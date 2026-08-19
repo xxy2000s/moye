@@ -78,7 +78,7 @@ BL-0002 中的基础 Task Trace 属于编码闭环验收，不代表 BL-0006 已
 
 Review Agent 只能报告问题，不能直接修改文件。主执行者必须验证审查结论，只修复真实问题。
 
-## 可直接发送到 Goal 模式的提示词
+## 提示词
 
 ```text
 在 /Users/xiaxu/service/moye 中执行“夜间多 Task 自举开发目标”。持续推进约 8–9 小时，但以多个 Task 的真实闭环为完成标准，不为消耗时间制造工作。
@@ -155,5 +155,3 @@ TASK-0007 完成看板 Trace 和故障恢复验收：从 task_id 能找到 Step�
 
 持续推进，直到多 Task 目标完成，或出现当前权限和仓库上下文无法消除的真实阻塞。
 ```
-
-本文确定下一轮 Goal 的需求边界、Backlog 映射和启动提示词，不替代每个 Task 的 Spec、Architecture 或 ADR。
