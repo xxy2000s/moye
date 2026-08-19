@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 8
+graph_revision: 9
 updated_at: "2026-08-20"
 
 entrypoints:
@@ -400,6 +400,54 @@ documents:
     authority: task-evidence
     read_when: [task-close, task-archive]
 
+  - id: task-0002-manifest
+    path: docs/delivery/tasks/TASK-0002/task.yaml
+    type: task-manifest
+    status: active
+    scope: backlog-projection-sync
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution, task-close]
+
+  - id: task-0002-spec
+    path: docs/delivery/tasks/TASK-0002/spec.md
+    type: task-spec
+    status: active
+    scope: backlog-projection-sync
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution, task-close]
+
+  - id: task-0002-design
+    path: docs/delivery/tasks/TASK-0002/design.md
+    type: task-design
+    status: active
+    scope: backlog-projection-sync
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution]
+
+  - id: task-0002-plan
+    path: docs/delivery/tasks/TASK-0002/plan.md
+    type: task-plan
+    status: active
+    scope: backlog-projection-sync
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0002-verification
+    path: docs/delivery/tasks/TASK-0002/verification.md
+    type: verification
+    status: active
+    scope: backlog-projection-sync
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0002-docs-impact
+    path: docs/delivery/tasks/TASK-0002/docs-impact.yaml
+    type: docs-impact
+    status: active
+    scope: backlog-projection-sync
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
   - id: restate-typescript-baseline
     path: docs/sources/research/restate-typescript-implementation-baseline.md
     type: research
@@ -764,6 +812,38 @@ relations:
   - from: task-0001-docs-impact
     to: task-0001-manifest
     type: reports_on
+
+  - from: bl-0008-backlog-projection-sync
+    to: task-0002-manifest
+    type: schedules_into
+
+  - from: tasks-index
+    to: task-0002-manifest
+    type: indexes
+
+  - from: task-0002-spec
+    to: task-0002-manifest
+    type: belongs_to
+
+  - from: task-0002-design
+    to: task-0002-spec
+    type: refines
+
+  - from: task-0002-plan
+    to: task-0002-manifest
+    type: belongs_to
+
+  - from: task-0002-verification
+    to: task-0002-manifest
+    type: verifies
+
+  - from: task-0002-docs-impact
+    to: task-0002-manifest
+    type: reports_on
+
+  - from: task-0002-manifest
+    to: document-control-plane
+    type: integrates_with
 
   - from: task-0001-manifest
     to: task-runtime-kernel

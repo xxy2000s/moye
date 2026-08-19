@@ -20,7 +20,7 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 | [BL-0005](./BL-0005.yaml) | Triaged | 接入远程 Git Provider 与 PR/Merge 闭环 | — |
 | [BL-0006](./BL-0006.yaml) | Triaged | 建设生产级 Trace、运营指标与异常看板 | — |
 | [BL-0007](./BL-0007.yaml) | Triaged | 实现经验候选、知识提升与效果反馈闭环 | — |
-| [BL-0008](./BL-0008.yaml) | Ready | 将 Backlog 文档幂等同步到项目看板 | — |
+| [BL-0008](./BL-0008.yaml) | Converted | 将 Backlog 文档幂等同步到项目看板 | TASK-0002 |
 
 ## 下一轮调度边界
 

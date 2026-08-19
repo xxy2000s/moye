@@ -1,0 +1,58 @@
+schema_version: 1
+task_id: "TASK-0002"
+graph_revision: 9
+
+intents:
+  - coding-task-poc
+  - task-create
+
+changed_paths:
+  - docs/delivery/tasks/TASK-0002/task.yaml
+  - docs/delivery/tasks/TASK-0002/spec.md
+  - docs/delivery/tasks/TASK-0002/design.md
+  - docs/delivery/tasks/TASK-0002/plan.md
+  - docs/delivery/tasks/TASK-0002/verification.md
+  - docs/delivery/tasks/TASK-0002/docs-impact.yaml
+  - docs/delivery/backlog/BL-0008.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/tasks/README.md
+  - docs/graph.yaml
+  - src/backlog/document-sync.ts
+  - src/domain/backlog.ts
+  - src/domain/task.ts
+  - src/restate/services.ts
+  - src/cli/index.ts
+  - tests/unit/backlog-sync.test.ts
+  - tests/e2e/backlog-sync.test.ts
+
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - overnight-multi-task-goal
+    - finding-backlog-docs-not-projected
+    - bl-0008-backlog-projection-sync
+    - bl-0002-single-agent-coding-loop
+    - task-runtime-kernel
+    - restate-poc-architecture
+    - durable-runtime-pitfalls
+    - backlog-index
+    - tasks-index
+  reviewed:
+    architecture-overview:
+      outcome: unchanged
+      reason: "本 Task 只补齐既有 Backlog→Projection 边界，不改变总体组件边界"
+    adr-0001-restate-poc:
+      outcome: unchanged
+      reason: "继续使用已接受的 Restate PoC 运行时"
+    adr-0002-doc-lifecycle-roles:
+      outcome: unchanged
+      reason: "按既有 Backlog→Task 规则创建 Active Task"
+    task-0001-manifest:
+      outcome: not_applicable
+      reason: "不修改 TASK-0001 历史事实"
+    adr-0003-typescript-poc:
+      outcome: unchanged
+      reason: "实现继续使用 TypeScript 基线"

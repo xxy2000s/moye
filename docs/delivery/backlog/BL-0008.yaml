@@ -2,7 +2,7 @@ schema_version: 1
 id: "BL-0008"
 title: "将 Backlog 文档幂等同步到项目看板"
 kind: "feature"
-status: "ready"
+status: "converted_to_task"
 priority: "high"
 
 source_refs:
@@ -25,6 +25,7 @@ acceptance_outline:
   - "包含转换单测、幂等测试和真实 Restate 集成证据"
 
 resolution:
-  task_refs: []
+  task_refs:
+    - TASK-0002
   duplicate_of:
-  reason:
+  reason: "已转换为 Backlog 文档同步实现任务"
