@@ -1,0 +1,26 @@
+schema_version: 1
+id: TASK-0006
+title: 实现编码 Workflow、Verification Gate 与本地 Merge
+status: closed
+outcome: succeeded
+backlog_refs:
+  - BL-0002
+spec_revision: 1
+workflow_id: task/TASK-0006
+execution_mode: goal-bootstrap
+base_commit: eb6f7ee983879aa2c38f9c0679ee500982bd77c1
+archive:
+  status: pending
+  archived_at: null
+  archived_path: null
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: task-artifact://TASK-0006/verification.md
+  implementation_commit: 1950fb4a91bfd1aca72b12ec0a5fb04ef4f957d9
+execution_evidence:
+  executor_id: goal:/root
+  result_commit: 1950fb4a91bfd1aca72b12ec0a5fb04ef4f957d9
+  verification_refs:
+    - task-artifact://TASK-0006/verification.md
+  docs_impact_ref: task-artifact://TASK-0006/docs-impact.yaml

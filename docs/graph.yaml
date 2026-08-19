@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 17
+graph_revision: 18
 updated_at: "2026-08-20"
 
 entrypoints:
@@ -593,49 +593,49 @@ documents:
     read_when: [task-close, task-archive]
 
   - id: task-0006-manifest
-    path: docs/delivery/tasks/TASK-0006/task.yaml
+    path: docs/delivery/tasks/archive/2026-08-20-TASK-0006/task.yaml
     type: task-manifest
-    status: active
+    status: archived
     scope: coding-workflow
     authority: task-artifact
     read_when: [coding-task-poc, task-execution, task-close]
 
   - id: task-0006-spec
-    path: docs/delivery/tasks/TASK-0006/spec.md
+    path: docs/delivery/tasks/archive/2026-08-20-TASK-0006/spec.md
     type: task-spec
-    status: active
+    status: archived
     scope: coding-workflow
     authority: task-artifact
     read_when: [coding-task-poc, task-execution, task-close]
 
   - id: task-0006-design
-    path: docs/delivery/tasks/TASK-0006/design.md
+    path: docs/delivery/tasks/archive/2026-08-20-TASK-0006/design.md
     type: task-design
-    status: active
+    status: archived
     scope: coding-workflow
     authority: task-artifact
     read_when: [coding-task-poc, task-execution]
 
   - id: task-0006-plan
-    path: docs/delivery/tasks/TASK-0006/plan.md
+    path: docs/delivery/tasks/archive/2026-08-20-TASK-0006/plan.md
     type: task-plan
-    status: active
+    status: archived
     scope: coding-workflow
     authority: task-artifact
     read_when: [task-execution]
 
   - id: task-0006-verification
-    path: docs/delivery/tasks/TASK-0006/verification.md
+    path: docs/delivery/tasks/archive/2026-08-20-TASK-0006/verification.md
     type: verification
-    status: active
+    status: archived
     scope: coding-workflow
     authority: task-evidence
     read_when: [task-close, task-archive]
 
   - id: task-0006-docs-impact
-    path: docs/delivery/tasks/TASK-0006/docs-impact.yaml
+    path: docs/delivery/tasks/archive/2026-08-20-TASK-0006/docs-impact.yaml
     type: docs-impact
-    status: active
+    status: archived
     scope: coding-workflow
     authority: task-evidence
     read_when: [task-close, task-archive]
@@ -1137,7 +1137,7 @@ relations:
     to: task-0006-manifest
     type: schedules_into
 
-  - from: tasks-index
+  - from: archived-tasks-index
     to: task-0006-manifest
     type: indexes
 
