@@ -1,0 +1,26 @@
+schema_version: 1
+id: TASK-0003
+title: 定义 Spec、TaskEnvelope、Step 与 Attempt 最小协议
+status: closed
+outcome: succeeded
+backlog_refs:
+  - BL-0002
+spec_revision: 1
+workflow_id: task/TASK-0003
+execution_mode: goal-bootstrap
+base_commit: cb501f705f2f9a913697b973f80a92879020635f
+archive:
+  status: pending
+  archived_at: null
+  archived_path: null
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: task-artifact://TASK-0003/verification.md
+  implementation_commit: cce3e88782abac357f0ebb521756d97fafc398de
+execution_evidence:
+  executor_id: goal/root
+  result_commit: cce3e88782abac357f0ebb521756d97fafc398de
+  verification_refs:
+    - task-artifact://TASK-0003/verification.md
+  docs_impact_ref: task-artifact://TASK-0003/docs-impact.yaml

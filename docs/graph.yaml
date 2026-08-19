@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 11
+graph_revision: 12
 updated_at: "2026-08-20"
 
 entrypoints:
@@ -449,49 +449,49 @@ documents:
     read_when: [task-close, task-archive]
 
   - id: task-0003-manifest
-    path: docs/delivery/tasks/TASK-0003/task.yaml
+    path: docs/delivery/tasks/archive/2026-08-20-TASK-0003/task.yaml
     type: task-manifest
-    status: active
+    status: archived
     scope: coding-task-protocol
     authority: task-artifact
     read_when: [coding-task-poc, task-execution, task-close]
 
   - id: task-0003-spec
-    path: docs/delivery/tasks/TASK-0003/spec.md
+    path: docs/delivery/tasks/archive/2026-08-20-TASK-0003/spec.md
     type: task-spec
-    status: active
+    status: archived
     scope: coding-task-protocol
     authority: task-artifact
     read_when: [coding-task-poc, task-execution, task-close]
 
   - id: task-0003-design
-    path: docs/delivery/tasks/TASK-0003/design.md
+    path: docs/delivery/tasks/archive/2026-08-20-TASK-0003/design.md
     type: task-design
-    status: active
+    status: archived
     scope: coding-task-protocol
     authority: task-artifact
     read_when: [coding-task-poc, task-execution]
 
   - id: task-0003-plan
-    path: docs/delivery/tasks/TASK-0003/plan.md
+    path: docs/delivery/tasks/archive/2026-08-20-TASK-0003/plan.md
     type: task-plan
-    status: active
+    status: archived
     scope: coding-task-protocol
     authority: task-artifact
     read_when: [task-execution]
 
   - id: task-0003-verification
-    path: docs/delivery/tasks/TASK-0003/verification.md
+    path: docs/delivery/tasks/archive/2026-08-20-TASK-0003/verification.md
     type: verification
-    status: active
+    status: archived
     scope: coding-task-protocol
     authority: task-evidence
     read_when: [task-close, task-archive]
 
   - id: task-0003-docs-impact
-    path: docs/delivery/tasks/TASK-0003/docs-impact.yaml
+    path: docs/delivery/tasks/archive/2026-08-20-TASK-0003/docs-impact.yaml
     type: docs-impact
-    status: active
+    status: archived
     scope: coding-task-protocol
     authority: task-evidence
     read_when: [task-close, task-archive]
@@ -897,7 +897,7 @@ relations:
     to: task-0003-manifest
     type: schedules_into
 
-  - from: tasks-index
+  - from: archived-tasks-index
     to: task-0003-manifest
     type: indexes
 
