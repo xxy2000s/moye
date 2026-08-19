@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 14
+graph_revision: 15
 updated_at: "2026-08-20"
 
 entrypoints:
@@ -544,6 +544,54 @@ documents:
     authority: task-evidence
     read_when: [task-close, task-archive]
 
+  - id: task-0005-manifest
+    path: docs/delivery/tasks/TASK-0005/task.yaml
+    type: task-manifest
+    status: active
+    scope: agent-runner
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution, task-close]
+
+  - id: task-0005-spec
+    path: docs/delivery/tasks/TASK-0005/spec.md
+    type: task-spec
+    status: active
+    scope: agent-runner
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution, task-close]
+
+  - id: task-0005-design
+    path: docs/delivery/tasks/TASK-0005/design.md
+    type: task-design
+    status: active
+    scope: agent-runner
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution]
+
+  - id: task-0005-plan
+    path: docs/delivery/tasks/TASK-0005/plan.md
+    type: task-plan
+    status: active
+    scope: agent-runner
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0005-verification
+    path: docs/delivery/tasks/TASK-0005/verification.md
+    type: verification
+    status: active
+    scope: agent-runner
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0005-docs-impact
+    path: docs/delivery/tasks/TASK-0005/docs-impact.yaml
+    type: docs-impact
+    status: active
+    scope: agent-runner
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
   - id: restate-typescript-baseline
     path: docs/sources/research/restate-typescript-implementation-baseline.md
     type: research
@@ -1002,6 +1050,38 @@ relations:
     type: reports_on
 
   - from: task-0004-manifest
+    to: task-runtime-kernel
+    type: implements_slice_of
+
+  - from: bl-0002-single-agent-coding-loop
+    to: task-0005-manifest
+    type: schedules_into
+
+  - from: tasks-index
+    to: task-0005-manifest
+    type: indexes
+
+  - from: task-0005-spec
+    to: task-0005-manifest
+    type: belongs_to
+
+  - from: task-0005-design
+    to: task-0005-spec
+    type: refines
+
+  - from: task-0005-plan
+    to: task-0005-manifest
+    type: belongs_to
+
+  - from: task-0005-verification
+    to: task-0005-manifest
+    type: verifies
+
+  - from: task-0005-docs-impact
+    to: task-0005-manifest
+    type: reports_on
+
+  - from: task-0005-manifest
     to: task-runtime-kernel
     type: implements_slice_of
 
