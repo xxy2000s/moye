@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 7
+graph_revision: 8
 updated_at: "2026-08-20"
 
 entrypoints:
@@ -168,6 +168,14 @@ documents:
     authority: idea-input
     read_when: [task-lifecycle-design, spec-lifecycle-design, docs-change]
 
+  - id: overnight-multi-task-goal
+    path: docs/sources/brainstorm/overnight-multi-task-goal.md
+    type: brainstorm
+    status: draft
+    scope: overnight-multi-task-bootstrap
+    authority: idea-input
+    read_when: [task-create, coding-task-poc]
+
   - id: durable-workflow-research
     path: docs/sources/research/durable-workflow-and-observability-options.md
     type: research
@@ -239,6 +247,14 @@ documents:
     scope: findings
     authority: navigation
     read_when: [finding-intake, bug-intake]
+
+  - id: finding-backlog-docs-not-projected
+    path: docs/sources/findings/backlog-docs-not-projected.md
+    type: finding
+    status: confirmed
+    scope: backlog-projection-sync
+    authority: finding
+    read_when: [finding-intake, task-create, coding-task-poc]
 
   - id: references-index
     path: docs/sources/references/README.md
@@ -327,6 +343,14 @@ documents:
     scope: knowledge-lifecycle
     authority: backlog
     read_when: [task-create, knowledge-change]
+
+  - id: bl-0008-backlog-projection-sync
+    path: docs/delivery/backlog/BL-0008.yaml
+    type: backlog
+    status: ready
+    scope: backlog-projection-sync
+    authority: backlog
+    read_when: [task-create, coding-task-poc]
 
   - id: task-0001-manifest
     path: docs/delivery/tasks/archive/2026-08-20-TASK-0001/task.yaml
@@ -557,6 +581,10 @@ relations:
     to: task-spec-document-closure-brainstorm
     type: indexes
 
+  - from: brainstorm-index
+    to: overnight-multi-task-goal
+    type: indexes
+
   - from: task-spec-document-closure-brainstorm
     to: task-runtime-kernel
     type: proposes_for
@@ -588,6 +616,10 @@ relations:
   - from: findings-index
     to: backlog-index
     type: feeds
+
+  - from: findings-index
+    to: finding-backlog-docs-not-projected
+    type: indexes
 
   - from: brainstorm-index
     to: backlog-index
@@ -640,6 +672,26 @@ relations:
   - from: backlog-index
     to: bl-0007-knowledge-feedback-loop
     type: indexes
+
+  - from: backlog-index
+    to: bl-0008-backlog-projection-sync
+    type: indexes
+
+  - from: finding-backlog-docs-not-projected
+    to: bl-0008-backlog-projection-sync
+    type: creates_backlog
+
+  - from: overnight-multi-task-goal
+    to: bl-0008-backlog-projection-sync
+    type: informs
+
+  - from: overnight-multi-task-goal
+    to: bl-0002-single-agent-coding-loop
+    type: informs
+
+  - from: bl-0008-backlog-projection-sync
+    to: bl-0002-single-agent-coding-loop
+    type: scheduled_before
 
   - from: task-spec-document-closure-brainstorm
     to: bl-0002-single-agent-coding-loop
@@ -799,6 +851,14 @@ routing:
       - backlog-index
       - tasks-index
       - task-runtime-kernel
+    coding-task-poc:
+      - overnight-multi-task-goal
+      - finding-backlog-docs-not-projected
+      - bl-0008-backlog-projection-sync
+      - bl-0002-single-agent-coding-loop
+      - task-runtime-kernel
+      - restate-poc-architecture
+      - durable-runtime-pitfalls
     task-archive:
       - tasks-index
       - archived-tasks-index

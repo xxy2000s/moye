@@ -28,6 +28,7 @@ Brainstorm 不要求每次讨论都立即收敛，但不能被 Agent 当作当�
 ## 当前草稿
 
 - [编码任务 Spec、文档与外围闭环](./task-spec-and-document-closure.md)：拆分 Task Control Plane、编码 Spec 协议和长期知识文档，并探索如何通过文档义务形成关闭 Gate。
+- [夜间多 Task 自举开发目标](./overnight-multi-task-goal.md)：固定下一轮 Goal 的 Backlog 映射、顺序能力切片、自举约束和完成边界。
 
 ## 写作约定
 

@@ -1,0 +1,30 @@
+schema_version: 1
+id: "BL-0008"
+title: "将 Backlog 文档幂等同步到项目看板"
+kind: "feature"
+status: "ready"
+priority: "high"
+
+source_refs:
+  - finding-backlog-docs-not-projected
+  - overnight-multi-task-goal
+affected_areas:
+  - backlog
+  - document-control
+  - project-board
+  - cli
+  - restate
+
+acceptance_outline:
+  - "提供显式 CLI 将 docs/delivery/backlog/BL-*.yaml 转换并同步到 ProjectBoard Projection"
+  - "校验并转换文档字段、运行时字段和枚举大小写，错误条目不得部分静默成功"
+  - "重复同步相同内容不会产生重复 Backlog 或无意义状态变化"
+  - "明确处理新增、更新和源文件消失，禁止未经策略静默删除运行时记录"
+  - "Web 查询只读取 Projection，不在请求路径临时扫描 Git 文档"
+  - "同步后 Ready 和 Triaged 条目可以在项目看板查看，Converted 条目仍按现有规则隐藏"
+  - "包含转换单测、幂等测试和真实 Restate 集成证据"
+
+resolution:
+  task_refs: []
+  duplicate_of:
+  reason:

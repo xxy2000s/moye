@@ -9,4 +9,8 @@ Finding 与 Incident 的边界：
 - 一个 Incident 可以产生多个 Finding；
 - 一个 Finding 经过去重和初步确认后可以生成 Backlog Item。
 
-当前尚无 Finding。不要为了演示目录创建虚构 Bug。
+## 当前 Finding
+
+- [Backlog 文档未投影到项目看板](./backlog-docs-not-projected.md)：Git 中的 Backlog YAML 与 Restate ProjectBoard Projection 尚无显式同步路径。
+
+不要为了演示目录创建虚构 Bug。

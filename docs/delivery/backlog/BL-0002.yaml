@@ -7,6 +7,7 @@ priority: "high"
 
 source_refs:
   - task-spec-document-closure-brainstorm
+  - overnight-multi-task-goal
 affected_areas:
   - task-runtime
   - task-spec
