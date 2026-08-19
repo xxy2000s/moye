@@ -5,6 +5,7 @@ graph_revision: 13
 intents:
   - coding-task-poc
   - task-create
+  - task-close
 
 changed_paths:
   - docs/delivery/backlog/BL-0002.yaml
@@ -16,6 +17,10 @@ changed_paths:
   - docs/delivery/tasks/TASK-0004/verification.md
   - docs/delivery/tasks/TASK-0004/docs-impact.yaml
   - docs/graph.yaml
+  - docs/knowledge/current/architecture/task-runtime-kernel.md
+  - docs/knowledge/current/codemap/README.md
+  - src/git/workspace-effect.ts
+  - tests/unit/workspace-effect.test.ts
 
 docs:
   read:
@@ -32,10 +37,18 @@ docs:
     - durable-runtime-pitfalls
     - backlog-index
     - tasks-index
+    - architecture-index
+    - task-0004-manifest
+    - task-0004-spec
+    - task-0004-design
+    - task-0004-plan
+    - task-0004-verification
+    - task-0004-docs-impact
+    - sources-index
   reviewed:
     architecture-overview:
       outcome: unchanged
-      reason: "Task 创建尚未改变总体系统边界"
+      reason: "本 Task 实现既定 Worktree/Git Adapter 边界，不改变总体领域划分"
     adr-0001-restate-poc:
       outcome: unchanged
       reason: "本地 Git Adapter 不改变 Restate PoC 选型"
@@ -45,9 +58,18 @@ docs:
     task-0003-manifest:
       outcome: unchanged
       reason: "TASK-0003 已归档，仅作为上游协议事实"
+    task-0004-manifest:
+      outcome: updated
+      reason: "Task 状态进入验证，并将由正常 Runtime Closure 固化结果"
     task-0001-manifest:
       outcome: not_applicable
       reason: "不修改 TASK-0001 历史事实"
     adr-0003-typescript-poc:
       outcome: unchanged
       reason: "继续使用 TypeScript 基线"
+    moye-task-control-skill:
+      outcome: unchanged
+      reason: "Git Adapter 不改变 Task 与文档门禁操作流程"
+    task-0002-manifest:
+      outcome: unchanged
+      reason: "TASK-0002 已归档，仅复用其真实 Bootstrap Closure 能力"

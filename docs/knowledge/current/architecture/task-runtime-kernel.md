@@ -97,6 +97,18 @@ Daemon 调度、角色 Agent、Worktree、Git、Gate 和知识沉淀都建立在
 
 这一切片尚未接入 Restate 主状态机，也不包含 Worktree、Agent、Lease、Fencing 或 Retry Budget。以下完整模型仍是后续设计目标。
 
+### 5.0.1 当前 PoC 已实现本地 Git Effect 切片
+
+`src/git/workspace-effect.ts` 已实现不推进 Task 主状态的本地 Git Adapter：
+
+- `WorkspaceEffectRequest` 从 Task、Spec Revision、Repository、Git Common Dir、Managed Worktree Root、完整 Base Ref 和 Base SHA 规范生成稳定 Effect ID；任务分支编码完整 Effect 摘要，Worktree 目标路径按 Task ID 派生；
+- 路径创建前后都通过物理路径、Git 元数据禁区、直接子级、文件系统根目录与符号链接约束检查；Git 只以 argv 和 `shell:false` 执行；
+- 每次创建先检查 Worktree List、Task Branch 和 HEAD。完全匹配视为已完成；ownership、Branch、路径、prunable 状态或 ancestry 只部分匹配时停止为 Conflict；
+- Git 命令失败或调用方丢失结果后再次读取上述事实。确认已经完成时返回 `ALREADY_APPLIED`，确认未发生时才暴露可重试错误，无法读取事实则标记 `UNKNOWN_SIDE_EFFECT`；
+- `GitCheckpoint` 只接受无 tracked dirty 和 untracked 文件的 Worktree，固定 Base、Branch、Result Commit、Git Tree Object ID 与 Workspace Effect ID，创建时验证 Branch HEAD 和 Base ancestry；序列化恢复要求外部 Expected Digest。
+
+该切片尚未把 Effect Record 持久化到 Workflow，也不执行 Agent、Verification 或 Merge。Worktree 路径仍然只是单机缓存；可迁移恢复点是已提交的 Commit 与 Tree Object ID。
+
 ### 5.1 模型关系
 
 ```mermaid
