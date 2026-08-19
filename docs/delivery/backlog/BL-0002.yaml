@@ -2,7 +2,7 @@ schema_version: 1
 id: "BL-0002"
 title: "实现首个真实单 Agent 本地编码闭环"
 kind: "feature"
-status: "ready"
+status: "converted_to_task"
 priority: "high"
 
 source_refs:
