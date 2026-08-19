@@ -21,7 +21,9 @@ tasks/
 
 ## 当前 Active Task
 
-当前没有 Active Task。
+| Task | Backlog | 标题 | 执行方式 |
+|---|---|---|---|
+| [TASK-0003](./TASK-0003/task.yaml) | BL-0002 | 定义最小编码任务协议 | Goal Bootstrap |
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 

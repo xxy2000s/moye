@@ -1,0 +1,52 @@
+schema_version: 1
+task_id: "TASK-0003"
+graph_revision: 11
+
+intents:
+  - coding-task-poc
+  - task-create
+
+changed_paths:
+  - docs/delivery/backlog/BL-0002.yaml
+  - docs/delivery/tasks/README.md
+  - docs/delivery/tasks/TASK-0003/task.yaml
+  - docs/delivery/tasks/TASK-0003/spec.md
+  - docs/delivery/tasks/TASK-0003/design.md
+  - docs/delivery/tasks/TASK-0003/plan.md
+  - docs/delivery/tasks/TASK-0003/verification.md
+  - docs/delivery/tasks/TASK-0003/docs-impact.yaml
+  - docs/graph.yaml
+  - docs/knowledge/current/architecture/task-runtime-kernel.md
+  - docs/knowledge/current/codemap/README.md
+  - src/domain/coding-task.ts
+  - tests/unit/coding-task.test.ts
+
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - overnight-multi-task-goal
+    - bl-0002-single-agent-coding-loop
+    - task-runtime-kernel
+    - restate-poc-architecture
+    - durable-runtime-pitfalls
+    - backlog-index
+    - tasks-index
+  reviewed:
+    architecture-overview:
+      outcome: unchanged
+      reason: "本 Task 细化既有 Task Runtime 领域协议，不改变总体领域边界"
+    adr-0001-restate-poc:
+      outcome: unchanged
+      reason: "纯领域协议不依赖 Restate 选型"
+    adr-0002-doc-lifecycle-roles:
+      outcome: unchanged
+      reason: "继续使用 Backlog→Active Task→Archive 生命周期"
+    task-0001-manifest:
+      outcome: not_applicable
+      reason: "不修改 TASK-0001 历史事实"
+    adr-0003-typescript-poc:
+      outcome: unchanged
+      reason: "继续使用 TypeScript 基线"

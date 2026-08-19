@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 10
+graph_revision: 11
 updated_at: "2026-08-20"
 
 entrypoints:
@@ -448,6 +448,54 @@ documents:
     authority: task-evidence
     read_when: [task-close, task-archive]
 
+  - id: task-0003-manifest
+    path: docs/delivery/tasks/TASK-0003/task.yaml
+    type: task-manifest
+    status: active
+    scope: coding-task-protocol
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution, task-close]
+
+  - id: task-0003-spec
+    path: docs/delivery/tasks/TASK-0003/spec.md
+    type: task-spec
+    status: active
+    scope: coding-task-protocol
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution, task-close]
+
+  - id: task-0003-design
+    path: docs/delivery/tasks/TASK-0003/design.md
+    type: task-design
+    status: active
+    scope: coding-task-protocol
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution]
+
+  - id: task-0003-plan
+    path: docs/delivery/tasks/TASK-0003/plan.md
+    type: task-plan
+    status: active
+    scope: coding-task-protocol
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0003-verification
+    path: docs/delivery/tasks/TASK-0003/verification.md
+    type: verification
+    status: active
+    scope: coding-task-protocol
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0003-docs-impact
+    path: docs/delivery/tasks/TASK-0003/docs-impact.yaml
+    type: docs-impact
+    status: active
+    scope: coding-task-protocol
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
   - id: restate-typescript-baseline
     path: docs/sources/research/restate-typescript-implementation-baseline.md
     type: research
@@ -817,7 +865,7 @@ relations:
     to: task-0002-manifest
     type: schedules_into
 
-  - from: tasks-index
+  - from: archived-tasks-index
     to: task-0002-manifest
     type: indexes
 
@@ -844,6 +892,38 @@ relations:
   - from: task-0002-manifest
     to: document-control-plane
     type: integrates_with
+
+  - from: bl-0002-single-agent-coding-loop
+    to: task-0003-manifest
+    type: schedules_into
+
+  - from: tasks-index
+    to: task-0003-manifest
+    type: indexes
+
+  - from: task-0003-spec
+    to: task-0003-manifest
+    type: belongs_to
+
+  - from: task-0003-design
+    to: task-0003-spec
+    type: refines
+
+  - from: task-0003-plan
+    to: task-0003-manifest
+    type: belongs_to
+
+  - from: task-0003-verification
+    to: task-0003-manifest
+    type: verifies
+
+  - from: task-0003-docs-impact
+    to: task-0003-manifest
+    type: reports_on
+
+  - from: task-0003-manifest
+    to: task-runtime-kernel
+    type: implements_slice_of
 
   - from: task-0001-manifest
     to: task-runtime-kernel

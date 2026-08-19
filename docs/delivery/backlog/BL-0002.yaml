@@ -29,6 +29,7 @@ acceptance_outline:
   - "看板可以从 Task ID 查看 Step、Attempt、Agent Session、Commit、验证和恢复轨迹"
 
 resolution:
-  task_refs: []
+  task_refs:
+    - TASK-0003
   duplicate_of:
-  reason:
+  reason: "按独立闭环 Task 切片消费；TASK-0003 先实现 Spec、Envelope、Step 与 Attempt 协议"
