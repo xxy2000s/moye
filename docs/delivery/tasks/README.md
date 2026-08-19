@@ -21,9 +21,7 @@ tasks/
 
 ## 当前 Active Task
 
-| Task | 状态 | 目标 |
-|---|---|---|
-| TASK-0005 | Executing | Fake AgentRunner 与 Codex Exec Adapter |
+当前没有 Active Task。
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 
