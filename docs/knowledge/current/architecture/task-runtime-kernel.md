@@ -130,7 +130,9 @@ Daemon 调度、角色 Agent、Worktree、Git、Gate 和知识沉淀都建立在
 - Fake Coding Runner 用 Commit marker 对账中断点；真实 Codex 在进程启动前写稳定 Intent，缺少完整结果时标记 UNKNOWN 并禁止自动重启；
 - Docs Step 即使 `not_applicable` 也生成明确 Artifact；证据不齐不能 CLOSED，Restate 路径在 CLOSED 后调用独立 ArchiveWorkflow。
 
-当前 ProjectBoard 已接收 Coding 的状态和事件摘要；领域 Attempt/Evidence、Restate Journal 与日志的分层 Trace、Repair/Replan 操作入口仍由后续恢复验收切片完成。
+ProjectBoard 接收 Coding 的状态和事件摘要；`src/trace/coding-trace.ts` 再从只读 Coding Projection 派生三层 Trace：业务 Event/Step/Attempt/Evidence 是任务事实，Restate Journal 是 durable execution/replay 事实，Agent/Verification/Git Artifact 是诊断证据。Workflow 把 Adapter 的 `code + category` 结构化保存到失败 Projection；任何 `UNKNOWN_SIDE_EFFECT`，无论发生在 Workspace、Agent、Verification 或 Merge，都只能派生等待/对账建议，不能建议并行新 Task。Trace 没有写入口，不能复活 Attempt 或形成第二套状态机。完整 Repair/Replan 操作仍属于后续切片。
+
+`TaskAuthority.get` 为查询层返回冻结的 owner 与 Spec Revision，Board 据此访问唯一主 Workflow，不扫描目录猜测类型。Git ref 更新完成后 Worker 退出的路径由相同 Merge Effect 重放：先读取 marker、双亲和 target ancestry，确认已应用后返回 `ALREADY_APPLIED`，再由 Workflow 确认 Step。
 
 ### 5.1 模型关系
 

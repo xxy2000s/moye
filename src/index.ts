@@ -22,6 +22,7 @@ const board = startBoardServer({
   port: config.boardPort,
   projectId: config.projectId,
   ingressUrl: config.restateIngressUrl,
+  restateAdminUrl: config.restateAdminUrl,
   publicRoot: join(process.cwd(), "public"),
 });
 board.on("listening", () => {

@@ -14,6 +14,7 @@ import {
   recordAttemptEvidence,
   startAttempt,
 } from "../domain/coding-task.js";
+import { MoyeError, type MoyeErrorCategory } from "../domain/errors.js";
 import type { GitCommandRunner, GitCheckpoint, WorkspaceEffectRequest } from "../git/workspace-effect.js";
 import {
   applyWorkspaceEffect,
@@ -62,6 +63,8 @@ export interface CodingWorkflowProjection {
   readonly outcome?: "SUCCEEDED" | "FAILED_TERMINAL";
   readonly archiveStatus: "NOT_READY" | "PENDING" | "ARCHIVED" | "FAILED";
   readonly error?: string;
+  readonly errorCode?: string;
+  readonly errorCategory?: MoyeErrorCategory;
   readonly events: readonly CodingWorkflowEvent[];
   readonly steps: readonly CodingStep[];
   readonly attempts: readonly StepAttempt[];
@@ -146,7 +149,11 @@ export async function runCodingWorkflow(
     }
     await publish(withEvent(projection, "STEP_SUCCEEDED", step, canonicalNow(now), detail));
   };
-  const fail = async (step: CodingWorkflowStep, message: string): Promise<CodingWorkflowProjection> => {
+  const fail = async (
+    step: CodingWorkflowStep,
+    message: string,
+    errorFact?: { readonly code: string; readonly category: MoyeErrorCategory },
+  ): Promise<CodingWorkflowProjection> => {
     const codingStep = findCodingStep(envelope, step);
     if (codingStep !== undefined) {
       const running = projection.attempts.find((attempt) => attempt.stepId === step && attempt.status === "RUNNING");
@@ -163,6 +170,7 @@ export async function runCodingWorkflow(
       state: "FAILED",
       outcome: "FAILED_TERMINAL",
       error: message,
+      ...(errorFact === undefined ? {} : { errorCode: errorFact.code, errorCategory: errorFact.category }),
     }, "WORKFLOW_FAILED", step, canonicalNow(now), message));
     return projection;
   };
@@ -174,7 +182,7 @@ export async function runCodingWorkflow(
     });
 
     await start("WORKSPACE");
-    const workspaceActivity = await activity("workspace-effect", async () => {
+    const workspaceActivityResult = await activity("workspace-effect", () => captureUnknownSideEffect(async () => {
       const request = await createWorkspaceEffectRequest({
         taskId: envelope.taskId,
         specRevision: envelope.specRevision,
@@ -185,12 +193,19 @@ export async function runCodingWorkflow(
       });
       const effect = await applyWorkspaceEffect(request, dependencies.gitRunner);
       return { request, effect };
-    });
+    }));
+    if (!workspaceActivityResult.ok) {
+      return fail("WORKSPACE", workspaceActivityResult.error.message, workspaceActivityResult.error);
+    }
+    const workspaceActivity = workspaceActivityResult.value;
     const workspace = await parseWorkspaceEffectRequest(
       JSON.parse(JSON.stringify(workspaceActivity.request)) as unknown,
       workspaceActivity.request.effectId,
     );
-    if (workspaceActivity.effect.outcome === "CONFLICT") return fail("WORKSPACE", workspaceActivity.effect.reconcileCode);
+    if (workspaceActivity.effect.outcome === "CONFLICT") {
+      return fail("WORKSPACE", workspaceActivity.effect.reconcileCode,
+        { code: workspaceActivity.effect.reconcileCode, category: "CONFLICT" });
+    }
     await publish({
       ...projection,
       workspace: { effectId: workspace.effectId, path: workspace.worktreePath, branch: workspace.branchName },
@@ -210,14 +225,19 @@ export async function runCodingWorkflow(
       artifactRoot: path.join(input.artifactRoot, "agent"),
       prompt: input.prompt,
     });
-    const agentRaw = await activity("agent-run", () => dependencies.agentRunner.run(agentRequest));
+    const agentActivity = await activity("agent-run", () => captureUnknownSideEffect(
+      () => dependencies.agentRunner.run(agentRequest),
+    ));
+    if (!agentActivity.ok) return fail("IMPLEMENT", agentActivity.error.message, agentActivity.error);
+    const agentRaw = agentActivity.value;
     const agent = await parseAgentRunResult(
       JSON.parse(JSON.stringify(agentRaw)) as unknown,
       agentRequest,
       agentRaw.runDigest,
     );
     await publish({ ...projection, agent });
-    if (agent.outcome !== "SUCCEEDED") return fail("IMPLEMENT", `Agent outcome ${agent.outcome}`);
+    if (agent.outcome !== "SUCCEEDED") return fail("IMPLEMENT", `Agent outcome ${agent.outcome}`,
+      { code: `AGENT_OUTCOME_${agent.outcome}`, category: "TERMINAL" });
     const checkpointCreatedAt = canonicalNow(now);
     const checkpointRaw = await activity("result-checkpoint", () => createGitCheckpoint(
       workspace,
@@ -258,13 +278,16 @@ export async function runCodingWorkflow(
       verification = deepFreeze(JSON.parse(JSON.stringify(verificationRaw)) as VerificationFailure);
     }
     await publish({ ...projection, verification });
-    if (!verification.passed) return fail("VERIFY", verification.code);
+    if (!verification.passed) return fail("VERIFY", verification.code, {
+      code: verification.code,
+      category: verification.code === "RESULT_UNKNOWN" ? "UNKNOWN_SIDE_EFFECT" : "TERMINAL",
+    });
     await succeed("VERIFY", verification.verificationDigest, {
       artifactName: "verification.json", contentDigest: verification.evidenceContentDigest,
     });
 
     await start("MERGE");
-    const merge = await activity("local-merge-effect", async () => {
+    const mergeActivity = await activity("local-merge-effect", () => captureUnknownSideEffect(async () => {
       const request = await createLocalMergeRequest({
         repositoryRoot: workspace.worktreePath,
         targetRef: input.targetRef,
@@ -272,9 +295,13 @@ export async function runCodingWorkflow(
         verification,
       });
       return applyLocalMerge(request, dependencies.gitRunner);
-    });
+    }));
+    if (!mergeActivity.ok) return fail("MERGE", mergeActivity.error.message, mergeActivity.error);
+    const merge = mergeActivity.value;
     await publish({ ...projection, merge });
-    if (merge.outcome === "CONFLICT" || !merge.mergeCommit) return fail("MERGE", merge.code);
+    if (merge.outcome === "CONFLICT" || !merge.mergeCommit) {
+      return fail("MERGE", merge.code, { code: merge.code, category: "CONFLICT" });
+    }
     await succeed("MERGE", merge.mergeCommit, {
       artifactName: "merge-result.json", contentDigest: sha256(Buffer.from(JSON.stringify(merge))),
     });
@@ -307,7 +334,26 @@ export async function runCodingWorkflow(
     }
     return projection;
   } catch (error) {
-    return fail(projection.currentStep, error instanceof Error ? error.message : String(error));
+    return fail(
+      projection.currentStep,
+      error instanceof Error ? error.message : String(error),
+      error instanceof MoyeError ? { code: error.code, category: error.category } : undefined,
+    );
+  }
+}
+
+type CapturedActivity<T> =
+  | { readonly ok: true; readonly value: T }
+  | { readonly ok: false; readonly error: { readonly code: string; readonly category: "UNKNOWN_SIDE_EFFECT"; readonly message: string } };
+
+async function captureUnknownSideEffect<T>(operation: () => Promise<T>): Promise<CapturedActivity<T>> {
+  try {
+    return { ok: true, value: await operation() };
+  } catch (error) {
+    if (error instanceof MoyeError && error.category === "UNKNOWN_SIDE_EFFECT") {
+      return { ok: false, error: { code: error.code, category: error.category, message: error.message } };
+    }
+    throw error;
   }
 }
 

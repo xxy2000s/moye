@@ -11,6 +11,7 @@ import type { ProjectBoardSnapshot } from "../../src/domain/board.js";
 import { invoke, send } from "../../src/restate/ingress.js";
 import type { CodingTaskWorkflowInput } from "../../src/restate/coding-services.js";
 import type { CodingWorkflowProjection } from "../../src/coding/workflow.js";
+import type { CodingTaskTrace } from "../../src/trace/coding-trace.js";
 
 const root = process.cwd();
 const containerName = `moye-coding-e2e-${process.pid}`;
@@ -52,6 +53,9 @@ describe("Restate coding workflow", () => {
     );
     expect(result).toMatchObject({ state: "CLOSED", outcome: "SUCCEEDED", archiveStatus: "ARCHIVED" });
     expect(status).toEqual(result);
+    await expect(invoke<CodingWorkflowProjection>(
+      `http://127.0.0.1:${ingressPort}`, "CodingTaskWorkflow", "TASK-CODING-E2E", "run", fixture.input,
+    )).rejects.toThrow(/workflow method was already invoked/);
     expect(result.agent).toMatchObject({ sessionId: "session-TASK-CODING-E2E", outcome: "SUCCEEDED" });
     expect(result.verification).toMatchObject({ passed: true });
     expect(git(fixture.repositoryRoot, "rev-parse", "master").trim()).toBe(result.merge?.mergeCommit);
@@ -63,6 +67,22 @@ describe("Restate coding workflow", () => {
     expect(board.archived.find((task) => task.taskId === "TASK-CODING-E2E")).toMatchObject({
       state: "CLOSED", archiveStatus: "ARCHIVED", currentStep: "ARCHIVE",
     });
+    const traceResponse = await fetch(`http://127.0.0.1:${boardPort}/api/tasks/TASK-CODING-E2E/trace`);
+    expect(traceResponse.status).toBe(200);
+    const trace = await traceResponse.json() as CodingTaskTrace;
+    expect(trace).toMatchObject({
+      task: { taskId: "TASK-CODING-E2E", state: "CLOSED", archiveStatus: "ARCHIVED" },
+      agent: { sessionId: "session-TASK-CODING-E2E" },
+      git: { branch: result.workspace?.branch, resultCommit: result.checkpoint?.commitSha, mergeCommit: result.merge?.mergeCommit },
+      verification: { passed: true, evidenceRef: result.verification?.evidenceRef },
+      durableRuntime: {
+        workflowRef: "restate://CodingTaskWorkflow/TASK-CODING-E2E",
+        adminBaseUrl: `http://127.0.0.1:${adminPort}`,
+      },
+      recovery: { classification: "NONE", actions: [] },
+    });
+    expect(trace.business.attempts).toHaveLength(6);
+    expect(trace.technical.artifacts.map((artifact) => artifact.kind)).toContain("agent-stderr");
     await expect(invoke(
       `http://127.0.0.1:${ingressPort}`, "TaskWorkflow", "TASK-CODING-E2E", "run", {
         taskId: "TASK-CODING-E2E",
@@ -99,6 +119,61 @@ describe("Restate coding workflow", () => {
     expect(result.merge).toMatchObject({ outcome: "ALREADY_APPLIED", reconciledAfterUnknown: true });
     expect(git(fixture.repositoryRoot, "log", "master", "--fixed-strings", "--grep", result.merge!.effectId, "--format=%H").trim().split("\n"))
       .toEqual([result.merge?.mergeCommit]);
+  }, 30_000);
+
+  it("reconciles Git after the Worker exits between ref update and Step acknowledgement", async () => {
+    const fixture = await workflowFixture("TASK-CODING-GIT-WORKER-EXIT", false);
+    const marker = path.join(path.dirname(fixture.repositoryRoot), "merge-ref-updated.marker");
+    const input: CodingTaskWorkflowInput = { ...fixture.input, fault: { exitAfterMergeRefUpdateOnceAt: marker } };
+    await send(
+      `http://127.0.0.1:${ingressPort}`, "CodingTaskWorkflow", "TASK-CODING-GIT-WORKER-EXIT", "run", input,
+    );
+    await waitUntil(async () => {
+      try { return (await readFile(marker, "utf8")).includes("update-ref"); } catch { return false; }
+    }, 15_000);
+    await waitUntil(async () => service?.exitCode !== null || service?.signalCode !== null, 10_000);
+    await stopService("SIGTERM");
+    await startService();
+    await registerService();
+    let result: CodingWorkflowProjection | null = null;
+    await waitUntil(async () => {
+      try {
+        result = await invoke<CodingWorkflowProjection | null>(
+          `http://127.0.0.1:${ingressPort}`, "CodingTaskWorkflow", "TASK-CODING-GIT-WORKER-EXIT", "status", undefined,
+        );
+        return result?.archiveStatus === "ARCHIVED";
+      } catch { return false; }
+    }, 25_000);
+    const recovered = result as CodingWorkflowProjection | null;
+    if (recovered === null) throw new Error(`Git projection did not recover\n${logs}`);
+    expect(recovered).toMatchObject({ state: "CLOSED", archiveStatus: "ARCHIVED" });
+    expect(recovered.merge).toMatchObject({ outcome: "ALREADY_APPLIED" });
+    expect(git(fixture.repositoryRoot, "log", "master", "--fixed-strings", "--grep", recovered.merge!.effectId, "--format=%H").trim().split("\n"))
+      .toEqual([recovered.merge?.mergeCommit]);
+  }, 40_000);
+
+  it("records an abnormal Agent exit as a terminal Attempt with no Merge", async () => {
+    const fixture = await workflowFixture("TASK-CODING-AGENT-EXIT", false);
+    const input: CodingTaskWorkflowInput = {
+      ...fixture.input,
+      fake: {
+        mutation: fixture.input.fake!.mutation,
+        script: { ...fixture.input.fake!.script, exitCode: 19, stderr: "agent crashed\n" },
+      },
+    };
+    const result = await invoke<CodingWorkflowProjection>(
+      `http://127.0.0.1:${ingressPort}`, "CodingTaskWorkflow", "TASK-CODING-AGENT-EXIT", "run", input,
+    );
+    expect(result).toMatchObject({ state: "FAILED", currentStep: "IMPLEMENT", outcome: "FAILED_TERMINAL" });
+    expect(result.agent).toMatchObject({ outcome: "FAILED", exitCode: 19 });
+    expect(result.attempts.find((attempt) => attempt.stepId === "IMPLEMENT")).toMatchObject({ status: "FAILED" });
+    expect(result.merge).toBeUndefined();
+    expect(git(fixture.repositoryRoot, "rev-parse", "master").trim()).toBe(fixture.baseSha);
+    const traceResponse = await fetch(`http://127.0.0.1:${boardPort}/api/tasks/TASK-CODING-AGENT-EXIT/trace`);
+    expect(traceResponse.status).toBe(200);
+    expect(await traceResponse.json()).toMatchObject({
+      recovery: { classification: "FAILED_TERMINAL", actions: [{ code: "CREATE_FOLLOW_UP" }] },
+    });
   }, 30_000);
 
   it("hands an interrupted Verification activity to a restarted Worker without rerunning the command", async () => {
@@ -215,6 +290,8 @@ async function startService(): Promise<void> {
       RESTATE_SERVICE_PORT: String(servicePort),
       MOYE_BOARD_PORT: String(boardPort),
       RESTATE_INGRESS_URL: `http://127.0.0.1:${ingressPort}`,
+      RESTATE_ADMIN_URL: `http://127.0.0.1:${adminPort}`,
+      MOYE_TEST_FAULT_INJECTION: "enabled",
       MOYE_PROJECT_ID: "moye-coding-e2e",
     },
     stdio: ["ignore", "pipe", "pipe"],

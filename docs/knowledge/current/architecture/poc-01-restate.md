@@ -22,6 +22,7 @@
 - 真实 Restate Server 1.7.4 下的 Worker `SIGKILL` 恢复测试。
 - keyed `CodingTaskWorkflow/<task_id>`、Verification Gate、本地 Merge Effect 与 Fake/真实 Codex Fixture 编码闭环。
 - `TaskAuthority/<task_id>` 单一主权声明、Coding→ProjectBoard 投影与独立 ArchiveWorkflow 串联。
+- `TaskAuthority` owner 查询、Coding Trace Builder、`/api/tasks/<task_id>/trace` 与三层看板详情。
 
 它不包含多 Daemon、远程 Git 平台/PR、鉴权、多租户和生产级 Telemetry；真实 LLM 仅在一次性本地 Fixture 中完成 Smoke Test。
 
@@ -97,9 +98,15 @@ PoC 尚未实现 Repair/Replan、中央预算、人工解除冲突和跨设备 G
 
 ## 6. 查询与 Trace
 
-Board 固定展示 Backlog、Active、Archive Pending、Archived。Task 详情包含 Task/Archive 状态、当前步骤、Attempt、Spec Revision、Backlog、Workflow Ref、结果路径和 Durable Event Trace。
+Board 固定展示 Backlog、Active、Archive Pending、Archived。通用 Task 保留原详情；Coding Task 通过 `TaskAuthority` owner 解析后查询唯一 `CodingTaskWorkflow` Projection，并由纯函数 Trace Builder 形成三个明确分区：
 
-领域 Event/Projection 用于业务解释；Restate Admin/API 用于 Invocation 和 Journal 排障。二者通过 `task_id` 关联，技术 Trace 不替代业务状态。
+1. Business Facts：状态、Step、Attempt、Evidence Binding 和领域 Event，是任务结果权威；
+2. Durable Runtime：Workflow Ref 与 Restate Admin 入口，Journal 是执行、重放和中断恢复权威；
+3. Technical Evidence：Agent Session/Artifact、Branch、Checkpoint、Verification 和 Merge，是诊断证据。
+
+`GET /api/tasks/<task_id>/trace` 和看板详情只读。恢复分类从已有 Projection 派生为 `NONE | WAIT_OR_RECONCILE | FAILED_TERMINAL | ARCHIVE_RETRY`，只说明应等待、对账、创建后续 Task 或重新附着 Archive，不直接推进状态。因此 Trace 不会成为第二套状态机，三层事实只通过 `task_id`、Attempt ID、Effect ID 和 Content Digest 关联。
+
+Workflow Projection 保留 Adapter 的结构化 `errorCode/errorCategory`。`UNKNOWN_SIDE_EFFECT` 在 Workspace、Agent、Verification 和 Merge 四个边界统一进入 `WAIT_OR_RECONCILE`；只有确定性失败才允许建议创建后续 Task。Board 静态文件路径在读取前同时校验 lexical path 与 `realpath` 位于 `publicRoot`，拒绝指向根外的符号链接。强杀/丢回执开关仅在显式 `MOYE_TEST_FAULT_INJECTION=enabled` 的测试进程中可用，不属于正常任务能力。
 
 ## 7. 验证结论
 
@@ -113,6 +120,8 @@ Board 固定展示 Backlog、Active、Archive Pending、Archived。Task 详情�
 - Pipeline 重试耗尽时形成唯一失败终态，并且失败材料仍能归档。
 - Fake Coding Workflow 在真实 Restate 中成功闭环并只产生一个 Merge Commit；Verification 失败时目标 master 保持不变。
 - Merge 回执丢失会由 marker/双亲对账；Verification 命令执行后强杀 Worker，新 Worker 接管且命令只运行一次，结果安全停止为 UNKNOWN。
+- Git ref 原子更新完成但 Merge Step 尚未确认时强杀 Worker，新 Worker 通过 Git facts 复用唯一 Merge；重复 Workflow 命令被 Restate 409 拒绝，Agent 异常退出形成可追踪终态且不合并。
+- Trace API 从单个 task_id 返回 6 个 Attempt、Agent Session、任务 Branch、Result/Merge Commit、Verification Evidence、技术 Artifact 和恢复分类。
 - 真实 Codex 只在临时 Fixture 中完成一次提交、验证与唯一 Merge，原始 JSONL 和摘要保存在 TASK-0006。
 
 完整证据和命令见 [TASK-0001 Verification](../../../delivery/tasks/archive/2026-08-20-TASK-0001/verification.md) 与 [本地 PoC Runbook](../../guidance/runbooks/local-restate-poc.md)。本结论只证明最小恢复语义成立，不代表最终生产选型。

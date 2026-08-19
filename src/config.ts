@@ -1,6 +1,7 @@
 export interface MoyeConfig {
   readonly projectId: string;
   readonly restateIngressUrl: string;
+  readonly restateAdminUrl: string;
   readonly servicePort: number;
   readonly boardPort: number;
 }
@@ -12,6 +13,8 @@ export function loadConfig(
     projectId: environment["MOYE_PROJECT_ID"] ?? "moye",
     restateIngressUrl:
       environment["RESTATE_INGRESS_URL"] ?? "http://127.0.0.1:8080",
+    restateAdminUrl:
+      environment["RESTATE_ADMIN_URL"] ?? "http://127.0.0.1:9070",
     servicePort: parsePort(environment["RESTATE_SERVICE_PORT"], 9080),
     boardPort: parsePort(environment["MOYE_BOARD_PORT"], 3000),
   };

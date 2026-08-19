@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { FixtureCodingAgentRunner } from "../../src/agent/fixture-coding.js";
 import { CODING_WORKFLOW_STEPS, runCodingWorkflow } from "../../src/coding/workflow.js";
 import { createTaskEnvelope } from "../../src/domain/coding-task.js";
+import { MoyeError } from "../../src/domain/errors.js";
 import { nodeGitCommandRunner } from "../../src/git/workspace-effect.js";
 import type { GitCommandRunner } from "../../src/git/workspace-effect.js";
 
@@ -101,6 +102,53 @@ describe("coding workflow", () => {
     expect(result.events.at(-1)).toMatchObject({ type: "ARCHIVE_FAILED", step: "ARCHIVE" });
     expect(result.merge?.mergeCommit).toBe(git(fixture.repositoryRoot, "rev-parse", "master").trim());
   });
+
+  it("preserves an unknown Agent side effect for recovery instead of suggesting a new task", async () => {
+    const fixture = await createFixture();
+    const result = await runCodingWorkflow(fixture.input, {
+      agentRunner: {
+        async run() {
+          throw unknown("AGENT_RESULT_UNKNOWN", "Agent intent exists but the result is not confirmed");
+        },
+      },
+      now: clock(),
+    });
+    expect(result).toMatchObject({
+      state: "FAILED", currentStep: "IMPLEMENT", errorCode: "AGENT_RESULT_UNKNOWN", errorCategory: "UNKNOWN_SIDE_EFFECT",
+    });
+  });
+
+  it("preserves an unknown Workspace side effect for recovery", async () => {
+    const fixture = await createFixture();
+    const result = await runCodingWorkflow(fixture.input, {
+      agentRunner: fixture.runner,
+      gitRunner: { async run() { throw unknown("WORKSPACE_EFFECT_UNKNOWN", "Worktree facts are unavailable"); } },
+      now: clock(),
+    });
+    expect(result).toMatchObject({
+      state: "FAILED", currentStep: "WORKSPACE", errorCode: "WORKSPACE_EFFECT_UNKNOWN", errorCategory: "UNKNOWN_SIDE_EFFECT",
+    });
+  });
+
+  it("preserves an unknown Merge side effect for recovery", async () => {
+    const fixture = await createFixture();
+    const mergeUnknown: GitCommandRunner = {
+      async run(invocation) {
+        if (invocation.argv[0] === "log" && invocation.argv.includes("--grep")) {
+          throw unknown("LOCAL_MERGE_UNKNOWN", "Target ref cannot be reconciled");
+        }
+        return nodeGitCommandRunner.run(invocation);
+      },
+    };
+    const result = await runCodingWorkflow(fixture.input, {
+      agentRunner: fixture.runner,
+      gitRunner: mergeUnknown,
+      now: clock(),
+    });
+    expect(result).toMatchObject({
+      state: "FAILED", currentStep: "MERGE", errorCode: "LOCAL_MERGE_UNKNOWN", errorCategory: "UNKNOWN_SIDE_EFFECT",
+    });
+  });
 });
 
 async function createFixture(failValidation = false) {
@@ -169,4 +217,8 @@ function clock(): () => Date {
 
 function git(cwd: string, ...argv: string[]): string {
   return execFileSync("git", argv, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+}
+
+function unknown(code: string, message: string): MoyeError {
+  return new MoyeError({ code, category: "UNKNOWN_SIDE_EFFECT", retryable: true, message });
 }

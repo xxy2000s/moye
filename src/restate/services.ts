@@ -44,7 +44,7 @@ interface ArchiveWorkflowState {
   result: ArchiveMoveResult;
 }
 
-interface TaskAuthorityState {
+export interface TaskAuthorityState {
   owner: "TASK_WORKFLOW" | "CODING_WORKFLOW";
   specRevision: number;
 }
@@ -86,6 +86,16 @@ export const taskAuthority = restate.object({
       ctx.set("specRevision", input.specRevision);
       return input;
     },
+
+    get: restate.handlers.object.shared(
+      async (ctx: restate.ObjectSharedContext<TaskAuthorityState>): Promise<TaskAuthorityState | null> => {
+        const [owner, specRevision] = await Promise.all([
+          ctx.get("owner") as Promise<TaskAuthorityState["owner"] | null>,
+          ctx.get("specRevision") as Promise<number | null>,
+        ]);
+        return owner === null || specRevision === null ? null : { owner, specRevision };
+      },
+    ),
   },
 });
 

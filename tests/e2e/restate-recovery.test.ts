@@ -93,6 +93,11 @@ describe("Restate process-loss recovery", () => {
     expect(board.archived.map((task) => task.taskId)).toContain(taskId);
     expect(board.active).toHaveLength(0);
     expect(board.archivePending).toHaveLength(0);
+    const detailResponse = await fetch(`http://127.0.0.1:${boardPort}/api/tasks/${taskId}`);
+    expect(detailResponse.status).toBe(200);
+    expect(await detailResponse.json()).toEqual(finalTask);
+    const traceResponse = await fetch(`http://127.0.0.1:${boardPort}/api/tasks/${taskId}/trace`);
+    expect(traceResponse.status).toBe(409);
   }, 70_000);
 
   it("exhausts a broken pipeline step, closes as terminal failure, then archives evidence", async () => {

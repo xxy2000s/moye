@@ -27,7 +27,7 @@
 
 ### 1.2 当前实现切片
 
-当前代码只实现总体架构中的 Task Runtime 最小垂直切片：单 Task Durable Workflow、独立 Archive、查询投影、CLI/Skill 和本地 Board。Daemon 集群、多角色调度、Worktree/Git 合入与知识蒸馏仍是目标架构，不能从本 PoC 的目录推断为已实现。
+当前代码实现了总体架构中的本地单 Agent 垂直切片：Task/Archive Durable Workflow、冻结 TaskEnvelope、Step/Attempt/Evidence、隔离 Worktree、Fake/真实 Codex Adapter、Verification、本地原子 Merge、查询投影、三层 Trace、CLI/Skill 和本地 Board。Daemon 集群、多角色调度、远程 Git/PR、完整 Repair/Replan、生产可观测性与知识蒸馏仍是目标架构，不能从本 PoC 的目录推断为已实现。
 
 ## 2. 设计结论
 

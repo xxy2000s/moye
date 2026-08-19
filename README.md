@@ -2,7 +2,7 @@
 
 Moye 是一个面向代码研发任务的全自动、可恢复、可追踪 Harness。它以 Task 为业务聚合根，协调 Agent、Daemon、Worktree、测试、Review、Git 合并和知识沉淀，目标是让一次研发任务从需求进入到主干合入形成可验证闭环。
 
-当前状态：**Restate PoC 已实现并通过验收**。
+当前状态：**首个本地单 Agent 编码闭环与三层 Trace 已实现并通过验收**。
 
 ## 当前目标
 
@@ -53,6 +53,21 @@ npm run test:e2e
 
 CLI 统一使用 `npm run cli -- <command>`；项目 Agent 应使用 [moye-task-control Skill](./.agents/skills/moye-task-control/SKILL.md) 路由文档依赖和关闭门禁。
 
+Coding Task 出现在看板后，点击卡片可依次查看：
+
+1. 业务事实：Step、Attempt、Evidence Binding 与领域 Event；
+2. Durable Runtime：`restate://CodingTaskWorkflow/<task_id>` 与 Restate Admin 入口；
+3. 技术证据：Agent Session/JSONL/stderr、Branch、Result/Merge Commit 和 Verification Artifact；
+4. 恢复视图：等待重放、先对账、创建后续 Task 或只重试 Archive 的只读建议。
+
+也可以直接查询 JSON：
+
+```bash
+curl http://127.0.0.1:3000/api/tasks/<task_id>/trace
+```
+
+Trace 不会修改 Workflow 状态；业务 Projection、Restate Journal 与技术日志分别承担状态、恢复、诊断职责。
+
 将 Git 中的 Backlog 文档显式同步到已启动的 ProjectBoard：
 
 ```bash
@@ -95,4 +110,4 @@ Moye 使用自己定义的 Task、证据和知识治理原则建设自身：
 
 ## 当前边界
 
-本轮已经实现 Task/Archive Workflow、幂等文件归档、Board Projection、查询 API、静态看板、CLI、项目 Skill 和故障注入测试。真实编码 Agent、多 Daemon 调度、GitHub PR/Merge、鉴权与生产可观测性仍属于后续阶段。
+本轮已经实现 Task/Archive Workflow、单 Agent 本地编码 Workflow、Fake/真实 Codex Adapter、幂等 Worktree/Verification/Merge、Board Projection、三层 Trace 查询与恢复视图、CLI、项目 Skill 和故障注入测试。多 Daemon 调度、GitHub PR/Merge、鉴权、完整 Repair/Replan 与生产可观测性仍属于后续阶段。

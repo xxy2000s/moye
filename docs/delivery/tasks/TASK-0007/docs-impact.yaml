@@ -12,15 +12,36 @@ changed_paths:
   - docs/delivery/tasks/TASK-0007/verification.md
   - docs/delivery/tasks/TASK-0007/docs-impact.yaml
   - docs/graph.yaml
+  - README.md
+  - docs/delivery/tasks/TASK-0007/evidence/trace-detail.png
+  - docs/knowledge/current/architecture/overview.md
+  - docs/knowledge/current/architecture/task-runtime-kernel.md
+  - docs/knowledge/current/architecture/poc-01-restate.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - public/app.js
+  - public/styles.css
+  - src/board/server.ts
+  - src/config.ts
+  - src/index.ts
+  - src/restate/coding-services.ts
+  - src/restate/services.ts
+  - src/trace/coding-trace.ts
+  - tests/unit/coding-trace.test.ts
+  - tests/unit/coding-workflow.test.ts
+  - tests/unit/board-server.test.ts
+  - tests/e2e/coding-workflow.test.ts
+  - tests/e2e/restate-recovery.test.ts
 docs:
-  read: [agent-contract, docs-index, codemap, document-control-plane, overnight-multi-task-goal, finding-backlog-docs-not-projected, bl-0008-backlog-projection-sync, bl-0002-single-agent-coding-loop, task-runtime-kernel, restate-poc-architecture, durable-runtime-pitfalls, root-readme, meta-index, adr-0002-doc-lifecycle-roles, backlog-index, sources-index, tasks-index, task-0007-manifest, task-0007-spec, task-0007-design, task-0007-plan, task-0007-verification, task-0007-docs-impact]
+  read: [agent-contract, docs-index, codemap, document-control-plane, overnight-multi-task-goal, finding-backlog-docs-not-projected, bl-0008-backlog-projection-sync, bl-0002-single-agent-coding-loop, task-runtime-kernel, restate-poc-architecture, durable-runtime-pitfalls, adr-0001-restate-poc, root-readme, meta-index, adr-0002-doc-lifecycle-roles, architecture-index, architecture-overview, local-restate-poc-runbook, runbooks-index, backlog-index, sources-index, tasks-index, task-0007-manifest, task-0007-spec, task-0007-design, task-0007-plan, task-0007-verification, task-0007-docs-impact]
   reviewed:
-    architecture-overview: { outcome: unchanged, reason: "本 Task 只增加既定 PoC 的只读 Trace 查询边界" }
+    architecture-overview: { outcome: updated, reason: "同步当前已实现的单 Agent 本地编码与三层 Trace 切片" }
     adr-0001-restate-poc: { outcome: unchanged, reason: "继续验证已接受的 Restate PoC" }
     adr-0003-typescript-poc: { outcome: unchanged, reason: "继续使用已接受的 TypeScript 基线" }
-    task-runtime-kernel: { outcome: unchanged, reason: "Task 创建阶段尚未改变实现，完成前重新判断" }
-    codemap: { outcome: unchanged, reason: "Task 创建阶段尚未改变模块，完成前重新判断" }
-    local-restate-poc-runbook: { outcome: unchanged, reason: "Task 创建阶段尚未改变操作入口，完成前重新判断" }
+    task-runtime-kernel: { outcome: updated, reason: "固化 Trace 只读边界、Authority 查询和 Git 中断对账语义" }
+    codemap: { outcome: updated, reason: "登记 trace 模块、Board UI 和对应高风险测试" }
+    local-restate-poc-runbook: { outcome: updated, reason: "增加 Trace API、三层排障、恢复分类和 Admin URL" }
+    durable-workflow-research: { outcome: unchanged, reason: "本 Task 落实现有 Restate PoC，不产生新的方案选型证据" }
     moye-task-control-skill: { outcome: unchanged, reason: "Trace 页面不改变仓库 Task 控制流程" }
     tasks-index: { outcome: updated, reason: "登记 Active TASK-0007" }
     task-spec-document-closure-brainstorm: { outcome: unchanged, reason: "实现已拆分的 BL-0002，不产生新脑暴" }

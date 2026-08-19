@@ -1,7 +1,7 @@
 schema_version: 1
 id: TASK-0007
 title: 实现基础 Trace、恢复视图与完整闭环故障验收
-status: received
+status: verifying
 outcome: null
 backlog_refs:
   - BL-0002

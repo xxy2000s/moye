@@ -1,18 +1,22 @@
 import { createReadStream } from "node:fs";
-import { stat } from "node:fs/promises";
+import { realpath, stat } from "node:fs/promises";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { extname, join, normalize } from "node:path";
+import { extname, isAbsolute, relative, resolve } from "node:path";
 
 import type { BacklogProjection } from "../domain/backlog.js";
 import type { ProjectBoardSnapshot } from "../domain/board.js";
-import type { TaskProjection } from "../domain/task.js";
+import { assertTaskId, type TaskProjection } from "../domain/task.js";
 import { invoke, send } from "../restate/ingress.js";
 import type { TaskWorkflowInput } from "../restate/services.js";
+import type { TaskAuthorityState } from "../restate/services.js";
+import type { CodingWorkflowProjection } from "../coding/workflow.js";
+import { buildCodingTaskTrace } from "../trace/coding-trace.js";
 
 export interface BoardServerOptions {
   readonly port: number;
   readonly projectId: string;
   readonly ingressUrl: string;
+  readonly restateAdminUrl: string;
   readonly publicRoot: string;
 }
 
@@ -47,13 +51,46 @@ async function route(
   }
 
   if (method === "GET" && url.pathname.startsWith("/api/tasks/")) {
-    const taskId = decodeURIComponent(url.pathname.slice("/api/tasks/".length));
-    const projection = await invoke<TaskProjection | null>(
-      options.ingressUrl,
-      "TaskWorkflow",
-      taskId,
-      "status",
+    const segments = url.pathname.slice("/api/tasks/".length).split("/");
+    let taskId: string;
+    try { taskId = decodeURIComponent(segments[0] ?? ""); }
+    catch {
+      writeJson(response, 400, { error: "Malformed Task ID encoding" });
+      return;
+    }
+    try { assertTaskId(taskId); }
+    catch {
+      writeJson(response, 400, { error: "Invalid Task ID" });
+      return;
+    }
+    if (segments.length > 2 || (segments.length === 2 && segments[1] !== "trace")) {
+      writeJson(response, 404, { error: "Not found" });
+      return;
+    }
+    const authority = await invoke<TaskAuthorityState | null>(
+      options.ingressUrl, "TaskAuthority", taskId, "get",
     );
+    if (authority === null) {
+      writeJson(response, 404, { error: "Task not found" });
+      return;
+    }
+    if (segments[1] === "trace") {
+      if (authority.owner !== "CODING_WORKFLOW") {
+        writeJson(response, 409, { error: "Detailed coding trace is not available for this Task workflow" });
+        return;
+      }
+      const projection = await invoke<CodingWorkflowProjection | null>(
+        options.ingressUrl, "CodingTaskWorkflow", taskId, "status",
+      );
+      writeJson(response, projection === null ? 404 : 200,
+        projection === null ? { error: "Task trace not found" } : buildCodingTaskTrace(projection, {
+          restateAdminUrl: options.restateAdminUrl,
+        }));
+      return;
+    }
+    const projection = authority.owner === "CODING_WORKFLOW"
+      ? await invoke<CodingWorkflowProjection | null>(options.ingressUrl, "CodingTaskWorkflow", taskId, "status")
+      : await invoke<TaskProjection | null>(options.ingressUrl, "TaskWorkflow", taskId, "status");
     writeJson(response, projection === null ? 404 : 200, projection ?? { error: "Task not found" });
     return;
   }
@@ -114,14 +151,25 @@ async function serveStatic(
   response: ServerResponse,
   publicRoot: string,
 ): Promise<void> {
-  const requested = pathname === "/" ? "index.html" : pathname.slice(1);
-  const relative = normalize(requested).replace(/^(\.\.(\/|\\|$))+/, "");
-  const filePath = join(publicRoot, relative);
-  if (!filePath.startsWith(`${publicRoot}/`) && filePath !== publicRoot) {
+  let decodedPath: string;
+  try { decodedPath = decodeURIComponent(pathname); }
+  catch {
+    writeJson(response, 400, { error: "Malformed path encoding" });
+    return;
+  }
+  const requested = decodedPath === "/" ? "index.html" : decodedPath.slice(1);
+  const root = await realpath(publicRoot);
+  const candidate = resolve(root, requested);
+  if (!isSameOrWithin(root, candidate)) {
     writeJson(response, 404, { error: "Not found" });
     return;
   }
   try {
+    const filePath = await realpath(candidate);
+    if (!isSameOrWithin(root, filePath)) {
+      writeJson(response, 404, { error: "Not found" });
+      return;
+    }
     const info = await stat(filePath);
     if (!info.isFile()) throw new Error("Not a file");
     response.writeHead(200, {
@@ -134,6 +182,11 @@ async function serveStatic(
   } catch {
     writeJson(response, 404, { error: "Not found" });
   }
+}
+
+function isSameOrWithin(root: string, candidate: string): boolean {
+  const pathFromRoot = relative(root, candidate);
+  return pathFromRoot === "" || (!isAbsolute(pathFromRoot) && pathFromRoot !== ".." && !pathFromRoot.startsWith(`..${process.platform === "win32" ? "\\" : "/"}`));
 }
 
 function contentType(extension: string): string {

@@ -28,7 +28,10 @@ export interface CodingTaskWorkflowInput extends CodingWorkflowInput {
     readonly script: FakeAgentScript;
     readonly mutation: FixtureMutation;
   };
-  readonly fault?: { readonly loseMergeAcknowledgementOnceAt?: string };
+  readonly fault?: {
+    readonly loseMergeAcknowledgementOnceAt?: string;
+    readonly exitAfterMergeRefUpdateOnceAt?: string;
+  };
 }
 
 export const codingTaskWorkflow = restate.workflow({
@@ -102,22 +105,40 @@ function createFixtureRunner(input: CodingTaskWorkflowInput): FixtureCodingAgent
 }
 
 function createGitRunner(input: CodingTaskWorkflowInput): GitCommandRunner {
-  const marker = input.fault?.loseMergeAcknowledgementOnceAt;
-  if (marker === undefined) return nodeGitCommandRunner;
+  const lostAcknowledgementMarker = input.fault?.loseMergeAcknowledgementOnceAt;
+  const exitMarker = input.fault?.exitAfterMergeRefUpdateOnceAt;
+  if (lostAcknowledgementMarker === undefined && exitMarker === undefined) return nodeGitCommandRunner;
+  if (process.env["MOYE_TEST_FAULT_INJECTION"] !== "enabled") {
+    throw new restate.TerminalError("Coding fault injection is disabled outside explicit test processes", { errorCode: 403 });
+  }
   return {
     async run(invocation) {
       const result = await nodeGitCommandRunner.run(invocation);
       if (invocation.argv[0] === "update-ref" && result.exitCode === 0) {
-        try {
-          await writeFile(marker, `${invocation.argv.join(" ")}\n`, { flag: "wx" });
-          throw new Error("simulated lost Merge acknowledgement");
-        } catch (error) {
-          if (!(typeof error === "object" && error !== null && "code" in error && error.code === "EEXIST")) throw error;
+        if (exitMarker !== undefined) {
+          try {
+            await writeFile(exitMarker, `${invocation.argv.join(" ")}\n`, { flag: "wx" });
+            process.exit(76);
+          } catch (error) {
+            if (!isAlreadyExists(error)) throw error;
+          }
+        }
+        if (lostAcknowledgementMarker !== undefined) {
+          try {
+            await writeFile(lostAcknowledgementMarker, `${invocation.argv.join(" ")}\n`, { flag: "wx" });
+            throw new Error("simulated lost Merge acknowledgement");
+          } catch (error) {
+            if (!isAlreadyExists(error)) throw error;
+          }
         }
       }
       return result;
     },
   };
+}
+
+function isAlreadyExists(error: unknown): boolean {
+  return typeof error === "object" && error !== null && "code" in error && error.code === "EEXIST";
 }
 
 function toTaskProjection(input: CodingTaskWorkflowInput, projection: CodingWorkflowProjection): TaskProjection {
