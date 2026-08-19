@@ -1,0 +1,26 @@
+schema_version: 1
+id: TASK-0004
+title: 实现 Worktree、Checkpoint 与本地 Git Effect
+status: closed
+outcome: succeeded
+backlog_refs:
+  - BL-0002
+spec_revision: 1
+workflow_id: task/TASK-0004
+execution_mode: goal-bootstrap
+base_commit: 6bdeea2c7eb56d54a48208f353b88e8e8403550e
+archive:
+  status: pending
+  archived_at: null
+  archived_path: null
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: task-artifact://TASK-0004/verification.md
+  implementation_commit: 66f6cca671e43921e3a81866c8f2f85ba232b15e
+execution_evidence:
+  executor_id: goal/root
+  result_commit: 66f6cca671e43921e3a81866c8f2f85ba232b15e
+  verification_refs:
+    - task-artifact://TASK-0004/verification.md
+  docs_impact_ref: task-artifact://TASK-0004/docs-impact.yaml
