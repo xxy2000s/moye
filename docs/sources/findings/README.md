@@ -1,0 +1,12 @@
+# Findings：Bug、缺陷与异常发现
+
+Finding 记录一个已经观察到、但尚未进入 Task 执行生命周期的问题。它可以来自开发、测试、Agent 运行或真实环境。
+
+Finding 与 Incident 的边界：
+
+- Finding 描述一个可独立确认和修复的问题；
+- Incident 描述一次有时间线、影响和处置过程的故障事件；
+- 一个 Incident 可以产生多个 Finding；
+- 一个 Finding 经过去重和初步确认后可以生成 Backlog Item。
+
+当前尚无 Finding。不要为了演示目录创建虚构 Bug。

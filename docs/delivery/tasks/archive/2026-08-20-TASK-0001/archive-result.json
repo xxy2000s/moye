@@ -1,0 +1,35 @@
+{
+  "taskId": "TASK-0001",
+  "projectId": "moye",
+  "state": "CLOSED",
+  "currentStep": "task-archived",
+  "attempt": 1,
+  "specRevision": 1,
+  "archiveStatus": "ARCHIVED",
+  "outcome": "SUCCEEDED",
+  "archivePath": "/Users/xiaxu/service/moye/docs/delivery/tasks/archive/2026-08-20-TASK-0001",
+  "lastEventAt": "2026-08-19T16:28:29.187Z",
+  "events": [
+    {
+      "sequence": 1,
+      "type": "TaskCreated",
+      "at": "2026-08-19T00:00:00+08:00"
+    },
+    {
+      "sequence": 2,
+      "type": "TaskClosed",
+      "at": "2026-08-20T00:24:11+08:00",
+      "detail": "SUCCEEDED: user accepted"
+    },
+    {
+      "sequence": 3,
+      "type": "ArchivePending",
+      "at": "2026-08-19T16:28:29.157Z"
+    },
+    {
+      "sequence": 4,
+      "type": "ArchiveArchived",
+      "at": "2026-08-19T16:28:29.187Z"
+    }
+  ]
+}

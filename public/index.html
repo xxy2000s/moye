@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>Moye · Task Control Plane</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M6 24V8l10 10L26 8v16' fill='none' stroke='%23242320' stroke-width='3'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+    <header class="masthead">
+      <a class="brand" href="/" aria-label="Moye 首页">
+        <svg viewBox="0 0 32 32" role="img" aria-label="Moye 标志">
+          <path d="M6 24V8l10 10L26 8v16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter"/>
+        </svg>
+        <span>Moye</span>
+      </a>
+      <div class="runtime-state">
+        <span id="connection-dot" class="connection-dot"></span>
+        <span id="connection-label">正在连接 Runtime</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="intro reveal">
+        <div>
+          <p class="eyebrow">Task Control Plane · PoC 01</p>
+          <h1>一个任务，<br>一条可恢复的执行轨迹。</h1>
+        </div>
+        <div class="intro-meta">
+          <p>任务完成和材料归档是两个独立状态。Worker 中断后，由 Durable Workflow 从已确认的步骤继续。</p>
+          <button id="refresh" type="button">刷新投影</button>
+        </div>
+      </section>
+
+      <section class="summary reveal" aria-label="项目摘要">
+        <div><span>PROJECT</span><strong id="project-id">—</strong></div>
+        <div><span>OPEN TASKS</span><strong id="active-count">0</strong></div>
+        <div><span>ARCHIVE PENDING</span><strong id="pending-count">0</strong></div>
+        <div><span>LAST PROJECTION</span><strong id="generated-at">—</strong></div>
+      </section>
+
+      <section class="board reveal" aria-label="项目任务看板">
+        <article class="lane lane-backlog">
+          <header><div><span>01</span><h2>Backlog</h2></div><b id="backlog-count">0</b></header>
+          <p class="lane-note">已收敛但尚未调度</p>
+          <div id="backlog-list" class="cards"></div>
+        </article>
+        <article class="lane lane-active">
+          <header><div><span>02</span><h2>Active</h2></div><b id="active-lane-count">0</b></header>
+          <p class="lane-note">接收、执行或验证中</p>
+          <div id="active-list" class="cards"></div>
+        </article>
+        <article class="lane lane-pending">
+          <header><div><span>03</span><h2>Archive pending</h2></div><b id="pending-lane-count">0</b></header>
+          <p class="lane-note">业务已关闭，材料待固化</p>
+          <div id="pending-list" class="cards"></div>
+        </article>
+        <article class="lane lane-archived">
+          <header><div><span>04</span><h2>Archived</h2></div><b id="archived-count">0</b></header>
+          <p class="lane-note">闭环完成，可审计</p>
+          <div id="archived-list" class="cards"></div>
+        </article>
+      </section>
+
+      <section id="empty-state" class="empty-state" hidden>
+        <p class="eyebrow">NO PROJECTIONS YET</p>
+        <h2>Runtime 已就绪，等待第一个 Task。</h2>
+        <p>可通过 CLI 提交任务。投影写入后，这里会自动显示完整状态和事件轨迹。</p>
+        <code>npm run cli -- task submit --file task.json</code>
+      </section>
+    </main>
+
+    <dialog id="task-detail">
+      <form method="dialog"><button class="close" aria-label="关闭详情">关闭</button></form>
+      <div id="detail-content"></div>
+    </dialog>
+
+    <template id="empty-card">
+      <div class="placeholder">暂无条目</div>
+    </template>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

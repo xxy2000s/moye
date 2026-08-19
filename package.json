@@ -1,0 +1,33 @@
+{
+  "name": "moye",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "moye": "dist/src/cli/index.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx src/index.ts",
+    "demo": "exec node scripts/demo.mjs",
+    "start": "node dist/src/index.js",
+    "cli": "tsx src/cli/index.ts",
+    "test": "vitest run --exclude tests/e2e/**",
+    "test:e2e": "vitest run tests/e2e",
+    "check:docs": "ruby scripts/docs_graph.rb validate",
+    "check": "npm run typecheck && npm test && npm run check:docs"
+  },
+  "dependencies": {
+    "@restatedev/restate-sdk": "1.16.7"
+  },
+  "devDependencies": {
+    "@types/node": "22.18.6",
+    "tsx": "4.20.6",
+    "typescript": "5.9.2",
+    "vitest": "4.1.11"
+  }
+}

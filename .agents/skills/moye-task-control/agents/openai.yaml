@@ -1,0 +1,4 @@
+interface:
+  display_name: "Moye Task Control"
+  short_description: "Route durable tasks and enforce documentation gates"
+  default_prompt: "Use $moye-task-control to route this change, operate its durable task, and close the documentation gate."

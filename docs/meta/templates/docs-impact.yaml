@@ -1,0 +1,28 @@
+schema_version: 1
+task_id: "replace-with-task-id"
+graph_revision: 6
+
+intents:
+  - restate-poc
+
+changed_paths:
+  - src/restate/example.ts
+
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - adr-0001-restate-poc
+    - restate-poc-architecture
+    - task-runtime-kernel
+    - durable-runtime-pitfalls
+
+  reviewed:
+    architecture-overview:
+      outcome: unchanged
+      reason: "示例：本次变化没有改变总体系统边界"
+    durable-workflow-research:
+      outcome: not_applicable
+      reason: "示例：本次任务不产生新的选型证据"

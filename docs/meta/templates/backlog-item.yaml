@@ -1,0 +1,16 @@
+schema_version: 1
+id: "BL-NNNN"
+title: "replace-with-title"
+kind: "feature" # feature | bug | debt | docs | investigation
+status: "captured" # captured | triaged | ready | scheduled | converted_to_task | deferred | duplicate | rejected
+priority: "medium"
+
+source_refs: []
+affected_areas: []
+
+acceptance_outline: []
+
+resolution:
+  task_refs: []
+  duplicate_of:
+  reason:

@@ -1,0 +1,20 @@
+schema_version: 1
+id: "TASK-0001"
+title: "实现可恢复 Task 生命周期、Archive 与项目看板"
+status: "closed"
+outcome: "succeeded"
+
+backlog_refs:
+  - BL-0001
+spec_revision: 1
+workflow_id: "task/TASK-0001"
+
+archive:
+  status: "archived"
+  archived_at: "2026-08-20T00:28:29+08:00"
+  archived_path: "docs/delivery/tasks/archive/2026-08-20-TASK-0001"
+
+result:
+  pull_request:
+  merge_commit:
+  closure_report: "verification.md"

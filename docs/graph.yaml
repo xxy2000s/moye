@@ -1,0 +1,796 @@
+schema_version: 1
+graph_revision: 6
+updated_at: "2026-08-19"
+
+entrypoints:
+  human: root-readme
+  agent: agent-contract
+  internal: docs-index
+
+documents:
+  - id: root-readme
+    path: README.md
+    type: entrypoint
+    status: active
+    scope: repository
+    authority: orientation
+    read_when: [first-entry]
+
+  - id: agent-contract
+    path: AGENTS.md
+    type: agent-instructions
+    status: active
+    scope: repository
+    authority: operating-contract
+    read_when: [any-agent-task]
+
+  - id: moye-task-control-skill
+    path: .agents/skills/moye-task-control/SKILL.md
+    type: agent-skill
+    status: active
+    scope: repository
+    authority: operating-procedure
+    read_when: [any-agent-task, task-execution, task-close]
+
+  - id: docs-index
+    path: docs/README.md
+    type: index
+    status: active
+    scope: documentation
+    authority: documentation-governance
+    read_when: [any-agent-task, docs-change]
+
+  - id: sources-index
+    path: docs/sources/README.md
+    type: index
+    status: active
+    scope: sources
+    authority: navigation
+    read_when: [source-intake, requirement-discovery]
+
+  - id: delivery-index
+    path: docs/delivery/README.md
+    type: index
+    status: active
+    scope: delivery
+    authority: navigation
+    read_when: [backlog-triage, task-create, task-archive]
+
+  - id: knowledge-index
+    path: docs/knowledge/README.md
+    type: index
+    status: active
+    scope: knowledge
+    authority: navigation
+    read_when: [any-agent-task, knowledge-change]
+
+  - id: meta-index
+    path: docs/meta/README.md
+    type: index
+    status: active
+    scope: documentation-control
+    authority: documentation-governance
+    read_when: [docs-change]
+
+  - id: architecture-index
+    path: docs/knowledge/current/architecture/README.md
+    type: index
+    status: active
+    scope: architecture
+    authority: navigation
+    read_when: [architecture-change]
+
+  - id: architecture-overview
+    path: docs/knowledge/current/architecture/overview.md
+    type: architecture
+    status: draft
+    scope: system
+    authority: current-design
+    read_when: [first-entry, architecture-change, cross-domain-change]
+
+  - id: task-runtime-kernel
+    path: docs/knowledge/current/architecture/task-runtime-kernel.md
+    type: detailed-design
+    status: draft
+    scope: task-runtime
+    authority: current-design
+    read_when: [task-runtime-change, workflow-change, retry-change]
+
+  - id: document-control-plane
+    path: docs/knowledge/current/architecture/document-control-plane.md
+    type: detailed-design
+    status: draft
+    scope: documentation-control
+    authority: current-design
+    read_when: [any-agent-task, docs-change, task-closure-change]
+
+  - id: restate-poc-architecture
+    path: docs/knowledge/current/architecture/poc-01-restate.md
+    type: architecture
+    status: proposed
+    scope: restate-poc
+    authority: current-design
+    read_when: [restate-poc-change]
+
+  - id: adr-index
+    path: docs/knowledge/decisions/adr/README.md
+    type: index
+    status: active
+    scope: decisions
+    authority: navigation
+    read_when: [architecture-change, dependency-change]
+
+  - id: adr-template
+    path: docs/knowledge/decisions/adr/template.md
+    type: template
+    status: active
+    scope: decisions
+    authority: template
+    read_when: [new-adr]
+
+  - id: adr-0001-restate-poc
+    path: docs/knowledge/decisions/adr/0001-use-restate-for-task-runtime-poc.md
+    type: adr
+    status: accepted
+    scope: restate-poc
+    authority: accepted-decision
+    read_when: [restate-poc-change, workflow-change]
+
+  - id: adr-0002-doc-lifecycle-roles
+    path: docs/knowledge/decisions/adr/0002-organize-docs-by-lifecycle-role.md
+    type: adr
+    status: accepted
+    scope: documentation-control
+    authority: accepted-decision
+    read_when: [docs-change, task-archive, backlog-triage]
+
+  - id: research-index
+    path: docs/sources/research/README.md
+    type: index
+    status: active
+    scope: research
+    authority: navigation
+    read_when: [research-change]
+
+  - id: brainstorm-index
+    path: docs/sources/brainstorm/README.md
+    type: index
+    status: active
+    scope: brainstorm
+    authority: navigation
+    read_when: [brainstorm-change, requirement-discovery]
+
+  - id: task-spec-document-closure-brainstorm
+    path: docs/sources/brainstorm/task-spec-and-document-closure.md
+    type: brainstorm
+    status: draft
+    scope: task-spec-and-document-closure
+    authority: idea-input
+    read_when: [task-lifecycle-design, spec-lifecycle-design, docs-change]
+
+  - id: durable-workflow-research
+    path: docs/sources/research/durable-workflow-and-observability-options.md
+    type: research
+    status: draft
+    scope: workflow-and-observability
+    authority: analysis
+    read_when: [workflow-selection, observability-selection]
+
+  - id: pitfalls-index
+    path: docs/knowledge/guidance/pitfalls/README.md
+    type: index
+    status: active
+    scope: pitfalls
+    authority: navigation
+    read_when: [any-agent-task]
+
+  - id: durable-runtime-pitfalls
+    path: docs/knowledge/guidance/pitfalls/durable-task-runtime.md
+    type: pitfalls
+    status: active
+    scope: task-runtime
+    authority: known-risk
+    read_when: [task-runtime-change, workflow-change, scm-change]
+
+  - id: incidents-index
+    path: docs/sources/incidents/README.md
+    type: index
+    status: active
+    scope: incidents
+    authority: navigation
+    read_when: [incident-response]
+
+  - id: incident-template
+    path: docs/sources/incidents/template.md
+    type: template
+    status: active
+    scope: incidents
+    authority: template
+    read_when: [new-incident]
+
+  - id: runbooks-index
+    path: docs/knowledge/guidance/runbooks/README.md
+    type: index
+    status: active
+    scope: operations
+    authority: operational-procedure
+    read_when: [operations-change, incident-response]
+
+  - id: local-restate-poc-runbook
+    path: docs/knowledge/guidance/runbooks/local-restate-poc.md
+    type: runbook
+    status: verified
+    scope: restate-poc
+    authority: operational-procedure
+    read_when: [restate-poc, operations-change, incident-response]
+
+  - id: codemap
+    path: docs/knowledge/current/codemap/README.md
+    type: codemap
+    status: active
+    scope: repository
+    authority: code-navigation
+    read_when: [any-agent-task, code-structure-change]
+
+  - id: findings-index
+    path: docs/sources/findings/README.md
+    type: index
+    status: active
+    scope: findings
+    authority: navigation
+    read_when: [finding-intake, bug-intake]
+
+  - id: references-index
+    path: docs/sources/references/README.md
+    type: index
+    status: active
+    scope: references
+    authority: navigation
+    read_when: [research-change, reference-intake]
+
+  - id: backlog-index
+    path: docs/delivery/backlog/README.md
+    type: index
+    status: active
+    scope: backlog
+    authority: backlog-governance
+    read_when: [source-intake, backlog-triage, task-create]
+
+  - id: tasks-index
+    path: docs/delivery/tasks/README.md
+    type: index
+    status: active
+    scope: tasks
+    authority: task-artifact-governance
+    read_when: [task-create, task-execution, task-close, task-archive]
+
+  - id: archived-tasks-index
+    path: docs/delivery/tasks/archive/README.md
+    type: index
+    status: active
+    scope: task-archive
+    authority: archive-policy
+    read_when: [task-archive, task-audit]
+
+  - id: bl-0001-runtime-board
+    path: docs/delivery/backlog/BL-0001.yaml
+    type: backlog
+    status: converted_to_task
+    scope: task-runtime-and-board
+    authority: backlog
+    read_when: [task-create, restate-poc]
+
+  - id: task-0001-manifest
+    path: docs/delivery/tasks/archive/2026-08-20-TASK-0001/task.yaml
+    type: task-manifest
+    status: archived
+    scope: task-runtime-and-board
+    authority: task-artifact
+    read_when: [restate-poc, task-execution, task-close]
+
+  - id: task-0001-spec
+    path: docs/delivery/tasks/archive/2026-08-20-TASK-0001/spec.md
+    type: task-spec
+    status: archived
+    scope: task-runtime-and-board
+    authority: task-artifact
+    read_when: [restate-poc, task-execution, task-close]
+
+  - id: task-0001-design
+    path: docs/delivery/tasks/archive/2026-08-20-TASK-0001/design.md
+    type: task-design
+    status: archived
+    scope: task-runtime-and-board
+    authority: task-artifact
+    read_when: [restate-poc, task-execution]
+
+  - id: task-0001-plan
+    path: docs/delivery/tasks/archive/2026-08-20-TASK-0001/plan.md
+    type: task-plan
+    status: archived
+    scope: task-runtime-and-board
+    authority: task-artifact
+    read_when: [restate-poc, task-execution]
+
+  - id: task-0001-verification
+    path: docs/delivery/tasks/archive/2026-08-20-TASK-0001/verification.md
+    type: verification
+    status: archived
+    scope: task-runtime-and-board
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0001-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-20-TASK-0001/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: task-runtime-and-board
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: restate-typescript-baseline
+    path: docs/sources/research/restate-typescript-implementation-baseline.md
+    type: research
+    status: current
+    scope: restate-poc
+    authority: analysis
+    read_when: [restate-poc, dependency-change]
+
+  - id: adr-0003-typescript-poc
+    path: docs/knowledge/decisions/adr/0003-use-typescript-for-restate-poc.md
+    type: adr
+    status: accepted
+    scope: restate-poc
+    authority: accepted-decision
+    read_when: [restate-poc, dependency-change]
+
+relations:
+  - from: root-readme
+    to: docs-index
+    type: routes_to
+
+  - from: agent-contract
+    to: docs-index
+    type: governed_by
+
+  - from: agent-contract
+    to: moye-task-control-skill
+    type: delegates_to
+
+  - from: moye-task-control-skill
+    to: document-control-plane
+    type: enforces
+
+  - from: docs-index
+    to: sources-index
+    type: indexes
+
+  - from: docs-index
+    to: delivery-index
+    type: indexes
+
+  - from: docs-index
+    to: knowledge-index
+    type: indexes
+
+  - from: docs-index
+    to: meta-index
+    type: indexes
+
+  - from: sources-index
+    to: brainstorm-index
+    type: indexes
+
+  - from: sources-index
+    to: findings-index
+    type: indexes
+
+  - from: sources-index
+    to: incidents-index
+    type: indexes
+
+  - from: sources-index
+    to: research-index
+    type: indexes
+
+  - from: sources-index
+    to: references-index
+    type: indexes
+
+  - from: delivery-index
+    to: backlog-index
+    type: indexes
+
+  - from: delivery-index
+    to: tasks-index
+    type: indexes
+
+  - from: tasks-index
+    to: archived-tasks-index
+    type: indexes
+
+  - from: knowledge-index
+    to: architecture-index
+    type: indexes
+
+  - from: knowledge-index
+    to: adr-index
+    type: indexes
+
+  - from: knowledge-index
+    to: codemap
+    type: indexes
+
+  - from: knowledge-index
+    to: pitfalls-index
+    type: indexes
+
+  - from: knowledge-index
+    to: runbooks-index
+    type: indexes
+
+  - from: runbooks-index
+    to: local-restate-poc-runbook
+    type: indexes
+
+  - from: local-restate-poc-runbook
+    to: restate-poc-architecture
+    type: operates
+
+  - from: meta-index
+    to: document-control-plane
+    type: governed_by
+
+  - from: architecture-index
+    to: architecture-overview
+    type: indexes
+
+  - from: architecture-index
+    to: task-runtime-kernel
+    type: indexes
+
+  - from: architecture-index
+    to: document-control-plane
+    type: indexes
+
+  - from: architecture-index
+    to: restate-poc-architecture
+    type: indexes
+
+  - from: task-runtime-kernel
+    to: architecture-overview
+    type: refines
+
+  - from: document-control-plane
+    to: task-runtime-kernel
+    type: integrates_with
+
+  - from: restate-poc-architecture
+    to: task-runtime-kernel
+    type: implements_slice_of
+
+  - from: adr-index
+    to: adr-template
+    type: uses_template
+
+  - from: adr-index
+    to: adr-0001-restate-poc
+    type: indexes
+
+  - from: adr-index
+    to: adr-0002-doc-lifecycle-roles
+    type: indexes
+
+  - from: adr-0001-restate-poc
+    to: restate-poc-architecture
+    type: governs
+
+  - from: durable-workflow-research
+    to: adr-0001-restate-poc
+    type: informs
+
+  - from: adr-0002-doc-lifecycle-roles
+    to: document-control-plane
+    type: governs
+
+  - from: adr-0002-doc-lifecycle-roles
+    to: docs-index
+    type: governs
+
+  - from: adr-0002-doc-lifecycle-roles
+    to: tasks-index
+    type: governs
+
+  - from: research-index
+    to: durable-workflow-research
+    type: indexes
+
+  - from: brainstorm-index
+    to: task-spec-document-closure-brainstorm
+    type: indexes
+
+  - from: task-spec-document-closure-brainstorm
+    to: task-runtime-kernel
+    type: proposes_for
+
+  - from: task-spec-document-closure-brainstorm
+    to: document-control-plane
+    type: proposes_for
+
+  - from: task-spec-document-closure-brainstorm
+    to: adr-0002-doc-lifecycle-roles
+    type: informs
+
+  - from: pitfalls-index
+    to: durable-runtime-pitfalls
+    type: indexes
+
+  - from: durable-runtime-pitfalls
+    to: task-runtime-kernel
+    type: warns_about
+
+  - from: incidents-index
+    to: incident-template
+    type: uses_template
+
+  - from: incidents-index
+    to: backlog-index
+    type: feeds
+
+  - from: findings-index
+    to: backlog-index
+    type: feeds
+
+  - from: brainstorm-index
+    to: backlog-index
+    type: feeds
+
+  - from: references-index
+    to: research-index
+    type: supplies
+
+  - from: backlog-index
+    to: tasks-index
+    type: schedules_into
+
+  - from: archived-tasks-index
+    to: tasks-index
+    type: archives
+
+  - from: tasks-index
+    to: task-runtime-kernel
+    type: projects
+
+  - from: tasks-index
+    to: document-control-plane
+    type: integrates_with
+
+  - from: backlog-index
+    to: bl-0001-runtime-board
+    type: indexes
+
+  - from: bl-0001-runtime-board
+    to: task-0001-manifest
+    type: schedules_into
+
+  - from: archived-tasks-index
+    to: task-0001-manifest
+    type: indexes
+
+  - from: task-0001-spec
+    to: task-0001-manifest
+    type: belongs_to
+
+  - from: task-0001-design
+    to: task-0001-spec
+    type: refines
+
+  - from: task-0001-plan
+    to: task-0001-manifest
+    type: belongs_to
+
+  - from: task-0001-verification
+    to: task-0001-manifest
+    type: verifies
+
+  - from: task-0001-docs-impact
+    to: task-0001-manifest
+    type: reports_on
+
+  - from: task-0001-manifest
+    to: task-runtime-kernel
+    type: implements_slice_of
+
+  - from: task-0001-manifest
+    to: document-control-plane
+    type: integrates_with
+
+  - from: research-index
+    to: restate-typescript-baseline
+    type: indexes
+
+  - from: restate-typescript-baseline
+    to: adr-0003-typescript-poc
+    type: informs
+
+  - from: adr-index
+    to: adr-0003-typescript-poc
+    type: indexes
+
+  - from: adr-0003-typescript-poc
+    to: restate-poc-architecture
+    type: governs
+
+  - from: adr-0003-typescript-poc
+    to: task-0001-manifest
+    type: governs
+
+  - from: codemap
+    to: architecture-overview
+    type: maps_implementation_of
+
+  - from: codemap
+    to: restate-poc-architecture
+    type: maps_implementation_of
+
+  - from: agent-contract
+    to: document-control-plane
+    type: enforces
+
+routing:
+  baseline:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+
+  intents:
+    first-entry:
+      - root-readme
+      - architecture-overview
+    any-agent-task:
+      - document-control-plane
+      - pitfalls-index
+    restate-poc:
+      - adr-0001-restate-poc
+      - restate-poc-architecture
+      - task-runtime-kernel
+      - durable-runtime-pitfalls
+    task-runtime-change:
+      - task-runtime-kernel
+      - durable-runtime-pitfalls
+    workflow-selection:
+      - durable-workflow-research
+      - adr-index
+    docs-change:
+      - document-control-plane
+      - docs-index
+      - meta-index
+      - adr-0002-doc-lifecycle-roles
+    source-intake:
+      - sources-index
+      - backlog-index
+    finding-intake:
+      - findings-index
+      - backlog-index
+    reference-intake:
+      - references-index
+      - research-index
+    backlog-triage:
+      - backlog-index
+      - sources-index
+    task-create:
+      - backlog-index
+      - tasks-index
+      - task-runtime-kernel
+    task-archive:
+      - tasks-index
+      - archived-tasks-index
+      - task-runtime-kernel
+      - document-control-plane
+    brainstorm-consumption:
+      - brainstorm-index
+      - task-spec-document-closure-brainstorm
+      - document-control-plane
+    incident-response:
+      - incidents-index
+      - backlog-index
+      - runbooks-index
+      - pitfalls-index
+
+  path_rules:
+    - match: "docs/**"
+      read: [document-control-plane]
+      review: [docs-index]
+    - match: "docs/sources/**"
+      read: [sources-index]
+      review: [backlog-index]
+    - match: "docs/sources/brainstorm/**"
+      read: [brainstorm-index]
+      review: [research-index, document-control-plane]
+    - match: "docs/sources/findings/**"
+      read: [findings-index]
+      review: [backlog-index]
+    - match: "docs/sources/incidents/**"
+      read: [incidents-index]
+      review: [backlog-index, pitfalls-index, runbooks-index]
+    - match: "docs/sources/research/**"
+      read: [research-index, references-index]
+      review: [adr-index]
+    - match: "docs/sources/references/**"
+      read: [references-index]
+      review: [research-index]
+    - match: "docs/delivery/backlog/**"
+      read: [backlog-index, sources-index]
+      review: [tasks-index, document-control-plane]
+    - match: "docs/delivery/tasks/archive/**"
+      read: [archived-tasks-index, tasks-index, task-runtime-kernel]
+      review: [document-control-plane, codemap]
+    - match: "docs/delivery/tasks/**"
+      read: [tasks-index, task-runtime-kernel]
+      review: [document-control-plane, codemap]
+    - match: "docs/knowledge/current/architecture/**"
+      read: [architecture-index]
+      review: [architecture-overview, codemap]
+    - match: "docs/knowledge/current/codemap/**"
+      read: [codemap]
+      review: [architecture-overview]
+    - match: "docs/knowledge/decisions/adr/**"
+      read: [adr-index]
+      review: [architecture-overview]
+    - match: "docs/knowledge/guidance/pitfalls/**"
+      read: [pitfalls-index]
+      review: [task-runtime-kernel]
+    - match: "docs/knowledge/guidance/runbooks/**"
+      read: [runbooks-index]
+      review: [task-runtime-kernel]
+    - match: "docs/meta/**"
+      read: [meta-index, document-control-plane]
+      review: [docs-index]
+    - match: "src/domain/**"
+      read: [task-runtime-kernel]
+      review: [codemap, architecture-overview]
+    - match: "src/restate/**"
+      read: [task-runtime-kernel, restate-poc-architecture, adr-0001-restate-poc]
+      review: [codemap, durable-runtime-pitfalls]
+    - match: "src/archive/**"
+      read: [task-runtime-kernel]
+      review: [codemap, durable-runtime-pitfalls]
+    - match: "src/effects/**"
+      read: [task-runtime-kernel, durable-runtime-pitfalls]
+      review: [codemap]
+    - match: "src/board/**"
+      read: [restate-poc-architecture]
+      review: [codemap, architecture-overview]
+    - match: "src/cli/**"
+      read: [document-control-plane, restate-poc-architecture]
+      review: [codemap, agent-contract]
+    - match: "public/**"
+      read: [restate-poc-architecture]
+      review: [codemap]
+    - match: ".agents/skills/**"
+      read: [agent-contract, document-control-plane]
+      review: [codemap, docs-index]
+    - match: "tests/e2e/**"
+      read: [task-runtime-kernel, restate-poc-architecture, durable-runtime-pitfalls]
+      review: [codemap, local-restate-poc-runbook]
+    - match: "tests/unit/**"
+      read: [task-runtime-kernel]
+      review: [codemap]
+
+  propagating_relations:
+    - refines
+    - integrates_with
+    - implements_slice_of
+    - governs
+    - informs
+    - warns_about
+    - maps_implementation_of
+    - enforces
+
+impact_policy:
+  required_disposition: [updated, unchanged, not_applicable]
+  unchanged_requires_reason: true
+  not_applicable_requires_reason: true
+  new_markdown_must_be_registered: true
+  every_non_index_document_requires_relation: true

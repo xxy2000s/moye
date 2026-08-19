@@ -1,0 +1,27 @@
+schema_version: 1
+id: "BL-0001"
+title: "实现可恢复 Task 生命周期、Archive 与项目看板"
+kind: "feature"
+status: "converted_to_task"
+priority: "high"
+
+source_refs:
+  - task-spec-document-closure-brainstorm
+affected_areas:
+  - task-runtime
+  - archive
+  - project-board
+  - document-control
+
+acceptance_outline:
+  - "Task 和 Archive 由 Durable Workflow 控制，CLI 不承担流程可靠性"
+  - "Archive 在 Worker 中断和未知文件移动结果后可以恢复且不重复"
+  - "项目看板展示 Backlog、Active Task、Archive Pending 和 Archived"
+  - "提供 CLI 与项目 Skill 作为稳定入口"
+  - "通过端到端故障注入测试和严格代码审查"
+
+resolution:
+  task_refs:
+    - TASK-0001
+  duplicate_of:
+  reason: "已转换为首个自举实现任务"
