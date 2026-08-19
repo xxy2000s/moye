@@ -1,8 +1,8 @@
 schema_version: 1
 id: TASK-0007
 title: 实现基础 Trace、恢复视图与完整闭环故障验收
-status: verifying
-outcome: null
+status: closed
+outcome: succeeded
 backlog_refs:
   - BL-0002
 spec_revision: 1
@@ -10,16 +10,17 @@ workflow_id: task/TASK-0007
 execution_mode: goal-bootstrap
 base_commit: f19e7843cd19a26d7145a94b27574b852319d03a
 archive:
-  status: not_ready
+  status: pending
   archived_at: null
   archived_path: null
 result:
   pull_request: null
   merge_commit: null
-  closure_report: null
-  implementation_commit: null
+  closure_report: task-artifact://TASK-0007/verification.md
+  implementation_commit: acfe0cb49f6eb2bb878f9bca89cdc940150e86b5
 execution_evidence:
   executor_id: goal:/root
-  result_commit: null
-  verification_refs: []
+  result_commit: acfe0cb49f6eb2bb878f9bca89cdc940150e86b5
+  verification_refs:
+    - task-artifact://TASK-0007/verification.md
   docs_impact_ref: task-artifact://TASK-0007/docs-impact.yaml
