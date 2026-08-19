@@ -1,0 +1,26 @@
+schema_version: 1
+id: TASK-0002
+title: 将 Backlog 文档幂等同步到项目看板
+status: closed
+outcome: succeeded
+backlog_refs:
+  - BL-0008
+spec_revision: 1
+workflow_id: task/TASK-0002
+execution_mode: goal-bootstrap
+base_commit: 4640122bf7cf2e5588b524a2cf88de21d856c835
+archive:
+  status: pending
+  archived_at: null
+  archived_path: null
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: task-artifact://TASK-0002/verification.md
+  implementation_commit: ff1954f4e4360e85276cf22aa30d6f5e8e396f84
+execution_evidence:
+  executor_id: goal/root
+  result_commit: ff1954f4e4360e85276cf22aa30d6f5e8e396f84
+  verification_refs:
+    - task-artifact://TASK-0002/verification.md
+  docs_impact_ref: task-artifact://TASK-0002/docs-impact.yaml

@@ -2,7 +2,7 @@
 
 > 状态：Approved for bootstrap execution  
 > Spec Revision：1  
-> Backlog：[BL-0008](../../backlog/BL-0008.yaml)
+> Backlog：[BL-0008](../../../backlog/BL-0008.yaml)
 
 ## 目标
 

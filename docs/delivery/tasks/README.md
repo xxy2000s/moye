@@ -21,9 +21,7 @@ tasks/
 
 ## 当前 Active Task
 
-| Task | Backlog | 标题 | 执行方式 |
-|---|---|---|---|
-| [TASK-0002](./TASK-0002/task.yaml) | BL-0008 | 将 Backlog 文档幂等同步到项目看板 | Goal Bootstrap |
+当前没有 Active Task。
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 
