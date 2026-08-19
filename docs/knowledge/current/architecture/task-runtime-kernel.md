@@ -86,6 +86,17 @@ Daemon 调度、角色 Agent、Worktree、Git、Gate 和知识沉淀都建立在
 
 ## 5. 核心模型
 
+### 5.0 当前 PoC 已实现协议切片
+
+`src/domain/coding-task.ts` 已实现不依赖 Runtime、Git 或 Agent 的最小编码任务协议：
+
+- `TaskEnvelope` 固定 Task ID、Spec Revision、Base SHA、Requirement、argv 验证命令和 Context Plan，并通过规范内容摘要与深冻结保持不可变；
+- Pipeline 固定为 `CONTEXT → WORKSPACE → IMPLEMENT → VERIFY → MERGE → DOCS`，Archive 仍是 `CLOSED` 后的独立 Workflow；
+- `CodingStep` 绑定 Envelope Digest 与 Spec Revision；`StepAttempt` 独立记录 Generation 和终态，重试创建新 Attempt 而不复活旧实例；
+- Attempt Evidence 固定 Artifact Content Digest 与 Producer Tuple，Binding 只能从成功 Attempt 生成；Envelope、Attempt、Evidence 和 Binding 使用 Canonical Digest 与 Expected Digest 重建，Spec 升版或 Context/Requirement 变化会让旧证据失效但不会删除历史。
+
+这一切片尚未接入 Restate 主状态机，也不包含 Worktree、Agent、Lease、Fencing 或 Retry Budget。以下完整模型仍是后续设计目标。
+
 ### 5.1 模型关系
 
 ```mermaid

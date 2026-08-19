@@ -5,6 +5,7 @@ graph_revision: 11
 intents:
   - coding-task-poc
   - task-create
+  - task-close
 
 changed_paths:
   - docs/delivery/backlog/BL-0002.yaml
@@ -34,6 +35,16 @@ docs:
     - durable-runtime-pitfalls
     - backlog-index
     - tasks-index
+    - finding-backlog-docs-not-projected
+    - bl-0008-backlog-projection-sync
+    - sources-index
+    - task-0003-manifest
+    - task-0003-spec
+    - task-0003-design
+    - task-0003-plan
+    - task-0003-verification
+    - task-0003-docs-impact
+    - architecture-index
   reviewed:
     architecture-overview:
       outcome: unchanged
@@ -50,3 +61,9 @@ docs:
     adr-0003-typescript-poc:
       outcome: unchanged
       reason: "继续使用 TypeScript 基线"
+    moye-task-control-skill:
+      outcome: unchanged
+      reason: "协议模型不改变 Task 与文档门禁操作流程"
+    task-0002-manifest:
+      outcome: unchanged
+      reason: "TASK-0002 已归档，TASK-0003 只复用其真实 Bootstrap Closure 能力"

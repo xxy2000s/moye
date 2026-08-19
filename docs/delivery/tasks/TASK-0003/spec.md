@@ -19,8 +19,8 @@
 ### REQ-0003-02：Requirement 与验证命令
 
 - Requirement ID 在 Envelope 内唯一且格式稳定；
-- 验证命令必须是非空 argv，不接受 Shell 启动器或 Shell 字符串；
-- Command ID 唯一，参数保留原始边界。
+- 验证命令必须是非空 argv，并固定执行策略为 `shell: false`；协议层不使用可绕过的 Shell 名称黑名单，具体可执行文件 Allowlist 由后续 Gate Policy 决定；
+- Command ID 唯一，参数保留原始边界和内容，包括空参数与有意义的空白。
 
 ### REQ-0003-03：Context Plan
 
@@ -38,13 +38,17 @@
 
 - Attempt 是 Step 的一次执行，拥有独立 Attempt ID、Generation、状态和时间；
 - 终态 Attempt 不得复活；重试必须创建更高 Generation 的新 Attempt；
+- 初始 Attempt 构造是确定且幂等的；Retry 构造必须消费从 Generation 1 开始连续、有序、全部终态的完整历史；
 - Attempt 与创建它的 Spec Revision 和 Envelope Digest 绑定。
 
 ### REQ-0003-06：证据失效
 
 - Evidence Binding 必须同时匹配 Task ID、Spec Revision 和 Envelope Digest；
+- Artifact Evidence 由运行中 Attempt 产生，URI 包含派生 Attempt ID，并固定 Artifact Name、Content Digest 和完整 Producer Tuple；
+- Attempt、Evidence Record 与 Binding 各自带 Canonical Digest；Binding 只能从当前 Envelope 内一个可信的 `SUCCEEDED` Attempt 产生，不能把裸 Artifact Ref 重新贴到新 Revision；
 - Spec Revision 或 Envelope 内容变化后，旧 Evidence 必须判定失效；
 - 失效只表示不能用于当前 Gate，不删除历史证据。
+- JSON/Restate 反序列化必须携带外部已冻结的 Expected Digest 并通过重建校验，不能信任对象自报摘要。
 
 ## 非目标
 
