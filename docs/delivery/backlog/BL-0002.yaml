@@ -31,5 +31,6 @@ acceptance_outline:
 resolution:
   task_refs:
     - TASK-0003
+    - TASK-0004
   duplicate_of:
-  reason: "按独立闭环 Task 切片消费；TASK-0003 先实现 Spec、Envelope、Step 与 Attempt 协议"
+  reason: "按独立闭环 Task 切片消费；TASK-0003 实现协议，TASK-0004 实现 Worktree、Checkpoint 与本地 Git Effect"

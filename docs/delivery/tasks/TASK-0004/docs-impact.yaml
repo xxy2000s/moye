@@ -1,0 +1,53 @@
+schema_version: 1
+task_id: "TASK-0004"
+graph_revision: 13
+
+intents:
+  - coding-task-poc
+  - task-create
+
+changed_paths:
+  - docs/delivery/backlog/BL-0002.yaml
+  - docs/delivery/tasks/README.md
+  - docs/delivery/tasks/TASK-0004/task.yaml
+  - docs/delivery/tasks/TASK-0004/spec.md
+  - docs/delivery/tasks/TASK-0004/design.md
+  - docs/delivery/tasks/TASK-0004/plan.md
+  - docs/delivery/tasks/TASK-0004/verification.md
+  - docs/delivery/tasks/TASK-0004/docs-impact.yaml
+  - docs/graph.yaml
+
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - overnight-multi-task-goal
+    - finding-backlog-docs-not-projected
+    - bl-0008-backlog-projection-sync
+    - bl-0002-single-agent-coding-loop
+    - task-runtime-kernel
+    - restate-poc-architecture
+    - durable-runtime-pitfalls
+    - backlog-index
+    - tasks-index
+  reviewed:
+    architecture-overview:
+      outcome: unchanged
+      reason: "Task 创建尚未改变总体系统边界"
+    adr-0001-restate-poc:
+      outcome: unchanged
+      reason: "本地 Git Adapter 不改变 Restate PoC 选型"
+    adr-0002-doc-lifecycle-roles:
+      outcome: unchanged
+      reason: "继续使用 Backlog→Active Task→Archive 生命周期"
+    task-0003-manifest:
+      outcome: unchanged
+      reason: "TASK-0003 已归档，仅作为上游协议事实"
+    task-0001-manifest:
+      outcome: not_applicable
+      reason: "不修改 TASK-0001 历史事实"
+    adr-0003-typescript-poc:
+      outcome: unchanged
+      reason: "继续使用 TypeScript 基线"

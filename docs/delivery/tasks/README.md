@@ -21,7 +21,9 @@ tasks/
 
 ## 当前 Active Task
 
-当前没有 Active Task。
+| Task | 状态 | 目标 |
+|---|---|---|
+| TASK-0004 | Executing | Worktree、Checkpoint 与本地 Git Effect |
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 
