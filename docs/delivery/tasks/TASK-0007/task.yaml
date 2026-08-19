@@ -1,0 +1,25 @@
+schema_version: 1
+id: TASK-0007
+title: 实现基础 Trace、恢复视图与完整闭环故障验收
+status: received
+outcome: null
+backlog_refs:
+  - BL-0002
+spec_revision: 1
+workflow_id: task/TASK-0007
+execution_mode: goal-bootstrap
+base_commit: f19e7843cd19a26d7145a94b27574b852319d03a
+archive:
+  status: not_ready
+  archived_at: null
+  archived_path: null
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+  implementation_commit: null
+execution_evidence:
+  executor_id: goal:/root
+  result_commit: null
+  verification_refs: []
+  docs_impact_ref: task-artifact://TASK-0007/docs-impact.yaml

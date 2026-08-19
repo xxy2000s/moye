@@ -1,0 +1,32 @@
+schema_version: 1
+task_id: TASK-0007
+graph_revision: 19
+intents: [coding-task-poc, restate-poc-change, docs-change]
+changed_paths:
+  - docs/delivery/backlog/BL-0002.yaml
+  - docs/delivery/tasks/README.md
+  - docs/delivery/tasks/TASK-0007/task.yaml
+  - docs/delivery/tasks/TASK-0007/spec.md
+  - docs/delivery/tasks/TASK-0007/design.md
+  - docs/delivery/tasks/TASK-0007/plan.md
+  - docs/delivery/tasks/TASK-0007/verification.md
+  - docs/delivery/tasks/TASK-0007/docs-impact.yaml
+  - docs/graph.yaml
+docs:
+  read: [agent-contract, docs-index, codemap, document-control-plane, overnight-multi-task-goal, finding-backlog-docs-not-projected, bl-0008-backlog-projection-sync, bl-0002-single-agent-coding-loop, task-runtime-kernel, restate-poc-architecture, durable-runtime-pitfalls, root-readme, meta-index, adr-0002-doc-lifecycle-roles, backlog-index, sources-index, tasks-index, task-0007-manifest, task-0007-spec, task-0007-design, task-0007-plan, task-0007-verification, task-0007-docs-impact]
+  reviewed:
+    architecture-overview: { outcome: unchanged, reason: "本 Task 只增加既定 PoC 的只读 Trace 查询边界" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "继续验证已接受的 Restate PoC" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "继续使用已接受的 TypeScript 基线" }
+    task-runtime-kernel: { outcome: unchanged, reason: "Task 创建阶段尚未改变实现，完成前重新判断" }
+    codemap: { outcome: unchanged, reason: "Task 创建阶段尚未改变模块，完成前重新判断" }
+    local-restate-poc-runbook: { outcome: unchanged, reason: "Task 创建阶段尚未改变操作入口，完成前重新判断" }
+    moye-task-control-skill: { outcome: unchanged, reason: "Trace 页面不改变仓库 Task 控制流程" }
+    tasks-index: { outcome: updated, reason: "登记 Active TASK-0007" }
+    task-spec-document-closure-brainstorm: { outcome: unchanged, reason: "实现已拆分的 BL-0002，不产生新脑暴" }
+    task-0001-manifest: { outcome: not_applicable, reason: "不修改历史 Task 事实" }
+    task-0002-manifest: { outcome: unchanged, reason: "只复用既有 Board 投影能力" }
+    task-0003-manifest: { outcome: unchanged, reason: "只读取既有 Step/Attempt 协议" }
+    task-0004-manifest: { outcome: unchanged, reason: "只读取既有 Git Effect 事实" }
+    task-0005-manifest: { outcome: unchanged, reason: "只读取既有 Agent Runner 事实" }
+    task-0006-manifest: { outcome: unchanged, reason: "只读取既有 Coding Workflow Projection" }

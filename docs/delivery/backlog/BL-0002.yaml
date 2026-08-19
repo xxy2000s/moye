@@ -34,5 +34,6 @@ resolution:
     - TASK-0004
     - TASK-0005
     - TASK-0006
+    - TASK-0007
   duplicate_of:
-  reason: "按独立闭环 Task 切片消费；TASK-0003 至 TASK-0005 提供协议/Git/Runner，TASK-0006 串联编码 Workflow、Verification 与本地 Merge"
+  reason: "按独立闭环 Task 切片消费；TASK-0003 至 TASK-0005 提供协议/Git/Runner，TASK-0006 串联编码 Workflow、Verification 与本地 Merge，TASK-0007 交付基础 Trace、恢复视图和完整故障验收"

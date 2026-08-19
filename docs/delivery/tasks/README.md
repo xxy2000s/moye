@@ -21,7 +21,9 @@ tasks/
 
 ## 当前 Active Task
 
-当前没有 Active Task。
+| Task | 状态 | 目标 |
+|---|---|---|
+| [TASK-0007](./TASK-0007/spec.md) | Executing | 基础 Trace、恢复视图与完整闭环故障验收 |
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 
