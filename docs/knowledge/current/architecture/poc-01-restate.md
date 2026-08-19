@@ -2,8 +2,8 @@
 
 > 文档类型：Architecture  
 > 状态：Implemented  
-> 版本：v0.2  
-> 更新日期：2026-08-19  
+> 版本：v0.3
+> 更新日期：2026-08-20
 > 决策依据：[ADR-0001](../../decisions/adr/0001-use-restate-for-task-runtime-poc.md)、[ADR-0003](../../decisions/adr/0003-use-typescript-for-restate-poc.md)
 
 ## 1. 已实现范围
@@ -17,6 +17,8 @@
 - 带稳定 operation ledger 的副作用样例；
 - Manifest 冻结、目录摘要、原子移动和未知结果 Reconcile；
 - HTTP API、四列 Board、CLI 和项目 Skill；
+- Git Backlog 文档到 ProjectBoard 的显式批次同步；
+- 在真实编码 Workflow 完成前记录外层 Goal Commit 与验证引用的窄化 Bootstrap Evidence；
 - 真实 Restate Server 1.7.4 下的 Worker `SIGKILL` 恢复测试。
 
 它不包含真实 LLM Agent、多 Daemon、Git 平台合并、鉴权、多租户和生产级 Telemetry。
@@ -52,6 +54,10 @@ NOT_READY → PENDING → ARCHIVED | FAILED
 ```
 
 ProjectBoard 只保存查询投影。CLI、Skill、Board API 和目录位置都不能直接推进状态。`task_id` 同时是 Workflow key、事件关联和人类查询入口。
+
+Git Backlog 是导入条目字段的所有者。CLI 完整校验 `BL-*.yaml` 后，通过单次 `ProjectBoard.syncBacklog` 提交；Object 比较 Source Digest，内容未变时不重写状态。Projection 独有记录采用 `PRESERVE` 并显式报告，Web 查询仍然只读取 Projection。
+
+Goal Bootstrap 是自举期的实际执行者。它只能提交干净 HEAD 上的真实 Result Commit、首次引入 Manifest 时冻结的 Base、Verification 和 Docs Impact 引用；TaskWorkflow 在发布 `CLOSED` 前重新验证并持久化关闭材料，不产生 Agent 执行事实。稳定 Task Artifact 引用由 Active/Archive Resolver 根据 Projection 解析。`CLOSED` 后仍调用独立 ArchiveWorkflow。
 
 ## 4. 可恢复副作用
 

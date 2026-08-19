@@ -1,10 +1,12 @@
 import * as restate from "@restatedev/restate-sdk";
+import path from "node:path";
 
 import {
   archiveTaskPackage,
   freezeArchiveManifest,
   resolveArchivePaths,
 } from "../archive/file-archive.js";
+import { verifyAndPersistBootstrapClosure, verifyBootstrapEvidence } from "../archive/bootstrap-closure.js";
 import type {
   ArchiveInput,
   ArchiveMoveResult,
@@ -12,6 +14,8 @@ import type {
 } from "../domain/archive.js";
 import { archiveOperationId } from "../domain/archive.js";
 import type { BacklogProjection } from "../domain/backlog.js";
+import type { BacklogSyncInput, BacklogSyncResult } from "../domain/backlog.js";
+import { mergeBacklogBatch, upsertRuntimeBacklog } from "../domain/backlog.js";
 import { buildBoardSnapshot } from "../domain/board.js";
 import type { ProjectBoardSnapshot } from "../domain/board.js";
 import { asMoyeError, MoyeError } from "../domain/errors.js";
@@ -19,10 +23,11 @@ import {
   closeTask,
   createTaskProjection,
   failTask,
+  recordBootstrapEvidence,
   transitionTask,
   updateArchiveStatus,
 } from "../domain/task.js";
-import type { TaskProjection } from "../domain/task.js";
+import type { TaskExecutionEvidence, TaskProjection } from "../domain/task.js";
 import { incrementEffectCounter } from "../effects/counter.js";
 
 interface ProjectBoardState {
@@ -50,6 +55,7 @@ export interface TaskWorkflowInput {
   readonly effectCounterPath: string;
   readonly archivedAt: string;
   readonly fault?: ArchiveInput["fault"];
+  readonly bootstrapEvidence?: TaskExecutionEvidence;
 }
 
 interface ArchiveWorkflowInput extends ArchiveInput {
@@ -72,7 +78,25 @@ export const projectBoard = restate.object({
       item: BacklogProjection,
     ): Promise<void> => {
       const backlog = (await ctx.get("backlog")) ?? {};
-      ctx.set("backlog", { ...backlog, [item.backlogId]: item });
+      try {
+        ctx.set("backlog", upsertRuntimeBacklog(backlog, item));
+      } catch (error) {
+        throw asTerminalError(error);
+      }
+    },
+
+    syncBacklog: async (
+      ctx: restate.ObjectContext<ProjectBoardState>,
+      input: BacklogSyncInput,
+    ): Promise<BacklogSyncResult> => {
+      try {
+        const current = (await ctx.get("backlog")) ?? {};
+        const { backlog, result } = mergeBacklogBatch(current, input);
+        if (result.changed) ctx.set("backlog", backlog);
+        return result;
+      } catch (error) {
+        throw asTerminalError(error);
+      }
     },
 
     get: restate.handlers.object.shared(
@@ -214,21 +238,37 @@ export const taskWorkflow = restate.workflow({
       ctx.set("projection", task);
       await boardClient(ctx, input.projectId).upsertTask(task);
 
-      try {
+      if (input.bootstrapEvidence === undefined) {
+        try {
+          await ctx.run(
+            "expensive-task-effect",
+            () => incrementEffectCounter(input.effectCounterPath, input.taskId),
+            { maxRetryAttempts: 5 },
+          );
+        } catch (error) {
+          if (isRestateControlError(error)) throw error;
+          const message = error instanceof Error ? error.message : String(error);
+          task = failTask(task, message, await durableNow(ctx));
+          ctx.set("projection", task);
+          await boardClient(ctx, input.projectId).upsertTask(task);
+          task = await runTaskArchive(ctx, input, task);
+          ctx.set("projection", task);
+          return task;
+        }
+      } else {
+        const bootstrapEvidence = input.bootstrapEvidence;
         await ctx.run(
-          "expensive-task-effect",
-          () => incrementEffectCounter(input.effectCounterPath, input.taskId),
+          "verify-bootstrap-evidence",
+          () => runArchiveEffect(() => verifyBootstrapEvidence({
+            repositoryRoot: runtimeRepositoryRoot(),
+            taskId: input.taskId,
+            evidence: bootstrapEvidence,
+          })),
           { maxRetryAttempts: 5 },
         );
-      } catch (error) {
-        if (isRestateControlError(error)) throw error;
-        const message = error instanceof Error ? error.message : String(error);
-        task = failTask(task, message, await durableNow(ctx));
+        task = recordBootstrapEvidence(task, bootstrapEvidence, await durableNow(ctx));
         ctx.set("projection", task);
         await boardClient(ctx, input.projectId).upsertTask(task);
-        task = await runTaskArchive(ctx, input, task);
-        ctx.set("projection", task);
-        return task;
       }
 
       task = transitionTask(
@@ -240,13 +280,33 @@ export const taskWorkflow = restate.workflow({
       ctx.set("projection", task);
       await boardClient(ctx, input.projectId).upsertTask(task);
 
-      await ctx.run("verify-task", async () => ({ passed: true }));
-
-      task = closeTask(task, "SUCCEEDED", await durableNow(ctx));
+      if (input.bootstrapEvidence === undefined) {
+        await ctx.run("verify-task", async () => ({ passed: true }));
+        task = closeTask(task, "SUCCEEDED", await durableNow(ctx));
+      } else {
+        const bootstrapEvidence = input.bootstrapEvidence;
+        const closedTask = closeTask(task, "SUCCEEDED", await durableNow(ctx));
+        await ctx.run(
+          "verify-and-persist-bootstrap-closure",
+          () => runArchiveEffect(() => verifyAndPersistBootstrapClosure({
+            repositoryRoot: runtimeRepositoryRoot(),
+            activeTasksRoot: bootstrapActiveTasksRoot(),
+            task: closedTask,
+            evidence: bootstrapEvidence,
+            workflowId: `task/${input.taskId}`,
+          })),
+          { maxRetryAttempts: 5 },
+        );
+        task = closedTask;
+      }
       ctx.set("projection", task);
       await boardClient(ctx, input.projectId).upsertTask(task);
 
-      task = await runTaskArchive(ctx, input, task);
+      task = await runTaskArchive(
+        ctx,
+        input.bootstrapEvidence === undefined ? input : bootstrapArchiveInput(input),
+        task,
+      );
       ctx.set("projection", task);
       return task;
     },
@@ -279,7 +339,11 @@ async function runTaskArchive(
     archiveWorkflow,
     input.taskId,
   );
-  const { fault, ...archiveBase } = input;
+  const {
+    fault,
+    bootstrapEvidence: _bootstrapEvidence,
+    ...archiveBase
+  } = input;
   const archiveInput: ArchiveWorkflowInput = fault === undefined
     ? { ...archiveBase, task }
     : { ...archiveBase, task, fault };
@@ -290,6 +354,23 @@ async function runTaskArchive(
 
 function isRestateControlError(error: unknown): boolean {
   return error instanceof restate.CancelledError || error instanceof restate.PauseError;
+}
+
+function runtimeRepositoryRoot(): string {
+  return path.resolve(process.env["MOYE_REPOSITORY_ROOT"] ?? process.cwd());
+}
+
+function bootstrapActiveTasksRoot(): string {
+  return path.join(runtimeRepositoryRoot(), "docs", "delivery", "tasks");
+}
+
+function bootstrapArchiveInput(input: TaskWorkflowInput): TaskWorkflowInput {
+  const activeTasksRoot = bootstrapActiveTasksRoot();
+  return {
+    ...input,
+    activeTasksRoot,
+    archiveRoot: path.join(activeTasksRoot, "archive"),
+  };
 }
 
 async function runArchiveEffect<T>(effect: () => Promise<T>): Promise<T> {
@@ -325,4 +406,13 @@ function terminalStatus(error: MoyeError): number {
     case "TERMINAL":
       return 500;
   }
+}
+
+function asTerminalError(error: unknown): restate.TerminalError {
+  if (error instanceof restate.TerminalError) return error;
+  const moyeError = asMoyeError(error);
+  return new restate.TerminalError(moyeError.message, {
+    errorCode: terminalStatus(moyeError),
+    metadata: { code: moyeError.code, category: moyeError.category, ...moyeError.details },
+  });
 }

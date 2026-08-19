@@ -40,6 +40,15 @@ export interface TaskProjection {
   readonly error?: string;
   readonly lastEventAt: string;
   readonly events: readonly TaskEventSummary[];
+  readonly execution?: TaskExecutionEvidence;
+}
+
+export interface TaskExecutionEvidence {
+  readonly kind: "GOAL_BOOTSTRAP";
+  readonly executorId: string;
+  readonly resultCommit: string;
+  readonly verificationRefs: readonly string[];
+  readonly docsImpactRef: string;
 }
 
 export interface CreateTaskInput {
@@ -202,6 +211,73 @@ export function failTask(
   };
 }
 
+export function recordBootstrapEvidence(
+  projection: TaskProjection,
+  evidence: TaskExecutionEvidence,
+  now: string,
+): TaskProjection {
+  if (projection.state !== "EXECUTING") {
+    throw new MoyeError({
+      code: "BOOTSTRAP_EVIDENCE_INVALID_STATE",
+      category: "CONFLICT",
+      message: `Task ${projection.taskId} must be EXECUTING before bootstrap evidence is accepted`,
+    });
+  }
+  if (evidence.kind !== "GOAL_BOOTSTRAP") {
+    throw new MoyeError({
+      code: "BOOTSTRAP_EVIDENCE_KIND_INVALID",
+      category: "VALIDATION",
+      message: "bootstrap evidence kind must be GOAL_BOOTSTRAP",
+    });
+  }
+  if (!evidence.executorId.trim()) {
+    throw new MoyeError({
+      code: "BOOTSTRAP_EXECUTOR_REQUIRED",
+      category: "VALIDATION",
+      message: "bootstrap executorId is required",
+    });
+  }
+  if (!/^[0-9a-f]{40}([0-9a-f]{24})?$/.test(evidence.resultCommit)) {
+    throw new MoyeError({
+      code: "BOOTSTRAP_COMMIT_INVALID",
+      category: "VALIDATION",
+      message: "bootstrap resultCommit must be a full Git object id",
+    });
+  }
+  if (evidence.verificationRefs.length === 0) {
+    throw new MoyeError({
+      code: "BOOTSTRAP_VERIFICATION_REQUIRED",
+      category: "VALIDATION",
+      message: "bootstrap verificationRefs must not be empty",
+    });
+  }
+  for (const ref of [...evidence.verificationRefs, evidence.docsImpactRef]) {
+    if (!isSafeArtifactRef(ref)) {
+      throw new MoyeError({
+        code: "BOOTSTRAP_EVIDENCE_REF_INVALID",
+        category: "VALIDATION",
+        message: `Invalid bootstrap evidence ref: ${ref}`,
+      });
+    }
+  }
+
+  return {
+    ...projection,
+    currentStep: "bootstrap-evidence-accepted",
+    execution: { ...evidence, verificationRefs: [...evidence.verificationRefs] },
+    lastEventAt: now,
+    events: [
+      ...projection.events,
+      {
+        sequence: projection.events.length + 1,
+        type: "BootstrapEvidenceAccepted",
+        at: now,
+        detail: `${evidence.executorId}:${evidence.resultCommit}`,
+      },
+    ],
+  };
+}
+
 export function updateArchiveStatus(
   projection: TaskProjection,
   archiveStatus: ArchiveStatus,
@@ -248,4 +324,8 @@ function toPascalCase(value: string): string {
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join("");
+}
+
+function isSafeArtifactRef(value: string): boolean {
+  return /^task-artifact:\/\/TASK-[A-Z0-9][A-Z0-9-]{0,63}\/[a-z0-9][a-z0-9.-]*$/.test(value);
 }

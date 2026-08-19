@@ -32,7 +32,7 @@ npm run check
 npm run test:e2e
 ```
 
-成功标准：单元测试 12 项和 E2E 2 项通过；E2E 分别验证进程中断恢复，以及 Pipeline 重试耗尽后 `FAILED_TERMINAL` 并继续归档失败证据。
+当前成功标准：单元测试 36 项和 E2E 3 项通过；E2E 覆盖进程中断恢复、Pipeline 重试耗尽后 `FAILED_TERMINAL` 并继续归档失败证据，以及 Backlog 批次同步、幂等与原子失败。
 
 ## 3. 手工启动
 
@@ -76,11 +76,13 @@ npm run cli -- validate --file /path/to/task.json
 npm run cli -- create --file /path/to/task.json
 npm run cli -- status TASK-EXAMPLE
 npm run cli -- close --file /path/to/task.json
+npm run cli -- backlog sync --dir docs/delivery/backlog --project moye
 ```
 
 - `create` 异步提交 keyed Workflow；
 - `close` 连接同一 Workflow 并等待业务终态，不创建第二条流程；
 - `archive` 和 `reconcile` 连接同一 keyed ArchiveWorkflow。
+- `backlog sync` 在提交前校验完整 YAML 批次；重复同步按 Source Digest 收敛；运行时独有记录默认保留并报告。
 
 打开 `http://127.0.0.1:3000` 查看 Moye Board；打开 `http://127.0.0.1:9070` 或使用 Admin API 排查 Restate Invocation。二者都通过 `task_id` 关联。
 

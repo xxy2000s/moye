@@ -17,12 +17,22 @@ changed_paths:
   - docs/delivery/backlog/README.md
   - docs/delivery/tasks/README.md
   - docs/graph.yaml
+  - README.md
+  - docs/knowledge/current/architecture/poc-01-restate.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - package.json
+  - package-lock.json
   - src/backlog/document-sync.ts
   - src/domain/backlog.ts
   - src/domain/task.ts
+  - src/archive/bootstrap-closure.ts
+  - src/archive/task-artifacts.ts
   - src/restate/services.ts
   - src/cli/index.ts
   - tests/unit/backlog-sync.test.ts
+  - tests/unit/bootstrap-closure.test.ts
+  - tests/unit/task.test.ts
   - tests/e2e/backlog-sync.test.ts
 
 docs:
@@ -40,6 +50,18 @@ docs:
     - durable-runtime-pitfalls
     - backlog-index
     - tasks-index
+    - task-0002-manifest
+    - task-0002-spec
+    - task-0002-design
+    - task-0002-plan
+    - task-0002-verification
+    - task-0002-docs-impact
+    - sources-index
+    - root-readme
+    - architecture-index
+    - local-restate-poc-runbook
+    - runbooks-index
+    - adr-0001-restate-poc
   reviewed:
     architecture-overview:
       outcome: unchanged
@@ -56,3 +78,18 @@ docs:
     adr-0003-typescript-poc:
       outcome: unchanged
       reason: "实现继续使用 TypeScript 基线"
+    local-restate-poc-runbook:
+      outcome: updated
+      reason: "增加已验证的 Backlog 同步操作入口和 Preserve 语义"
+    durable-workflow-research:
+      outcome: unchanged
+      reason: "没有改变已调研的工作流候选比较"
+    moye-task-control-skill:
+      outcome: unchanged
+      reason: "Task 与文档门禁操作协议没有变化"
+    task-0002-design:
+      outcome: updated
+      reason: "补齐数据所有权、Digest 幂等和真实 Bootstrap 关闭边界"
+    task-0002-manifest:
+      outcome: updated
+      reason: "创建真实 Active Task 并绑定 BL-0008"

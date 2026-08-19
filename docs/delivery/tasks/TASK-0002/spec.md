@@ -47,6 +47,7 @@
 - 在真实编码 Workflow 尚未完成前，允许 Goal Bootstrap 执行者提交实际 Result Commit、Verification 和 Docs Impact 引用；
 - Runtime 必须明确记录执行方式为 `GOAL_BOOTSTRAP`，不得产生“Agent 已执行”的虚假事实；
 - 缺少 Commit 或证据引用时禁止成功关闭；
+- 证据使用 `task-artifact://<TASK-ID>/<artifact>` 稳定引用，由运行时解析 Active/Archive 实际路径，归档后不得成为悬空引用；
 - `CLOSED` 后仍由独立 Archive Workflow 归档，Archive 不是普通 Pipeline Step。
 
 ## 非目标

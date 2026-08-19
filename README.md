@@ -53,6 +53,14 @@ npm run test:e2e
 
 CLI 统一使用 `npm run cli -- <command>`；项目 Agent 应使用 [moye-task-control Skill](./.agents/skills/moye-task-control/SKILL.md) 路由文档依赖和关闭门禁。
 
+将 Git 中的 Backlog 文档显式同步到已启动的 ProjectBoard：
+
+```bash
+npm run cli -- backlog sync --dir docs/delivery/backlog --project moye
+```
+
+该命令先校验完整批次，再通过一次 ProjectBoard 调用幂等合并；源文件消失时默认保留运行时记录并在结果中报告，不会静默删除。
+
 ## 文档入口
 
 阅读顺序：

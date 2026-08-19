@@ -4,6 +4,7 @@ import {
   closeTask,
   createTaskProjection,
   failTask,
+  recordBootstrapEvidence,
   transitionTask,
   updateArchiveStatus,
 } from "../../src/domain/task.js";
@@ -107,5 +108,45 @@ describe("task lifecycle", () => {
     expect(failed.outcome).toBe("FAILED_TERMINAL");
     expect(failed.archiveStatus).toBe("PENDING");
     expect(failed.error).toBe("retry budget exhausted");
+  });
+
+  it("records truthful bootstrap evidence without claiming an agent ran", () => {
+    const created = createTaskProjection(input, "2026-08-19T00:00:00.000Z");
+    const executing = transitionTask(created, "EXECUTING", "bootstrap-execution", "2026-08-19T00:00:01.000Z");
+    const evidenced = recordBootstrapEvidence(executing, {
+      kind: "GOAL_BOOTSTRAP",
+      executorId: "goal/root",
+      resultCommit: "a".repeat(40),
+      verificationRefs: ["task-artifact://TASK-0002/verification.md"],
+      docsImpactRef: "task-artifact://TASK-0002/docs-impact.yaml",
+    }, "2026-08-19T00:00:02.000Z");
+
+    expect(evidenced.execution?.kind).toBe("GOAL_BOOTSTRAP");
+    expect(evidenced.events.at(-1)?.type).toBe("BootstrapEvidenceAccepted");
+    expect(evidenced.currentStep).toBe("bootstrap-evidence-accepted");
+  });
+
+  it("rejects incomplete bootstrap evidence", () => {
+    const created = createTaskProjection(input, "2026-08-19T00:00:00.000Z");
+    const executing = transitionTask(created, "EXECUTING", "bootstrap-execution", "2026-08-19T00:00:01.000Z");
+    expect(() => recordBootstrapEvidence(executing, {
+      kind: "GOAL_BOOTSTRAP",
+      executorId: "goal/root",
+      resultCommit: "short",
+      verificationRefs: [],
+      docsImpactRef: "../escape.yaml",
+    }, "2026-08-19T00:00:02.000Z")).toThrow(/resultCommit/);
+  });
+
+  it("rejects a runtime JSON evidence kind that only bypassed TypeScript", () => {
+    const created = createTaskProjection(input, "2026-08-19T00:00:00.000Z");
+    const executing = transitionTask(created, "EXECUTING", "bootstrap-execution", "2026-08-19T00:00:01.000Z");
+    expect(() => recordBootstrapEvidence(executing, {
+      kind: "AGENT",
+      executorId: "untrusted",
+      resultCommit: "a".repeat(40),
+      verificationRefs: ["task-artifact://TASK-0001/verification.md"],
+      docsImpactRef: "task-artifact://TASK-0001/docs-impact.yaml",
+    } as never, "2026-08-19T00:00:02.000Z")).toThrow(/kind must be GOAL_BOOTSTRAP/);
   });
 });

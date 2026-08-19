@@ -4,9 +4,11 @@ import { readFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { resolve } from "node:path";
 
+import { loadBacklogSyncBatch } from "../backlog/document-sync.js";
 import { loadConfig } from "../config.js";
 import type { ArchiveInput } from "../domain/archive.js";
 import type { TaskProjection } from "../domain/task.js";
+import type { BacklogSyncResult } from "../domain/backlog.js";
 import { createTaskProjection } from "../domain/task.js";
 import { invoke, send } from "../restate/ingress.js";
 import type { TaskWorkflowInput } from "../restate/services.js";
@@ -25,6 +27,22 @@ try {
     case "route":
       await runDocsGraph("route", args);
       break;
+    case "backlog": {
+      const subcommand = args[0];
+      if (subcommand !== "sync") throw new Error(`Unknown backlog command: ${subcommand ?? ""}`);
+      const directory = optionalOption(args, "--dir") ?? "docs/delivery/backlog";
+      const projectId = optionalOption(args, "--project") ?? config.projectId;
+      const batch = await loadBacklogSyncBatch(directory);
+      const result = await invoke<BacklogSyncResult>(
+        config.restateIngressUrl,
+        "ProjectBoard",
+        projectId,
+        "syncBacklog",
+        batch,
+      );
+      print({ projectId, directory, ...result });
+      break;
+    }
     case "status": {
       const taskId = requiredArgument(args, "task id");
       print(await taskStatus(taskId));
@@ -92,6 +110,14 @@ function requiredOption(args: readonly string[], name: string): string {
   return value;
 }
 
+function optionalOption(args: readonly string[], name: string): string | undefined {
+  const index = args.indexOf(name);
+  if (index < 0) return undefined;
+  const value = args[index + 1];
+  if (value === undefined || value.startsWith("--")) throw new Error(`${name} requires a value`);
+  return value;
+}
+
 function requiredArgument(args: readonly string[], label: string): string {
   const value = args.find((argument) => !argument.startsWith("--"));
   if (value === undefined) throw new Error(`${label} is required`);
@@ -118,6 +144,7 @@ function helpText(): string {
   return `Moye Task Control CLI
 
 Usage:
+  moye backlog sync [--dir PATH] [--project PROJECT-ID]
   moye validate --file task.json
   moye route --intent NAME --path PATH
   moye status TASK-ID
@@ -130,5 +157,8 @@ Usage:
 create submits a workflow asynchronously; close attaches to the same durable
 workflow and waits for its business terminal state. archive and reconcile use
 the same keyed ArchiveWorkflow, so they cannot create a second lifecycle.
+
+backlog sync validates every BL-*.yaml before a single ProjectBoard batch call.
+Runtime-only records are preserved and reported; no implicit delete occurs.
 `;
 }
