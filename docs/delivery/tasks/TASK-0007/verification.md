@@ -36,6 +36,10 @@
 
 首轮只读复审发现 UNKNOWN 恢复分类不完整、静态符号链接逃逸和故障注入边界过宽三项 Major；全部修复并增加聚焦测试。第二轮复审结论为 `RELEASE READY`，无 blocker / major，确认 Trace 仍为只读纯派生、四类 UNKNOWN 均先对账、静态 realpath containment 和 test-only fault 门禁有效。
 
+## 闭环门禁演练
+
+首次 Runtime Closure 在 Bootstrap Gate 被拒绝，返回 `BOOTSTRAP_IMPACT_INCOMPLETE`：实际变更中的 `src/coding/workflow.ts` 未登记到 Docs Impact。该拒绝发生在归档副作用之前，Active Task 与 Git 状态均保持不变；补齐影响清单并重新生成 Result Commit 后，才允许再次执行关闭。这验证了门禁失败可安全中断、定位并交接恢复。
+
 ## 当前边界
 
 - 恢复视图只读，不实现 BL-0003 的 Repair/Replan 或 BudgetLedger；

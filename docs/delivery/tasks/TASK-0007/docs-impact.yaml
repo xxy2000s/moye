@@ -23,6 +23,7 @@ changed_paths:
   - public/styles.css
   - src/board/server.ts
   - src/config.ts
+  - src/coding/workflow.ts
   - src/index.ts
   - src/restate/coding-services.ts
   - src/restate/services.ts
