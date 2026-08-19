@@ -1,0 +1,27 @@
+schema_version: 1
+id: "BL-0005"
+title: "接入远程 Git Provider 与 PR/Merge 闭环"
+kind: "feature"
+status: "triaged"
+priority: "medium"
+
+source_refs:
+  - task-spec-document-closure-brainstorm
+affected_areas:
+  - scm-adapter
+  - git-provider
+  - pull-request
+  - merge
+  - effect-ledger
+
+acceptance_outline:
+  - "通过可替换 SCM Adapter 接入 Push、PR、Review 状态和 Merge"
+  - "所有远程写操作具有稳定幂等键、请求摘要和外部引用"
+  - "网络超时导致结果未知时先查询远端状态，再决定确认或重试"
+  - "Base Branch 漂移后重新验证，不把过期结果直接合入"
+  - "Task 记录 Branch、Head SHA、PR、Merge SHA 和对应业务事件"
+
+resolution:
+  task_refs: []
+  duplicate_of:
+  reason:

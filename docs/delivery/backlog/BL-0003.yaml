@@ -1,0 +1,27 @@
+schema_version: 1
+id: "BL-0003"
+title: "实现 Repair、Replan 与中央重试预算"
+kind: "feature"
+status: "triaged"
+priority: "high"
+
+source_refs:
+  - task-spec-document-closure-brainstorm
+affected_areas:
+  - task-runtime
+  - retry-policy
+  - repair-loop
+  - replan-loop
+  - project-board
+
+acceptance_outline:
+  - "Operation Retry、Attempt Retry、Repair 和 Replan 使用不同控制语义"
+  - "错误先分类，再由确定性策略选择重试、修复、重规划、等待或终止"
+  - "Task 维护统一的时间、Attempt、Repair、Replan、模型调用和成本预算"
+  - "预算耗尽后进入明确终态或人工 Gate，不产生无限嵌套循环"
+  - "故障测试覆盖实现失败、计划失败、重复投递和预算耗尽"
+
+resolution:
+  task_refs: []
+  duplicate_of:
+  reason:

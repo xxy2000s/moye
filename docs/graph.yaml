@@ -1,6 +1,6 @@
 schema_version: 1
-graph_revision: 6
-updated_at: "2026-08-19"
+graph_revision: 7
+updated_at: "2026-08-20"
 
 entrypoints:
   human: root-readme
@@ -279,6 +279,54 @@ documents:
     scope: task-runtime-and-board
     authority: backlog
     read_when: [task-create, restate-poc]
+
+  - id: bl-0002-single-agent-coding-loop
+    path: docs/delivery/backlog/BL-0002.yaml
+    type: backlog
+    status: ready
+    scope: single-agent-coding-loop
+    authority: backlog
+    read_when: [task-create, coding-task-poc]
+
+  - id: bl-0003-repair-replan-budget
+    path: docs/delivery/backlog/BL-0003.yaml
+    type: backlog
+    status: triaged
+    scope: retry-repair-replan
+    authority: backlog
+    read_when: [task-create, retry-change]
+
+  - id: bl-0004-multi-daemon-handoff
+    path: docs/delivery/backlog/BL-0004.yaml
+    type: backlog
+    status: triaged
+    scope: daemon-scheduling-and-handoff
+    authority: backlog
+    read_when: [task-create, scheduler-change]
+
+  - id: bl-0005-remote-scm-loop
+    path: docs/delivery/backlog/BL-0005.yaml
+    type: backlog
+    status: triaged
+    scope: remote-scm-and-merge
+    authority: backlog
+    read_when: [task-create, scm-change]
+
+  - id: bl-0006-production-observability
+    path: docs/delivery/backlog/BL-0006.yaml
+    type: backlog
+    status: triaged
+    scope: observability-and-operations
+    authority: backlog
+    read_when: [task-create, observability-selection]
+
+  - id: bl-0007-knowledge-feedback-loop
+    path: docs/delivery/backlog/BL-0007.yaml
+    type: backlog
+    status: triaged
+    scope: knowledge-lifecycle
+    authority: backlog
+    read_when: [task-create, knowledge-change]
 
   - id: task-0001-manifest
     path: docs/delivery/tasks/archive/2026-08-20-TASK-0001/task.yaml
@@ -568,6 +616,74 @@ relations:
   - from: backlog-index
     to: bl-0001-runtime-board
     type: indexes
+
+  - from: backlog-index
+    to: bl-0002-single-agent-coding-loop
+    type: indexes
+
+  - from: backlog-index
+    to: bl-0003-repair-replan-budget
+    type: indexes
+
+  - from: backlog-index
+    to: bl-0004-multi-daemon-handoff
+    type: indexes
+
+  - from: backlog-index
+    to: bl-0005-remote-scm-loop
+    type: indexes
+
+  - from: backlog-index
+    to: bl-0006-production-observability
+    type: indexes
+
+  - from: backlog-index
+    to: bl-0007-knowledge-feedback-loop
+    type: indexes
+
+  - from: task-spec-document-closure-brainstorm
+    to: bl-0002-single-agent-coding-loop
+    type: creates_backlog
+
+  - from: task-spec-document-closure-brainstorm
+    to: bl-0003-repair-replan-budget
+    type: creates_backlog
+
+  - from: task-spec-document-closure-brainstorm
+    to: bl-0004-multi-daemon-handoff
+    type: creates_backlog
+
+  - from: task-spec-document-closure-brainstorm
+    to: bl-0005-remote-scm-loop
+    type: creates_backlog
+
+  - from: durable-workflow-research
+    to: bl-0006-production-observability
+    type: creates_backlog
+
+  - from: task-spec-document-closure-brainstorm
+    to: bl-0007-knowledge-feedback-loop
+    type: creates_backlog
+
+  - from: bl-0003-repair-replan-budget
+    to: bl-0002-single-agent-coding-loop
+    type: depends_on
+
+  - from: bl-0004-multi-daemon-handoff
+    to: bl-0002-single-agent-coding-loop
+    type: depends_on
+
+  - from: bl-0005-remote-scm-loop
+    to: bl-0002-single-agent-coding-loop
+    type: depends_on
+
+  - from: bl-0006-production-observability
+    to: bl-0002-single-agent-coding-loop
+    type: depends_on
+
+  - from: bl-0007-knowledge-feedback-loop
+    to: bl-0002-single-agent-coding-loop
+    type: depends_on
 
   - from: bl-0001-runtime-board
     to: task-0001-manifest

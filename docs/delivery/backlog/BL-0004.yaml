@@ -1,0 +1,29 @@
+schema_version: 1
+id: "BL-0004"
+title: "实现多 Daemon 调度、租约与安全交接"
+kind: "feature"
+status: "triaged"
+priority: "high"
+
+source_refs:
+  - task-spec-document-closure-brainstorm
+affected_areas:
+  - daemon-cluster
+  - scheduler
+  - attempt-lease
+  - checkpoint
+  - handoff
+  - artifact-transfer
+
+acceptance_outline:
+  - "Daemon 注册角色、工具链、平台和容量等可验证能力"
+  - "调度器按 Step 角色与能力创建 Attempt，并通过 Lease 维护临时所有权"
+  - "重新派发时递增 Fencing Token，旧执行者不能覆盖新结果"
+  - "心跳、进展 Checkpoint 和 Stuck Detection 分别建模"
+  - "新 Daemon 能从 TaskEnvelope、Checkpoint、Git 和 Artifact 接管任务"
+  - "随机终止 Daemon 后 Task 仍收敛到唯一且可解释的结果"
+
+resolution:
+  task_refs: []
+  duplicate_of:
+  reason:

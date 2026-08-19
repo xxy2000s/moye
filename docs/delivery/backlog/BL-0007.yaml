@@ -1,0 +1,29 @@
+schema_version: 1
+id: "BL-0007"
+title: "实现经验候选、知识提升与效果反馈闭环"
+kind: "feature"
+status: "triaged"
+priority: "medium"
+
+source_refs:
+  - task-spec-document-closure-brainstorm
+affected_areas:
+  - knowledge-lifecycle
+  - document-control
+  - findings
+  - incidents
+  - pitfalls
+  - runbooks
+  - architecture
+
+acceptance_outline:
+  - "从 Task、Finding 和 Incident 产出带证据与来源引用的知识候选"
+  - "知识候选不能自动冒充 ADR、Architecture、Pitfall 或 Runbook"
+  - "通过明确审核与提升动作更新长期知识，并保留来源和 supersedes 关系"
+  - "记录知识被哪些后续 Task 检索、采用、拒绝以及产生的结果"
+  - "看板能追踪 Source、Backlog、Task、Knowledge 和后续反馈关系"
+
+resolution:
+  task_refs: []
+  duplicate_of:
+  reason:

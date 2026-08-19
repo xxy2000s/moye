@@ -2,10 +2,10 @@
 
 > 文档类型：Brainstorm  
 > 状态：Draft / Partially Consumed  
-> 更新日期：2026-08-19  
+> 更新日期：2026-08-20  
 > 目标消费方：Task Runtime、Document Control Plane、首个编码任务 PoC
 
-> 消费记录：目录角色、Backlog、Active/Archive Task 边界已进入 [ADR-0002](../../knowledge/decisions/adr/0002-organize-docs-by-lifecycle-role.md) 和 [Document Control Plane](../../knowledge/current/architecture/document-control-plane.md)；Spec 最小模型等问题仍保持 Open。
+> 消费记录：目录角色、Backlog、Active/Archive Task 边界已进入 [ADR-0002](../../knowledge/decisions/adr/0002-organize-docs-by-lifecycle-role.md) 和 [Document Control Plane](../../knowledge/current/architecture/document-control-plane.md)；2026-08-20 又拆出 [BL-0002](../../delivery/backlog/BL-0002.yaml) 至 [BL-0007](../../delivery/backlog/BL-0007.yaml)，分别承接单 Agent 编码闭环、重试控制、多 Daemon、远程 Git、可观测性和知识闭环。Spec 工具选型等问题仍保持 Open。
 
 ## 1. 背景
 

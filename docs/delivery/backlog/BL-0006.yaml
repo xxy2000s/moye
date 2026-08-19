@@ -1,0 +1,27 @@
+schema_version: 1
+id: "BL-0006"
+title: "建设生产级 Trace、运营指标与异常看板"
+kind: "feature"
+status: "triaged"
+priority: "medium"
+
+source_refs:
+  - durable-workflow-research
+affected_areas:
+  - observability
+  - tracing
+  - metrics
+  - project-board
+  - operations
+
+acceptance_outline:
+  - "使用 Task、Step、Attempt、Effect 和 Agent Session 标识串联业务事件与技术 Trace"
+  - "明确区分可重建业务历史、Workflow Journal 和 OpenTelemetry Trace"
+  - "看板展示耗时、重试、预算、阻塞原因、Daemon 和当前恢复动作"
+  - "形成卡住、预算耗尽、未知副作用和重复故障的告警信号"
+  - "支持从 Task 详情跳转到对应 Invocation、日志和证据 Artifact"
+
+resolution:
+  task_refs: []
+  duplicate_of:
+  reason:

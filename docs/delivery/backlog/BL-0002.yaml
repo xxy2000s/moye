@@ -1,0 +1,33 @@
+schema_version: 1
+id: "BL-0002"
+title: "实现首个真实单 Agent 本地编码闭环"
+kind: "feature"
+status: "ready"
+priority: "high"
+
+source_refs:
+  - task-spec-document-closure-brainstorm
+affected_areas:
+  - task-runtime
+  - task-spec
+  - agent-runner
+  - worktree
+  - local-scm
+  - verification
+  - document-control
+  - project-board
+
+acceptance_outline:
+  - "Task 固定 Spec Revision、Base SHA、验收项、验证命令和 Context Plan"
+  - "固定 Pipeline 使用可追踪的 Step 与 Attempt 执行真实编码任务"
+  - "在隔离 Worktree 和任务分支中调用 Codex Exec Agent Adapter"
+  - "验证 Gate 保存命令、退出码、耗时和输出证据，失败时不允许合并"
+  - "本地 Merge 使用稳定 Effect ID，并能对账已完成但尚未确认的结果"
+  - "关闭前根据实际 Git Diff 完成文档影响检查，之后才能归档"
+  - "自动化 E2E 使用确定性 Fake Runner，并保存一次真实 Codex Fixture Smoke Test 证据"
+  - "看板可以从 Task ID 查看 Step、Attempt、Agent Session、Commit、验证和恢复轨迹"
+
+resolution:
+  task_refs: []
+  duplicate_of:
+  reason:
