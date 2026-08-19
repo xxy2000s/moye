@@ -1,7 +1,7 @@
 schema_version: 1
 task_id: "TASK-0005"
 graph_revision: 15
-intents: [coding-task-poc, task-create]
+intents: [coding-task-poc, task-create, task-close]
 changed_paths:
   - docs/delivery/backlog/BL-0002.yaml
   - docs/delivery/tasks/README.md
@@ -12,6 +12,11 @@ changed_paths:
   - docs/delivery/tasks/TASK-0005/verification.md
   - docs/delivery/tasks/TASK-0005/docs-impact.yaml
   - docs/graph.yaml
+  - docs/knowledge/current/architecture/task-runtime-kernel.md
+  - docs/knowledge/current/codemap/README.md
+  - src/agent/runner.ts
+  - src/agent/codex-exec.ts
+  - tests/unit/agent-runner.test.ts
 docs:
   read:
     - agent-contract
@@ -27,6 +32,14 @@ docs:
     - durable-runtime-pitfalls
     - backlog-index
     - tasks-index
+    - architecture-index
+    - sources-index
+    - task-0005-manifest
+    - task-0005-spec
+    - task-0005-design
+    - task-0005-plan
+    - task-0005-verification
+    - task-0005-docs-impact
   reviewed:
     architecture-overview: { outcome: unchanged, reason: "实现既定 Agent Adapter 边界，不改变总体领域" }
     adr-0001-restate-poc: { outcome: unchanged, reason: "Runner 尚未接入 Restate" }
@@ -35,3 +48,6 @@ docs:
     task-0004-manifest: { outcome: unchanged, reason: "只消费上游 Workspace Effect 事实" }
     task-0001-manifest: { outcome: not_applicable, reason: "不修改历史事实" }
     adr-0003-typescript-poc: { outcome: unchanged, reason: "继续使用 TypeScript 基线" }
+    task-0005-manifest: { outcome: updated, reason: "Task 进入验证并记录真实 Artifact/测试证据" }
+    moye-task-control-skill: { outcome: unchanged, reason: "Runner 不改变 Task 操作门禁" }
+    task-0002-manifest: { outcome: unchanged, reason: "只复用其 Bootstrap Closure 能力" }

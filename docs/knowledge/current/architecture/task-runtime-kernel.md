@@ -109,6 +109,18 @@ Daemon 调度、角色 Agent、Worktree、Git、Gate 和知识沉淀都建立在
 
 该切片尚未把 Effect Record 持久化到 Workflow，也不执行 Agent、Verification 或 Merge。Worktree 路径仍然只是单机缓存；可迁移恢复点是已提交的 Commit 与 Tree Object ID。
 
+### 5.0.2 当前 PoC 已实现 AgentRunner 切片
+
+`src/agent/` 已实现不拥有 Task 主状态的单 Attempt Agent 边界：
+
+- `AgentRunRequest` 固定 Task、Spec Revision、IMPLEMENT Attempt、Runner Kind、Git Workspace、受管 Artifact Root 与 Prompt Digest，派生稳定 Run ID；
+- `FakeAgentRunner` 用确定 Event Script 驱动自动化；`CodexExecAgentRunner` 按本机官方 CLI 契约通过 argv、`shell:false` 执行 `codex exec --json --sandbox workspace-write --cd`；
+- JSONL 必须以唯一 `thread.started` 开始，并保存 Session ID、最后一个完成的 Agent Message、turn 结果、退出码、Signal 和 Duration；Malformed Stream 独立标记 `INVALID_OUTPUT`，原始内容仍保留；
+- Artifact Bundle 原子保存 stdout JSONL、stderr、final message 和 manifest。Manifest 固定文件摘要、Producer Tuple 与 Run Digest；读取时同时重算语义和文件内容，外部消费者还必须提供 Expected Digest；
+- 同一完成 Run 直接从 Artifact 对账；pending manifest 可恢复，不完整且无法证明的 Bundle 停止为 Conflict，不能再次调用昂贵 Agent。
+
+这一切片不接入 Workflow、不执行 Verification 或 Merge，也不实现 Session Resume。真实 Codex Fixture 调用在端到端 Workflow Task 中验收。
+
 ### 5.1 模型关系
 
 ```mermaid
