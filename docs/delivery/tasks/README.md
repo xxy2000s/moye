@@ -21,7 +21,9 @@ tasks/
 
 ## 当前 Active Task
 
-当前没有 Active Task。
+| Task | 状态 | 目标 |
+|---|---|---|
+| TASK-0006 | Executing | 编码 Workflow、Verification Gate 与本地 Merge |
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 

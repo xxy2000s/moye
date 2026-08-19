@@ -1,0 +1,12 @@
+schema_version: 1
+id: TASK-0006
+title: 实现编码 Workflow、Verification Gate 与本地 Merge
+status: executing
+outcome:
+backlog_refs: [BL-0002]
+spec_revision: 1
+workflow_id: task/TASK-0006
+execution_mode: goal-bootstrap
+base_commit: eb6f7ee983879aa2c38f9c0679ee500982bd77c1
+archive: { status: not_ready, archived_at: null, archived_path: null }
+result: { pull_request: null, merge_commit: null, closure_report: null }
