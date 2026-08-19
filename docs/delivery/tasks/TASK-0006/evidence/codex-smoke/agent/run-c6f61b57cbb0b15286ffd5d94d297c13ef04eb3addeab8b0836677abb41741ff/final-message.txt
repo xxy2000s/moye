@@ -1,0 +1,4 @@
+Created and committed `result.txt` with exact requested content.
+
+Commit: `bffa111` (`codex fixture result`)  
+Working tree is clean.

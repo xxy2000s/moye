@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "taskId": "TASK-CODEX-SMOKE-V2",
+  "docsArtifactRef": "coding-artifact://TASK-CODEX-SMOKE-V2/docs/TASK-CODEX-SMOKE-V2.json",
+  "docsContentDigest": "sha256:492eabe8ec8f157920f6407d374435093fee43fcb23c8fe21e8633a3939735ec",
+  "archiveDigest": "coding-archive:sha256:28e6d3f04217c46c92c66effe7bf44e0cb26733cfb04711b698439c4f7458257"
+}

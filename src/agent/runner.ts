@@ -289,9 +289,48 @@ export async function reconcileAgentRun(request: AgentRunRequest): Promise<Agent
     return parsed;
   }
   if (!(await pathExists(manifestPath))) {
+    if (entries.includes("execution-intent.json")) return undefined;
     throw conflict("INCOMPLETE_AGENT_ARTIFACT", "Agent Artifact directory exists without a complete manifest");
   }
   return parseStoredAgentRunResult(JSON.parse(await readFile(manifestPath, "utf8")) as unknown, request);
+}
+
+export async function claimAgentExecution(request: AgentRunRequest): Promise<boolean> {
+  assertTrustedRequest(request);
+  await assertRequestPathsSafe(request);
+  await mkdir(request.artifactRoot, { recursive: true });
+  await mkdir(request.artifactPath, { recursive: true });
+  const content = Buffer.from(`${JSON.stringify({
+    schemaVersion: 1,
+    runId: request.runId,
+    taskId: request.taskId,
+    specRevision: request.specRevision,
+    attemptId: request.attemptId,
+    runnerKind: request.runnerKind,
+    promptDigest: request.promptDigest,
+  }, null, 2)}\n`, "utf8");
+  const target = path.join(request.artifactPath, "execution-intent.json");
+  try { await writeFile(target, content, { flag: "wx" }); return true; }
+  catch (error) {
+    if (!isAlreadyExists(error)) throw error;
+    if (!(await readFile(target)).equals(content)) {
+      throw conflict("AGENT_EXECUTION_INTENT_CONFLICT", "Agent execution intent differs from the stable Run ID");
+    }
+    return false;
+  }
+}
+
+export async function recordAgentExecutionUnknown(request: AgentRunRequest): Promise<void> {
+  assertTrustedRequest(request);
+  await writeStableFile(path.join(request.artifactPath, "result-unknown.json"), Buffer.from(`${JSON.stringify({
+    schemaVersion: 1,
+    runId: request.runId,
+    taskId: request.taskId,
+    specRevision: request.specRevision,
+    attemptId: request.attemptId,
+    outcome: "RESULT_UNKNOWN",
+    recovery: "Do not restart this Run ID; reconcile the Worktree and create a new Spec revision or Attempt ID.",
+  }, null, 2)}\n`, "utf8"));
 }
 
 export async function parseAgentRunResult(

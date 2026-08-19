@@ -32,7 +32,9 @@ npm run check
 npm run test:e2e
 ```
 
-当前成功标准：单元测试 36 项和 E2E 3 项通过；E2E 覆盖进程中断恢复、Pipeline 重试耗尽后 `FAILED_TERMINAL` 并继续归档失败证据，以及 Backlog 批次同步、幂等与原子失败。
+当前成功标准：单元测试 70 项和 E2E 7 项通过；除归档恢复与 Backlog 同步外，E2E 还覆盖 Fake Coding Workflow 的唯一 Merge、Verification 失败不合并、Merge 丢回执对账和 Verification 期间 Worker 重启不重复命令。
+
+TASK-0006 的 `scripts/codex_fixture_smoke.mjs` 已执行一次真实 Codex 临时 Fixture，并把冻结证据存入对应 Task Archive。脚本会拒绝覆盖既有 `summary.json`，不属于日常回归命令；自动化测试只使用 Fake/受控进程。
 
 ## 3. 手工启动
 
@@ -83,6 +85,7 @@ npm run cli -- backlog sync --dir docs/delivery/backlog --project moye
 - `close` 连接同一 Workflow 并等待业务终态，不创建第二条流程；
 - `archive` 和 `reconcile` 连接同一 keyed ArchiveWorkflow。
 - `backlog sync` 在提交前校验完整 YAML 批次；重复同步按 Source Digest 收敛；运行时独有记录默认保留并报告。
+- `CodingTaskWorkflow/<task_id>` 接受冻结 Envelope 和 Fixture/Codex Runner 配置；主状态与事件摘要已同步到 Board，Attempt/Evidence、Journal 和日志分层 Trace 在 TASK-0007 接入。
 
 打开 `http://127.0.0.1:3000` 查看 Moye Board；打开 `http://127.0.0.1:9070` 或使用 Admin API 排查 Restate Invocation。二者都通过 `task_id` 关联。
 

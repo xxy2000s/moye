@@ -1,7 +1,7 @@
 schema_version: 1
 task_id: TASK-0006
 graph_revision: 17
-intents: [coding-task-poc, task-create]
+intents: [coding-task-poc, task-create, task-close]
 changed_paths:
   - docs/delivery/backlog/BL-0002.yaml
   - docs/delivery/tasks/README.md
@@ -12,8 +12,45 @@ changed_paths:
   - docs/delivery/tasks/TASK-0006/verification.md
   - docs/delivery/tasks/TASK-0006/docs-impact.yaml
   - docs/graph.yaml
+  - docs/delivery/tasks/TASK-0006/evidence/codex-smoke/agent/run-c6f61b57cbb0b15286ffd5d94d297c13ef04eb3addeab8b0836677abb41741ff/events.jsonl
+  - docs/delivery/tasks/TASK-0006/evidence/codex-smoke/agent/run-c6f61b57cbb0b15286ffd5d94d297c13ef04eb3addeab8b0836677abb41741ff/final-message.txt
+  - docs/delivery/tasks/TASK-0006/evidence/codex-smoke/agent/run-c6f61b57cbb0b15286ffd5d94d297c13ef04eb3addeab8b0836677abb41741ff/manifest.json
+  - docs/delivery/tasks/TASK-0006/evidence/codex-smoke/agent/run-c6f61b57cbb0b15286ffd5d94d297c13ef04eb3addeab8b0836677abb41741ff/stderr.log
+  - docs/delivery/tasks/TASK-0006/evidence/codex-smoke/docs/TASK-CODEX-SMOKE.json
+  - docs/delivery/tasks/TASK-0006/evidence/codex-smoke/summary.json
+  - docs/delivery/tasks/TASK-0006/evidence/codex-smoke/verification/TASK-CODEX-SMOKE-evidence-sha256-4aa8234d51853afa4dc0e0fd9301a8248c5a0a76400e29f059c5ab157d713582.json
+  - docs/delivery/tasks/TASK-0006/evidence/codex-smoke-v2/agent/run-c671024794350547e05adae46e56bbcf2688f12b45abfa481668c8f03ef2322d/events.jsonl
+  - docs/delivery/tasks/TASK-0006/evidence/codex-smoke-v2/agent/run-c671024794350547e05adae46e56bbcf2688f12b45abfa481668c8f03ef2322d/execution-intent.json
+  - docs/delivery/tasks/TASK-0006/evidence/codex-smoke-v2/agent/run-c671024794350547e05adae46e56bbcf2688f12b45abfa481668c8f03ef2322d/final-message.txt
+  - docs/delivery/tasks/TASK-0006/evidence/codex-smoke-v2/agent/run-c671024794350547e05adae46e56bbcf2688f12b45abfa481668c8f03ef2322d/manifest.json
+  - docs/delivery/tasks/TASK-0006/evidence/codex-smoke-v2/agent/run-c671024794350547e05adae46e56bbcf2688f12b45abfa481668c8f03ef2322d/stderr.log
+  - docs/delivery/tasks/TASK-0006/evidence/codex-smoke-v2/archive/TASK-CODEX-SMOKE-V2.json
+  - docs/delivery/tasks/TASK-0006/evidence/codex-smoke-v2/docs/TASK-CODEX-SMOKE-V2.json
+  - docs/delivery/tasks/TASK-0006/evidence/codex-smoke-v2/summary.json
+  - docs/delivery/tasks/TASK-0006/evidence/codex-smoke-v2/verification/TASK-CODEX-SMOKE-V2-4710d1a7acbf298f8cd2187e6d5b245b7f5afb432084e0593b5c858a6ff5a609.intent.json
+  - docs/delivery/tasks/TASK-0006/evidence/codex-smoke-v2/verification/TASK-CODEX-SMOKE-V2-4710d1a7acbf298f8cd2187e6d5b245b7f5afb432084e0593b5c858a6ff5a609.outcome.json
+  - docs/delivery/tasks/TASK-0006/evidence/codex-smoke-v2/verification/TASK-CODEX-SMOKE-V2-evidence-sha256-b515e8325070453834dfef9fec5a359267c564a1ecaa67940631ae5688f2866b.json
+  - docs/knowledge/current/architecture/task-runtime-kernel.md
+  - docs/knowledge/current/architecture/poc-01-restate.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - scripts/codex_fixture_smoke.mjs
+  - src/agent/codex-exec.ts
+  - src/agent/fixture-coding.ts
+  - src/agent/runner.ts
+  - src/coding/workflow.ts
+  - src/git/merge-effect.ts
+  - src/git/workspace-effect.ts
+  - src/index.ts
+  - src/restate/coding-services.ts
+  - src/restate/services.ts
+  - src/verification/gate.ts
+  - tests/unit/coding-workflow.test.ts
+  - tests/unit/agent-runner.test.ts
+  - tests/unit/verification-merge.test.ts
+  - tests/e2e/coding-workflow.test.ts
 docs:
-  read: [agent-contract, docs-index, codemap, document-control-plane, overnight-multi-task-goal, finding-backlog-docs-not-projected, bl-0008-backlog-projection-sync, bl-0002-single-agent-coding-loop, task-runtime-kernel, restate-poc-architecture, durable-runtime-pitfalls, backlog-index, tasks-index]
+  read: [agent-contract, docs-index, codemap, document-control-plane, overnight-multi-task-goal, finding-backlog-docs-not-projected, bl-0008-backlog-projection-sync, bl-0002-single-agent-coding-loop, task-runtime-kernel, restate-poc-architecture, durable-runtime-pitfalls, backlog-index, tasks-index, architecture-index, sources-index, adr-0001-restate-poc, local-restate-poc-runbook, runbooks-index, task-0006-manifest, task-0006-spec, task-0006-design, task-0006-plan, task-0006-verification, task-0006-docs-impact]
   reviewed:
     local-restate-poc-runbook: { outcome: updated, reason: "将增加 Coding Workflow Fixture 操作入口" }
     architecture-overview: { outcome: unchanged, reason: "实现既定单 Agent 本地闭环" }
@@ -24,3 +61,7 @@ docs:
     task-0005-manifest: { outcome: unchanged, reason: "消费 Runner 事实" }
     task-0001-manifest: { outcome: not_applicable, reason: "不修改历史事实" }
     adr-0003-typescript-poc: { outcome: unchanged, reason: "继续使用 TypeScript 基线" }
+    task-0006-manifest: { outcome: updated, reason: "Task 进入验证并固定 Coding Workflow 与真实 Codex 证据" }
+    moye-task-control-skill: { outcome: unchanged, reason: "编码 Workflow 不改变仓库 Task 门禁" }
+    task-0002-manifest: { outcome: unchanged, reason: "只复用 Bootstrap Closure 能力" }
+    durable-workflow-research: { outcome: unchanged, reason: "实现已接受的 Restate PoC，不产生新的框架选型结论" }

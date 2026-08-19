@@ -1,0 +1,5 @@
+Created `result.txt` with the exact requested content and committed it.
+
+Commit: `e5a76a1 codex fixture result`
+
+Working tree is clean; `README.md` was unchanged.

@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "taskId": "TASK-CODEX-SMOKE",
+  "specRevision": 1,
+  "envelopeDigest": "sha256:04da572859129aaf898a175a590a2020aaf7b5e5f25ed0df49efa8d28daa18f3",
+  "workspaceEffectId": "git-worktree-effect:sha256:bb20d98c58f4f13e2c881e40b3bf18950bd37ab7df26a52d9f7a5a33f9ca257f",
+  "checkpointDigest": "git-checkpoint:sha256:2176ecf2bfc0e0bea9c735cb1ceadc96c8dcaab75b3207ce19b83a5f14f90105",
+  "verifiedCommit": "bffa1119f81a922a93ba5158b5dfa0ac127509fd",
+  "treeDigest": "920890009af28b972090e0826adda6817b187cd4",
+  "commandResults": [
+    {
+      "commandId": "CMD-CODEX-SMOKE",
+      "argv": [
+        "/opt/homebrew/Cellar/node@22/22.23.2/bin/node",
+        "-e",
+        "const fs=require('fs');const files=fs.readdirSync('.').filter(x=>x!=='README.md'&&x!=='.git');if(files.length!==1||files[0]!=='result.txt'||fs.readFileSync('result.txt','utf8')!=='codex fixture ok\\n')process.exit(2);console.log('real codex fixture verified')"
+      ],
+      "shell": false,
+      "exitCode": 0,
+      "signal": null,
+      "startedAt": "2026-08-19T18:22:42.605Z",
+      "finishedAt": "2026-08-19T18:22:42.660Z",
+      "durationMs": 55,
+      "stdout": "real codex fixture verified\n",
+      "stderr": "",
+      "stdoutDigest": "sha256:43e67ead7a5d5af06acfe4a12cddae44818be6d2f129e464a641a5e2d277104f",
+      "stderrDigest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "evidenceDigest": "verification-evidence:sha256:4aa8234d51853afa4dc0e0fd9301a8248c5a0a76400e29f059c5ab157d713582"
+}

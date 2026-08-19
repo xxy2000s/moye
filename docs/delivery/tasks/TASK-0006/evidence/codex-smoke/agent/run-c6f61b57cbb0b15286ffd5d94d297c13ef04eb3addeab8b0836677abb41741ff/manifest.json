@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "runId": "agent-run:sha256:c6f61b57cbb0b15286ffd5d94d297c13ef04eb3addeab8b0836677abb41741ff",
+  "runnerKind": "CODEX_EXEC",
+  "taskId": "TASK-CODEX-SMOKE",
+  "specRevision": 1,
+  "stepId": "IMPLEMENT",
+  "attemptId": "TASK-CODEX-SMOKE/IMPLEMENT/attempt-001",
+  "sessionId": "01a01b42-3746-77d1-aff8-b657bccf8b47",
+  "outcome": "SUCCEEDED",
+  "exitCode": 0,
+  "signal": null,
+  "startedAt": "2026-08-19T18:21:59.051Z",
+  "finishedAt": "2026-08-19T18:22:42.367Z",
+  "durationMs": 43316,
+  "finalMessage": "Created and committed `result.txt` with exact requested content.\n\nCommit: `bffa111` (`codex fixture result`)  \nWorking tree is clean.",
+  "artifacts": {
+    "events": {
+      "artifactRef": "agent-artifact://agent-run:sha256:c6f61b57cbb0b15286ffd5d94d297c13ef04eb3addeab8b0836677abb41741ff/events.jsonl",
+      "contentDigest": "sha256:fa33225825246e5ac012f16ac3d5f5f38eb70006854b04444545a3c68c4ae1e9",
+      "bytes": 3533
+    },
+    "stderr": {
+      "artifactRef": "agent-artifact://agent-run:sha256:c6f61b57cbb0b15286ffd5d94d297c13ef04eb3addeab8b0836677abb41741ff/stderr.log",
+      "contentDigest": "sha256:1aa26269eb1cc57f86b235a03cda53c004edb5b1e9fc99d4da4f00843293d721",
+      "bytes": 39
+    },
+    "finalMessage": {
+      "artifactRef": "agent-artifact://agent-run:sha256:c6f61b57cbb0b15286ffd5d94d297c13ef04eb3addeab8b0836677abb41741ff/final-message.txt",
+      "contentDigest": "sha256:682f22f2a77048e75349c344119bae6ec88e60456dc9e2be6f40c485b0c63632",
+      "bytes": 133
+    }
+  },
+  "runDigest": "agent-result:sha256:d50471378df85d67db63f1584b1dcb3ae6d968d0072d4151e5c78f012a80177a"
+}

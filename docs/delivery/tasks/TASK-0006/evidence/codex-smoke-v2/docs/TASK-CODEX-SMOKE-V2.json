@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "taskId": "TASK-CODEX-SMOKE-V2",
+  "mergeCommit": "279d7d144b263da8f08e2f5d8cd63019b5f3bc23",
+  "disposition": "not_applicable",
+  "docsDigest": "docs-step:sha256:80e828882e2e8b24ca0bb652ea7510261fbbcb281353464c416b622fe8eebcfc"
+}

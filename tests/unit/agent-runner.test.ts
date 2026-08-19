@@ -187,6 +187,34 @@ describe("agent runner", () => {
     expect(invocations[0]?.argv).not.toContain("--skip-git-repo-check");
   });
 
+  it("does not launch Codex again when a prior Run ID has an unknown result", async () => {
+    const fixture = await createFixture();
+    const request = await requestFor(fixture, "CODEX_EXEC", "unknown result fixture");
+    let processCalls = 0;
+    const processRunner: AgentProcessRunner = {
+      async run() {
+        processCalls += 1;
+        return { stdout: jsonl(successEvents("session-unknown", "may have committed")), stderr: "", exitCode: 0, signal: null };
+      },
+    };
+    let clockCalls = 0;
+    const first = new CodexExecAgentRunner({
+      processRunner,
+      now: () => {
+        clockCalls += 1;
+        if (clockCalls === 2) throw new Error("simulated worker loss before persist");
+        return new Date("2026-08-20T01:00:00.000Z");
+      },
+    });
+    await expect(first.run(request)).rejects.toThrow(/simulated worker loss/);
+    await expect(new CodexExecAgentRunner({ processRunner }).run(request)).rejects.toMatchObject({
+      code: "AGENT_RESULT_UNKNOWN",
+      category: "UNKNOWN_SIDE_EFFECT",
+    });
+    expect(processCalls).toBe(1);
+    expect(await readFile(path.join(request.artifactPath, "result-unknown.json"), "utf8")).toContain(request.runId);
+  });
+
   it("executes a controlled child process with argv and shell=false", async () => {
     const fixture = await createFixture();
     const runner = new SpawnAgentProcessRunner({ timeoutMs: 10_000, maxOutputBytes: 4096 });

@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "runId": "agent-run:sha256:c671024794350547e05adae46e56bbcf2688f12b45abfa481668c8f03ef2322d",
+  "taskId": "TASK-CODEX-SMOKE-V2",
+  "specRevision": 1,
+  "attemptId": "TASK-CODEX-SMOKE-V2/IMPLEMENT/attempt-001",
+  "runnerKind": "CODEX_EXEC",
+  "promptDigest": "sha256:d30f77c2eed3a2fa28e5dc65d7d24988e936b6673368eafaf792cff4671a23fa"
+}

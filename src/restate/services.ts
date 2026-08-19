@@ -44,6 +44,11 @@ interface ArchiveWorkflowState {
   result: ArchiveMoveResult;
 }
 
+interface TaskAuthorityState {
+  owner: "TASK_WORKFLOW" | "CODING_WORKFLOW";
+  specRevision: number;
+}
+
 export interface TaskWorkflowInput {
   readonly taskId: string;
   readonly projectId: string;
@@ -58,9 +63,31 @@ export interface TaskWorkflowInput {
   readonly bootstrapEvidence?: TaskExecutionEvidence;
 }
 
-interface ArchiveWorkflowInput extends ArchiveInput {
+export interface ArchiveWorkflowInput extends ArchiveInput {
   readonly task: TaskProjection;
 }
+
+export const taskAuthority = restate.object({
+  name: "TaskAuthority",
+  handlers: {
+    claim: async (
+      ctx: restate.ObjectContext<TaskAuthorityState>,
+      input: TaskAuthorityState,
+    ): Promise<TaskAuthorityState> => {
+      const current = await ctx.get("owner") as TaskAuthorityState["owner"] | null;
+      const currentRevision = await ctx.get("specRevision") as number | null;
+      if (current !== null && (current !== input.owner || currentRevision !== input.specRevision)) {
+        throw new restate.TerminalError(
+          `Task ${ctx.key} is already owned by ${current} revision ${String(currentRevision)}`,
+          { errorCode: 409 },
+        );
+      }
+      ctx.set("owner", input.owner);
+      ctx.set("specRevision", input.specRevision);
+      return input;
+    },
+  },
+});
 
 export const projectBoard = restate.object({
   name: "ProjectBoard",
@@ -225,6 +252,10 @@ export const taskWorkflow = restate.workflow({
       ctx: restate.WorkflowContext<TaskWorkflowState>,
       input: TaskWorkflowInput,
     ): Promise<TaskProjection> => {
+      await ctx.objectClient(taskAuthority, input.taskId).claim({
+        owner: "TASK_WORKFLOW",
+        specRevision: input.specRevision,
+      });
       let task = createTaskProjection(input, await durableNow(ctx));
       ctx.set("projection", task);
       await boardClient(ctx, input.projectId).upsertTask(task);

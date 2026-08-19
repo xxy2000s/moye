@@ -3,7 +3,9 @@ import { spawn } from "node:child_process";
 import { MoyeError } from "../domain/errors.js";
 import {
   assertTrustedAgentResult,
+  claimAgentExecution,
   persistAgentRun,
+  recordAgentExecutionUnknown,
   reconcileAgentRun,
 } from "./runner.js";
 import type {
@@ -63,6 +65,16 @@ export class CodexExecAgentRunner implements AgentRunner {
     if (existing !== undefined) {
       assertTrustedAgentResult(existing);
       return existing;
+    }
+    if (!(await claimAgentExecution(request))) {
+      await recordAgentExecutionUnknown(request);
+      throw new MoyeError({
+        code: "AGENT_RESULT_UNKNOWN",
+        category: "UNKNOWN_SIDE_EFFECT",
+        retryable: false,
+        message: "A previous Codex execution was started without a durable result; automatic replay is forbidden",
+        details: { runId: request.runId, attemptId: request.attemptId },
+      });
     }
     const startedAt = canonicalNow(this.#now);
     let processResult: AgentProcessResult;

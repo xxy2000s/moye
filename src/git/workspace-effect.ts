@@ -14,6 +14,7 @@ export interface GitInvocation {
   readonly argv: readonly string[];
   readonly cwd: string;
   readonly shell: false;
+  readonly env?: Readonly<Record<string, string>>;
 }
 
 export interface GitCommandResult {
@@ -97,6 +98,7 @@ export const nodeGitCommandRunner: GitCommandRunner = Object.freeze({
     return new Promise((resolve, reject) => {
       const child = spawn(invocation.executable, [...invocation.argv], {
         cwd: invocation.cwd,
+        env: { ...process.env, ...invocation.env },
         shell: false,
         stdio: ["ignore", "pipe", "pipe"],
       });

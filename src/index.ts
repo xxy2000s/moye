@@ -5,12 +5,13 @@ import * as restate from "@restatedev/restate-sdk";
 
 import { startBoardServer } from "./board/server.js";
 import { loadConfig } from "./config.js";
-import { archiveWorkflow, projectBoard, taskWorkflow } from "./restate/services.js";
+import { archiveWorkflow, projectBoard, taskAuthority, taskWorkflow } from "./restate/services.js";
+import { codingTaskWorkflow } from "./restate/coding-services.js";
 
 const config = loadConfig();
 const endpoint = createServer(
   restate.createEndpointHandler({
-    services: [projectBoard, taskWorkflow, archiveWorkflow],
+    services: [projectBoard, taskAuthority, taskWorkflow, archiveWorkflow, codingTaskWorkflow],
   }),
 );
 endpoint.listen(config.servicePort, "0.0.0.0", () => {

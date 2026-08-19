@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "executedAt": "2026-08-19T18:50:36.483Z",
+  "codexVersion": "codex-cli 0.146.0",
+  "fixtureBase": "21a1b198f0925fafee2f5e402f0edbfd4d52c3e7",
+  "taskId": "TASK-CODEX-SMOKE-V2",
+  "sessionId": "01a01b5b-f2fd-7c00-af1a-92ef71324cf6",
+  "agentRunId": "agent-run:sha256:c671024794350547e05adae46e56bbcf2688f12b45abfa481668c8f03ef2322d",
+  "agentRunDigest": "agent-result:sha256:5814a8d6b3136687cb307f861f912cdb3b0df9d973be9eef7a186747238b3098",
+  "resultCommit": "e5a76a1db96ac24ccd310076e4f8e8da58db529e",
+  "treeDigest": "920890009af28b972090e0826adda6817b187cd4",
+  "verificationDigest": "verification-binding:sha256:a9c92c564c00ef2c3b7639d8de01e0341098b27fbd6dd32c3b59a4a516aa65a2",
+  "mergeEffectId": "local-merge-effect:sha256:adf6a0c553e78cdaf40ba1f844a87f3f9ca6b7c6c9055e718bdb58c14d8dbf25",
+  "mergeCommit": "279d7d144b263da8f08e2f5d8cd63019b5f3bc23",
+  "masterHead": "279d7d144b263da8f08e2f5d8cd63019b5f3bc23",
+  "mergeMarkerCount": 1,
+  "docsArtifact": {
+    "artifactRef": "coding-artifact://TASK-CODEX-SMOKE-V2/docs/TASK-CODEX-SMOKE-V2.json",
+    "contentDigest": "sha256:492eabe8ec8f157920f6407d374435093fee43fcb23c8fe21e8633a3939735ec",
+    "disposition": "not_applicable"
+  },
+  "agentExecutionIntent": "agent/run-c671024794350547e05adae46e56bbcf2688f12b45abfa481668c8f03ef2322d/execution-intent.json",
+  "verificationIntent": "verification/TASK-CODEX-SMOKE-V2-4710d1a7acbf298f8cd2187e6d5b245b7f5afb432084e0593b5c858a6ff5a609.intent.json",
+  "verificationOutcome": "verification/TASK-CODEX-SMOKE-V2-4710d1a7acbf298f8cd2187e6d5b245b7f5afb432084e0593b5c858a6ff5a609.outcome.json",
+  "attemptCount": 6,
+  "evidenceBindingCount": 6,
+  "archiveReceipt": "archive/TASK-CODEX-SMOKE-V2.json",
+  "outcome": "SUCCEEDED",
+  "archiveStatus": "ARCHIVED"
+}

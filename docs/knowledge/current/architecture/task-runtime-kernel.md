@@ -121,6 +121,17 @@ Daemon 调度、角色 Agent、Worktree、Git、Gate 和知识沉淀都建立在
 
 这一切片不接入 Workflow、不执行 Verification 或 Merge，也不实现 Session Resume。真实 Codex Fixture 调用在端到端 Workflow Task 中验收。
 
+### 5.0.3 当前 PoC 已实现单 Agent 编码 Workflow
+
+`CodingTaskWorkflow/<task_id>` 已串联 `CONTEXT → WORKSPACE → IMPLEMENT → VERIFY → MERGE → DOCS → CLOSED → ARCHIVE`。`TaskAuthority/<task_id>` 保证通用 TaskWorkflow 与 CodingTaskWorkflow 不会同时认领同一个 Task revision；Workflow 通过 Observer 独占 Projection 写入并同步 ProjectBoard 查询副本。六个领域 Step 都把 Step、Attempt、Evidence 与 Binding 写入 Projection；每个外部操作经 Restate `ctx.run`，Adapter 只能返回可验证结果。
+
+- Verification Gate 只执行 Envelope argv 并固定 `shell:false`；稳定 Operation Intent 让完成 Outcome 可复用，pending/未知结果停止而不重跑命令；Branch Commit 漂移或任一失败都不会产生 Binding；
+- Local Merge Request 只能从可信 Verification Binding 构造；确定性双亲 Commit 通过 `git update-ref` Expected-Base CAS 原子发布，未知结果由 marker、双亲和 target ancestry 对账；
+- Fake Coding Runner 用 Commit marker 对账中断点；真实 Codex 在进程启动前写稳定 Intent，缺少完整结果时标记 UNKNOWN 并禁止自动重启；
+- Docs Step 即使 `not_applicable` 也生成明确 Artifact；证据不齐不能 CLOSED，Restate 路径在 CLOSED 后调用独立 ArchiveWorkflow。
+
+当前 ProjectBoard 已接收 Coding 的状态和事件摘要；领域 Attempt/Evidence、Restate Journal 与日志的分层 Trace、Repair/Replan 操作入口仍由后续恢复验收切片完成。
+
 ### 5.1 模型关系
 
 ```mermaid

@@ -2,7 +2,7 @@
 
 > 文档类型：Architecture  
 > 状态：Implemented  
-> 版本：v0.3
+> 版本：v0.5
 > 更新日期：2026-08-20
 > 决策依据：[ADR-0001](../../decisions/adr/0001-use-restate-for-task-runtime-poc.md)、[ADR-0003](../../decisions/adr/0003-use-typescript-for-restate-poc.md)
 
@@ -20,8 +20,10 @@
 - Git Backlog 文档到 ProjectBoard 的显式批次同步；
 - 在真实编码 Workflow 完成前记录外层 Goal Commit 与验证引用的窄化 Bootstrap Evidence；
 - 真实 Restate Server 1.7.4 下的 Worker `SIGKILL` 恢复测试。
+- keyed `CodingTaskWorkflow/<task_id>`、Verification Gate、本地 Merge Effect 与 Fake/真实 Codex Fixture 编码闭环。
+- `TaskAuthority/<task_id>` 单一主权声明、Coding→ProjectBoard 投影与独立 ArchiveWorkflow 串联。
 
-它不包含真实 LLM Agent、多 Daemon、Git 平台合并、鉴权、多租户和生产级 Telemetry。
+它不包含多 Daemon、远程 Git 平台/PR、鉴权、多租户和生产级 Telemetry；真实 LLM 仅在一次性本地 Fixture 中完成 Smoke Test。
 
 ## 2. 运行拓扑
 
@@ -31,9 +33,15 @@ flowchart LR
     UI[Project Board] -->|Read API| BA[Board API]
     BA -->|Ingress Query| RS
     RS --> TW[TaskWorkflow]
+    RS --> CW[CodingTaskWorkflow]
+    RS --> TA[TaskAuthority]
     TW --> PW[ProjectBoard Projection]
     TW --> AW[ArchiveWorkflow]
+    CW --> PW
+    CW --> AW
     AW --> FS[Task Artifact Filesystem]
+    CW --> GIT[Local Worktree / Verify / Merge]
+    CW --> AA[Agent Artifacts]
     UI -.只读.-> PW
 ```
 
@@ -41,7 +49,7 @@ Node 进程暴露 HTTP/2 Restate Endpoint（默认 `9080`）和普通 HTTP Board
 
 ## 3. 状态所有权
 
-`TaskWorkflow` 是 Task 主状态唯一写入者：
+`TaskWorkflow` 是通用 Task/Archive 演示聚合的主状态唯一写入者：
 
 ```text
 RECEIVED → EXECUTING → VERIFYING → CLOSED
@@ -54,6 +62,8 @@ NOT_READY → PENDING → ARCHIVED | FAILED
 ```
 
 ProjectBoard 只保存查询投影。CLI、Skill、Board API 和目录位置都不能直接推进状态。`task_id` 同时是 Workflow key、事件关联和人类查询入口。
+
+`TaskAuthority/<task_id>` 在任一主 Workflow 开始前冻结 `owner + spec_revision`，冲突 owner 被拒绝。`CodingTaskWorkflow` 独占编码聚合 Projection，按固定八阶段推进；Workspace、Agent、Verification、Merge 和 Docs Adapter 只返回证据，不写 Projection。Observer 把兼容 TaskProjection 同步到 ProjectBoard，但 Board 不是主状态源。
 
 Git Backlog 是导入条目字段的所有者。CLI 完整校验 `BL-*.yaml` 后，通过单次 `ProjectBoard.syncBacklog` 提交；Object 比较 Source Digest，内容未变时不重写状态。Projection 独有记录采用 `PRESERVE` 并显式报告，Web 查询仍然只读取 Projection。
 
@@ -80,6 +90,8 @@ Archive 使用 `archive/<task_id>/revision-<spec_revision>` 作为稳定操作�
 - Pipeline Step 在 5 次预算耗尽后关闭为 `FAILED_TERMINAL`，保留错误并继续归档失败证据，不会在 Board 中永久停留为 `EXECUTING`；
 - 进程退出不属于业务失败，Journal 保持未确认步骤并在新进程恢复；
 - 同一 Workflow key 保证重复 `create/close` 命令不会创建第二条生命周期。
+- Workflow 事件时间从 Restate durable time 派生；Activity 是否在重放时执行不会改变后续 Journal 命令。
+- Verification/Codex 先落稳定 Intent；未确认结果停止为 UNKNOWN。Merge 用 `update-ref` CAS 原子校验 Expected Base，避免检查与写入之间的 TOCTOU。
 
 PoC 尚未实现 Repair/Replan、中央预算、人工解除冲突和跨设备 Git Artifact，这些继续由 [Task Runtime Kernel](./task-runtime-kernel.md) 约束后续设计。
 
@@ -99,5 +111,8 @@ Board 固定展示 Backlog、Active、Archive Pending、Archived。Task 详情�
 - 昂贵副作用 operation 只计数一次；
 - Board 最终只在 Archived 列出现该 Task。
 - Pipeline 重试耗尽时形成唯一失败终态，并且失败材料仍能归档。
+- Fake Coding Workflow 在真实 Restate 中成功闭环并只产生一个 Merge Commit；Verification 失败时目标 master 保持不变。
+- Merge 回执丢失会由 marker/双亲对账；Verification 命令执行后强杀 Worker，新 Worker 接管且命令只运行一次，结果安全停止为 UNKNOWN。
+- 真实 Codex 只在临时 Fixture 中完成一次提交、验证与唯一 Merge，原始 JSONL 和摘要保存在 TASK-0006。
 
 完整证据和命令见 [TASK-0001 Verification](../../../delivery/tasks/archive/2026-08-20-TASK-0001/verification.md) 与 [本地 PoC Runbook](../../guidance/runbooks/local-restate-poc.md)。本结论只证明最小恢复语义成立，不代表最终生产选型。

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "executedAt": "2026-08-19T18:22:42.858Z",
+  "codexVersion": "codex-cli 0.146.0",
+  "fixtureBase": "8e82827ce6eb2dea673f7669179ed54a1b56d54e",
+  "taskId": "TASK-CODEX-SMOKE",
+  "sessionId": "01a01b42-3746-77d1-aff8-b657bccf8b47",
+  "agentRunId": "agent-run:sha256:c6f61b57cbb0b15286ffd5d94d297c13ef04eb3addeab8b0836677abb41741ff",
+  "agentRunDigest": "agent-result:sha256:d50471378df85d67db63f1584b1dcb3ae6d968d0072d4151e5c78f012a80177a",
+  "resultCommit": "bffa1119f81a922a93ba5158b5dfa0ac127509fd",
+  "treeDigest": "920890009af28b972090e0826adda6817b187cd4",
+  "verificationDigest": "verification-binding:sha256:edb55da6ce7ab456c4dcf22c6d70d621d250f58ceba508c9ca523a42e6964c43",
+  "mergeEffectId": "local-merge-effect:sha256:44d907b00d7fcdf9ce5007e3fea52c091b36bb94e557ece3a0caa241934e2454",
+  "mergeCommit": "0d1d5aa9450532b1247cc73d5f7596e790171561",
+  "masterHead": "0d1d5aa9450532b1247cc73d5f7596e790171561",
+  "mergeMarkerCount": 1,
+  "docsArtifact": {
+    "artifactRef": "coding-artifact://TASK-CODEX-SMOKE/docs/TASK-CODEX-SMOKE.json",
+    "contentDigest": "sha256:48387554998cdd36be10af992fc32307b8a6c3b412acfcb5fcfb9eb79ff8320a",
+    "disposition": "not_applicable"
+  },
+  "outcome": "SUCCEEDED",
+  "archiveStatus": "ARCHIVED"
+}
