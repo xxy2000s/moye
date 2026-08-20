@@ -23,7 +23,7 @@ tasks/
 
 | Task | 状态 | 目标 |
 |---|---|---|
-| [TASK-0008](./TASK-0008/spec.md) | Executing | 可理解的 Coding Demo 与中文 Agent 流转看板 |
+| — | — | 当前没有 Active Task |
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 
