@@ -32,7 +32,7 @@ npm install
 npm run demo
 ```
 
-命令会自动分配空闲端口、启动 Restate、注册 Moye、创建一个演示 Task，并在闭环完成后打印实际看板地址。打开终端中 `项目看板:` 后面的 URL，点击 `Archived` 列中的 Task，就能看到状态、Attempt、归档结果和完整事件轨迹。按 `Ctrl-C` 停止；演示数据保留在 `.moye-runtime/demo`。
+命令会自动分配空闲端口、启动 Restate，并在隔离 Git Fixture 中用 Fake Agent 完成一次真实的 Coding Task：创建 Worktree、修改文件、提交、验证、合入和归档。它不会修改 Moye 仓库。打开终端中 `项目看板:` 后面的 URL，点击“已归档”列中的 Task，就能看到中文七阶段旅程；按 `Ctrl-C` 停止，演示数据保留在 `.moye-runtime/demo`。
 
 ### 验证实现
 
@@ -53,12 +53,13 @@ npm run test:e2e
 
 CLI 统一使用 `npm run cli -- <command>`；项目 Agent 应使用 [moye-task-control Skill](./.agents/skills/moye-task-control/SKILL.md) 路由文档依赖和关闭门禁。
 
-Coding Task 出现在看板后，点击卡片可依次查看：
+Coding Task 出现在看板后，点击卡片默认先看到：
 
-1. 业务事实：Step、Attempt、Evidence Binding 与领域 Event；
-2. Durable Runtime：`restate://CodingTaskWorkflow/<task_id>` 与 Restate Admin 入口；
-3. 技术证据：Agent Session/JSONL/stderr、Branch、Result/Merge Commit 和 Verification Artifact；
-4. 恢复视图：等待重放、先对账、创建后续 Task 或只重试 Archive 的只读建议。
+1. 任务结论与 Task → Workflow → Agent Session → Git Commit 关联链；
+2. 需求与上下文、隔离工作区、Agent 编码、自动验证、合入分支、文档检查、归档七个阶段；
+3. 每个阶段展开后的 Attempt 和 Evidence。
+
+Restate Journal、恢复建议、技术 Artifact 与原始事件收在“高级诊断”中。进入 Restate 的链接已经按 `CodingTaskWorkflow + task_id` 过滤；Restate 负责执行排障，Moye Board 才是任务业务视图。
 
 也可以直接查询 JSON：
 

@@ -76,7 +76,10 @@ export interface CodingTaskTrace {
   readonly durableRuntime: {
     readonly authority: "Restate Journal";
     readonly workflowRef: string;
+    readonly workflowService: "CodingTaskWorkflow";
+    readonly workflowKey: string;
     readonly adminBaseUrl?: string;
+    readonly invocationsUrl?: string;
     readonly role: string;
   };
   readonly technical: {
@@ -184,7 +187,12 @@ export function buildCodingTaskTrace(
     durableRuntime: {
       authority: "Restate Journal" as const,
       workflowRef: `restate://CodingTaskWorkflow/${projection.taskId}`,
-      ...(options.restateAdminUrl === undefined ? {} : { adminBaseUrl: options.restateAdminUrl }),
+      workflowService: "CodingTaskWorkflow" as const,
+      workflowKey: projection.taskId,
+      ...(options.restateAdminUrl === undefined ? {} : {
+        adminBaseUrl: options.restateAdminUrl,
+        invocationsUrl: buildRestateInvocationsUrl(options.restateAdminUrl, projection.taskId),
+      }),
       role: "Journal records durable execution and replay; the business projection remains the task-state authority.",
     },
     technical: {
@@ -193,6 +201,29 @@ export function buildCodingTaskTrace(
     },
     recovery,
   });
+}
+
+export function buildRestateInvocationsUrl(adminBaseUrl: string, taskId: string): string {
+  const url = new URL("/ui/invocations", normalizeHttpBaseUrl(adminBaseUrl));
+  url.searchParams.set("filter_target_service_name", JSON.stringify({
+    operation: "IN",
+    value: ["CodingTaskWorkflow"],
+  }));
+  url.searchParams.set("filter_target_service_key", JSON.stringify({
+    operation: "EQUALS",
+    value: taskId,
+  }));
+  url.searchParams.set("sort_field", "created_at");
+  url.searchParams.set("sort_order", "DESC");
+  return url.toString();
+}
+
+function normalizeHttpBaseUrl(value: string): URL {
+  const url = new URL(value);
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    throw new Error("Restate Admin URL must use http or https");
+  }
+  return url;
 }
 
 function deriveRecovery(projection: CodingWorkflowProjection): CodingTaskTrace["recovery"] {

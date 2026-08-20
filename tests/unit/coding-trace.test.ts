@@ -19,7 +19,17 @@ describe("coding task trace", () => {
     ]);
     expect(trace.durableRuntime).toMatchObject({
       workflowRef: "restate://CodingTaskWorkflow/TASK-TRACE-UNIT",
+      workflowService: "CodingTaskWorkflow",
+      workflowKey: "TASK-TRACE-UNIT",
       adminBaseUrl: "http://127.0.0.1:9070",
+    });
+    const invocationsUrl = new URL(trace.durableRuntime.invocationsUrl!);
+    expect(invocationsUrl.pathname).toBe("/ui/invocations");
+    expect(JSON.parse(invocationsUrl.searchParams.get("filter_target_service_name")!)).toEqual({
+      operation: "IN", value: ["CodingTaskWorkflow"],
+    });
+    expect(JSON.parse(invocationsUrl.searchParams.get("filter_target_service_key")!)).toEqual({
+      operation: "EQUALS", value: "TASK-TRACE-UNIT",
     });
     expect(trace.recovery).toEqual({ classification: "NONE", summary: "业务与归档均已闭环，无需恢复动作。", actions: [] });
     expect(Object.isFrozen(projection.events)).toBe(false);

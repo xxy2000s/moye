@@ -93,11 +93,14 @@ describe("Backlog document to ProjectBoard sync", () => {
     expect(first.preservedIds).toContain("BL-RUNTIME-ONLY");
     expect(second).toMatchObject({ inserted: 0, updated: 0, unchanged: batch.items.length, changed: false });
     const visible = board.backlog.map((item) => item.backlogId);
-    expect(visible).toEqual(expect.arrayContaining([
-      "BL-0002", "BL-0003", "BL-0004", "BL-0005", "BL-0006", "BL-0007", "BL-RUNTIME-ONLY",
-    ]));
-    expect(visible).not.toContain("BL-0001");
-    expect(visible).not.toContain("BL-0008");
+    const expectedVisible = batch.items
+      .filter((item) => item.status !== "CONVERTED_TO_TASK")
+      .map((item) => item.backlogId);
+    const converted = batch.items
+      .filter((item) => item.status === "CONVERTED_TO_TASK")
+      .map((item) => item.backlogId);
+    expect(visible).toEqual(expect.arrayContaining([...expectedVisible, "BL-RUNTIME-ONLY"]));
+    for (const backlogId of converted) expect(visible).not.toContain(backlogId);
 
     const beforeInvalid = await invoke<ProjectBoardSnapshot>(
       ingressUrl(), "ProjectBoard", "moye-backlog-e2e", "get",

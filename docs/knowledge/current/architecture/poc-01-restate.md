@@ -98,13 +98,13 @@ PoC 尚未实现 Repair/Replan、中央预算、人工解除冲突和跨设备 G
 
 ## 6. 查询与 Trace
 
-Board 固定展示 Backlog、Active、Archive Pending、Archived。通用 Task 保留原详情；Coding Task 通过 `TaskAuthority` owner 解析后查询唯一 `CodingTaskWorkflow` Projection，并由纯函数 Trace Builder 形成三个明确分区：
+Board 固定展示需求池、进行中、待归档、已归档。通用 Task 保留原详情；Coding Task 通过 `TaskAuthority` owner 解析后查询唯一 `CodingTaskWorkflow` Projection，并由纯函数 Trace Builder 形成三个明确分区：
 
 1. Business Facts：状态、Step、Attempt、Evidence Binding 和领域 Event，是任务结果权威；
 2. Durable Runtime：Workflow Ref 与 Restate Admin 入口，Journal 是执行、重放和中断恢复权威；
 3. Technical Evidence：Agent Session/Artifact、Branch、Checkpoint、Verification 和 Merge，是诊断证据。
 
-`GET /api/tasks/<task_id>/trace` 和看板详情只读。恢复分类从已有 Projection 派生为 `NONE | WAIT_OR_RECONCILE | FAILED_TERMINAL | ARCHIVE_RETRY`，只说明应等待、对账、创建后续 Task 或重新附着 Archive，不直接推进状态。因此 Trace 不会成为第二套状态机，三层事实只通过 `task_id`、Attempt ID、Effect ID 和 Content Digest 关联。
+`GET /api/tasks/<task_id>/trace` 和看板详情只读。默认页面把业务事实整理为“需求与上下文 → 隔离工作区 → Agent 编码 → 自动验证 → 合入分支 → 文档检查 → 归档”，并直接展示 `Task → CodingTaskWorkflow → Agent Session → Git Commit` 关联链。Journal、Artifact、原始事件和恢复建议渐进披露在高级诊断区；Restate 链接携带 Workflow service 与 Task key 过滤条件，而不是打开无上下文首页。恢复分类从已有 Projection 派生为 `NONE | WAIT_OR_RECONCILE | FAILED_TERMINAL | ARCHIVE_RETRY`，只说明应等待、对账、创建后续 Task 或重新附着 Archive，不直接推进状态。因此 Trace 不会成为第二套状态机，三层事实只通过 `task_id`、Attempt ID、Effect ID 和 Content Digest 关联。
 
 Workflow Projection 保留 Adapter 的结构化 `errorCode/errorCategory`。`UNKNOWN_SIDE_EFFECT` 在 Workspace、Agent、Verification 和 Merge 四个边界统一进入 `WAIT_OR_RECONCILE`；只有确定性失败才允许建议创建后续 Task。Board 静态文件路径在读取前同时校验 lexical path 与 `realpath` 位于 `publicRoot`，拒绝指向根外的符号链接。强杀/丢回执开关仅在显式 `MOYE_TEST_FAULT_INJECTION=enabled` 的测试进程中可用，不属于正常任务能力。
 

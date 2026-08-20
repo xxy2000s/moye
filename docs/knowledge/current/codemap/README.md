@@ -14,6 +14,7 @@
 | `src/restate/services.ts` | TaskAuthority、TaskWorkflow、ArchiveWorkflow、ProjectBoard | Authority 冻结并查询主 Workflow；Workflow 拥有 Task/Archive 流转 |
 | `src/restate/coding-services.ts` | CodingTaskWorkflow、Board 映射、Archive 子流程 | Workflow 独占 Coding Projection |
 | `src/trace/coding-trace.ts` | Coding Projection 到三层 Trace 与恢复建议的纯映射 | 无，只读派生 |
+| `src/demo/coding-fixture.ts`、`scripts/demo.ts` | 隔离 Git Fixture、确定性 Fake Agent 与一键 Coding Demo 编排 | 不拥有生产状态；演示状态由 CodingTaskWorkflow 持有 |
 | `public/index.html`、`public/app.js` | 四列项目看板、Task 详情与 Coding Trace | 只读 Projection |
 
 ## 模块图
@@ -23,6 +24,7 @@ src/
 ├── agent/             AgentRunner、Fake Runner、Codex Exec 与 Artifact Bundle
 ├── backlog/           Git Backlog 文档加载、严格转换与批次摘要
 ├── coding/            八阶段单 Agent 编码 Workflow 编排与 Projection
+├── demo/              隔离 Coding Demo Fixture 与安全清理
 ├── domain/            纯领域状态、错误、Backlog 和 Board 分类
 ├── archive/           Manifest、Bootstrap 关闭材料、原子移动与 Reconcile
 ├── effects/           带稳定 operation ledger 的幂等副作用样例
@@ -42,7 +44,7 @@ tests/
 .agents/skills/
 └── moye-task-control/ 项目 Task/文档控制 Skill
 scripts/
-├── demo.mjs           一键启动 Restate、Moye、演示 Task 和 Board
+├── demo.ts            一键启动 Restate、Moye、隔离 Fake Coding Task 和 Board
 ├── codex_fixture_smoke.mjs  一次性真实 Codex Fixture（拒绝覆盖既有证据）
 └── docs_graph.rb      文档校验、Context Route、Impact Gate、Mermaid
 ```
@@ -85,6 +87,7 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 | `src/effects/counter.ts` | Step 确认前中断造成副作用重复 | `tests/unit/counter.test.ts`、E2E 计数断言 |
 | `src/restate/services.ts` | 重放、错误分类、投影漂移 | `tests/e2e/restate-recovery.test.ts` |
 | `src/trace/coding-trace.ts`、`src/board/server.ts` | 状态源混淆、错误 Workflow 查询、UNKNOWN 恢复建议越权、静态路径/符号链接逃逸 | Trace/Board unit + Coding/Legacy Restate E2E、只读派生、lexical + realpath containment、1 MiB 限制 |
+| `src/demo/coding-fixture.ts`、`scripts/demo.ts` | 演示误改真实仓库、缺少 Coding 证据、残留 Worktree 或容器 | Demo Fixture unit + 真实 Restate Demo E2E |
 | `docs/graph.yaml` | 入口遗漏与关联文档漏更新 | `scripts/docs_graph.rb validate[-impact]` |
 
 模块新增、移动、状态所有者改变或高风险副作用变化时必须同步更新本文件。

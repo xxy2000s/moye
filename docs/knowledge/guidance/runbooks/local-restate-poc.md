@@ -13,14 +13,16 @@ npm install
 npm run demo
 ```
 
-等待终端打印 `Moye demo 已就绪`，然后打开终端中 `项目看板:` 后面的动态 URL：
+等待终端打印 `Moye Coding Demo 已就绪`，然后打开终端中 `项目看板:` 后面的动态 URL：
 
-1. 看 Backlog 列中的需求来源；
-2. 看 Archived 列中的已完成 Task；
-3. 点击 Task 卡片，查看 `TaskCreated → TaskExecuting → TaskVerifying → TaskClosed → ArchivePending → ArchiveArchived`；
-4. 按 `Ctrl-C` 停止本地服务。
+1. “需求池”显示需求来源及其派发状态；
+2. “已归档”显示闭环完成的 Coding Task；
+3. 点击 Task 卡片，先看任务结论与 `Task → Workflow → Agent Session → Git Commit` 关联链；
+4. 依次展开“需求与上下文、隔离工作区、Agent 编码、自动验证、合入分支、文档检查、归档”，查看各阶段 Attempt 和 Evidence；
+5. 只有排障时再展开“高级诊断”。其中的链接会在 Restate 中按当前 `task_id` 精确过滤；
+6. 按 `Ctrl-C` 停止本地服务。
 
-脚本只管理名为 `moye-restate-demo` 的容器，不删除其他容器；运行数据保存在 `.moye-runtime/demo`。
+Demo 使用隔离 Git Fixture 和确定性 Fake Agent，不修改 Moye 仓库。脚本只管理名为 `moye-restate-demo` 的容器，不删除其他容器；运行数据保存在 `.moye-runtime/demo`。
 
 ## 2. 自动验收
 
@@ -32,7 +34,7 @@ npm run check
 npm run test:e2e
 ```
 
-当前成功标准：单元测试 82 项和 E2E 9 项通过；除归档恢复与 Backlog 同步外，E2E 还覆盖 Fake Coding Workflow 的唯一 Merge、重复命令拒绝、Agent 异常退出、Verification 失败不合并、Merge 丢回执对账、Git 更新后 Worker 退出恢复，以及 Verification 期间 Worker 重启不重复命令。单元测试另外证明 Workspace/Agent/Merge 的 UNKNOWN 全部保留结构化错误并要求先对账，以及静态文件符号链接不能逃出 `publicRoot`。
+当前成功标准：单元测试 84 项和 E2E 10 项通过；除归档恢复与 Backlog 同步外，E2E 还覆盖一键 Coding Demo、Fake Coding Workflow 的唯一 Merge、重复命令拒绝、Agent 异常退出、Verification 失败不合并、Merge 丢回执对账、Git 更新后 Worker 退出恢复，以及 Verification 期间 Worker 重启不重复命令。单元测试另外证明 Workspace/Agent/Merge 的 UNKNOWN 全部保留结构化错误并要求先对账，以及静态文件符号链接不能逃出 `publicRoot`。
 
 TASK-0006 的 `scripts/codex_fixture_smoke.mjs` 已执行一次真实 Codex 临时 Fixture，并把冻结证据存入对应 Task Archive。脚本会拒绝覆盖既有 `summary.json`，不属于日常回归命令；自动化测试只使用 Fake/受控进程。
 
@@ -93,9 +95,9 @@ npm run cli -- backlog sync --dir docs/delivery/backlog --project moye
 curl http://127.0.0.1:3000/api/tasks/TASK-EXAMPLE/trace
 ```
 
-响应中的 `business` 才是业务状态事实；`durableRuntime.workflowRef` 用于到 Restate Admin 查 Invocation/Journal；`technical.artifacts` 只提供日志和证据引用。`recovery` 是从 Projection 派生的只读建议，不是新的控制命令。
+响应中的 `business` 才是业务状态事实；`durableRuntime.workflowRef` 用于定位 Journal，`durableRuntime.invocationsUrl` 是按 Workflow 服务和 Task key 过滤的 Restate 深链；`technical.artifacts` 只提供日志和证据引用。`recovery` 是从 Projection 派生的只读建议，不是新的控制命令。
 
-打开 `http://127.0.0.1:3000` 查看 Moye Board；打开 `http://127.0.0.1:9070` 或使用 Admin API 排查 Restate Invocation。二者都通过 `task_id` 关联。
+打开 `http://127.0.0.1:3000` 查看 Moye Board。普通使用只需要 Moye；需要确认 Invocation、Journal 或 Replay 时，再从任务的“高级诊断”进入 `http://127.0.0.1:9070` Restate UI。二者通过 `task_id` 关联，但 Restate UI 不是项目任务看板。
 
 ## 5. 配置
 

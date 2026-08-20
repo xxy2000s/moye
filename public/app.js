@@ -16,8 +16,18 @@ const lanes = {
   archivePending: [document.querySelector("#pending-list"), document.querySelector("#pending-lane-count")],
   archived: [document.querySelector("#archived-list"), document.querySelector("#archived-count")],
 };
-let lastProjectionSignature = "";
 
+const PIPELINE_STAGES = [
+  { id: "CONTEXT", label: "需求与上下文", description: "冻结规格、验收条件和必读文档" },
+  { id: "WORKSPACE", label: "隔离工作区", description: "创建独立 Worktree 与任务分支" },
+  { id: "IMPLEMENT", label: "Agent 编码", description: "绑定一次可追踪的 Agent Session" },
+  { id: "VERIFY", label: "自动验证", description: "运行固定命令并固化验证证据" },
+  { id: "MERGE", label: "合入分支", description: "检查 Git 事实并合入目标分支" },
+  { id: "DOCS", label: "文档检查", description: "确认关联文档、影响声明与知识沉淀" },
+  { id: "ARCHIVE", label: "归档", description: "固化结果与回执，完成闭环" },
+];
+
+let lastProjectionSignature = "";
 document.querySelector("#refresh").addEventListener("click", loadBoard);
 await loadBoard();
 setInterval(loadBoard, 5000);
@@ -26,13 +36,12 @@ async function loadBoard() {
   try {
     const response = await fetch("/api/board", { cache: "no-store" });
     if (!response.ok) throw new Error(await response.text());
-    const board = await response.json();
-    renderBoard(board);
+    renderBoard(await response.json());
     elements.dot.className = "connection-dot online";
-    elements.connection.textContent = "Runtime online";
+    elements.connection.textContent = "运行时已连接";
   } catch (error) {
     elements.dot.className = "connection-dot offline";
-    elements.connection.textContent = "Runtime unavailable";
+    elements.connection.textContent = "运行时不可用";
     console.error(error);
   }
 }
@@ -42,18 +51,13 @@ function renderBoard(board) {
   elements.active.textContent = String(board.active.length);
   elements.pending.textContent = String(board.archivePending.length);
   elements.generated.textContent = formatTime(board.generatedAt);
-  const projectionSignature = JSON.stringify([
-    board.backlog,
-    board.active,
-    board.archivePending,
-    board.archived,
-  ]);
-  if (projectionSignature !== lastProjectionSignature) {
+  const signature = JSON.stringify([board.backlog, board.active, board.archivePending, board.archived]);
+  if (signature !== lastProjectionSignature) {
     renderLane("backlog", board.backlog, backlogCard);
     renderLane("active", board.active, taskCard);
     renderLane("archivePending", board.archivePending, taskCard);
     renderLane("archived", board.archived, taskCard);
-    lastProjectionSignature = projectionSignature;
+    lastProjectionSignature = signature;
   }
   elements.empty.hidden = board.backlog.length + board.active.length + board.archivePending.length + board.archived.length !== 0;
 }
@@ -69,35 +73,32 @@ function renderLane(name, items, renderer) {
 }
 
 function backlogCard(item, index) {
-  const card = cardShell(index);
+  const card = cardShell(index, "div");
   card.classList.add("static");
   card.innerHTML = `
     <div class="card-meta"><span>${escapeHtml(item.backlogId)}</span><span>${escapeHtml(item.priority)}</span></div>
     <h3>${escapeHtml(item.title)}</h3>
-    <div class="card-footer"><span class="tag yellow">${escapeHtml(item.status)}</span><span class="tag blue">${escapeHtml(item.kind)}</span></div>`;
+    <div class="card-footer"><span class="tag ${item.status === "SCHEDULED" ? "green" : "yellow"}">${escapeHtml(backlogStatusLabel(item.status))}</span><span class="tag blue">${escapeHtml(item.kind)}</span></div>`;
   return card;
 }
 
 function taskCard(task, index) {
-  const card = cardShell(index);
-  card.setAttribute("role", "button");
-  card.tabIndex = 0;
+  const card = cardShell(index, "button");
+  card.type = "button";
+  card.setAttribute("aria-label", `查看任务 ${task.taskId}：${task.title}`);
   card.innerHTML = `
     <div class="card-meta"><span>${escapeHtml(task.taskId)}</span><span>R${task.specRevision}</span></div>
     <h3>${escapeHtml(task.title)}</h3>
     <div class="card-footer">
-      <span class="tag ${stateColor(task.state)}">${escapeHtml(task.state)}</span>
-      <span class="tag ${archiveColor(task.archiveStatus)}">${escapeHtml(task.archiveStatus)}</span>
+      <span class="tag ${stateColor(task.state)}">${escapeHtml(taskStateLabel(task.state))}</span>
+      <span class="tag ${archiveColor(task.archiveStatus)}">${escapeHtml(archiveStatusLabel(task.archiveStatus))}</span>
     </div>`;
   card.addEventListener("click", () => openTask(task));
-  card.addEventListener("keydown", event => {
-    if (event.key === "Enter" || event.key === " ") openTask(task);
-  });
   return card;
 }
 
-function cardShell(index) {
-  const card = document.createElement("div");
+function cardShell(index, tagName) {
+  const card = document.createElement(tagName);
   card.className = "card";
   card.style.setProperty("--index", String(index));
   return card;
@@ -112,18 +113,18 @@ async function openTask(summary) {
       elements.dialog.showModal();
       return;
     }
-    if (traceResponse.status !== 409) throw new Error(`Trace query failed (${traceResponse.status})`);
+    if (traceResponse.status !== 409) throw new Error(`轨迹查询失败（${traceResponse.status}）`);
     const response = await fetch(`/api/tasks/${encodeURIComponent(taskId)}`, { cache: "no-store" });
-    if (!response.ok) throw new Error(`Task query failed (${response.status})`);
+    if (!response.ok) throw new Error(`任务查询失败（${response.status}）`);
     renderLegacyTask(await response.json());
     elements.dialog.showModal();
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     elements.detail.innerHTML = `
-      <span class="detail-id">TRACE UNAVAILABLE</span>
+      <span class="detail-id">轨迹暂不可用</span>
       <h2 class="detail-title">暂时无法读取任务详情</h2>
       <p class="error-box">${escapeHtml(message)}</p>
-      <p class="trace-note">任务状态不会因此改变。请检查 Board API、Restate Ingress 与 Workflow retention 后重试。</p>`;
+      <p class="trace-note"><strong>下一步：</strong>确认 Moye 服务与 Restate Ingress 正常，然后点击“刷新投影”重试。任务状态不会因此改变。</p>`;
     elements.dialog.showModal();
   }
 }
@@ -132,101 +133,183 @@ function renderLegacyTask(task) {
   const events = task.events.map(event => `
     <li><span class="sequence">${String(event.sequence).padStart(2, "0")}</span><strong>${escapeHtml(event.type)}</strong><time>${formatTime(event.at)}</time></li>`).join("");
   elements.detail.innerHTML = `
-    <span class="detail-id">${escapeHtml(task.taskId)} · SPEC R${task.specRevision}</span>
+    <span class="detail-id">${escapeHtml(task.taskId)} · 规格版本 R${task.specRevision}</span>
     <h2 class="detail-title">${escapeHtml(task.title)}</h2>
+    <p class="legacy-note"><strong>基础任务生命周期</strong>　这个任务不是 Coding Task，因此没有 Agent、Worktree、验证和 Git 合入轨迹。</p>
     <div class="detail-grid">
-      <div><span>TASK STATE</span><strong>${escapeHtml(task.state)}</strong></div>
-      <div><span>ARCHIVE STATE</span><strong>${escapeHtml(task.archiveStatus)}</strong></div>
-      <div><span>CURRENT STEP</span><strong>${escapeHtml(task.currentStep)}</strong></div>
-      <div><span>ATTEMPT</span><strong>${task.attempt}</strong></div>
-      <div><span>WORKFLOW REF</span><strong>TaskWorkflow/${escapeHtml(task.taskId)}</strong></div>
-      <div><span>BACKLOG</span><strong>${task.backlogRefs.map(escapeHtml).join(", ") || "—"}</strong></div>
+      <div><span>任务状态</span><strong>${escapeHtml(taskStateLabel(task.state))}</strong></div>
+      <div><span>归档状态</span><strong>${escapeHtml(archiveStatusLabel(task.archiveStatus))}</strong></div>
+      <div><span>当前步骤</span><strong>${escapeHtml(task.currentStep)}</strong></div>
+      <div><span>执行次数</span><strong>${task.attempt}</strong></div>
+      <div><span>工作流定位</span><strong>TaskWorkflow/${escapeHtml(task.taskId)}</strong></div>
+      <div><span>需求来源</span><strong>${task.backlogRefs.map(escapeHtml).join(", ") || "—"}</strong></div>
     </div>
-    ${task.archivePath ? `<p class="result-ref"><span>RESULT REF</span><code>${escapeHtml(task.archivePath)}</code></p>` : ""}
+    ${task.archivePath ? `<p class="result-ref"><span>归档结果</span><code>${escapeHtml(task.archivePath)}</code></p>` : ""}
     ${task.error ? `<p class="error-box">${escapeHtml(task.error)}</p>` : ""}
-    <p class="eyebrow">DURABLE EVENT TRACE</p>
+    <p class="eyebrow">持久化事件轨迹</p>
     <ol class="timeline">${events}</ol>`;
 }
 
 function renderCodingTrace(trace, summary) {
   const task = trace.task;
+  const conclusion = task.state === "CLOSED" && task.archiveStatus === "ARCHIVED"
+    ? { icon: "✓", title: "任务已闭环", text: "编码、验证、合入、文档与归档证据均已确认。", tone: "success" }
+    : task.state === "FAILED"
+      ? { icon: "!", title: "任务已停止，需要处理", text: trace.recovery.summary, tone: "danger" }
+      : { icon: "●", title: `任务正在${stepLabel(task.currentStep)}`, text: trace.recovery.summary, tone: "progress" };
+  const workflowRef = `${trace.durableRuntime.workflowService}/${trace.durableRuntime.workflowKey}`;
+  const sessionRef = trace.agent?.sessionId || "等待 Agent Session";
+  const mergeRef = trace.git.mergeCommit ? shortSha(trace.git.mergeCommit) : "等待合入";
+  const journey = PIPELINE_STAGES.map((definition, index) => renderJourneyStage(trace, definition, index)).join("");
   const events = trace.business.events.map(event => `
-    <li><span class="sequence">${String(event.sequence).padStart(2, "0")}</span><strong>${escapeHtml(event.type)}</strong><span>${escapeHtml(event.step)}</span><time>${formatTime(event.at)}</time></li>`).join("");
-  const steps = trace.business.steps.map(step => `
-    <li><span>${String(step.sequence).padStart(2, "0")} · ${escapeHtml(step.stepId)}</span><strong class="tag ${attemptColor(step.status)}">${escapeHtml(step.status)}</strong><small>${step.attemptIds.map(escapeHtml).join(", ") || "尚未创建 Attempt"}</small></li>`).join("");
-  const attempts = trace.business.attempts.map(attempt => `
-    <li><div><strong>${escapeHtml(attempt.attemptId)}</strong><span class="tag ${attemptColor(attempt.status)}">${escapeHtml(attempt.status)}</span></div><small>${attempt.evidenceRecords.map(record => `${escapeHtml(record.artifactName)} · ${escapeHtml(shortDigest(record.contentDigest))}`).join("<br>") || escapeHtml(attempt.error || "无证据")}</small></li>`).join("");
+    <li><span class="sequence">${String(event.sequence).padStart(2, "0")}</span><strong>${escapeHtml(event.type)}</strong><span>${escapeHtml(stepLabel(event.step))}</span><time>${formatTime(event.at)}</time></li>`).join("");
   const artifacts = trace.technical.artifacts.map(artifact => `
     <li><span>${escapeHtml(artifact.kind)}</span><code>${escapeHtml(artifact.artifactRef)}</code><small>${escapeHtml(shortDigest(artifact.contentDigest))}${artifact.bytes === undefined ? "" : ` · ${artifact.bytes} B`}</small></li>`).join("");
   const actions = trace.recovery.actions.map(action => `
-    <li><strong>${escapeHtml(action.label)}</strong><span class="tag ${action.automatic ? "blue" : "yellow"}">${action.automatic ? "RUNTIME" : "HUMAN"}</span><p>${escapeHtml(action.reason)}</p></li>`).join("");
-  const verification = trace.verification === undefined ? "" : `
-    <div class="trace-card">
-      <span class="trace-label">VERIFICATION</span>
-      <strong>${trace.verification.passed ? "PASSED" : escapeHtml(trace.verification.code)}</strong>
-      <code>${escapeHtml(trace.verification.evidenceRef)}</code>
-      <small>${trace.verification.commands.map(command => `${escapeHtml(command.commandId)} → exit ${command.exitCode ?? "signal"} · ${command.durationMs}ms`).join("<br>") || "没有已确认的命令结果"}</small>
-    </div>`;
-  const agent = trace.agent === undefined ? "" : `
-    <div class="trace-card">
-      <span class="trace-label">AGENT SESSION</span>
-      <strong>${escapeHtml(trace.agent.sessionId || "未建立 Session")}</strong>
-      <code>${escapeHtml(trace.agent.runId)}</code>
-      <small>${escapeHtml(trace.agent.runnerKind)} · ${escapeHtml(trace.agent.outcome)} · exit ${trace.agent.exitCode ?? trace.agent.signal ?? "—"}</small>
-    </div>`;
+    <li><strong>${escapeHtml(action.label)}</strong><span class="tag ${action.automatic ? "blue" : "yellow"}">${action.automatic ? "自动" : "人工"}</span><p>${escapeHtml(action.reason)}</p></li>`).join("");
 
   elements.detail.innerHTML = `
-    <span class="detail-id">${escapeHtml(task.taskId)} · SPEC R${task.specRevision}</span>
+    <span class="detail-id">${escapeHtml(task.taskId)} · 规格版本 R${task.specRevision}</span>
     <h2 class="detail-title">${escapeHtml(summary.title || task.taskId)}</h2>
-    <div class="detail-grid">
-      <div><span>TASK STATE</span><strong>${escapeHtml(task.state)}</strong></div>
-      <div><span>ARCHIVE STATE</span><strong>${escapeHtml(task.archiveStatus)}</strong></div>
-      <div><span>CURRENT STEP</span><strong>${escapeHtml(task.currentStep)}</strong></div>
-      <div><span>RECOVERY</span><strong>${escapeHtml(trace.recovery.classification)}</strong></div>
-      <div><span>BRANCH</span><strong>${escapeHtml(trace.git.branch || "—")}</strong></div>
-      <div><span>RESULT / MERGE</span><strong>${escapeHtml(shortSha(trace.git.resultCommit))} / ${escapeHtml(shortSha(trace.git.mergeCommit))}</strong></div>
+    <section class="task-conclusion ${conclusion.tone}" aria-label="任务结论">
+      <span class="conclusion-icon" aria-hidden="true">${conclusion.icon}</span>
+      <div><strong>${escapeHtml(conclusion.title)}</strong><p>${escapeHtml(conclusion.text)}</p></div>
+    </section>
+    <div class="correlation-strip" aria-label="任务关联链">
+      ${correlationNode("任务", task.taskId)}<span aria-hidden="true">→</span>
+      ${correlationNode("工作流", workflowRef)}<span aria-hidden="true">→</span>
+      ${correlationNode("Agent 会话", sessionRef)}<span aria-hidden="true">→</span>
+      ${correlationNode("合入提交", mergeRef)}
     </div>
-    ${task.error ? `<p class="error-box">${escapeHtml(task.error)}</p>` : ""}
+    <div class="detail-grid overview-grid">
+      <div><span>任务状态</span><strong>${escapeHtml(taskStateLabel(task.state))}</strong></div>
+      <div><span>当前阶段</span><strong>${escapeHtml(stepLabel(task.currentStep))}</strong></div>
+      <div><span>Agent 类型</span><strong>${escapeHtml(runnerLabel(trace.agent?.runnerKind))}</strong></div>
+      <div><span>归档状态</span><strong>${escapeHtml(archiveStatusLabel(task.archiveStatus))}</strong></div>
+    </div>
+    ${task.error ? `<p class="error-box"><strong>失败原因：</strong>${escapeHtml(task.error)}<br><span>下一步：${escapeHtml(trace.recovery.summary)}</span></p>` : ""}
 
-    <section class="trace-section recovery ${trace.recovery.classification === "NONE" ? "settled" : "attention"}">
-      <div class="trace-heading"><div><p class="eyebrow">RECOVERY VIEW</p><h3>${escapeHtml(trace.recovery.classification)}</h3></div><span>只读建议</span></div>
-      <p>${escapeHtml(trace.recovery.summary)}</p>
-      ${actions ? `<ul class="action-list">${actions}</ul>` : ""}
+    <section class="journey-section" aria-labelledby="journey-title">
+      <div class="trace-heading"><div><p class="eyebrow">任务执行旅程</p><h3 id="journey-title">七个阶段，一眼看清做到哪里</h3></div><span>点击阶段查看证据</span></div>
+      <div class="journey">${journey}</div>
     </section>
 
-    <section class="trace-section">
-      <div class="trace-heading"><div><p class="eyebrow">01 · BUSINESS FACTS</p><h3>业务状态与证据绑定</h3></div><span>权威：Workflow Projection</span></div>
-      <p class="trace-note">只有这里的 Event、Step、Attempt 和终态决定任务是否完成。</p>
-      <ul class="step-list">${steps}</ul>
-      <p class="subheading">ATTEMPTS</p>
-      <ul class="attempt-list">${attempts}</ul>
-      <p class="subheading">BUSINESS EVENTS</p>
-      <ol class="timeline coding-timeline">${events}</ol>
-    </section>
-
-    <section class="trace-section">
-      <div class="trace-heading"><div><p class="eyebrow">02 · DURABLE RUNTIME</p><h3>Restate Journal 定位</h3></div><span>权威：执行与重放</span></div>
-      <p class="trace-note">Journal 解释 Worker 中断后如何继续，但不替代业务 Projection。</p>
-      <code class="wide-code">${escapeHtml(trace.durableRuntime.workflowRef)}</code>
-      ${trace.durableRuntime.adminBaseUrl ? `<a class="runtime-link" href="${escapeAttribute(trace.durableRuntime.adminBaseUrl)}" target="_blank" rel="noreferrer">打开 Restate Admin ↗</a>` : ""}
-    </section>
-
-    <section class="trace-section">
-      <div class="trace-heading"><div><p class="eyebrow">03 · TECHNICAL EVIDENCE</p><h3>Agent、Git、验证与日志</h3></div><span>诊断证据，不是状态机</span></div>
-      <div class="trace-card-grid">${agent}${verification}</div>
-      <div class="trace-card git-card">
-        <span class="trace-label">GIT CHAIN</span>
-        <strong>${escapeHtml(trace.git.branch || "尚未创建 Branch")}</strong>
-        <code>base ${escapeHtml(trace.git.baseCommit || "—")}<br>result ${escapeHtml(trace.git.resultCommit || "—")}<br>merge ${escapeHtml(trace.git.mergeCommit || "—")}</code>
-        <small>${trace.git.reconciledAfterUnknown ? "已在未知回执后通过 Git facts 对账" : "使用 Effect ID 关联可重复调用"}</small>
+    <details class="advanced-panel">
+      <summary><span>高级诊断</span><small>Restate Journal、恢复建议、Artifact 与原始事件</small></summary>
+      <div class="advanced-content">
+        <section>
+          <div class="trace-heading"><div><p class="eyebrow">Restate 定位</p><h3>耐久执行与中断恢复</h3></div><span>执行证据</span></div>
+          <p class="trace-note">Restate Journal 负责记录执行与重放；任务是否完成，以 Moye 的业务投影为准。</p>
+          <code class="wide-code">${escapeHtml(trace.durableRuntime.workflowRef)}</code>
+          ${trace.durableRuntime.invocationsUrl ? `<a class="runtime-link" href="${escapeAttribute(trace.durableRuntime.invocationsUrl)}" target="_blank" rel="noreferrer">在 Restate 中打开这个任务 ↗</a>` : ""}
+        </section>
+        <section class="recovery ${trace.recovery.classification === "NONE" ? "settled" : "attention"}">
+          <div class="trace-heading"><div><p class="eyebrow">恢复判断</p><h3>${escapeHtml(recoveryLabel(trace.recovery.classification))}</h3></div><span>只读建议</span></div>
+          <p>${escapeHtml(trace.recovery.summary)}</p>
+          ${actions ? `<ul class="action-list">${actions}</ul>` : ""}
+        </section>
+        <section>
+          <p class="subheading">技术 Artifact</p>
+          <ul class="artifact-list">${artifacts || "<li>尚无技术 Artifact</li>"}</ul>
+          <p class="subheading">业务事件</p>
+          <ol class="timeline coding-timeline">${events}</ol>
+        </section>
       </div>
-      <p class="subheading">ARTIFACT REFERENCES</p>
-      <ul class="artifact-list">${artifacts || "<li>尚无技术 Artifact</li>"}</ul>
-    </section>`;
+    </details>`;
+}
+
+function renderJourneyStage(trace, definition, index) {
+  const step = trace.business.steps.find(candidate => candidate.stepId === definition.id);
+  const attempts = trace.business.attempts.filter(attempt => attempt.stepId === definition.id);
+  const attempt = attempts.at(-1);
+  const status = definition.id === "ARCHIVE" ? archiveJourneyStatus(trace.task) : (step?.status || "NOT_STARTED");
+  const isOpen = status === "RUNNING" || status === "FAILED" || status === "CANCELLED";
+  return `<details class="journey-stage status-${escapeHtml(status.toLowerCase())}"${isOpen ? " open" : ""}>
+    <summary>
+      <span class="stage-marker" aria-hidden="true">${statusIcon(status)}</span>
+      <span class="stage-copy"><small>${String(index + 1).padStart(2, "0")}</small><strong>${escapeHtml(definition.label)}</strong><span>${escapeHtml(definition.description)}</span></span>
+      <span class="stage-status tag ${attemptColor(status)}">${escapeHtml(attemptStatusLabel(status))}</span>
+    </summary>
+    <div class="stage-detail">${renderStageDetail(trace, definition.id, attempt)}</div>
+  </details>`;
+}
+
+function renderStageDetail(trace, stepId, attempt) {
+  const evidence = attempt?.evidenceRecords || [];
+  const common = attempt ? `
+    <dl class="evidence-grid">
+      <div><dt>本次执行</dt><dd>${escapeHtml(attempt.attemptId)}</dd></div>
+      <div><dt>耗时</dt><dd>${formatDuration(attempt.startedAt, attempt.finishedAt)}</dd></div>
+    </dl>` : `<p class="trace-note">尚未进入这个阶段，因此还没有执行证据。</p>`;
+  let facts = "";
+  if (stepId === "CONTEXT") facts = `<p><strong>规格：</strong>R${trace.task.specRevision}　<strong>任务：</strong>${escapeHtml(trace.task.taskId)}</p>`;
+  if (stepId === "WORKSPACE") facts = `<p><strong>任务分支：</strong><code>${escapeHtml(trace.git.branch || "尚未创建")}</code></p>`;
+  if (stepId === "IMPLEMENT") facts = `<p><strong>Agent Session：</strong><code>${escapeHtml(trace.agent?.sessionId || "尚未建立")}</code><br><strong>Runner：</strong>${escapeHtml(runnerLabel(trace.agent?.runnerKind))}　<strong>结果：</strong>${escapeHtml(agentOutcomeLabel(trace.agent?.outcome))}</p>`;
+  if (stepId === "VERIFY") facts = trace.verification
+    ? `<p><strong>验证结论：</strong>${trace.verification.passed ? "✓ 全部通过" : `! ${escapeHtml(trace.verification.code || "未通过")}`}<br>${trace.verification.commands.map(command => `<code>${escapeHtml(command.commandId)}</code> → exit ${command.exitCode ?? "signal"}，${command.durationMs} ms`).join("<br>")}</p>`
+    : `<p>尚无验证结果。</p>`;
+  if (stepId === "MERGE") facts = `<p><strong>结果提交：</strong><code>${escapeHtml(shortSha(trace.git.resultCommit))}</code><br><strong>合入提交：</strong><code>${escapeHtml(shortSha(trace.git.mergeCommit))}</code></p>`;
+  if (stepId === "DOCS") facts = `<p><strong>文档证据：</strong>${evidence.length ? `${evidence.length} 项已绑定` : "尚未绑定"}</p>`;
+  if (stepId === "ARCHIVE") facts = `<p><strong>归档状态：</strong>${escapeHtml(archiveStatusLabel(trace.task.archiveStatus))}<br><strong>闭环结论：</strong>${trace.task.state === "CLOSED" && trace.task.archiveStatus === "ARCHIVED" ? "任务结果与归档回执均已确认" : "等待归档回执"}</p>`;
+  const evidenceList = evidence.length ? `<ul class="evidence-list">${evidence.map(record => `<li><span>${escapeHtml(record.artifactName)}</span><code>${escapeHtml(shortDigest(record.contentDigest))}</code></li>`).join("")}</ul>` : "";
+  return `${facts}${common}${attempt?.error ? `<p class="error-box"><strong>这个阶段失败：</strong>${escapeHtml(attempt.error)}<br><span>下一步：${escapeHtml(trace.recovery.summary)}</span></p>` : ""}${evidenceList}`;
+}
+
+function correlationNode(label, value) {
+  return `<span class="correlation-node"><small>${escapeHtml(label)}</small><strong>${escapeHtml(value)}</strong></span>`;
+}
+
+function archiveJourneyStatus(task) {
+  if (task.archiveStatus === "ARCHIVED") return "SUCCEEDED";
+  if (task.archiveStatus === "FAILED") return "FAILED";
+  if (task.state === "CLOSED") return "RUNNING";
+  return "NOT_STARTED";
+}
+
+function taskStateLabel(state) {
+  return ({ RECEIVED: "已接收", RUNNING: "执行中", VERIFYING: "验证中", FAILED: "已失败", CLOSED: "已关闭" })[state] || state;
+}
+
+function backlogStatusLabel(status) {
+  return ({ DRAFT: "草稿", READY: "待调度", SCHEDULED: "已派发", BLOCKED: "已阻塞", CLOSED: "已关闭" })[status] || status;
+}
+
+function archiveStatusLabel(status) {
+  return ({ NOT_STARTED: "未开始归档", PENDING: "等待归档", ARCHIVING: "归档中", ARCHIVED: "已归档", FAILED: "归档失败" })[status] || status;
+}
+
+function stepLabel(step) {
+  return PIPELINE_STAGES.find(item => item.id === step)?.label || ({ RECEIVED: "接收任务", EXECUTE: "执行", VERIFY: "验证", CLOSE: "关闭", CLOSED: "业务关闭" })[step] || step || "等待开始";
+}
+
+function attemptStatusLabel(status) {
+  return ({ NOT_STARTED: "未开始", SCHEDULED: "已排队", RUNNING: "进行中", SUCCEEDED: "已完成", FAILED: "失败", CANCELLED: "已取消" })[status] || status;
+}
+
+function runnerLabel(kind) {
+  return ({ fake: "Fake Agent（演示）", codex: "Codex Agent", process: "本地进程 Agent" })[String(kind || "").toLowerCase()] || kind || "等待分配";
+}
+
+function agentOutcomeLabel(outcome) {
+  return ({ SUCCEEDED: "已完成", FAILED: "失败", TIMED_OUT: "超时", RESULT_UNKNOWN: "结果未知" })[outcome] || outcome || "等待结果";
+}
+
+function recoveryLabel(classification) {
+  return ({ NONE: "无需恢复", WAIT_OR_RECONCILE: "等待恢复或对账", FAILED_TERMINAL: "当前版本已终止", ARCHIVE_RETRY: "只需重试归档" })[classification] || classification;
+}
+
+function statusIcon(status) {
+  if (status === "SUCCEEDED") return "✓";
+  if (status === "FAILED" || status === "CANCELLED") return "!";
+  if (status === "RUNNING") return "●";
+  return "○";
 }
 
 function stateColor(state) {
-  return state === "CLOSED" ? "green" : state === "VERIFYING" ? "blue" : "yellow";
+  if (state === "CLOSED") return "green";
+  if (state === "FAILED") return "red";
+  if (state === "VERIFYING" || state === "RUNNING") return "blue";
+  return "yellow";
 }
 
 function archiveColor(status) {
@@ -240,6 +323,13 @@ function attemptColor(status) {
   if (status === "FAILED" || status === "CANCELLED") return "red";
   if (status === "RUNNING") return "blue";
   return "yellow";
+}
+
+function formatDuration(startedAt, finishedAt) {
+  if (!startedAt) return "尚未开始";
+  if (!finishedAt) return "执行中";
+  const duration = Math.max(0, new Date(finishedAt).getTime() - new Date(startedAt).getTime());
+  return duration < 1000 ? `${duration} ms` : `${(duration / 1000).toFixed(1)} s`;
 }
 
 function shortSha(value) {

@@ -3,6 +3,7 @@ task_id: TASK-0008
 graph_revision: 21
 intents: [task-create, coding-task-poc, docs-change]
 changed_paths:
+  - README.md
   - docs/sources/findings/demo-does-not-show-coding-agent-trace.md
   - docs/sources/findings/README.md
   - docs/delivery/backlog/BL-0009.yaml
@@ -14,20 +15,41 @@ changed_paths:
   - docs/delivery/tasks/TASK-0008/plan.md
   - docs/delivery/tasks/TASK-0008/verification.md
   - docs/delivery/tasks/TASK-0008/docs-impact.yaml
+  - docs/delivery/tasks/TASK-0008/evidence/coding-task-journey-desktop.png
+  - docs/delivery/tasks/TASK-0008/evidence/coding-task-journey-mobile.png
   - docs/graph.yaml
+  - docs/knowledge/current/architecture/overview.md
+  - docs/knowledge/current/architecture/poc-01-restate.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - package.json
+  - public/app.js
+  - public/index.html
+  - public/styles.css
+  - scripts/demo.mjs
+  - scripts/demo.ts
+  - src/demo/coding-fixture.ts
+  - src/trace/coding-trace.ts
+  - tests/e2e/backlog-sync.test.ts
+  - tests/e2e/demo.test.ts
+  - tests/unit/coding-demo-fixture.test.ts
+  - tests/unit/coding-trace.test.ts
+  - tsconfig.json
 docs:
-  read: [agent-contract, docs-index, codemap, document-control-plane, backlog-index, tasks-index, task-runtime-kernel, overnight-multi-task-goal, finding-backlog-docs-not-projected, bl-0008-backlog-projection-sync, bl-0002-single-agent-coding-loop, restate-poc-architecture, durable-runtime-pitfalls, meta-index, adr-0002-doc-lifecycle-roles]
+  read: [agent-contract, root-readme, docs-index, codemap, document-control-plane, backlog-index, tasks-index, task-runtime-kernel, overnight-multi-task-goal, finding-backlog-docs-not-projected, bl-0008-backlog-projection-sync, bl-0002-single-agent-coding-loop, restate-poc-architecture, durable-runtime-pitfalls, meta-index, adr-0002-doc-lifecycle-roles, architecture-overview, local-restate-poc-runbook, moye-task-control-skill, adr-0001-restate-poc, adr-0003-typescript-poc, task-spec-document-closure-brainstorm, task-0001-manifest, task-0002-manifest, task-0003-manifest, task-0004-manifest, task-0005-manifest, task-0006-manifest, task-0007-manifest, sources-index, findings-index, architecture-index, runbooks-index, finding-demo-coding-trace-missing, bl-0009-coding-demo-trace, task-0008-manifest, task-0008-spec, task-0008-design, task-0008-plan, task-0008-verification, task-0008-docs-impact]
   reviewed:
-    architecture-overview: { outcome: pending, reason: "实现完成后判断产品入口描述是否变化" }
-    local-restate-poc-runbook: { outcome: pending, reason: "实现完成后同步 Demo 和中文排障入口" }
-    moye-task-control-skill: { outcome: pending, reason: "实现完成后确认 Task 控制流程是否变化" }
-    adr-0001-restate-poc: { outcome: pending, reason: "实现完成后确认是否改变既有选型" }
-    task-spec-document-closure-brainstorm: { outcome: pending, reason: "实现完成后确认是否产生新的需求结论" }
-    task-0001-manifest: { outcome: pending, reason: "实现完成后确认历史 Task 是否受影响" }
-    task-0002-manifest: { outcome: pending, reason: "实现完成后确认 Backlog 投影事实是否受影响" }
-    task-0003-manifest: { outcome: pending, reason: "实现完成后确认协议事实是否受影响" }
-    task-0004-manifest: { outcome: pending, reason: "实现完成后确认 Git Effect 事实是否受影响" }
-    task-0005-manifest: { outcome: pending, reason: "实现完成后确认 Agent Runner 事实是否受影响" }
-    task-0006-manifest: { outcome: pending, reason: "实现完成后确认 Coding Workflow 事实是否受影响" }
-    task-0007-manifest: { outcome: pending, reason: "实现完成后确认 Trace 事实是否受影响" }
-    codemap: { outcome: pending, reason: "实现完成后登记新增或调整模块" }
+    architecture-overview: { outcome: updated, reason: "登记隔离 Coding Demo、中文七阶段业务旅程与 Restate 高级排障边界" }
+    restate-poc-architecture: { outcome: updated, reason: "同步中文 Board 投影、Task 关联链和精确 Restate 深链" }
+    local-restate-poc-runbook: { outcome: updated, reason: "改写一键 Coding Demo 使用说明、中文看板图解和最新验收计数" }
+    codemap: { outcome: updated, reason: "登记 demo 模块、TypeScript 脚本和真实 Demo E2E" }
+    moye-task-control-skill: { outcome: unchanged, reason: "Demo 与只读 Trace 不改变 Task 创建、验证、关闭和归档控制流程" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "继续使用既有 Restate PoC 选型，没有扩大为生产承诺" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "Demo 脚本从 JavaScript 收敛为 TypeScript，与既有实现语言决策一致" }
+    task-spec-document-closure-brainstorm: { outcome: unchanged, reason: "实现已收敛的可理解 Demo，不产生新的生命周期需求" }
+    task-0001-manifest: { outcome: not_applicable, reason: "不修改历史 Task 事实" }
+    task-0002-manifest: { outcome: unchanged, reason: "只修正 Backlog E2E 对已转换状态的陈旧断言" }
+    task-0003-manifest: { outcome: unchanged, reason: "复用既有 Step、Attempt 与 Evidence 协议" }
+    task-0004-manifest: { outcome: unchanged, reason: "复用既有 Git Worktree 与 Merge Effect" }
+    task-0005-manifest: { outcome: unchanged, reason: "复用既有 Fake Agent Runner 合约" }
+    task-0006-manifest: { outcome: unchanged, reason: "复用既有 CodingTaskWorkflow，不改变业务状态机" }
+    task-0007-manifest: { outcome: unchanged, reason: "在既有只读三层 Trace 上调整呈现与深链，不改变状态权威" }
