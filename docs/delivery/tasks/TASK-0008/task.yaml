@@ -1,0 +1,20 @@
+schema_version: 1
+id: TASK-0008
+title: 实现可理解的 Coding Demo 与中文 Agent 流转看板
+status: scoped
+outcome: null
+backlog_refs:
+  - BL-0009
+spec_revision: 1
+workflow_id: task/TASK-0008
+execution_mode: goal-bootstrap
+base_commit: ca3f31aff3be8ed3b10ce5f3e3201886ce400233
+archive:
+  status: not_ready
+  archived_at: null
+  archived_path: null
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+  implementation_commit: null

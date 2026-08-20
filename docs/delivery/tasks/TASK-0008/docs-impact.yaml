@@ -1,0 +1,33 @@
+schema_version: 1
+task_id: TASK-0008
+graph_revision: 21
+intents: [task-create, coding-task-poc, docs-change]
+changed_paths:
+  - docs/sources/findings/demo-does-not-show-coding-agent-trace.md
+  - docs/sources/findings/README.md
+  - docs/delivery/backlog/BL-0009.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/tasks/README.md
+  - docs/delivery/tasks/TASK-0008/task.yaml
+  - docs/delivery/tasks/TASK-0008/spec.md
+  - docs/delivery/tasks/TASK-0008/design.md
+  - docs/delivery/tasks/TASK-0008/plan.md
+  - docs/delivery/tasks/TASK-0008/verification.md
+  - docs/delivery/tasks/TASK-0008/docs-impact.yaml
+  - docs/graph.yaml
+docs:
+  read: [agent-contract, docs-index, codemap, document-control-plane, backlog-index, tasks-index, task-runtime-kernel, overnight-multi-task-goal, finding-backlog-docs-not-projected, bl-0008-backlog-projection-sync, bl-0002-single-agent-coding-loop, restate-poc-architecture, durable-runtime-pitfalls, meta-index, adr-0002-doc-lifecycle-roles]
+  reviewed:
+    architecture-overview: { outcome: pending, reason: "实现完成后判断产品入口描述是否变化" }
+    local-restate-poc-runbook: { outcome: pending, reason: "实现完成后同步 Demo 和中文排障入口" }
+    moye-task-control-skill: { outcome: pending, reason: "实现完成后确认 Task 控制流程是否变化" }
+    adr-0001-restate-poc: { outcome: pending, reason: "实现完成后确认是否改变既有选型" }
+    task-spec-document-closure-brainstorm: { outcome: pending, reason: "实现完成后确认是否产生新的需求结论" }
+    task-0001-manifest: { outcome: pending, reason: "实现完成后确认历史 Task 是否受影响" }
+    task-0002-manifest: { outcome: pending, reason: "实现完成后确认 Backlog 投影事实是否受影响" }
+    task-0003-manifest: { outcome: pending, reason: "实现完成后确认协议事实是否受影响" }
+    task-0004-manifest: { outcome: pending, reason: "实现完成后确认 Git Effect 事实是否受影响" }
+    task-0005-manifest: { outcome: pending, reason: "实现完成后确认 Agent Runner 事实是否受影响" }
+    task-0006-manifest: { outcome: pending, reason: "实现完成后确认 Coding Workflow 事实是否受影响" }
+    task-0007-manifest: { outcome: pending, reason: "实现完成后确认 Trace 事实是否受影响" }
+    codemap: { outcome: pending, reason: "实现完成后登记新增或调整模块" }

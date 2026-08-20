@@ -1,0 +1,29 @@
+schema_version: 1
+id: "BL-0009"
+title: "让一键 Demo 展示可理解的编码任务与 Agent 流转"
+kind: "bug"
+status: "converted_to_task"
+priority: "high"
+
+source_refs:
+  - finding-demo-coding-trace-missing
+affected_areas:
+  - demo
+  - project-board
+  - coding-trace
+  - agent-runner
+  - user-experience
+
+acceptance_outline:
+  - "npm run demo 在隔离 Fixture 中执行 Fake CodingTaskWorkflow，而不是通用 TaskWorkflow"
+  - "Moye 详情默认用中文 Pipeline 解释 Task、Step、Attempt、Agent、Verification、Git 与 Archive"
+  - "技术证据和 Restate Journal 使用渐进披露，不压过业务状态"
+  - "Restate 链接定位对应 Coding Workflow 查询，不再只打开 Admin 首页"
+  - "失败状态在问题附近给出明确恢复动作，不依赖颜色表达"
+  - "单元测试、真实 Restate E2E 与浏览器可访问性/响应式验收通过"
+
+resolution:
+  task_refs:
+    - TASK-0008
+  duplicate_of:
+  reason: "由 TASK-0008 一次性交付 Coding Demo、中文任务旅程和精确运行时关联"

@@ -12,5 +12,6 @@ Finding 与 Incident 的边界：
 ## 当前 Finding
 
 - [Backlog 文档未投影到项目看板](./backlog-docs-not-projected.md)：Git 中的 Backlog YAML 与 Restate ProjectBoard Projection 尚无显式同步路径。
+- [Demo 未展示编码任务与 Agent Trace](./demo-does-not-show-coding-agent-trace.md)：一键 Demo 仍使用通用 TaskWorkflow，无法体验已经实现的 Coding Trace。
 
 不要为了演示目录创建虚构 Bug。

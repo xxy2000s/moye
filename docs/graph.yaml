@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 20
+graph_revision: 21
 updated_at: "2026-08-20"
 
 entrypoints:
@@ -299,7 +299,7 @@ documents:
   - id: bl-0002-single-agent-coding-loop
     path: docs/delivery/backlog/BL-0002.yaml
     type: backlog
-    status: ready
+    status: converted_to_task
     scope: single-agent-coding-loop
     authority: backlog
     read_when: [task-create, coding-task-poc]
@@ -347,8 +347,24 @@ documents:
   - id: bl-0008-backlog-projection-sync
     path: docs/delivery/backlog/BL-0008.yaml
     type: backlog
-    status: ready
+    status: converted_to_task
     scope: backlog-projection-sync
+    authority: backlog
+    read_when: [task-create, coding-task-poc]
+
+  - id: finding-demo-coding-trace-missing
+    path: docs/sources/findings/demo-does-not-show-coding-agent-trace.md
+    type: finding
+    status: confirmed
+    scope: coding-demo-user-experience
+    authority: finding
+    read_when: [finding-intake, task-create, coding-task-poc]
+
+  - id: bl-0009-coding-demo-trace
+    path: docs/delivery/backlog/BL-0009.yaml
+    type: backlog
+    status: converted_to_task
+    scope: coding-demo-user-experience
     authority: backlog
     read_when: [task-create, coding-task-poc]
 
@@ -688,6 +704,54 @@ documents:
     authority: task-evidence
     read_when: [task-close, task-archive]
 
+  - id: task-0008-manifest
+    path: docs/delivery/tasks/TASK-0008/task.yaml
+    type: task-manifest
+    status: active
+    scope: coding-demo-user-experience
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution, task-close]
+
+  - id: task-0008-spec
+    path: docs/delivery/tasks/TASK-0008/spec.md
+    type: task-spec
+    status: active
+    scope: coding-demo-user-experience
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution, task-close]
+
+  - id: task-0008-design
+    path: docs/delivery/tasks/TASK-0008/design.md
+    type: task-design
+    status: active
+    scope: coding-demo-user-experience
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution]
+
+  - id: task-0008-plan
+    path: docs/delivery/tasks/TASK-0008/plan.md
+    type: task-plan
+    status: active
+    scope: coding-demo-user-experience
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0008-verification
+    path: docs/delivery/tasks/TASK-0008/verification.md
+    type: verification
+    status: active
+    scope: coding-demo-user-experience
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0008-docs-impact
+    path: docs/delivery/tasks/TASK-0008/docs-impact.yaml
+    type: docs-impact
+    status: active
+    scope: coding-demo-user-experience
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
   - id: restate-typescript-baseline
     path: docs/sources/research/restate-typescript-implementation-baseline.md
     type: research
@@ -969,6 +1033,18 @@ relations:
     to: bl-0008-backlog-projection-sync
     type: creates_backlog
 
+  - from: findings-index
+    to: finding-demo-coding-trace-missing
+    type: indexes
+
+  - from: finding-demo-coding-trace-missing
+    to: bl-0009-coding-demo-trace
+    type: creates_backlog
+
+  - from: backlog-index
+    to: bl-0009-coding-demo-trace
+    type: indexes
+
   - from: overnight-multi-task-goal
     to: bl-0008-backlog-projection-sync
     type: informs
@@ -1243,6 +1319,38 @@ relations:
 
   - from: task-0007-manifest
     to: task-runtime-kernel
+    type: implements_slice_of
+
+  - from: bl-0009-coding-demo-trace
+    to: task-0008-manifest
+    type: schedules_into
+
+  - from: tasks-index
+    to: task-0008-manifest
+    type: indexes
+
+  - from: task-0008-spec
+    to: task-0008-manifest
+    type: belongs_to
+
+  - from: task-0008-design
+    to: task-0008-spec
+    type: refines
+
+  - from: task-0008-plan
+    to: task-0008-manifest
+    type: belongs_to
+
+  - from: task-0008-verification
+    to: task-0008-manifest
+    type: verifies
+
+  - from: task-0008-docs-impact
+    to: task-0008-manifest
+    type: reports_on
+
+  - from: task-0008-manifest
+    to: restate-poc-architecture
     type: implements_slice_of
 
   - from: task-0001-manifest
