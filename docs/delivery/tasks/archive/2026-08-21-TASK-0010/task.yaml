@@ -1,0 +1,26 @@
+schema_version: 1
+id: TASK-0010
+title: 在 Moye 看板内联查看 Agent Events
+status: closed
+outcome: succeeded
+backlog_refs:
+  - BL-0011
+spec_revision: 1
+workflow_id: task/TASK-0010
+execution_mode: goal-bootstrap
+base_commit: 4c6faac3409b93a764e8c5ad1b268715f18e8ae3
+archive:
+  status: pending
+  archived_at: null
+  archived_path: null
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: task-artifact://TASK-0010/verification.md
+  implementation_commit: 1927502c000422d326be26141c02e17196ca17f4
+execution_evidence:
+  executor_id: goal:/root
+  result_commit: 1927502c000422d326be26141c02e17196ca17f4
+  verification_refs:
+    - task-artifact://TASK-0010/verification.md
+  docs_impact_ref: task-artifact://TASK-0010/docs-impact.yaml

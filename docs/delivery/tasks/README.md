@@ -23,7 +23,7 @@ tasks/
 
 | Task | 状态 | 目标 |
 |---|---|---|
-| [TASK-0010](./TASK-0010/) | Executing | 在 Moye 看板内联查看 Agent Events |
+| — | — | 当前无 Active Task |
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 
