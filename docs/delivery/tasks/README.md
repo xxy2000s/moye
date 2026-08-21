@@ -23,7 +23,7 @@ tasks/
 
 | Task | 状态 | 目标 |
 |---|---|---|
-| — | — | 当前无 Active Task |
+| [TASK-0011](./TASK-0011/task.yaml) | Executing | 接入真实 Agent 完整事件流与交互看板 |
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 

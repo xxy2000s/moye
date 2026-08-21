@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 27
+graph_revision: 28
 updated_at: "2026-08-21"
 
 entrypoints:
@@ -383,6 +383,62 @@ documents:
     scope: agent-events-user-experience
     authority: backlog
     read_when: [task-create, coding-task-poc]
+
+  - id: bl-0012-real-agent-events
+    path: docs/delivery/backlog/BL-0012.yaml
+    type: backlog
+    status: converted_to_task
+    scope: real-agent-events
+    authority: backlog
+    read_when: [task-create, observability-selection, coding-task-poc]
+
+  - id: task-0011-manifest
+    path: docs/delivery/tasks/TASK-0011/task.yaml
+    type: task-manifest
+    status: active
+    scope: real-agent-events
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution, task-close]
+
+  - id: task-0011-spec
+    path: docs/delivery/tasks/TASK-0011/spec.md
+    type: task-spec
+    status: active
+    scope: real-agent-events
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution, task-close]
+
+  - id: task-0011-design
+    path: docs/delivery/tasks/TASK-0011/design.md
+    type: task-design
+    status: active
+    scope: real-agent-events
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution]
+
+  - id: task-0011-plan
+    path: docs/delivery/tasks/TASK-0011/plan.md
+    type: task-plan
+    status: active
+    scope: real-agent-events
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0011-verification
+    path: docs/delivery/tasks/TASK-0011/verification.md
+    type: verification
+    status: active
+    scope: real-agent-events
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0011-docs-impact
+    path: docs/delivery/tasks/TASK-0011/docs-impact.yaml
+    type: docs-impact
+    status: active
+    scope: real-agent-events
+    authority: task-evidence
+    read_when: [task-close, task-archive]
 
   - id: task-0010-manifest
     path: docs/delivery/tasks/archive/2026-08-21-TASK-0010/task.yaml
@@ -1172,6 +1228,46 @@ relations:
   - from: backlog-index
     to: bl-0011-inline-agent-events-viewer
     type: indexes
+
+  - from: task-0010-manifest
+    to: bl-0012-real-agent-events
+    type: creates_backlog
+
+  - from: backlog-index
+    to: bl-0012-real-agent-events
+    type: indexes
+
+  - from: bl-0012-real-agent-events
+    to: task-0011-manifest
+    type: schedules_into
+
+  - from: tasks-index
+    to: task-0011-manifest
+    type: indexes
+
+  - from: task-0011-spec
+    to: task-0011-manifest
+    type: belongs_to
+
+  - from: task-0011-design
+    to: task-0011-spec
+    type: refines
+
+  - from: task-0011-plan
+    to: task-0011-manifest
+    type: belongs_to
+
+  - from: task-0011-verification
+    to: task-0011-manifest
+    type: verifies
+
+  - from: task-0011-docs-impact
+    to: task-0011-manifest
+    type: reports_on
+
+  - from: task-0011-manifest
+    to: task-0010-manifest
+    type: refines
 
   - from: task-0009-manifest
     to: bl-0011-inline-agent-events-viewer

@@ -1,0 +1,58 @@
+schema_version: 1
+task_id: TASK-0011
+graph_revision: 28
+intents: [task-create, coding-task-poc, observability-selection, docs-change]
+changed_paths:
+  - docs/delivery/backlog/BL-0012.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/tasks/TASK-0011/task.yaml
+  - docs/delivery/tasks/TASK-0011/spec.md
+  - docs/delivery/tasks/TASK-0011/design.md
+  - docs/delivery/tasks/TASK-0011/plan.md
+  - docs/delivery/tasks/TASK-0011/verification.md
+  - docs/delivery/tasks/TASK-0011/docs-impact.yaml
+  - docs/delivery/tasks/README.md
+  - docs/graph.yaml
+docs:
+  read:
+    - agent-contract
+    - root-readme
+    - docs-index
+    - codemap
+    - document-control-plane
+    - backlog-index
+    - tasks-index
+    - task-runtime-kernel
+    - overnight-multi-task-goal
+    - finding-backlog-docs-not-projected
+    - bl-0008-backlog-projection-sync
+    - bl-0002-single-agent-coding-loop
+    - restate-poc-architecture
+    - durable-runtime-pitfalls
+    - meta-index
+    - adr-0002-doc-lifecycle-roles
+    - sources-index
+    - bl-0012-real-agent-events
+    - task-0011-manifest
+    - task-0011-spec
+    - task-0011-design
+    - task-0011-plan
+    - task-0011-verification
+    - task-0011-docs-impact
+  reviewed:
+    moye-task-control-skill: { outcome: unchanged, reason: "现有 Skill 已覆盖 Router、Task Package、验证、Runtime Closure 与 Archive 流程" }
+    architecture-overview: { outcome: updated, reason: "当前实现切片需要明确真实 CLI 增量事件流与交互看板能力" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "继续由 Restate 承载唯一 Coding Workflow，不改变 durable runtime 选型" }
+    task-spec-document-closure-brainstorm: { outcome: unchanged, reason: "继续遵循 Task Runtime、Spec 与文档控制面分离的既有边界" }
+    task-0010-manifest: { outcome: unchanged, reason: "TASK-0011 消费其用户验收缺口，但不改写已归档任务事实" }
+    task-0001-manifest: { outcome: unchanged, reason: "不改变基础 Task、Archive 与 Board 生命周期" }
+    task-0002-manifest: { outcome: unchanged, reason: "不改变 Backlog 投影协议" }
+    task-0003-manifest: { outcome: unchanged, reason: "不改变 TaskEnvelope、Step 或 Attempt 核心协议" }
+    task-0004-manifest: { outcome: unchanged, reason: "不改变 Worktree 与 Git Effect 所有权" }
+    task-0005-manifest: { outcome: unchanged, reason: "扩展 Agent Runner 的事件写入能力，但历史任务事实保持冻结" }
+    task-0006-manifest: { outcome: unchanged, reason: "沿用 Coding Workflow、Verification 与 Merge 闭环" }
+    task-0007-manifest: { outcome: unchanged, reason: "沿用三层 Trace 权威边界，Agent Event 仍属于 Artifact 证据" }
+    task-0008-manifest: { outcome: unchanged, reason: "扩展 Demo Runner 选择和运行中查看，但不改写历史任务事实" }
+    task-0009-manifest: { outcome: unchanged, reason: "扩展 Agent Events 采集与浏览，不改写已归档 Trace Demo 任务" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "继续使用现有 TypeScript 与原生浏览器 JavaScript 技术栈" }
+    adr-0004-otlp-phoenix-demo: { outcome: updated, reason: "需要补充运行中 JSONL 事件流与最终不可变 Artifact 的边界" }

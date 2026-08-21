@@ -1,0 +1,29 @@
+schema_version: 1
+id: "BL-0012"
+title: "接入真实 Agent 完整事件流与交互看板"
+kind: "feature"
+status: "converted_to_task"
+priority: "high"
+
+source_refs:
+  - task-0010-manifest
+affected_areas:
+  - agent-runner
+  - agent-events
+  - project-board
+  - coding-demo
+  - observability
+
+acceptance_outline:
+  - "Codex 与 Claude CLI 的 stdout JSONL 在执行期间逐行持久化，并绑定 task_id、step_id、attempt_id 与 run_id"
+  - "Fake 与真实 Runner 明确区分，提供可直接启动的 Codex/Claude Demo 入口"
+  - "看板通过受控 cursor API 分页读取全部事件，不再硬截断为前 200 条"
+  - "运行中的事件可持续刷新，并可按对话、工具调用、工具结果、系统与错误分类筛选"
+  - "完成后的原始 JSONL 仍以摘要和内容摘要校验的 Artifact 作为不可变诊断证据"
+  - "单元、真实 Restate E2E、真实 Codex CLI 与浏览器端到端验收通过"
+
+resolution:
+  task_refs:
+    - TASK-0011
+  duplicate_of:
+  reason: "TASK-0010 解决了默认下载问题，但用户验收发现 Demo 仍是仅含 4 条硬编码事件的 Fake Runner，且页面硬截断事件；本项补齐真实运行时事件采集与完整交互浏览"

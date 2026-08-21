@@ -1,0 +1,19 @@
+schema_version: 1
+id: TASK-0011
+title: 接入真实 Agent 完整事件流与交互看板
+status: executing
+outcome:
+backlog_refs:
+  - BL-0012
+spec_revision: 1
+workflow_id: task/TASK-0011
+execution_mode: goal-bootstrap
+base_commit: 2d1102d9035e309e609f1bd12e1b618a1648ec80
+archive:
+  status: not_ready
+  archived_at: null
+  archived_path: null
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
