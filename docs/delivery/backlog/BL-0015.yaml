@@ -2,7 +2,7 @@ schema_version: 1
 id: "BL-0015"
 title: "统一 Docs、Implementation 与 Review Role Attempt 协议"
 kind: "feature"
-status: "ready"
+status: "converted_to_task"
 priority: "high"
 
 source_refs:
@@ -19,6 +19,7 @@ acceptance_outline:
   - "已确认 Role Run 在 Worker 恢复后复用 Artifact，不重复调用模型"
 
 resolution:
-  task_refs: []
+  task_refs:
+    - TASK-0014
   duplicate_of:
-  reason: "等待 Control Kernel 完成后调度 Slice 2"
+  reason: "Control Kernel 完成后按母需求 Slice 2 调度为 TASK-0014"

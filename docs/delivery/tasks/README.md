@@ -23,7 +23,7 @@ tasks/
 
 | Task | 状态 | 目标 |
 |---|---|---|
-| — | — | 当前无 Active Task |
+| [TASK-0014](./TASK-0014/task.yaml) | Executing | 统一 Docs、Implementation 与 Review Role Attempt 协议 |
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 

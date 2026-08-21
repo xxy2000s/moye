@@ -111,6 +111,20 @@ export interface PendingRoleDispatch {
   readonly inputDigest: string;
 }
 
+export interface RoleDispatchCompletionInput {
+  readonly dispatchId: string;
+  readonly role: CoreRole;
+  readonly attemptId: string;
+  readonly attemptGeneration: number;
+  readonly inputDigest: string;
+  readonly resultDigest: string;
+  readonly outcome: "SUCCEEDED";
+}
+
+export interface CompletedRoleDispatch extends RoleDispatchCompletionInput {
+  readonly completedAtProjectionVersion: number;
+}
+
 export interface CoreProjection {
   readonly schemaVersion: 1;
   readonly taskId: string;
@@ -121,6 +135,7 @@ export interface CoreProjection {
   readonly stage: CoreControlStage;
   readonly budget: CoreBudget;
   readonly appliedDecisions: readonly AppliedControlDecision[];
+  readonly completedRoleDispatches: readonly CompletedRoleDispatch[];
   readonly pendingRole: PendingRoleDispatch | null;
   readonly projectionDigest: string;
 }
@@ -144,6 +159,7 @@ export function createInitialCoreProjection(
     stage: "DOCS_REQUIRED",
     budget,
     appliedDecisions: [],
+    completedRoleDispatches: [],
     pendingRole: null,
   });
 }
@@ -222,16 +238,19 @@ export function proposeDeterministicControlDecision(
   assertTrustedProjection(projection);
   assertProjectionMatchesEnvelope(projection, trustedEnvelope);
   if (projection.pendingRole !== null) return null;
-  if (projection.state === "RUNNING" && projection.stage === "DOCS_REQUIRED") {
+  const requiredRole = requiredRoleForStage(projection.stage);
+  if (projection.state === "RUNNING" && requiredRole !== null) {
     return createControlDecision({
       taskId: projection.taskId,
       specRevision: projection.specRevision,
       expectedProjectionVersion: projection.projectionVersion,
       expectedState: projection.state,
       action: "SCHEDULE_ROLE",
-      targetRole: "DOCS",
-      evidenceRefs: [`task-envelope://${projection.envelopeDigest}`],
-      reason: "Initial Spec, plan and design artifacts are required before implementation",
+      targetRole: requiredRole,
+      evidenceRefs: projection.completedRoleDispatches.length === 0
+        ? [`task-envelope://${projection.envelopeDigest}`]
+        : [`role-result://${projection.completedRoleDispatches.at(-1)!.resultDigest}`],
+      reason: roleScheduleReason(requiredRole),
       budgetRequest: { roleAttempts: 1, modelCalls: 1 },
     });
   }
@@ -275,14 +294,15 @@ export function applyControlDecision(
   if (projection.pendingRole !== null) {
     throw conflict("ACTIVE_ROLE_EXISTS", `Role ${projection.pendingRole.role} is already pending`);
   }
-  if (projection.state !== "RUNNING" || projection.stage !== "DOCS_REQUIRED" || decision.targetRole !== "DOCS") {
+  const requiredRole = requiredRoleForStage(projection.stage);
+  if (projection.state !== "RUNNING" || requiredRole === null || decision.targetRole !== requiredRole) {
     throw conflict(
       "ILLEGAL_CONTROL_TRANSITION",
       `Stage ${projection.stage} only permits its required Role and Required Gates cannot be skipped`,
     );
   }
   if (decision.sourceFindingRefs.length > 0) {
-    throw conflict("FINDING_REFS_NOT_ALLOWED", "Initial Docs scheduling cannot be driven by Review Findings");
+    throw conflict("FINDING_REFS_NOT_ALLOWED", "Linear Role scheduling cannot be driven by Review Findings");
   }
 
   const nextVersion = projection.projectionVersion + 1;
@@ -305,7 +325,7 @@ export function applyControlDecision(
   return finalizeProjection({
     ...projectionWithoutDigest(projection),
     projectionVersion: nextVersion,
-    stage: "DOCS_RUNNING",
+    stage: runningStageForRole(requiredRole),
     budget: consumeBudget(projection.budget, decision.budgetRequest),
     appliedDecisions: [...projection.appliedDecisions, {
       decisionId: decision.decisionId,
@@ -317,6 +337,48 @@ export function applyControlDecision(
   });
 }
 
+export function completeRoleDispatch(
+  projection: CoreProjection,
+  input: RoleDispatchCompletionInput,
+): CoreProjection {
+  assertTrustedProjection(projection);
+  const normalized = normalizeRoleCompletion(input);
+  const prior = projection.completedRoleDispatches.find((item) => item.dispatchId === normalized.dispatchId);
+  if (prior !== undefined) {
+    if (canonicalJson(completionWithoutVersion(prior)) !== canonicalJson(normalized)) {
+      throw conflict("ROLE_COMPLETION_CONFLICT", `Dispatch ${normalized.dispatchId} already completed with another result`);
+    }
+    return projection;
+  }
+  const pending = projection.pendingRole;
+  if (pending === null) {
+    throw conflict("ROLE_DISPATCH_NOT_PENDING", `Dispatch ${normalized.dispatchId} is not pending`);
+  }
+  if (pending.dispatchId !== normalized.dispatchId || pending.role !== normalized.role ||
+      pending.inputDigest !== normalized.inputDigest) {
+    throw conflict("ROLE_COMPLETION_DISPATCH_MISMATCH", "Role completion does not match the current Pending Role Dispatch");
+  }
+  if (projection.state !== "RUNNING" || projection.stage !== runningStageForRole(normalized.role)) {
+    throw conflict("ILLEGAL_ROLE_COMPLETION", `Role ${normalized.role} cannot complete from stage ${projection.stage}`);
+  }
+  const expectedAttemptPrefix = `${projection.taskId}/CORE-${normalized.role}/attempt-`;
+  const expectedAttemptId = `${expectedAttemptPrefix}${String(normalized.attemptGeneration).padStart(3, "0")}`;
+  if (normalized.attemptId !== expectedAttemptId) {
+    throw conflict("ROLE_COMPLETION_ATTEMPT_MISMATCH", "Role completion Attempt ID and generation disagree");
+  }
+  const nextVersion = projection.projectionVersion + 1;
+  return finalizeProjection({
+    ...projectionWithoutDigest(projection),
+    projectionVersion: nextVersion,
+    stage: completedStageForRole(normalized.role),
+    completedRoleDispatches: [...projection.completedRoleDispatches, {
+      ...normalized,
+      completedAtProjectionVersion: nextVersion,
+    }],
+    pendingRole: null,
+  });
+}
+
 export function parseCoreProjection(
   value: unknown,
   envelope: TaskEnvelope,
@@ -324,7 +386,7 @@ export function parseCoreProjection(
 ): CoreProjection {
   const trustedEnvelope = revalidateEnvelope(envelope);
   if (!isRecord(value) || value["schemaVersion"] !== 1 || !isRecord(value["budget"]) ||
-      !Array.isArray(value["appliedDecisions"])) {
+      !Array.isArray(value["appliedDecisions"]) || !Array.isArray(value["completedRoleDispatches"])) {
     throw validation("INVALID_CORE_PROJECTION", "serialized CoreProjection has an invalid shape");
   }
   assertTaskId(value["taskId"] as string);
@@ -334,6 +396,7 @@ export function parseCoreProjection(
   assertControlStage(value["stage"] as CoreControlStage);
   const budget = normalizeRemainingBudget(value["budget"]);
   const appliedDecisions = value["appliedDecisions"].map(parseAppliedDecision);
+  const completedRoleDispatches = value["completedRoleDispatches"].map(parseCompletedRoleDispatch);
   const pendingRole = value["pendingRole"] === null
     ? null
     : parsePendingRole(value["pendingRole"]);
@@ -347,6 +410,7 @@ export function parseCoreProjection(
     stage: value["stage"] as CoreControlStage,
     budget,
     appliedDecisions,
+    completedRoleDispatches,
     pendingRole,
   };
   const parsed = finalizeProjection(core);
@@ -452,6 +516,74 @@ function parsePendingRole(value: unknown): PendingRoleDispatch {
   };
 }
 
+function normalizeRoleCompletion(input: RoleDispatchCompletionInput): RoleDispatchCompletionInput {
+  if (typeof input.dispatchId !== "string" || !input.dispatchId.startsWith("dispatch:")) {
+    throw validation("INVALID_ROLE_COMPLETION", "Role completion dispatchId is invalid");
+  }
+  assertCoreRole(input.role);
+  const attemptId = requiredString(input.attemptId, "attemptId");
+  assertPositiveInteger(input.attemptGeneration, "attemptGeneration");
+  assertDigest(input.inputDigest, "inputDigest");
+  assertDigest(input.resultDigest, "resultDigest");
+  if (input.outcome !== "SUCCEEDED") {
+    throw conflict("ROLE_COMPLETION_NOT_SUCCESSFUL", "Only a successful Role Result can complete a Pending Role Dispatch");
+  }
+  return {
+    dispatchId: input.dispatchId,
+    role: input.role,
+    attemptId,
+    attemptGeneration: input.attemptGeneration,
+    inputDigest: input.inputDigest,
+    resultDigest: input.resultDigest,
+    outcome: input.outcome,
+  };
+}
+
+function parseCompletedRoleDispatch(value: unknown): CompletedRoleDispatch {
+  if (!isRecord(value)) throw validation("INVALID_ROLE_COMPLETION", "completed Role Dispatch is invalid");
+  const normalized = normalizeRoleCompletion({
+    dispatchId: value["dispatchId"] as string,
+    role: value["role"] as CoreRole,
+    attemptId: value["attemptId"] as string,
+    attemptGeneration: value["attemptGeneration"] as number,
+    inputDigest: value["inputDigest"] as string,
+    resultDigest: value["resultDigest"] as string,
+    outcome: value["outcome"] as "SUCCEEDED",
+  });
+  assertPositiveInteger(value["completedAtProjectionVersion"], "completedAtProjectionVersion");
+  return { ...normalized, completedAtProjectionVersion: value["completedAtProjectionVersion"] as number };
+}
+
+function completionWithoutVersion(value: CompletedRoleDispatch): RoleDispatchCompletionInput {
+  const { completedAtProjectionVersion: _version, ...input } = value;
+  return input;
+}
+
+function requiredRoleForStage(stage: CoreControlStage): CoreRole | null {
+  if (stage === "DOCS_REQUIRED") return "DOCS";
+  if (stage === "IMPLEMENTATION_REQUIRED") return "IMPLEMENTATION";
+  if (stage === "REVIEW_REQUIRED") return "REVIEW";
+  return null;
+}
+
+function runningStageForRole(role: CoreRole): CoreControlStage {
+  if (role === "DOCS") return "DOCS_RUNNING";
+  if (role === "IMPLEMENTATION") return "IMPLEMENTATION_RUNNING";
+  return "REVIEW_RUNNING";
+}
+
+function completedStageForRole(role: CoreRole): CoreControlStage {
+  if (role === "DOCS") return "IMPLEMENTATION_REQUIRED";
+  if (role === "IMPLEMENTATION") return "REVIEW_REQUIRED";
+  return "VERIFICATION_REQUIRED";
+}
+
+function roleScheduleReason(role: CoreRole): string {
+  if (role === "DOCS") return "Initial Spec, plan and design artifacts are required before implementation";
+  if (role === "IMPLEMENTATION") return "Accepted Docs artifacts authorize an implementation Attempt";
+  return "Implementation evidence requires an independent Review verdict";
+}
+
 function finalizeProjection(core: Omit<CoreProjection, "projectionDigest">): CoreProjection {
   const projection: CoreProjection = { ...core, projectionDigest: digest("core-projection", core) };
   trustedProjections.add(projection);
@@ -543,6 +675,12 @@ function nonNegativeInteger(value: unknown, field: string): number {
     throw validation("INVALID_NON_NEGATIVE_INTEGER", `${field} must be a non-negative integer`);
   }
   return value as number;
+}
+
+function assertDigest(value: unknown, field: string): asserts value is string {
+  if (typeof value !== "string" || !/^sha256:[0-9a-f]{64}$/.test(value)) {
+    throw validation("INVALID_DIGEST", `${field} must be a SHA-256 digest`);
+  }
 }
 
 function digest(namespace: string, value: unknown): string {

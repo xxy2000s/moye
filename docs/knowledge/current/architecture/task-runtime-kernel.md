@@ -138,13 +138,26 @@ ProjectBoard 接收 Coding 的状态和事件摘要；`src/trace/coding-trace.ts
 
 `src/domain/core-control.ts` 已实现多角色 Core Workflow 使用的纯领域控制内核，但尚未接入 Restate 主循环：
 
-- `CoreProjection` 固定 Task、Spec Revision、Envelope Digest、Projection Version、Control State、Stage、中央预算摘要、Applied Decision 和唯一 Pending Role Dispatch；
+- `CoreProjection` 固定 Task、Spec Revision、Envelope Digest、Projection Version、Control State、Stage、中央预算摘要、Applied Decision、已完成 Role Dispatch 摘要和唯一 Pending Role Dispatch；
 - `ControlDecision` 固定 Expected State、Expected Projection Version、Action、Target Role、Finding/Evidence 引用、预算申请、原因和规范 SHA-256 Digest；
-- 确定性 Fake Orchestrator 只从已验证的 `TaskEnvelope + CoreProjection` 生成初始 Docs Role 候选，不读取聊天历史、Agent 内存或本地临时路径；
+- 确定性 Fake Orchestrator 只从已验证的 `TaskEnvelope + CoreProjection` 生成当前 Required Gate 对应的 Docs、Implementation 或 Review Role 候选，不读取聊天历史、Agent 内存或本地临时路径；
 - Reducer 是当前切片唯一合法转换入口。它先识别已确认的相同 Decision 重放，再校验 Task/Spec、状态、版本、预算、单 Pending Role 和 Required Gate，保证丢失确认后不会重复派发；
-- 初始阶段只允许 `SCHEDULE_ROLE/DOCS`。`RETRY`、`REPAIR`、`REPLAN`、Role 完成、Finding、Verification、Docs Impact 和 Closure 仍由后续切片实现，不能由当前 Projection 伪造。
+- `completeRoleDispatch` 只接受与唯一 Pending Dispatch、Role、Input Digest、Attempt ID/Generation 一致的成功结果摘要；相同完成重放不推进版本，不同结果冲突。线性 Gate 当前可推进至 `VERIFICATION_REQUIRED`；`RETRY`、`REPAIR`、`REPLAN`、Finding、Verification、最终 Docs Impact 和 Closure 仍由后续切片实现，不能由当前 Projection 伪造。
 
 这个模块是未来 keyed `CoreClosureWorkflow/<task_id>` 的 Reducer，不拥有独立进程或第二套运行时状态。现有 `CodingTaskWorkflow` 在完整 Core Workflow 接入前继续保持当前行为。
+
+### 5.0.5 当前已实现统一 Role Agent 协议切片
+
+`src/agent/role-runner.ts` 为 Core 三种执行角色提供同一执行外壳，当前由确定性 Fake Runner 验证，尚未接入真实模型进程或 Restate：
+
+- `RoleAttempt` 只能从 Core Projection 的唯一 Pending Role Dispatch 创建，固定 Role Step、Generation、Dispatch/Input Digest，并执行 `SCHEDULED → RUNNING → SUCCEEDED | FAILED | CANCELLED` 单向转换；Retry 要求连续且全终态历史，创建新的 Generation；
+- `RoleRunRequest` 固定 Task、Spec Revision、Role、Attempt、Runner Kind、Scope、Prompt Digest 和内容寻址 Run ID；序列化恢复要求调用方提供 Expected Run ID；
+- Docs 输出 Spec/Plan/Design 或 Docs Impact/Knowledge Sync，Implementation 强制 Result Commit/Checkpoint/Test Evidence/Self Review，Review 强制 ReviewResult，并在 `FINDINGS` Verdict 下绑定 Finding Artifact；
+- 每个 Artifact Manifest 固定文件摘要、字节数和完整 Producer Tuple，恢复时重算 Manifest、文件内容和角色输出引用；不同 Artifact Kind 不能冒充；
+- Runner 调用前以稳定 Run ID 写 Execution Intent。完整 Manifest 直接恢复且不增加执行计数；只有 Intent 而没有确认结果时返回 `UNKNOWN_SIDE_EFFECT`，禁止盲目执行第二次昂贵 Run；
+- Artifact Root 与输入 Scope 分离，拒绝文件系统根、直接符号链接和 Run 目录逃逸。
+
+现有 `src/agent/runner.ts`、Codex/Claude Adapter 和固定 Coding Workflow 契约保持不变。把真实 Role Request 映射到只读 Review/Docs 或可写 Implementation 进程，属于 Core Workflow 接入时的后续实现。
 
 ### 5.1 模型关系
 
