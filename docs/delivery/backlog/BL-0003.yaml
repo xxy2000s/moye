@@ -2,7 +2,7 @@ schema_version: 1
 id: "BL-0003"
 title: "实现 Repair、Replan 与中央重试预算"
 kind: "feature"
-status: "triaged"
+status: "converted_to_task"
 priority: "high"
 
 source_refs:
@@ -24,6 +24,7 @@ acceptance_outline:
   - "当前调度只覆盖单机、单 Task、单 Active Attempt；多 Daemon Lease/Fencing 继续由 BL-0004 承担"
 
 resolution:
-  task_refs: []
+  task_refs:
+    - TASK-0016
   duplicate_of:
-  reason: "按多 Agent Core 母需求收窄为 Slice 4；不再依赖多 Daemon 调度"
+  reason: "按多 Agent Core 母需求收窄为 Slice 4，并在前三个 Slice 完成后调度为 TASK-0016"

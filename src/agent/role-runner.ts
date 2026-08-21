@@ -217,7 +217,18 @@ export function createInitialRoleAttempt(
   if (verifiedProjection.pendingRole === null) {
     throw conflict("ROLE_DISPATCH_REQUIRED", "Core Projection has no Pending Role Dispatch");
   }
-  return newRoleAttempt(verifiedEnvelope, verifiedProjection.pendingRole, 1, scheduledAt);
+  const recovery = verifiedProjection.recoveryActions.find((item) =>
+    item.decisionId === verifiedProjection.pendingRole!.decisionId,
+  );
+  if (recovery?.action === "ROLE_ATTEMPT_RETRY") {
+    throw conflict("ROLE_ATTEMPT_HISTORY_REQUIRED", "Role retry must use complete Attempt history");
+  }
+  return newRoleAttempt(
+    verifiedEnvelope,
+    verifiedProjection.pendingRole,
+    verifiedProjection.pendingRole.generation,
+    scheduledAt,
+  );
 }
 
 export function createRetryRoleAttempt(
@@ -236,7 +247,7 @@ export function createRetryRoleAttempt(
   }
   for (const [index, attempt] of previousAttempts.entries()) {
     assertTrustedAttempt(attempt);
-    assertAttemptMatchesDispatch(attempt, verifiedEnvelope, verifiedProjection.pendingRole.role, verifiedProjection.pendingRole.dispatchId);
+    assertAttemptMatchesRoleHistory(attempt, verifiedEnvelope, verifiedProjection.pendingRole.role);
     if (attempt.generation !== index + 1) {
       throw conflict("ROLE_ATTEMPT_HISTORY_INCOMPLETE", "Role Attempt generations must be continuous and ordered");
     }
@@ -248,8 +259,26 @@ export function createRetryRoleAttempt(
   if (last.status === "SUCCEEDED") {
     throw conflict("ROLE_ATTEMPT_ALREADY_SUCCEEDED", "A successful Role Attempt cannot be retried");
   }
+  if (last.status !== "FAILED") {
+    throw conflict("ROLE_ATTEMPT_FAILURE_REQUIRED", "Role Attempt Retry requires the latest Attempt to be FAILED");
+  }
+  const recovery = verifiedProjection.recoveryActions.find((item) =>
+    item.decisionId === verifiedProjection.pendingRole!.decisionId,
+  );
+  if (recovery?.action !== "ROLE_ATTEMPT_RETRY") {
+    throw conflict("ROLE_RETRY_DISPATCH_REQUIRED", "Pending Role Dispatch is not a Role Attempt Retry");
+  }
+  if (verifiedProjection.pendingRole.generation !== previousAttempts.length + 1) {
+    throw conflict("ROLE_RETRY_DISPATCH_GENERATION_MISMATCH", "Pending Role Dispatch must authorize Generation N+1");
+  }
+  const recordedFailure = verifiedProjection.roleAttemptFailures.find((item) =>
+    item.attemptId === last.attemptId && item.dispatchId === last.dispatchId && item.resultDigest === last.resultDigest,
+  );
+  if (recordedFailure === undefined) {
+    throw conflict("ROLE_RETRY_FAILURE_NOT_RECORDED", "The latest failed Attempt must be recorded by Core before retry");
+  }
   assertTimeOrder(last.finishedAt ?? last.scheduledAt, scheduledAt, "scheduledAt");
-  return newRoleAttempt(verifiedEnvelope, verifiedProjection.pendingRole, previousAttempts.length + 1, scheduledAt);
+  return newRoleAttempt(verifiedEnvelope, verifiedProjection.pendingRole, verifiedProjection.pendingRole.generation, scheduledAt);
 }
 
 export function startRoleAttempt(attempt: RoleAttempt, startedAt: string): RoleAttempt {
@@ -852,16 +881,14 @@ function assertTrustedResult(result: RoleRunResult): void {
   }
 }
 
-function assertAttemptMatchesDispatch(
+function assertAttemptMatchesRoleHistory(
   attempt: RoleAttempt,
   envelope: TaskEnvelope,
   role: CoreRole,
-  dispatchId: string,
 ): void {
   if (attempt.taskId !== envelope.taskId || attempt.specRevision !== envelope.specRevision ||
-      attempt.envelopeDigest !== envelope.envelopeDigest || attempt.role !== role || attempt.stepId !== ROLE_STEP_IDS[role] ||
-      attempt.dispatchId !== dispatchId) {
-    throw conflict("ROLE_ATTEMPT_DISPATCH_MISMATCH", "Role Attempt does not belong to the current Pending Role Dispatch");
+      attempt.envelopeDigest !== envelope.envelopeDigest || attempt.role !== role || attempt.stepId !== ROLE_STEP_IDS[role]) {
+    throw conflict("ROLE_ATTEMPT_HISTORY_MISMATCH", "Role Attempt does not belong to the current Task, Spec and Role history");
   }
 }
 

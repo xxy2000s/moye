@@ -15,7 +15,7 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 |---|---|---|---|
 | [BL-0001](./BL-0001.yaml) | Converted | 实现可恢复 Task 生命周期、Archive 与项目看板 | TASK-0001 |
 | [BL-0002](./BL-0002.yaml) | Converted | 实现首个真实单 Agent 本地编码闭环 | TASK-0003～TASK-0007 |
-| [BL-0003](./BL-0003.yaml) | Triaged | 实现 Repair、Replan 与中央重试预算 | — |
+| [BL-0003](./BL-0003.yaml) | Converted | 实现 Repair、Replan 与中央重试预算 | TASK-0016 |
 | [BL-0004](./BL-0004.yaml) | Triaged | 实现多 Daemon 调度、租约与安全交接 | — |
 | [BL-0005](./BL-0005.yaml) | Triaged | 接入远程 Git Provider 与 PR/Merge 闭环 | — |
 | [BL-0006](./BL-0006.yaml) | Triaged | 建设生产级 Trace、运营指标与异常看板 | — |
@@ -39,6 +39,6 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 
 Backlog 的 `resolution.task_refs` 只登记实际创建过的稳定 Task ID；它不替代 Runtime Task 状态，执行与归档事实仍以 Task Projection 和归档证据为准。
 
-多 Agent Core 闭环按母需求的六个 Slice 顺序调度：BL-0014、BL-0015、BL-0016、BL-0003、BL-0006/BL-0007/BL-0017、BL-0018。Slice 1、2 已归档，Slice 3 已创建 TASK-0015；后续条目保持 Backlog 状态，完成前置 Task 后再绑定真实 Task ID。
+多 Agent Core 闭环按母需求的六个 Slice 顺序调度：BL-0014、BL-0015、BL-0016、BL-0003、BL-0006/BL-0007/BL-0017、BL-0018。Slice 1～3 已归档，Slice 4 已创建 TASK-0016；后续条目保持 Backlog 状态，完成前置 Task 后再绑定真实 Task ID。
 
 新建时复制 [`backlog-item.yaml`](../../meta/templates/backlog-item.yaml)，文件名使用 `<backlog-id>.yaml`。

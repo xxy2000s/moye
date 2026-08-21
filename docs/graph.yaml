@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 38
+graph_revision: 39
 updated_at: "2026-08-22"
 
 entrypoints:
@@ -331,7 +331,7 @@ documents:
   - id: bl-0003-repair-replan-budget
     path: docs/delivery/backlog/BL-0003.yaml
     type: backlog
-    status: triaged
+    status: converted_to_task
     scope: retry-repair-replan
     authority: backlog
     read_when: [task-create, retry-change]
@@ -613,6 +613,54 @@ documents:
     type: docs-impact
     status: archived
     scope: core-review-finding
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0016-manifest
+    path: docs/delivery/tasks/TASK-0016/task.yaml
+    type: task-manifest
+    status: active
+    scope: core-recovery-budget
+    authority: task-artifact
+    read_when: [task-runtime-change, workflow-change, task-execution, task-close]
+
+  - id: task-0016-spec
+    path: docs/delivery/tasks/TASK-0016/spec.md
+    type: task-spec
+    status: active
+    scope: core-recovery-budget
+    authority: task-artifact
+    read_when: [task-runtime-change, workflow-change, task-execution, task-close]
+
+  - id: task-0016-design
+    path: docs/delivery/tasks/TASK-0016/design.md
+    type: task-design
+    status: active
+    scope: core-recovery-budget
+    authority: task-artifact
+    read_when: [task-runtime-change, workflow-change, task-execution]
+
+  - id: task-0016-plan
+    path: docs/delivery/tasks/TASK-0016/plan.md
+    type: task-plan
+    status: active
+    scope: core-recovery-budget
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0016-verification
+    path: docs/delivery/tasks/TASK-0016/verification.md
+    type: verification
+    status: active
+    scope: core-recovery-budget
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0016-docs-impact
+    path: docs/delivery/tasks/TASK-0016/docs-impact.yaml
+    type: docs-impact
+    status: active
+    scope: core-recovery-budget
     authority: task-evidence
     read_when: [task-close, task-archive]
 
@@ -1718,6 +1766,42 @@ relations:
     type: refines
 
   - from: task-0015-manifest
+    to: task-runtime-kernel
+    type: implements_slice_of
+
+  - from: bl-0003-repair-replan-budget
+    to: task-0016-manifest
+    type: schedules_into
+
+  - from: tasks-index
+    to: task-0016-manifest
+    type: indexes
+
+  - from: task-0016-spec
+    to: task-0016-manifest
+    type: belongs_to
+
+  - from: task-0016-design
+    to: task-0016-spec
+    type: refines
+
+  - from: task-0016-plan
+    to: task-0016-manifest
+    type: belongs_to
+
+  - from: task-0016-verification
+    to: task-0016-manifest
+    type: verifies
+
+  - from: task-0016-docs-impact
+    to: task-0016-manifest
+    type: reports_on
+
+  - from: task-0016-manifest
+    to: task-0015-manifest
+    type: refines
+
+  - from: task-0016-manifest
     to: task-runtime-kernel
     type: implements_slice_of
 

@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 import type { TaskEnvelope } from "./coding-task.js";
 import { parseTaskEnvelope } from "./coding-task.js";
-import { MoyeError } from "./errors.js";
+import { MoyeError, type MoyeErrorCategory } from "./errors.js";
 import type { ReviewGateResult } from "./review-finding.js";
 import { assertTrustedReviewGateResult } from "./review-finding.js";
 import { assertTaskId } from "./task.js";
@@ -78,6 +78,7 @@ export interface ControlDecisionInput {
   readonly expectedState: CoreControlState;
   readonly action: ControlAction;
   readonly targetRole?: CoreRole;
+  readonly operationId?: string;
   readonly sourceFindingRefs?: readonly string[];
   readonly evidenceRefs?: readonly string[];
   readonly reason: string;
@@ -93,6 +94,7 @@ export interface ControlDecision {
   readonly expectedState: CoreControlState;
   readonly action: ControlAction;
   readonly targetRole: CoreRole | null;
+  readonly operationId: string | null;
   readonly sourceFindingRefs: readonly string[];
   readonly evidenceRefs: readonly string[];
   readonly reason: string;
@@ -139,6 +141,76 @@ export interface AppliedReviewGate {
   readonly appliedAtProjectionVersion: number;
 }
 
+export interface RoleAttemptFailureInput {
+  readonly dispatchId: string;
+  readonly role: CoreRole;
+  readonly attemptId: string;
+  readonly attemptGeneration: number;
+  readonly inputDigest: string;
+  readonly resultDigest: string;
+  readonly outcome: "FAILED" | "INVALID_OUTPUT";
+  readonly errorCode: string;
+  readonly errorCategory: MoyeErrorCategory;
+}
+
+export interface RoleAttemptFailure extends RoleAttemptFailureInput {
+  readonly failureDigest: string;
+  readonly recordedAtProjectionVersion: number;
+}
+
+export interface RecoveryActionRecord {
+  readonly decisionId: string;
+  readonly action: "OPERATION_RETRY" | "ROLE_ATTEMPT_RETRY" | "REPAIR" | "REPLAN";
+  readonly targetRole: CoreRole | null;
+  readonly sourceRefs: readonly string[];
+  readonly appliedAtProjectionVersion: number;
+}
+
+export interface UnknownEffectInput {
+  readonly effectId: string;
+  readonly operationId: string;
+  readonly evidenceRefs: readonly string[];
+  readonly reason: string;
+}
+
+export interface PendingReconcile extends UnknownEffectInput {
+  readonly waitDigest: string;
+  readonly enteredAtProjectionVersion: number;
+}
+
+export interface ReconcileInput {
+  readonly expectedWaitDigest: string;
+  readonly outcome: "CONFIRMED" | "NOT_APPLIED";
+  readonly evidenceRefs: readonly string[];
+}
+
+export interface ReconcileRecord {
+  readonly waitDigest: string;
+  readonly operationId: string;
+  readonly outcome: "CONFIRMED" | "NOT_APPLIED";
+  readonly evidenceRefs: readonly string[];
+  readonly reconcileDigest: string;
+  readonly appliedAtProjectionVersion: number;
+}
+
+export interface EvidenceInvalidation {
+  readonly invalidationId: string;
+  readonly fromSpecRevision: number;
+  readonly toSpecRevision: number;
+  readonly invalidatedRefs: readonly string[];
+  readonly reason: string;
+  readonly appliedAtProjectionVersion: number;
+}
+
+export interface CoreTerminalCandidate {
+  readonly candidateId: string;
+  readonly outcome: "FAILED_TERMINAL";
+  readonly reason: "BUDGET_EXHAUSTED";
+  readonly evidenceRefs: readonly string[];
+  readonly candidateDigest: string;
+  readonly createdAtProjectionVersion: number;
+}
+
 export interface CoreProjection {
   readonly schemaVersion: 1;
   readonly taskId: string;
@@ -151,6 +223,13 @@ export interface CoreProjection {
   readonly appliedDecisions: readonly AppliedControlDecision[];
   readonly completedRoleDispatches: readonly CompletedRoleDispatch[];
   readonly reviewGate: AppliedReviewGate | null;
+  readonly reviewGateHistory: readonly AppliedReviewGate[];
+  readonly roleAttemptFailures: readonly RoleAttemptFailure[];
+  readonly recoveryActions: readonly RecoveryActionRecord[];
+  readonly pendingReconcile: PendingReconcile | null;
+  readonly reconcileHistory: readonly ReconcileRecord[];
+  readonly invalidatedEvidence: readonly EvidenceInvalidation[];
+  readonly terminalCandidate: CoreTerminalCandidate | null;
   readonly pendingRole: PendingRoleDispatch | null;
   readonly projectionDigest: string;
 }
@@ -176,6 +255,13 @@ export function createInitialCoreProjection(
     appliedDecisions: [],
     completedRoleDispatches: [],
     reviewGate: null,
+    reviewGateHistory: [],
+    roleAttemptFailures: [],
+    recoveryActions: [],
+    pendingReconcile: null,
+    reconcileHistory: [],
+    invalidatedEvidence: [],
+    terminalCandidate: null,
     pendingRole: null,
   });
 }
@@ -191,8 +277,21 @@ export function createControlDecision(input: ControlDecisionInput): ControlDecis
   if (input.action === "SCHEDULE_ROLE" && targetRole === null) {
     throw validation("CONTROL_TARGET_ROLE_REQUIRED", "SCHEDULE_ROLE requires targetRole");
   }
-  if (input.action !== "SCHEDULE_ROLE" && targetRole !== null) {
+  if (input.action === "REPAIR" && targetRole !== "IMPLEMENTATION") {
+    throw validation("CONTROL_TARGET_ROLE_INVALID", "REPAIR requires targetRole IMPLEMENTATION");
+  }
+  if (input.action === "REPLAN" && targetRole !== "DOCS") {
+    throw validation("CONTROL_TARGET_ROLE_INVALID", "REPLAN requires targetRole DOCS");
+  }
+  if ((input.action === "WAIT" || input.action === "CLOSE") && targetRole !== null) {
     throw validation("CONTROL_TARGET_ROLE_INVALID", `${input.action} cannot carry targetRole`);
+  }
+  const operationId = input.operationId === undefined ? null : requiredString(input.operationId, "operationId");
+  if ((input.action === "WAIT" || (input.action === "RETRY" && targetRole === null)) && operationId === null) {
+    throw validation("CONTROL_OPERATION_ID_REQUIRED", `${input.action} operation control requires operationId`);
+  }
+  if (input.action !== "WAIT" && !(input.action === "RETRY" && targetRole === null) && operationId !== null) {
+    throw validation("CONTROL_OPERATION_ID_INVALID", `${input.action} cannot carry operationId`);
   }
   const reason = requiredString(input.reason, "reason");
   const sourceFindingRefs = normalizeRefs(input.sourceFindingRefs ?? [], "sourceFindingRefs");
@@ -206,6 +305,7 @@ export function createControlDecision(input: ControlDecisionInput): ControlDecis
     expectedState: input.expectedState,
     action: input.action,
     targetRole,
+    operationId,
     sourceFindingRefs,
     evidenceRefs,
     reason,
@@ -234,6 +334,9 @@ export function parseControlDecision(value: unknown, expectedDigest: string): Co
     ...((value["targetRole"] === null || value["targetRole"] === undefined)
       ? {}
       : { targetRole: value["targetRole"] as CoreRole }),
+    ...((value["operationId"] === null || value["operationId"] === undefined)
+      ? {}
+      : { operationId: value["operationId"] as string }),
     sourceFindingRefs: value["sourceFindingRefs"] as readonly string[],
     evidenceRefs: value["evidenceRefs"] as readonly string[],
     reason: value["reason"] as string,
@@ -256,6 +359,10 @@ export function proposeDeterministicControlDecision(
   if (projection.pendingRole !== null) return null;
   const requiredRole = requiredRoleForStage(projection.stage);
   if (projection.state === "RUNNING" && requiredRole !== null) {
+    const request = normalizeBudgetRequest({ roleAttempts: 1, modelCalls: 1 });
+    if (!budgetAvailable(projection.budget, request)) {
+      return budgetExhaustionDecision(projection, `No budget remains to schedule ${requiredRole}`);
+    }
     return createControlDecision({
       taskId: projection.taskId,
       specRevision: projection.specRevision,
@@ -267,7 +374,25 @@ export function proposeDeterministicControlDecision(
         ? [`task-envelope://${projection.envelopeDigest}`]
         : [`role-result://${projection.completedRoleDispatches.at(-1)!.resultDigest}`],
       reason: roleScheduleReason(requiredRole),
-      budgetRequest: { roleAttempts: 1, modelCalls: 1 },
+      budgetRequest: request,
+    });
+  }
+  if (projection.state === "RUNNING" && projection.stage === "REPAIR_REQUIRED" && projection.reviewGate !== null) {
+    const request = normalizeBudgetRequest({ repairs: 1, roleAttempts: 1, modelCalls: 1 });
+    if (!budgetAvailable(projection.budget, request)) {
+      return budgetExhaustionDecision(projection, "No budget remains for the required Repair");
+    }
+    return createControlDecision({
+      taskId: projection.taskId,
+      specRevision: projection.specRevision,
+      expectedProjectionVersion: projection.projectionVersion,
+      expectedState: projection.state,
+      action: "REPAIR",
+      targetRole: "IMPLEMENTATION",
+      sourceFindingRefs: projection.reviewGate.unresolvedBlockingFindingRefs,
+      evidenceRefs: [`review-gate://${projection.reviewGate.gateDigest}`],
+      reason: "Blocking Review Findings require a bounded Implementation Repair",
+      budgetRequest: request,
     });
   }
   return null;
@@ -276,6 +401,7 @@ export function proposeDeterministicControlDecision(
 export function applyControlDecision(
   projection: CoreProjection,
   decision: ControlDecision,
+  nextEnvelope?: TaskEnvelope,
 ): CoreProjection {
   assertTrustedProjection(projection);
   assertTrustedDecision(decision);
@@ -300,13 +426,107 @@ export function applyControlDecision(
       `Expected Projection version ${decision.expectedProjectionVersion}, current version is ${projection.projectionVersion}`,
     );
   }
-  if (decision.action !== "SCHEDULE_ROLE") {
-    throw conflict(
-      "CONTROL_ACTION_NOT_AVAILABLE_IN_SLICE",
-      `${decision.action} is reserved for a later Core Closure slice`,
-    );
-  }
+  assertBudgetRequestForDecision(decision);
   assertBudgetAvailable(projection.budget, decision.budgetRequest);
+
+  if (decision.action === "SCHEDULE_ROLE") {
+    return applyScheduleRole(projection, decision);
+  }
+  if (decision.action === "RETRY") {
+    return decision.targetRole === null
+      ? applyOperationRetry(projection, decision)
+      : applyRoleAttemptRetry(projection, decision);
+  }
+  if (decision.action === "REPAIR") {
+    return applyRepair(projection, decision);
+  }
+  if (decision.action === "REPLAN") {
+    return applyReplan(projection, decision, nextEnvelope);
+  }
+  if (decision.action === "WAIT") {
+    return applyWaitForReconcile(projection, decision);
+  }
+  return applyTerminalCandidate(projection, decision);
+}
+
+export function recordRoleAttemptFailure(
+  projection: CoreProjection,
+  input: RoleAttemptFailureInput,
+): CoreProjection {
+  assertTrustedProjection(projection);
+  const normalized = normalizeRoleFailure(input);
+  const prior = projection.roleAttemptFailures.find((item) => item.dispatchId === normalized.dispatchId);
+  if (prior !== undefined) {
+    if (canonicalJson(failureWithoutProjection(prior)) !== canonicalJson(normalized)) {
+      throw conflict("ROLE_FAILURE_CONFLICT", `Dispatch ${normalized.dispatchId} already failed with another result`);
+    }
+    return projection;
+  }
+  if (projection.state !== "RUNNING" || projection.stage !== runningStageForRole(normalized.role)) {
+    throw conflict("ROLE_FAILURE_NOT_ACTIVE", `Role failure cannot be recorded from stage ${projection.stage}`);
+  }
+  const pending = projection.pendingRole;
+  if (pending === null || pending.dispatchId !== normalized.dispatchId || pending.role !== normalized.role ||
+      pending.generation !== normalized.attemptGeneration || pending.inputDigest !== normalized.inputDigest) {
+    throw conflict("ROLE_FAILURE_DISPATCH_MISMATCH", "Role failure does not match the current Pending Role Dispatch");
+  }
+  assertCanonicalAttemptId(projection.taskId, normalized.role, normalized.attemptGeneration, normalized.attemptId);
+  const nextVersion = projection.projectionVersion + 1;
+  const failureCore = { ...normalized, recordedAtProjectionVersion: nextVersion };
+  return finalizeProjection({
+    ...projectionWithoutDigest(projection),
+    projectionVersion: nextVersion,
+    roleAttemptFailures: [...projection.roleAttemptFailures, {
+      ...failureCore,
+      failureDigest: digest("role-attempt-failure", failureCore),
+    }],
+  });
+}
+
+export function reconcileUnknownEffect(
+  projection: CoreProjection,
+  input: ReconcileInput,
+): CoreProjection {
+  assertTrustedProjection(projection);
+  assertDigest(input.expectedWaitDigest, "expectedWaitDigest");
+  const outcome = input.outcome;
+  if (outcome !== "CONFIRMED" && outcome !== "NOT_APPLIED") {
+    throw validation("INVALID_RECONCILE_OUTCOME", `Invalid Reconcile outcome: ${String(outcome)}`);
+  }
+  const evidenceRefs = normalizeRefs(input.evidenceRefs, "reconcile.evidenceRefs");
+  if (evidenceRefs.length === 0) throw validation("RECONCILE_EVIDENCE_REQUIRED", "Reconcile requires evidence");
+  const prior = projection.reconcileHistory.find((item) => item.waitDigest === input.expectedWaitDigest);
+  if (prior !== undefined) {
+    if (prior.outcome !== outcome || canonicalJson(prior.evidenceRefs) !== canonicalJson(evidenceRefs)) {
+      throw conflict("RECONCILE_CONFLICT", "Unknown Effect was already reconciled with another outcome");
+    }
+    return projection;
+  }
+  if (projection.state !== "WAITING_RECONCILE" || projection.pendingReconcile === null ||
+      projection.pendingReconcile.waitDigest !== input.expectedWaitDigest) {
+    throw conflict("RECONCILE_NOT_PENDING", "No matching Unknown Effect is waiting for reconciliation");
+  }
+  const nextVersion = projection.projectionVersion + 1;
+  const core = {
+    waitDigest: input.expectedWaitDigest,
+    operationId: projection.pendingReconcile.operationId,
+    outcome,
+    evidenceRefs,
+  };
+  return finalizeProjection({
+    ...projectionWithoutDigest(projection),
+    projectionVersion: nextVersion,
+    state: "RUNNING",
+    pendingReconcile: null,
+    reconcileHistory: [...projection.reconcileHistory, {
+      ...core,
+      reconcileDigest: digest("effect-reconcile", core),
+      appliedAtProjectionVersion: nextVersion,
+    }],
+  });
+}
+
+function applyScheduleRole(projection: CoreProjection, decision: ControlDecision): CoreProjection {
   if (projection.pendingRole !== null) {
     throw conflict("ACTIVE_ROLE_EXISTS", `Role ${projection.pendingRole.role} is already pending`);
   }
@@ -320,36 +540,262 @@ export function applyControlDecision(
   if (decision.sourceFindingRefs.length > 0) {
     throw conflict("FINDING_REFS_NOT_ALLOWED", "Linear Role scheduling cannot be driven by Review Findings");
   }
-
   const nextVersion = projection.projectionVersion + 1;
-  const pendingCore = {
-    decisionId: decision.decisionId,
-    role: decision.targetRole,
-    generation: 1,
-    inputDigest: digest("role-dispatch-input", {
-      taskId: projection.taskId,
-      specRevision: projection.specRevision,
-      envelopeDigest: projection.envelopeDigest,
-      role: decision.targetRole,
-      decisionDigest: decision.decisionDigest,
-    }),
-  };
-  const pendingRole: PendingRoleDispatch = {
-    dispatchId: `dispatch:${digestHex("role-dispatch-id", pendingCore)}`,
-    ...pendingCore,
-  };
+  const pendingRole = createPendingRole({
+    taskId: projection.taskId,
+    specRevision: projection.specRevision,
+    envelopeDigest: projection.envelopeDigest,
+    decision,
+    role: requiredRole,
+    generation: nextRoleGeneration(projection, requiredRole),
+  });
   return finalizeProjection({
     ...projectionWithoutDigest(projection),
     projectionVersion: nextVersion,
     stage: runningStageForRole(requiredRole),
     budget: consumeBudget(projection.budget, decision.budgetRequest),
-    appliedDecisions: [...projection.appliedDecisions, {
+    appliedDecisions: appendAppliedDecision(projection, decision, nextVersion),
+    pendingRole,
+  });
+}
+
+function applyOperationRetry(projection: CoreProjection, decision: ControlDecision): CoreProjection {
+  if (projection.state !== "RUNNING" || decision.operationId === null || decision.evidenceRefs.length === 0 ||
+      decision.sourceFindingRefs.length > 0) {
+    throw conflict("OPERATION_RETRY_NOT_ALLOWED", "Operation Retry requires RUNNING state, operationId and not-applied evidence");
+  }
+  const nextVersion = projection.projectionVersion + 1;
+  return finalizeProjection({
+    ...projectionWithoutDigest(projection),
+    projectionVersion: nextVersion,
+    budget: consumeBudget(projection.budget, decision.budgetRequest),
+    appliedDecisions: appendAppliedDecision(projection, decision, nextVersion),
+    recoveryActions: [...projection.recoveryActions, {
       decisionId: decision.decisionId,
-      decisionDigest: decision.decisionDigest,
+      action: "OPERATION_RETRY",
+      targetRole: null,
+      sourceRefs: decision.evidenceRefs,
       appliedAtProjectionVersion: nextVersion,
-      action: decision.action,
+    }],
+  });
+}
+
+function applyRoleAttemptRetry(projection: CoreProjection, decision: ControlDecision): CoreProjection {
+  const pending = projection.pendingRole;
+  if (projection.state !== "RUNNING" || pending === null || decision.targetRole !== pending.role) {
+    throw conflict("ROLE_RETRY_NOT_ALLOWED", "Role Attempt Retry requires the current failed Pending Role");
+  }
+  const failure = projection.roleAttemptFailures.at(-1);
+  if (failure === undefined || failure.dispatchId !== pending.dispatchId || failure.role !== pending.role ||
+      failure.attemptGeneration !== pending.generation) {
+    throw conflict("ROLE_RETRY_FAILURE_REQUIRED", "Role Attempt Retry requires the latest Pending Attempt failure");
+  }
+  const failureRef = `role-failure://${failure.failureDigest}`;
+  if (canonicalJson(decision.evidenceRefs) !== canonicalJson([failureRef]) || decision.sourceFindingRefs.length > 0) {
+    throw conflict("ROLE_RETRY_EVIDENCE_MISMATCH", "Role Attempt Retry must bind the latest Failure Record only");
+  }
+  const nextVersion = projection.projectionVersion + 1;
+  const pendingRole = createPendingRole({
+    taskId: projection.taskId,
+    specRevision: projection.specRevision,
+    envelopeDigest: projection.envelopeDigest,
+    decision,
+    role: pending.role,
+    generation: pending.generation + 1,
+    priorInputDigest: pending.inputDigest,
+    sourceDigest: failure.failureDigest,
+  });
+  return finalizeProjection({
+    ...projectionWithoutDigest(projection),
+    projectionVersion: nextVersion,
+    budget: consumeBudget(projection.budget, decision.budgetRequest),
+    appliedDecisions: appendAppliedDecision(projection, decision, nextVersion),
+    recoveryActions: [...projection.recoveryActions, {
+      decisionId: decision.decisionId,
+      action: "ROLE_ATTEMPT_RETRY",
+      targetRole: pending.role,
+      sourceRefs: [failureRef],
+      appliedAtProjectionVersion: nextVersion,
     }],
     pendingRole,
+  });
+}
+
+function applyRepair(projection: CoreProjection, decision: ControlDecision): CoreProjection {
+  const gate = projection.reviewGate;
+  if (projection.state !== "RUNNING" || projection.stage !== "REPAIR_REQUIRED" ||
+      projection.pendingRole !== null || gate === null || gate.verdict !== "BLOCKED" ||
+      decision.targetRole !== "IMPLEMENTATION") {
+    throw conflict("REPAIR_NOT_REQUIRED", "Repair requires a Blocking Review Gate and no Active Role");
+  }
+  if (canonicalJson(decision.sourceFindingRefs) !== canonicalJson([...gate.unresolvedBlockingFindingRefs].sort())) {
+    throw conflict("REPAIR_FINDING_MISMATCH", "Repair must bind the exact unresolved Blocking Finding set");
+  }
+  if (canonicalJson(decision.evidenceRefs) !== canonicalJson([`review-gate://${gate.gateDigest}`])) {
+    throw conflict("REPAIR_EVIDENCE_MISMATCH", "Repair must bind the current Blocking Review Gate");
+  }
+  const nextVersion = projection.projectionVersion + 1;
+  const pendingRole = createPendingRole({
+    taskId: projection.taskId,
+    specRevision: projection.specRevision,
+    envelopeDigest: projection.envelopeDigest,
+    decision,
+    role: "IMPLEMENTATION",
+    generation: nextRoleGeneration(projection, "IMPLEMENTATION"),
+    sourceDigest: gate.gateDigest,
+  });
+  return finalizeProjection({
+    ...projectionWithoutDigest(projection),
+    projectionVersion: nextVersion,
+    stage: "IMPLEMENTATION_RUNNING",
+    budget: consumeBudget(projection.budget, decision.budgetRequest),
+    appliedDecisions: appendAppliedDecision(projection, decision, nextVersion),
+    recoveryActions: [...projection.recoveryActions, {
+      decisionId: decision.decisionId,
+      action: "REPAIR",
+      targetRole: "IMPLEMENTATION",
+      sourceRefs: decision.sourceFindingRefs,
+      appliedAtProjectionVersion: nextVersion,
+    }],
+    reviewGateHistory: [...projection.reviewGateHistory, gate],
+    reviewGate: null,
+    pendingRole,
+  });
+}
+
+function applyReplan(
+  projection: CoreProjection,
+  decision: ControlDecision,
+  nextEnvelope: TaskEnvelope | undefined,
+): CoreProjection {
+  if (projection.state !== "RUNNING" || projection.stage !== "REPAIR_REQUIRED" ||
+      projection.pendingRole !== null || projection.reviewGate?.verdict !== "BLOCKED" ||
+      decision.targetRole !== "DOCS") {
+    throw conflict("REPLAN_NOT_REQUIRED", "Replan requires a Blocking Review Gate and no Active Role");
+  }
+  if (nextEnvelope === undefined) throw validation("REPLAN_ENVELOPE_REQUIRED", "Replan requires the next TaskEnvelope");
+  const envelope = revalidateEnvelope(nextEnvelope);
+  if (envelope.taskId !== projection.taskId || envelope.specRevision !== projection.specRevision + 1) {
+    throw conflict("REPLAN_ENVELOPE_MISMATCH", "Replan TaskEnvelope must use the same Task and Spec Revision N+1");
+  }
+  const envelopeRef = `task-envelope://${envelope.envelopeDigest}`;
+  if (!decision.evidenceRefs.includes(envelopeRef) ||
+      canonicalJson(decision.sourceFindingRefs) !==
+        canonicalJson([...projection.reviewGate.unresolvedBlockingFindingRefs].sort())) {
+    throw conflict("REPLAN_EVIDENCE_MISMATCH", "Replan must bind the next Envelope and exact Blocking Findings");
+  }
+  const nextVersion = projection.projectionVersion + 1;
+  const invalidatedRefs = normalizeRefs([
+    `task-envelope://${projection.envelopeDigest}`,
+    ...projection.completedRoleDispatches.map((item) => `role-result://${item.resultDigest}`),
+    ...projection.reviewGateHistory.map((item) => `review-gate://${item.gateDigest}`),
+    `review-gate://${projection.reviewGate.gateDigest}`,
+    ...projection.reviewGate.unresolvedBlockingFindingRefs,
+  ], "invalidatedRefs");
+  const invalidationCore = {
+    fromSpecRevision: projection.specRevision,
+    toSpecRevision: envelope.specRevision,
+    invalidatedRefs,
+    reason: decision.reason,
+  };
+  const pendingRole = createPendingRole({
+    taskId: projection.taskId,
+    specRevision: envelope.specRevision,
+    envelopeDigest: envelope.envelopeDigest,
+    decision,
+    role: "DOCS",
+    generation: 1,
+    sourceDigest: projection.reviewGate.gateDigest,
+  });
+  return finalizeProjection({
+    ...projectionWithoutDigest(projection),
+    specRevision: envelope.specRevision,
+    envelopeDigest: envelope.envelopeDigest,
+    projectionVersion: nextVersion,
+    stage: "DOCS_RUNNING",
+    budget: consumeBudget(projection.budget, decision.budgetRequest),
+    appliedDecisions: appendAppliedDecision(projection, decision, nextVersion),
+    recoveryActions: [...projection.recoveryActions, {
+      decisionId: decision.decisionId,
+      action: "REPLAN",
+      targetRole: "DOCS",
+      sourceRefs: [...decision.sourceFindingRefs, envelopeRef].sort(),
+      appliedAtProjectionVersion: nextVersion,
+    }],
+    reviewGateHistory: [...projection.reviewGateHistory, projection.reviewGate],
+    reviewGate: null,
+    invalidatedEvidence: [...projection.invalidatedEvidence, {
+      invalidationId: `invalidation:${digestHex("evidence-invalidation-id", invalidationCore)}`,
+      ...invalidationCore,
+      appliedAtProjectionVersion: nextVersion,
+    }],
+    pendingRole,
+  });
+}
+
+function applyWaitForReconcile(projection: CoreProjection, decision: ControlDecision): CoreProjection {
+  if (projection.state !== "RUNNING" || projection.pendingReconcile !== null ||
+      decision.operationId === null || decision.evidenceRefs.length === 0 || decision.sourceFindingRefs.length > 0) {
+    throw conflict("WAIT_NOT_ALLOWED", "WAIT requires one unknown operation and evidence from RUNNING state");
+  }
+  const nextVersion = projection.projectionVersion + 1;
+  const waitCore = {
+    effectId: `unknown-effect:${digestHex("unknown-effect-id", {
+      taskId: projection.taskId,
+      specRevision: projection.specRevision,
+      operationId: decision.operationId,
+      evidenceRefs: decision.evidenceRefs,
+    })}`,
+    operationId: decision.operationId,
+    evidenceRefs: decision.evidenceRefs,
+    reason: decision.reason,
+  };
+  return finalizeProjection({
+    ...projectionWithoutDigest(projection),
+    projectionVersion: nextVersion,
+    state: "WAITING_RECONCILE",
+    appliedDecisions: appendAppliedDecision(projection, decision, nextVersion),
+    pendingReconcile: {
+      ...waitCore,
+      waitDigest: digest("pending-reconcile", waitCore),
+      enteredAtProjectionVersion: nextVersion,
+    },
+  });
+}
+
+function applyTerminalCandidate(projection: CoreProjection, decision: ControlDecision): CoreProjection {
+  if (projection.state !== "RUNNING" || projection.pendingRole !== null ||
+      !budgetDeficitForStage(projection)) {
+    throw conflict("TERMINAL_CANDIDATE_NOT_ALLOWED", "FAILED_TERMINAL candidate requires a Required Gate with exhausted budget");
+  }
+  const budgetRef = `budget://${digest("core-budget", projection.budget)}`;
+  if (canonicalJson(decision.evidenceRefs) !== canonicalJson([budgetRef]) || decision.sourceFindingRefs.length > 0) {
+    throw conflict("TERMINAL_CANDIDATE_EVIDENCE_MISMATCH", "FAILED_TERMINAL candidate must bind the exhausted Budget");
+  }
+  const nextVersion = projection.projectionVersion + 1;
+  const core = {
+    outcome: "FAILED_TERMINAL" as const,
+    reason: "BUDGET_EXHAUSTED" as const,
+    evidenceRefs: decision.evidenceRefs,
+  };
+  const candidateId = `terminal-candidate:${digestHex("core-terminal-candidate-id", {
+    taskId: projection.taskId,
+    specRevision: projection.specRevision,
+    ...core,
+  })}`;
+  const terminalCandidate: CoreTerminalCandidate = {
+    candidateId,
+    ...core,
+    candidateDigest: digest("core-terminal-candidate", { candidateId, ...core }),
+    createdAtProjectionVersion: nextVersion,
+  };
+  return finalizeProjection({
+    ...projectionWithoutDigest(projection),
+    projectionVersion: nextVersion,
+    state: "CLOSING",
+    stage: "CLOSURE_REQUIRED",
+    appliedDecisions: appendAppliedDecision(projection, decision, nextVersion),
+    terminalCandidate,
   });
 }
 
@@ -371,8 +817,12 @@ export function completeRoleDispatch(
     throw conflict("ROLE_DISPATCH_NOT_PENDING", `Dispatch ${normalized.dispatchId} is not pending`);
   }
   if (pending.dispatchId !== normalized.dispatchId || pending.role !== normalized.role ||
-      pending.inputDigest !== normalized.inputDigest) {
+      pending.generation !== normalized.attemptGeneration || pending.inputDigest !== normalized.inputDigest) {
     throw conflict("ROLE_COMPLETION_DISPATCH_MISMATCH", "Role completion does not match the current Pending Role Dispatch");
+  }
+  const failedAttempt = projection.roleAttemptFailures.find((item) => item.attemptId === normalized.attemptId);
+  if (failedAttempt !== undefined) {
+    throw conflict("ROLE_COMPLETION_AFTER_FAILURE", `Attempt ${normalized.attemptId} is already terminal Failed`);
   }
   if (projection.state !== "RUNNING" || projection.stage !== runningStageForRole(normalized.role)) {
     throw conflict("ILLEGAL_ROLE_COMPLETION", `Role ${normalized.role} cannot complete from stage ${projection.stage}`);
@@ -448,7 +898,10 @@ export function parseCoreProjection(
 ): CoreProjection {
   const trustedEnvelope = revalidateEnvelope(envelope);
   if (!isRecord(value) || value["schemaVersion"] !== 1 || !isRecord(value["budget"]) ||
-      !Array.isArray(value["appliedDecisions"]) || !Array.isArray(value["completedRoleDispatches"])) {
+      !Array.isArray(value["appliedDecisions"]) || !Array.isArray(value["completedRoleDispatches"]) ||
+      !Array.isArray(value["reviewGateHistory"]) || !Array.isArray(value["roleAttemptFailures"]) ||
+      !Array.isArray(value["recoveryActions"]) || !Array.isArray(value["reconcileHistory"]) ||
+      !Array.isArray(value["invalidatedEvidence"])) {
     throw validation("INVALID_CORE_PROJECTION", "serialized CoreProjection has an invalid shape");
   }
   assertTaskId(value["taskId"] as string);
@@ -460,6 +913,13 @@ export function parseCoreProjection(
   const appliedDecisions = value["appliedDecisions"].map(parseAppliedDecision);
   const completedRoleDispatches = value["completedRoleDispatches"].map(parseCompletedRoleDispatch);
   const reviewGate = value["reviewGate"] === null ? null : parseAppliedReviewGate(value["reviewGate"]);
+  const reviewGateHistory = value["reviewGateHistory"].map(parseAppliedReviewGate);
+  const roleAttemptFailures = value["roleAttemptFailures"].map(parseRoleAttemptFailure);
+  const recoveryActions = value["recoveryActions"].map(parseRecoveryAction);
+  const pendingReconcile = value["pendingReconcile"] === null ? null : parsePendingReconcile(value["pendingReconcile"]);
+  const reconcileHistory = value["reconcileHistory"].map(parseReconcileRecord);
+  const invalidatedEvidence = value["invalidatedEvidence"].map(parseEvidenceInvalidation);
+  const terminalCandidate = value["terminalCandidate"] === null ? null : parseTerminalCandidate(value["terminalCandidate"]);
   const pendingRole = value["pendingRole"] === null
     ? null
     : parsePendingRole(value["pendingRole"]);
@@ -475,6 +935,13 @@ export function parseCoreProjection(
     appliedDecisions,
     completedRoleDispatches,
     reviewGate,
+    reviewGateHistory,
+    roleAttemptFailures,
+    recoveryActions,
+    pendingReconcile,
+    reconcileHistory,
+    invalidatedEvidence,
+    terminalCandidate,
     pendingRole,
   };
   const parsed = finalizeProjection(core);
@@ -518,6 +985,74 @@ function normalizeBudgetRequest(input: CoreBudgetRequestInput): CoreBudgetReques
   };
 }
 
+function budgetAvailable(budget: CoreBudget, request: CoreBudgetRequest): boolean {
+  return request.operationRetries <= budget.operationRetriesRemaining &&
+    request.roleAttempts <= budget.roleAttemptsRemaining &&
+    request.repairs <= budget.repairsRemaining &&
+    request.replans <= budget.replansRemaining &&
+    request.modelCalls <= budget.modelCallsRemaining &&
+    request.totalTimeMs <= budget.totalTimeRemainingMs;
+}
+
+function budgetDeficitForStage(projection: CoreProjection): boolean {
+  if (projection.state !== "RUNNING" || projection.pendingRole !== null) return false;
+  if (requiredRoleForStage(projection.stage) !== null) {
+    return !budgetAvailable(projection.budget, normalizeBudgetRequest({ roleAttempts: 1, modelCalls: 1 }));
+  }
+  if (projection.stage === "REPAIR_REQUIRED") {
+    return !budgetAvailable(
+      projection.budget,
+      normalizeBudgetRequest({ repairs: 1, roleAttempts: 1, modelCalls: 1 }),
+    );
+  }
+  return false;
+}
+
+function budgetExhaustionDecision(projection: CoreProjection, reason: string): ControlDecision {
+  return createControlDecision({
+    taskId: projection.taskId,
+    specRevision: projection.specRevision,
+    expectedProjectionVersion: projection.projectionVersion,
+    expectedState: projection.state,
+    action: "CLOSE",
+    evidenceRefs: [`budget://${digest("core-budget", projection.budget)}`],
+    reason,
+    budgetRequest: {},
+  });
+}
+
+function assertBudgetRequestForDecision(decision: ControlDecision): void {
+  const request = decision.budgetRequest;
+  const hasOnly = (expected: Partial<CoreBudgetRequest>): boolean =>
+    request.operationRetries === (expected.operationRetries ?? 0) &&
+    request.roleAttempts === (expected.roleAttempts ?? 0) &&
+    request.repairs === (expected.repairs ?? 0) &&
+    request.replans === (expected.replans ?? 0) &&
+    request.totalTimeMs === (expected.totalTimeMs ?? 0) &&
+    request.modelCalls <= (expected.modelCalls ?? 0);
+
+  let valid = false;
+  if (decision.action === "SCHEDULE_ROLE" || (decision.action === "RETRY" && decision.targetRole !== null)) {
+    valid = request.roleAttempts === 1 && hasOnly({ roleAttempts: 1, modelCalls: 1 });
+  } else if (decision.action === "RETRY") {
+    valid = request.operationRetries === 1 && hasOnly({ operationRetries: 1 });
+  } else if (decision.action === "REPAIR") {
+    valid = request.repairs === 1 && request.roleAttempts === 1 &&
+      hasOnly({ repairs: 1, roleAttempts: 1, modelCalls: 1 });
+  } else if (decision.action === "REPLAN") {
+    valid = request.replans === 1 && request.roleAttempts === 1 &&
+      hasOnly({ replans: 1, roleAttempts: 1, modelCalls: 1 });
+  } else {
+    valid = hasOnly({});
+  }
+  if (!valid) {
+    throw conflict(
+      "INVALID_CONTROL_BUDGET_REQUEST",
+      `${decision.action} carries a budget shape that does not match its recovery class`,
+    );
+  }
+}
+
 function assertBudgetAvailable(budget: CoreBudget, request: CoreBudgetRequest): void {
   const pairs = [
     ["operationRetries", request.operationRetries, budget.operationRetriesRemaining],
@@ -530,10 +1065,6 @@ function assertBudgetAvailable(budget: CoreBudget, request: CoreBudgetRequest): 
   const exhausted = pairs.find(([, requested, remaining]) => requested > remaining);
   if (exhausted !== undefined) {
     throw conflict("CORE_BUDGET_EXHAUSTED", `${exhausted[0]} requested ${exhausted[1]}, remaining ${exhausted[2]}`);
-  }
-  if (request.roleAttempts !== 1 || request.modelCalls > 1 || request.operationRetries > 0 ||
-      request.repairs > 0 || request.replans > 0) {
-    throw conflict("INVALID_ROLE_BUDGET_REQUEST", "initial Role scheduling consumes exactly one Role Attempt and at most one model call");
   }
 }
 
@@ -577,6 +1108,239 @@ function parsePendingRole(value: unknown): PendingRoleDispatch {
     role: value["role"] as CoreRole,
     generation: value["generation"] as number,
     inputDigest: value["inputDigest"] as string,
+  };
+}
+
+function createPendingRole(input: {
+  readonly taskId: string;
+  readonly specRevision: number;
+  readonly envelopeDigest: string;
+  readonly decision: ControlDecision;
+  readonly role: CoreRole;
+  readonly generation: number;
+  readonly priorInputDigest?: string;
+  readonly sourceDigest?: string;
+}): PendingRoleDispatch {
+  const inputCore = {
+    taskId: input.taskId,
+    specRevision: input.specRevision,
+    envelopeDigest: input.envelopeDigest,
+    role: input.role,
+    generation: input.generation,
+    decisionDigest: input.decision.decisionDigest,
+    priorInputDigest: input.priorInputDigest ?? null,
+    sourceDigest: input.sourceDigest ?? null,
+  };
+  const inputDigest = digest("role-dispatch-input", inputCore);
+  return {
+    dispatchId: `dispatch:${digestHex("role-dispatch-id", {
+      taskId: input.taskId,
+      specRevision: input.specRevision,
+      role: input.role,
+      generation: input.generation,
+      decisionId: input.decision.decisionId,
+      inputDigest,
+    })}`,
+    decisionId: input.decision.decisionId,
+    role: input.role,
+    generation: input.generation,
+    inputDigest,
+  };
+}
+
+function nextRoleGeneration(projection: CoreProjection, role: CoreRole): number {
+  const generations = [
+    ...projection.completedRoleDispatches.filter((item) => item.role === role).map((item) => item.attemptGeneration),
+    ...projection.roleAttemptFailures.filter((item) => item.role === role).map((item) => item.attemptGeneration),
+    ...(projection.pendingRole?.role === role ? [projection.pendingRole.generation] : []),
+  ];
+  return Math.max(0, ...generations) + 1;
+}
+
+function appendAppliedDecision(
+  projection: CoreProjection,
+  decision: ControlDecision,
+  nextVersion: number,
+): readonly AppliedControlDecision[] {
+  return [...projection.appliedDecisions, {
+    decisionId: decision.decisionId,
+    decisionDigest: decision.decisionDigest,
+    appliedAtProjectionVersion: nextVersion,
+    action: decision.action,
+  }];
+}
+
+function normalizeRoleFailure(input: RoleAttemptFailureInput): RoleAttemptFailureInput {
+  if (typeof input.dispatchId !== "string" || !input.dispatchId.startsWith("dispatch:")) {
+    throw validation("INVALID_ROLE_FAILURE", "Role failure dispatchId is invalid");
+  }
+  assertCoreRole(input.role);
+  const attemptId = requiredString(input.attemptId, "attemptId");
+  assertPositiveInteger(input.attemptGeneration, "attemptGeneration");
+  assertDigest(input.inputDigest, "inputDigest");
+  assertDigest(input.resultDigest, "resultDigest");
+  if (input.outcome !== "FAILED" && input.outcome !== "INVALID_OUTPUT") {
+    throw validation("INVALID_ROLE_FAILURE", "Role failure outcome must be FAILED or INVALID_OUTPUT");
+  }
+  const errorCode = requiredString(input.errorCode, "errorCode");
+  assertErrorCategory(input.errorCategory);
+  return {
+    dispatchId: input.dispatchId,
+    role: input.role,
+    attemptId,
+    attemptGeneration: input.attemptGeneration,
+    inputDigest: input.inputDigest,
+    resultDigest: input.resultDigest,
+    outcome: input.outcome,
+    errorCode,
+    errorCategory: input.errorCategory,
+  };
+}
+
+function failureWithoutProjection(value: RoleAttemptFailure): RoleAttemptFailureInput {
+  const { failureDigest: _digest, recordedAtProjectionVersion: _version, ...input } = value;
+  return input;
+}
+
+function assertCanonicalAttemptId(taskId: string, role: CoreRole, generation: number, attemptId: string): void {
+  const expected = `${taskId}/CORE-${role}/attempt-${String(generation).padStart(3, "0")}`;
+  if (attemptId !== expected) {
+    throw conflict("ROLE_ATTEMPT_IDENTITY_INVALID", `Expected canonical Attempt ID ${expected}`);
+  }
+}
+
+function parseRoleAttemptFailure(value: unknown): RoleAttemptFailure {
+  if (!isRecord(value)) throw validation("INVALID_ROLE_FAILURE", "Role Attempt Failure is invalid");
+  const normalized = normalizeRoleFailure({
+    dispatchId: value["dispatchId"] as string,
+    role: value["role"] as CoreRole,
+    attemptId: value["attemptId"] as string,
+    attemptGeneration: value["attemptGeneration"] as number,
+    inputDigest: value["inputDigest"] as string,
+    resultDigest: value["resultDigest"] as string,
+    outcome: value["outcome"] as "FAILED" | "INVALID_OUTPUT",
+    errorCode: value["errorCode"] as string,
+    errorCategory: value["errorCategory"] as MoyeErrorCategory,
+  });
+  assertPositiveInteger(value["recordedAtProjectionVersion"], "recordedAtProjectionVersion");
+  const core = { ...normalized, recordedAtProjectionVersion: value["recordedAtProjectionVersion"] as number };
+  const failureDigest = digest("role-attempt-failure", core);
+  if (value["failureDigest"] !== failureDigest) {
+    throw conflict("ROLE_FAILURE_INTEGRITY_FAILED", "Role Attempt Failure does not match its digest");
+  }
+  return { ...core, failureDigest };
+}
+
+function parseRecoveryAction(value: unknown): RecoveryActionRecord {
+  if (!isRecord(value) || typeof value["decisionId"] !== "string" || !Array.isArray(value["sourceRefs"])) {
+    throw validation("INVALID_RECOVERY_ACTION", "Recovery Action is invalid");
+  }
+  const action = value["action"];
+  const actions: readonly RecoveryActionRecord["action"][] = [
+    "OPERATION_RETRY", "ROLE_ATTEMPT_RETRY", "REPAIR", "REPLAN",
+  ];
+  if (!actions.includes(action as RecoveryActionRecord["action"])) {
+    throw validation("INVALID_RECOVERY_ACTION", "Recovery Action kind is invalid");
+  }
+  const targetRole = value["targetRole"] === null ? null : value["targetRole"] as CoreRole;
+  if (targetRole !== null) assertCoreRole(targetRole);
+  assertPositiveInteger(value["appliedAtProjectionVersion"], "appliedAtProjectionVersion");
+  return {
+    decisionId: value["decisionId"],
+    action: action as RecoveryActionRecord["action"],
+    targetRole,
+    sourceRefs: normalizeRefs(value["sourceRefs"] as string[], "recoveryAction.sourceRefs"),
+    appliedAtProjectionVersion: value["appliedAtProjectionVersion"] as number,
+  };
+}
+
+function parsePendingReconcile(value: unknown): PendingReconcile {
+  if (!isRecord(value) || typeof value["effectId"] !== "string" ||
+      !value["effectId"].startsWith("unknown-effect:") || !Array.isArray(value["evidenceRefs"])) {
+    throw validation("INVALID_PENDING_RECONCILE", "Pending Reconcile is invalid");
+  }
+  const core = {
+    effectId: value["effectId"],
+    operationId: requiredString(value["operationId"], "operationId"),
+    evidenceRefs: normalizeRefs(value["evidenceRefs"] as string[], "pendingReconcile.evidenceRefs"),
+    reason: requiredString(value["reason"], "reason"),
+  };
+  assertPositiveInteger(value["enteredAtProjectionVersion"], "enteredAtProjectionVersion");
+  const waitDigest = digest("pending-reconcile", core);
+  if (value["waitDigest"] !== waitDigest) {
+    throw conflict("PENDING_RECONCILE_INTEGRITY_FAILED", "Pending Reconcile does not match its digest");
+  }
+  return { ...core, waitDigest, enteredAtProjectionVersion: value["enteredAtProjectionVersion"] as number };
+}
+
+function parseReconcileRecord(value: unknown): ReconcileRecord {
+  if (!isRecord(value) || !Array.isArray(value["evidenceRefs"])) {
+    throw validation("INVALID_RECONCILE_RECORD", "Reconcile Record is invalid");
+  }
+  assertDigest(value["waitDigest"], "waitDigest");
+  if (value["outcome"] !== "CONFIRMED" && value["outcome"] !== "NOT_APPLIED") {
+    throw validation("INVALID_RECONCILE_OUTCOME", "Reconcile outcome is invalid");
+  }
+  const core = {
+    waitDigest: value["waitDigest"],
+    operationId: requiredString(value["operationId"], "operationId"),
+    outcome: value["outcome"] as ReconcileRecord["outcome"],
+    evidenceRefs: normalizeRefs(value["evidenceRefs"] as string[], "reconcile.evidenceRefs"),
+  };
+  assertPositiveInteger(value["appliedAtProjectionVersion"], "appliedAtProjectionVersion");
+  const reconcileDigest = digest("effect-reconcile", core);
+  if (value["reconcileDigest"] !== reconcileDigest) {
+    throw conflict("RECONCILE_INTEGRITY_FAILED", "Reconcile Record does not match its digest");
+  }
+  return { ...core, reconcileDigest, appliedAtProjectionVersion: value["appliedAtProjectionVersion"] as number };
+}
+
+function parseEvidenceInvalidation(value: unknown): EvidenceInvalidation {
+  if (!isRecord(value) || typeof value["invalidationId"] !== "string" ||
+      !value["invalidationId"].startsWith("invalidation:") || !Array.isArray(value["invalidatedRefs"])) {
+    throw validation("INVALID_EVIDENCE_INVALIDATION", "Evidence Invalidation is invalid");
+  }
+  assertPositiveInteger(value["fromSpecRevision"], "fromSpecRevision");
+  assertPositiveInteger(value["toSpecRevision"], "toSpecRevision");
+  assertPositiveInteger(value["appliedAtProjectionVersion"], "appliedAtProjectionVersion");
+  const core = {
+    fromSpecRevision: value["fromSpecRevision"] as number,
+    toSpecRevision: value["toSpecRevision"] as number,
+    invalidatedRefs: normalizeRefs(value["invalidatedRefs"] as string[], "invalidatedRefs"),
+    reason: requiredString(value["reason"], "reason"),
+  };
+  const expectedId = `invalidation:${digestHex("evidence-invalidation-id", core)}`;
+  if (value["invalidationId"] !== expectedId) {
+    throw conflict("EVIDENCE_INVALIDATION_INTEGRITY_FAILED", "Evidence Invalidation identity is stale");
+  }
+  return {
+    invalidationId: expectedId,
+    ...core,
+    appliedAtProjectionVersion: value["appliedAtProjectionVersion"] as number,
+  };
+}
+
+function parseTerminalCandidate(value: unknown): CoreTerminalCandidate {
+  if (!isRecord(value) || typeof value["candidateId"] !== "string" ||
+      !value["candidateId"].startsWith("terminal-candidate:") || !Array.isArray(value["evidenceRefs"]) ||
+      value["outcome"] !== "FAILED_TERMINAL" || value["reason"] !== "BUDGET_EXHAUSTED") {
+    throw validation("INVALID_TERMINAL_CANDIDATE", "Terminal Candidate is invalid");
+  }
+  const core = {
+    outcome: "FAILED_TERMINAL" as const,
+    reason: "BUDGET_EXHAUSTED" as const,
+    evidenceRefs: normalizeRefs(value["evidenceRefs"] as string[], "terminalCandidate.evidenceRefs"),
+  };
+  const candidateDigest = digest("core-terminal-candidate", { candidateId: value["candidateId"], ...core });
+  assertPositiveInteger(value["createdAtProjectionVersion"], "createdAtProjectionVersion");
+  if (value["candidateDigest"] !== candidateDigest) {
+    throw conflict("TERMINAL_CANDIDATE_INTEGRITY_FAILED", "Terminal Candidate does not match its digest");
+  }
+  return {
+    candidateId: value["candidateId"],
+    ...core,
+    candidateDigest,
+    createdAtProjectionVersion: value["createdAtProjectionVersion"] as number,
   };
 }
 
@@ -738,6 +1502,15 @@ function assertControlAction(value: ControlAction): void {
 function assertControlState(value: CoreControlState): void {
   const states: readonly CoreControlState[] = ["RUNNING", "WAITING_RECONCILE", "WAITING_HUMAN", "CLOSING", "CLOSED"];
   if (!states.includes(value)) throw validation("INVALID_CORE_STATE", `Invalid Core state: ${String(value)}`);
+}
+
+function assertErrorCategory(value: MoyeErrorCategory): void {
+  const categories: readonly MoyeErrorCategory[] = [
+    "VALIDATION", "CONFLICT", "NOT_FOUND", "TRANSIENT_IO", "UNKNOWN_SIDE_EFFECT", "TERMINAL",
+  ];
+  if (!categories.includes(value)) {
+    throw validation("INVALID_ERROR_CATEGORY", `Invalid error category: ${String(value)}`);
+  }
 }
 
 function assertControlStage(value: CoreControlStage): void {

@@ -142,7 +142,7 @@ ProjectBoard 接收 Coding 的状态和事件摘要；`src/trace/coding-trace.ts
 - `ControlDecision` 固定 Expected State、Expected Projection Version、Action、Target Role、Finding/Evidence 引用、预算申请、原因和规范 SHA-256 Digest；
 - 确定性 Fake Orchestrator 只从已验证的 `TaskEnvelope + CoreProjection` 生成当前 Required Gate 对应的 Docs、Implementation 或 Review Role 候选，不读取聊天历史、Agent 内存或本地临时路径；
 - Reducer 是当前切片唯一合法转换入口。它先识别已确认的相同 Decision 重放，再校验 Task/Spec、状态、版本、预算、单 Pending Role 和 Required Gate，保证丢失确认后不会重复派发；
-- `completeRoleDispatch` 只接受与唯一 Pending Dispatch、Role、Input Digest、Attempt ID/Generation 一致的成功结果摘要；相同完成重放不推进版本，不同结果冲突。Docs 与 Implementation 完成后进入下一 Role Required，Review 完成后停在 `REVIEW_GATE_REQUIRED`；只有可信 Review Gate 可进入 `VERIFICATION_REQUIRED` 或 `REPAIR_REQUIRED`。`RETRY`、实际 `REPAIR`/`REPLAN` 循环、Verification、最终 Docs Impact 和 Closure 仍由后续切片实现，不能由当前 Projection 伪造。
+- `completeRoleDispatch` 只接受与唯一 Pending Dispatch、Role、Input Digest、Attempt ID/Generation 一致的成功结果摘要；相同完成重放不推进版本，不同结果冲突。Docs 与 Implementation 完成后进入下一 Role Required，Review 完成后停在 `REVIEW_GATE_REQUIRED`；只有可信 Review Gate 可进入 `VERIFICATION_REQUIRED` 或 `REPAIR_REQUIRED`。Verification、最终 Docs Impact 和 Closure 仍由后续切片实现，不能由当前 Projection 伪造。
 
 这个模块是未来 keyed `CoreClosureWorkflow/<task_id>` 的 Reducer，不拥有独立进程或第二套运行时状态。现有 `CodingTaskWorkflow` 在完整 Core Workflow 接入前继续保持当前行为。
 
@@ -150,7 +150,7 @@ ProjectBoard 接收 Coding 的状态和事件摘要；`src/trace/coding-trace.ts
 
 `src/agent/role-runner.ts` 为 Core 三种执行角色提供同一执行外壳，当前由确定性 Fake Runner 验证，尚未接入真实模型进程或 Restate：
 
-- `RoleAttempt` 只能从 Core Projection 的唯一 Pending Role Dispatch 创建，固定 Role Step、Generation、Dispatch/Input Digest，并执行 `SCHEDULED → RUNNING → SUCCEEDED | FAILED | CANCELLED` 单向转换；Retry 要求连续且全终态历史，创建新的 Generation；
+- `RoleAttempt` 只能从 Core Projection 的唯一 Pending Role Dispatch 创建，固定 Role Step、Generation、Dispatch/Input Digest，并执行 `SCHEDULED → RUNNING → SUCCEEDED | FAILED | CANCELLED` 单向转换；Role Retry 必须使用 Core 新派发的 Generation N+1 和完整连续历史，普通入口不能绕过失败记录复活旧 Attempt；
 - `RoleRunRequest` 固定 Task、Spec Revision、Role、Attempt、Runner Kind、Scope、Prompt Digest 和内容寻址 Run ID；序列化恢复要求调用方提供 Expected Run ID；
 - Docs 输出 Spec/Plan/Design 或 Docs Impact/Knowledge Sync，Implementation 强制 Result Commit/Checkpoint/Test Evidence/Self Review，Review 强制 ReviewResult，并在 `FINDINGS` Verdict 下绑定 Finding Artifact；
 - 每个 Artifact Manifest 固定文件摘要、字节数和完整 Producer Tuple，恢复时重算 Manifest、文件内容和角色输出引用；不同 Artifact Kind 不能冒充；
@@ -169,7 +169,17 @@ ProjectBoard 接收 Coding 的状态和事件摘要；`src/trace/coding-trace.ts
 - `ReviewGateResult` 要求 Result 中的 Finding 集合与当前 Finding Record 精确匹配。任一 `BLOCKING + OPEN` 产生 `BLOCKED`，否则 `PASSED`；Gate Digest 同时绑定业务 ReviewResult Digest 和 Role Run Manifest Digest；
 - Core Reducer 对最近完成的 Review Manifest 再做 Gate 绑定。通过进入 `VERIFICATION_REQUIRED`，阻塞进入 `REPAIR_REQUIRED`；相同 Gate 重放不推进版本，不同 Gate 冲突。
 
-`REPAIR_REQUIRED` 当前是明确停止点，不会自行创建 Implementation Attempt。Finding 驱动 Repair、Replan、Spec Revision/Evidence 失效与预算扣减属于下一切片。
+### 5.0.7 当前已实现 Recovery Control 与中央预算切片
+
+`src/domain/core-control.ts` 继续作为唯一 Reducer，已实现四类互不混淆的恢复语义：
+
+- 明确 Role 失败先形成内容寻址 Failure Record；`RETRY(role)` 必须绑定最近失败，创建新 Dispatch 和 Generation N+1，只扣 Role Attempt/Model Call 预算；`RETRY(operation)` 不改变 Pending Role 或 Attempt Generation，只扣 Operation Retry 预算；
+- 外部结果未知时，`WAIT` 保存 Unknown Effect 并进入 `WAITING_RECONCILE`。只有带证据的 `CONFIRMED | NOT_APPLIED` 对账才能恢复 RUNNING；等待期间 Reducer 拒绝 Retry、Repair 和 Replan；
+- Blocking Review Gate 的 `REPAIR` 必须精确绑定全部未解决 Finding 和当前 Gate，保留 Gate 历史并派发 Implementation Generation N+1；Repair 原子扣减 Repair、Role Attempt 和 Model Call；
+- `REPLAN` 必须绑定同一 Task 的 Spec Revision N+1 TaskEnvelope 和精确 Blocking Finding，派发新 Spec 的 Docs Generation 1，同时显式记录旧 Envelope、Role Result、Review Gate 与 Finding 引用失效，历史事实不删除；
+- 每种 Decision 都有固定预算形状，Reducer 先完整校验再扣减，不能把 Operation Retry 夹带进 Role Retry/Repair/Replan。Required Gate 缺少所需预算时，确定性决策只产生一个内容寻址 `FAILED_TERMINAL` 候选并进入 `CLOSING`；最终 ClosureResult 仍由后续 Closure 切片生成。
+
+这些恢复事实仍是纯领域协议，尚未接入 keyed Restate Core Workflow；当前单 Agent `CodingTaskWorkflow` 的既有恢复语义不变。
 
 ### 5.1 模型关系
 

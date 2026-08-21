@@ -107,7 +107,7 @@ describe("Core Control kernel", () => {
       action: "CLOSE",
       budgetRequest: {},
     });
-    expect(() => applyControlDecision(initial, prematureClose)).toThrow(/reserved for a later Core Closure slice/);
+    expect(() => applyControlDecision(initial, prematureClose)).toThrow(/requires a Required Gate with exhausted budget/);
   });
 
   it("enforces the single pending Role invariant", () => {
@@ -125,10 +125,13 @@ describe("Core Control kernel", () => {
   it("checks central budget before dispatch and rejects disguised nested retry requests", () => {
     const envelope = taskEnvelope();
     const exhausted = createInitialCoreProjection(envelope, { ...budget(), roleAttempts: 0 });
-    expect(() => applyControlDecision(
-      exhausted,
-      requireDecision(proposeDeterministicControlDecision(envelope, exhausted)),
-    )).toThrow(/roleAttempts requested 1, remaining 0/);
+    const terminal = requireDecision(proposeDeterministicControlDecision(envelope, exhausted));
+    expect(terminal.action).toBe("CLOSE");
+    expect(applyControlDecision(exhausted, terminal)).toMatchObject({
+      state: "CLOSING",
+      stage: "CLOSURE_REQUIRED",
+      terminalCandidate: { outcome: "FAILED_TERMINAL", reason: "BUDGET_EXHAUSTED" },
+    });
 
     const initial = createInitialCoreProjection(envelope, budget());
     const multiplied = createControlDecision({
@@ -137,7 +140,7 @@ describe("Core Control kernel", () => {
       targetRole: "DOCS",
       budgetRequest: { roleAttempts: 1, modelCalls: 1, operationRetries: 1 },
     });
-    expect(() => applyControlDecision(initial, multiplied)).toThrow(/exactly one Role Attempt/);
+    expect(() => applyControlDecision(initial, multiplied)).toThrow(/budget shape/);
   });
 
   it("normalizes unordered references and rejects conflicting serialized content", () => {

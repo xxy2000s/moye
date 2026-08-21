@@ -1,0 +1,86 @@
+schema_version: 1
+task_id: TASK-0016
+graph_revision: 39
+intents: [task-create, task-runtime-change, coding-task-poc, docs-change]
+changed_paths:
+  - docs/delivery/backlog/BL-0003.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/tasks/TASK-0016/task.yaml
+  - docs/delivery/tasks/TASK-0016/spec.md
+  - docs/delivery/tasks/TASK-0016/design.md
+  - docs/delivery/tasks/TASK-0016/plan.md
+  - docs/delivery/tasks/TASK-0016/verification.md
+  - docs/delivery/tasks/TASK-0016/docs-impact.yaml
+  - docs/delivery/tasks/README.md
+  - docs/graph.yaml
+  - docs/sources/brainstorm/multi-agent-core-closure-requirements.md
+  - docs/knowledge/current/architecture/overview.md
+  - docs/knowledge/current/architecture/task-runtime-kernel.md
+  - docs/knowledge/current/codemap/README.md
+  - src/domain/core-control.ts
+  - src/agent/role-runner.ts
+  - tests/unit/core-control.test.ts
+  - tests/unit/core-recovery.test.ts
+  - tests/unit/role-runner.test.ts
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - backlog-index
+    - tasks-index
+    - task-runtime-kernel
+    - durable-runtime-pitfalls
+    - overnight-multi-task-goal
+    - finding-backlog-docs-not-projected
+    - bl-0008-backlog-projection-sync
+    - bl-0002-single-agent-coding-loop
+    - restate-poc-architecture
+    - meta-index
+    - adr-0002-doc-lifecycle-roles
+    - bl-0003-repair-replan-budget
+    - sources-index
+    - brainstorm-index
+    - multi-agent-core-closure-requirements
+    - architecture-index
+    - architecture-overview
+    - task-0016-manifest
+    - task-0016-spec
+    - task-0016-design
+    - task-0016-plan
+    - task-0016-verification
+    - task-0016-docs-impact
+  reviewed:
+    architecture-overview: { outcome: updated, reason: "Current slice 登记四类恢复、UNKNOWN 对账和预算终止候选，并保留尚未接入 Core Workflow 的边界" }
+    codemap: { outcome: updated, reason: "登记 Recovery Reducer 职责以及 retry/replan/预算风险矩阵和测试证据" }
+    task-runtime-kernel: { outcome: updated, reason: "新增 5.0.7，并修正前序章节中 Repair/Replan 尚未实现的过期边界" }
+    document-control-plane: { outcome: unchanged, reason: "Evidence Invalidation 属于 Task 领域事实，不改变文档路由、提升或 Archive Gate 规则" }
+    moye-task-control-skill: { outcome: unchanged, reason: "现有 Route、验证、Result Commit、Runtime Closure 与 Archive Gate 流程完整适用" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "Recovery 仍是纯领域协议，未注册 Restate Service 或改变 PoC 选型" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "Task/Backlog/Source 消费继续遵循既有文档生命周期决策" }
+    tasks-index: { outcome: updated, reason: "登记 TASK-0016 Active Task；Archive 后由独立 housekeeping commit 收敛索引" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "当前 Core 路线已由母需求取代，不回写历史外围 Harness 讨论" }
+    multi-agent-core-closure-requirements: { outcome: updated, reason: "标记 CORE-REQ-04 / Slice 4 已由 TASK-0016 实现并通过验证，等待 Runtime 归档" }
+    task-spec-document-closure-brainstorm: { outcome: unchanged, reason: "遵循 Task/Spec/Document 分层，不改写早期开放问题" }
+    task-0013-manifest: { outcome: unchanged, reason: "扩展既有 Core Projection，不改写 TASK-0013 历史证据" }
+    task-0014-manifest: { outcome: unchanged, reason: "强化 Retry Attempt 历史约束，不改写 TASK-0014 历史证据" }
+    task-0015-manifest: { outcome: unchanged, reason: "消费 Review Gate 进入 Repair/Replan，但不改写 TASK-0015 历史证据" }
+    task-0016-manifest: { outcome: updated, reason: "Task 包记录实现计划、验证证据和 Docs Impact" }
+    task-0001-manifest: { outcome: unchanged, reason: "不改变基础 Task/Archive Runtime 历史事实" }
+    task-0002-manifest: { outcome: unchanged, reason: "不改变 Backlog 投影同步协议" }
+    task-0003-manifest: { outcome: unchanged, reason: "复用 TaskEnvelope 与 Spec Revision 规则，不改写协议历史" }
+    task-0004-manifest: { outcome: unchanged, reason: "不改变 Git Workspace Effect 或 Checkpoint" }
+    task-0005-manifest: { outcome: unchanged, reason: "不改变既有 Coding AgentRunner 或真实 Adapter" }
+    task-0006-manifest: { outcome: unchanged, reason: "固定 Coding Workflow 与 Verification/Merge 行为保持不变" }
+    task-0007-manifest: { outcome: unchanged, reason: "不改变 Coding Trace 与既有恢复建议" }
+    task-0008-manifest: { outcome: unchanged, reason: "不改变 Coding Demo 或 Board" }
+    task-0009-manifest: { outcome: unchanged, reason: "不改变 OTLP/Phoenix Trace Demo" }
+    restate-poc-architecture: { outcome: unchanged, reason: "Recovery 尚未接入 Restate Service，不改变当前运行拓扑" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "继续使用现有 TypeScript 基线，无新依赖或选型" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "不改变 TraceSink、OTLP 或 Phoenix 边界" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "实现遵守 UNKNOWN 先对账、Attempt 不复活、历史不删除和预算有界，无新稳定陷阱" }
+    bl-0006-production-observability: { outcome: unchanged, reason: "本 Task 不实现 Observer、Trace 成本聚合或生产可观测能力" }
+    bl-0007-knowledge-feedback-loop: { outcome: unchanged, reason: "Evidence Invalidation 不等于长期知识提升，本 Task 不实现知识候选或效果反馈" }
+    local-restate-poc-runbook: { outcome: unchanged, reason: "真实 Restate 回归沿用现有步骤，无操作变化" }
+    research-index: { outcome: not_applicable, reason: "本 Task 未引入外部资料、实验比较或新的选型证据" }

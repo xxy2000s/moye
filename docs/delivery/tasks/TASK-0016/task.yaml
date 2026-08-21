@@ -1,0 +1,19 @@
+schema_version: 1
+id: TASK-0016
+title: 实现 Retry、Repair、Replan 与中央预算
+status: executing
+outcome:
+backlog_refs:
+  - BL-0003
+spec_revision: 1
+workflow_id: task/TASK-0016
+execution_mode: goal-bootstrap
+base_commit: cfe0a49dc6b37ed2ae70c3becc1bb16b312dddc5
+archive:
+  status: not_ready
+  archived_at: null
+  archived_path: null
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null

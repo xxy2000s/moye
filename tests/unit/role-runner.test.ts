@@ -23,8 +23,10 @@ import { createTaskEnvelope, type TaskEnvelope } from "../../src/domain/coding-t
 import {
   applyControlDecision,
   completeRoleDispatch,
+  createControlDecision,
   createInitialCoreProjection,
   proposeDeterministicControlDecision,
+  recordRoleAttemptFailure,
   type ControlDecision,
   type CoreProjection,
 } from "../../src/domain/core-control.js";
@@ -97,7 +99,7 @@ describe("Role Agent Runner", () => {
 
   it("creates a new Attempt generation after failure and never revives a terminal Attempt", async () => {
     const fixture = await roleFixture();
-    const scheduled = schedule(fixture.envelope, fixture.initial);
+    let scheduled = schedule(fixture.envelope, fixture.initial);
     const first = await runPendingRole(fixture, scheduled, failureScript());
 
     expect(first.finished).toMatchObject({ status: "FAILED", generation: 1 });
@@ -106,6 +108,34 @@ describe("Role Agent Runner", () => {
     expect(() => cancelRoleAttempt(first.finished, "2026-08-22T00:00:03.000Z"))
       .toThrow(/already FAILED/);
 
+    scheduled = recordRoleAttemptFailure(scheduled, {
+      dispatchId: scheduled.pendingRole!.dispatchId,
+      role: first.result.role,
+      attemptId: first.result.attemptId,
+      attemptGeneration: first.result.generation,
+      inputDigest: first.result.inputDigest,
+      resultDigest: first.result.resultDigest,
+      outcome: first.result.outcome as "FAILED",
+      errorCode: first.result.error!.code,
+      errorCategory: first.result.error!.category,
+    });
+    const failure = scheduled.roleAttemptFailures.at(-1)!;
+    scheduled = applyControlDecision(scheduled, createControlDecision({
+      taskId: scheduled.taskId,
+      specRevision: scheduled.specRevision,
+      expectedProjectionVersion: scheduled.projectionVersion,
+      expectedState: scheduled.state,
+      action: "RETRY",
+      targetRole: "DOCS",
+      evidenceRefs: [`role-failure://${failure.failureDigest}`],
+      reason: "retry the failed Docs attempt",
+      budgetRequest: { roleAttempts: 1, modelCalls: 1 },
+    }));
+    expect(() => createInitialRoleAttempt(
+      fixture.envelope,
+      scheduled,
+      "2026-08-22T00:00:03.000Z",
+    )).toThrow(/must use complete Attempt history/);
     const retry = createRetryRoleAttempt(
       fixture.envelope,
       scheduled,
