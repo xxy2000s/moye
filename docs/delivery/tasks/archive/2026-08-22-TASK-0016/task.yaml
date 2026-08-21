@@ -1,0 +1,26 @@
+schema_version: 1
+id: TASK-0016
+title: 实现 Retry、Repair、Replan 与中央预算
+status: closed
+outcome: succeeded
+backlog_refs:
+  - BL-0003
+spec_revision: 1
+workflow_id: task/TASK-0016
+execution_mode: goal-bootstrap
+base_commit: cfe0a49dc6b37ed2ae70c3becc1bb16b312dddc5
+archive:
+  status: pending
+  archived_at: null
+  archived_path: null
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: task-artifact://TASK-0016/verification.md
+  implementation_commit: 5eb336bdf422ed7b0b8d85919d2373615b43aabb
+execution_evidence:
+  executor_id: codex:/root
+  result_commit: 5eb336bdf422ed7b0b8d85919d2373615b43aabb
+  verification_refs:
+    - task-artifact://TASK-0016/verification.md
+  docs_impact_ref: task-artifact://TASK-0016/docs-impact.yaml

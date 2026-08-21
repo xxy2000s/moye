@@ -23,7 +23,7 @@ tasks/
 
 | Task | 状态 | 目标 |
 |---|---|---|
-| [TASK-0016](./TASK-0016/task.yaml) | Executing | Retry、Repair、Replan 与中央预算 |
+| — | — | 当前无 Active Task |
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 

@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 39
+graph_revision: 40
 updated_at: "2026-08-22"
 
 entrypoints:
@@ -617,49 +617,49 @@ documents:
     read_when: [task-close, task-archive]
 
   - id: task-0016-manifest
-    path: docs/delivery/tasks/TASK-0016/task.yaml
+    path: docs/delivery/tasks/archive/2026-08-22-TASK-0016/task.yaml
     type: task-manifest
-    status: active
+    status: archived
     scope: core-recovery-budget
     authority: task-artifact
     read_when: [task-runtime-change, workflow-change, task-execution, task-close]
 
   - id: task-0016-spec
-    path: docs/delivery/tasks/TASK-0016/spec.md
+    path: docs/delivery/tasks/archive/2026-08-22-TASK-0016/spec.md
     type: task-spec
-    status: active
+    status: archived
     scope: core-recovery-budget
     authority: task-artifact
     read_when: [task-runtime-change, workflow-change, task-execution, task-close]
 
   - id: task-0016-design
-    path: docs/delivery/tasks/TASK-0016/design.md
+    path: docs/delivery/tasks/archive/2026-08-22-TASK-0016/design.md
     type: task-design
-    status: active
+    status: archived
     scope: core-recovery-budget
     authority: task-artifact
     read_when: [task-runtime-change, workflow-change, task-execution]
 
   - id: task-0016-plan
-    path: docs/delivery/tasks/TASK-0016/plan.md
+    path: docs/delivery/tasks/archive/2026-08-22-TASK-0016/plan.md
     type: task-plan
-    status: active
+    status: archived
     scope: core-recovery-budget
     authority: task-artifact
     read_when: [task-execution]
 
   - id: task-0016-verification
-    path: docs/delivery/tasks/TASK-0016/verification.md
+    path: docs/delivery/tasks/archive/2026-08-22-TASK-0016/verification.md
     type: verification
-    status: active
+    status: archived
     scope: core-recovery-budget
     authority: task-evidence
     read_when: [task-close, task-archive]
 
   - id: task-0016-docs-impact
-    path: docs/delivery/tasks/TASK-0016/docs-impact.yaml
+    path: docs/delivery/tasks/archive/2026-08-22-TASK-0016/docs-impact.yaml
     type: docs-impact
-    status: active
+    status: archived
     scope: core-recovery-budget
     authority: task-evidence
     read_when: [task-close, task-archive]
@@ -1773,7 +1773,7 @@ relations:
     to: task-0016-manifest
     type: schedules_into
 
-  - from: tasks-index
+  - from: archived-tasks-index
     to: task-0016-manifest
     type: indexes
 
