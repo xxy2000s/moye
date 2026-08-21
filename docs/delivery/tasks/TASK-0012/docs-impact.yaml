@@ -16,6 +16,7 @@ changed_paths:
   - docs/graph.yaml
   - docs/knowledge/current/codemap/README.md
   - public/app.js
+  - public/index.html
   - public/styles.css
   - tests/e2e/demo.test.ts
 docs:

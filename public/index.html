@@ -78,6 +78,25 @@
       <div id="detail-content"></div>
     </dialog>
 
+    <dialog id="agent-events-dialog" class="agent-events-dialog" aria-labelledby="agent-events-title">
+      <section class="agent-events-viewer" data-agent-events-viewer aria-live="polite">
+        <header>
+          <div>
+            <p class="eyebrow">Agent Runtime Event Stream</p>
+            <h2 id="agent-events-title">Agent 完整交互事件</h2>
+            <small><span data-agent-events-task>等待 Task</span> · <span data-agent-events-binding>等待 Attempt</span></small>
+          </div>
+          <div class="agent-events-dialog-controls">
+            <div class="agent-events-actions"><span data-agent-events-status>尚未加载</span><a href="#" data-agent-events-download hidden download>下载原始 JSONL</a></div>
+            <form method="dialog"><button class="close" aria-label="关闭 Agent Events">关闭</button></form>
+          </div>
+        </header>
+        <div class="agent-event-toolbar" data-agent-events-toolbar aria-label="事件分类筛选"></div>
+        <div class="agent-events-content" data-agent-events-content></div>
+        <div class="agent-events-footer" data-agent-events-footer></div>
+      </section>
+    </dialog>
+
     <template id="empty-card">
       <div class="placeholder">暂无条目</div>
     </template>

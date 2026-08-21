@@ -8,6 +8,8 @@ const elements = {
   empty: document.querySelector("#empty-state"),
   dialog: document.querySelector("#task-detail"),
   detail: document.querySelector("#detail-content"),
+  eventsDialog: document.querySelector("#agent-events-dialog"),
+  eventsViewer: document.querySelector("#agent-events-dialog [data-agent-events-viewer]"),
 };
 
 const lanes = {
@@ -29,7 +31,20 @@ const PIPELINE_STAGES = [
 
 let lastProjectionSignature = "";
 let stopAgentEventsFollower = () => {};
-elements.dialog.addEventListener("close", () => stopAgentEventsFollower());
+let agentEventsReturnFocus;
+let shouldRestoreAgentEventsFocus = true;
+elements.dialog.addEventListener("close", () => closeAgentEventsDialog(false));
+elements.eventsDialog.addEventListener("close", () => {
+  const returnFocus = agentEventsReturnFocus;
+  stopAgentEventsFollower();
+  stopAgentEventsFollower = () => {};
+  if (returnFocus instanceof HTMLButtonElement) updateAgentEventsTrigger(returnFocus, false);
+  agentEventsReturnFocus = undefined;
+  if (shouldRestoreAgentEventsFocus && elements.dialog.open && returnFocus?.isConnected) {
+    window.requestAnimationFrame(() => returnFocus.focus());
+  }
+  shouldRestoreAgentEventsFocus = true;
+});
 document.querySelector("#refresh").addEventListener("click", loadBoard);
 await loadBoard();
 setInterval(loadBoard, 5000);
@@ -153,7 +168,7 @@ function renderLegacyTask(task) {
 }
 
 function renderCodingTrace(trace, summary) {
-  stopAgentEventsFollower();
+  closeAgentEventsDialog(false);
   const task = trace.task;
   const conclusion = task.state === "CLOSED" && task.archiveStatus === "ARCHIVED"
     ? { icon: "✓", title: "任务已闭环", text: "编码、验证、合入、文档与归档证据均已确认。", tone: "success" }
@@ -199,18 +214,9 @@ function renderCodingTrace(trace, summary) {
       ${trace.observability.enabled && trace.observability.uiBaseUrl
         ? `<a href="${escapeAttribute(trace.observability.uiBaseUrl)}" target="_blank" rel="noreferrer">打开 Trace（Phoenix）↗</a>`
         : `<span class="diagnostic-disabled">Trace 后端未启用</span>`}
-      ${agentEvents ? `<button type="button" class="diagnostic-link" data-agent-events-trigger aria-controls="agent-events-viewer" aria-expanded="false">查看 Agent Events</button>` : ""}
+      ${agentEvents ? `<button type="button" class="diagnostic-link" data-agent-events-trigger aria-controls="agent-events-dialog" aria-haspopup="dialog" aria-expanded="false">查看 Agent Events</button>` : ""}
       ${rawModelIo ? `<a class="sensitive-link" href="${escapeAttribute(rawModelIo.downloadUrl)}" target="_blank" rel="noreferrer">查看 Raw Model IO（敏感）↗</a>` : ""}
     </section>
-    ${agentEvents ? `<section id="agent-events-viewer" class="agent-events-viewer" data-agent-events-viewer data-source-url="${escapeAttribute(agentEvents.viewUrl)}" data-download-url="${escapeAttribute(agentEvents.downloadUrl || agentEvents.viewUrl.replace(/\/agent-events$/, "/artifacts/agent-events"))}" aria-labelledby="agent-events-title" aria-live="polite" hidden>
-      <header>
-        <div><p class="eyebrow">Agent Runtime Event Stream</p><h3 id="agent-events-title">Agent 完整交互事件</h3><small data-agent-events-binding>${escapeHtml(trace.agent?.attemptId || "等待 Attempt")} · ${escapeHtml(runnerLabel(trace.agent?.runnerKind))}</small></div>
-        <div class="agent-events-actions"><span data-agent-events-status>尚未加载</span><a href="${escapeAttribute(agentEvents.downloadUrl || "#")}" data-agent-events-download${agentEvents.downloadUrl ? "" : " hidden"} download>下载原始 JSONL</a></div>
-      </header>
-      <div class="agent-event-toolbar" data-agent-events-toolbar aria-label="事件分类筛选"></div>
-      <div class="agent-events-content" data-agent-events-content></div>
-      <div class="agent-events-footer" data-agent-events-footer></div>
-    </section>` : ""}
     <p class="trace-note">Trace 与 JSONL 只用于诊断；任务状态以 Moye Projection / Domain Event 为准，中断恢复以 Restate Journal 为准。</p>
 
     <section class="journey-section" aria-labelledby="journey-title">
@@ -241,20 +247,41 @@ function renderCodingTrace(trace, summary) {
       </div>
     </details>`;
 
-  bindAgentEventsViewer();
+  bindAgentEventsDialog(trace);
 }
 
-function bindAgentEventsViewer() {
+function bindAgentEventsDialog(trace) {
   const trigger = elements.detail.querySelector("[data-agent-events-trigger]");
-  const viewer = elements.detail.querySelector("[data-agent-events-viewer]");
-  if (!(trigger instanceof HTMLButtonElement) || !(viewer instanceof HTMLElement)) return;
+  if (!(trigger instanceof HTMLButtonElement) || trace.agentEvents === undefined) return;
+  trigger.addEventListener("click", () => openAgentEventsDialog(trigger, trace));
+}
+
+function openAgentEventsDialog(trigger, trace) {
+  closeAgentEventsDialog(false);
+  const viewer = elements.eventsViewer;
+  const dialog = elements.eventsDialog;
+  const agentEvents = trace.agentEvents;
+  viewer.dataset.sourceUrl = agentEvents.viewUrl;
+  viewer.dataset.downloadUrl = agentEvents.downloadUrl || agentEvents.viewUrl.replace(/\/agent-events$/, "/artifacts/agent-events");
+  viewer.dataset.state = "loading";
+  viewer.querySelector("[data-agent-events-task]").textContent = trace.task.taskId;
+  viewer.querySelector("[data-agent-events-binding]").textContent = `${trace.agent?.attemptId || "等待 Attempt"} · ${runnerLabel(trace.agent?.runnerKind)}`;
+  viewer.querySelector("[data-agent-events-toolbar]").replaceChildren();
+  viewer.querySelector("[data-agent-events-content]").innerHTML = '<div class="agent-events-loading" role="status">正在加载原始 JSONL 事件…</div>';
+  viewer.querySelector("[data-agent-events-footer]").replaceChildren();
+  const download = viewer.querySelector("[data-agent-events-download]");
+  download.href = agentEvents.downloadUrl || "#";
+  download.hidden = !agentEvents.downloadUrl;
+  setAgentEventsStatus(viewer, "正在加载");
+  agentEventsReturnFocus = trigger;
+  updateAgentEventsTrigger(trigger, true, true);
   const state = { cursor: 0, total: 0, events: [], completed: false, hasMore: false, filter: "all", loading: false, stopped: false, timer: 0 };
   stopAgentEventsFollower = () => {
     state.stopped = true;
     if (state.timer) window.clearTimeout(state.timer);
   };
   const schedule = () => {
-    if (state.stopped || state.completed || state.hasMore || viewer.hidden) return;
+    if (state.stopped || state.completed || state.hasMore || !dialog.open) return;
     state.timer = window.setTimeout(() => void loadPage(false), 1000);
   };
   const loadPage = async (drain) => {
@@ -270,6 +297,7 @@ function bindAgentEventsViewer() {
         const response = await fetch(source, { cache: "no-store" });
         if (!response.ok) throw new Error(`读取失败（HTTP ${response.status}）`);
         const page = await response.json();
+        if (state.stopped) return;
         const known = new Set(state.events.map(event => event.sequence));
         state.events.push(...page.events.filter(event => !known.has(event.sequence)));
         state.cursor = page.nextCursor;
@@ -289,23 +317,24 @@ function bindAgentEventsViewer() {
       viewer.querySelector("[data-agent-events-retry]")?.addEventListener("click", () => void loadPage(false), { once: true });
     } finally {
       state.loading = false;
-      updateAgentEventsTrigger(trigger, !viewer.hidden);
+      if (!state.stopped) updateAgentEventsTrigger(trigger, true);
     }
   };
-  trigger.addEventListener("click", () => {
-    const willOpen = viewer.hidden;
-    viewer.hidden = !willOpen;
-    updateAgentEventsTrigger(trigger, willOpen);
-    if (!willOpen) {
-      if (state.timer) window.clearTimeout(state.timer);
-      return;
-    }
-    if (state.events.length === 0 && state.cursor === 0) {
-      viewer.querySelector("[data-agent-events-content]").innerHTML = '<div class="agent-events-loading" role="status">正在加载原始 JSONL 事件…</div>';
-      void loadPage(true);
-    } else schedule();
-    viewer.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  });
+  dialog.showModal();
+  void loadPage(true);
+}
+
+function closeAgentEventsDialog(restoreFocus = true) {
+  shouldRestoreAgentEventsFocus = restoreFocus;
+  stopAgentEventsFollower();
+  if (elements.eventsDialog.open) {
+    elements.eventsDialog.close();
+    return;
+  }
+  const returnFocus = agentEventsReturnFocus;
+  if (returnFocus instanceof HTMLButtonElement) updateAgentEventsTrigger(returnFocus, false);
+  agentEventsReturnFocus = undefined;
+  shouldRestoreAgentEventsFocus = true;
 }
 
 function renderAgentEventsState(viewer, state, loadPage) {
@@ -411,7 +440,7 @@ function setAgentEventsStatus(viewer, value) {
 function updateAgentEventsTrigger(trigger, expanded, loading = false) {
   trigger.disabled = loading;
   trigger.setAttribute("aria-expanded", String(expanded));
-  trigger.textContent = loading ? "正在加载 Agent Events…" : expanded ? "隐藏 Agent Events" : "查看 Agent Events";
+  trigger.textContent = loading ? "正在加载 Agent Events…" : expanded ? "Agent Events 已打开" : "查看 Agent Events";
 }
 
 function renderJourneyStage(trace, definition, index) {

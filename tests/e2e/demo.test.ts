@@ -79,7 +79,11 @@ describe("npm run demo", () => {
     expect(html).toContain("任务控制面 · Coding Demo");
     expect(app).toContain("七个阶段，一眼看清做到哪里");
     expect(app).toContain("查看 Agent Events");
-    expect(app).toContain("data-agent-events-viewer");
+    expect(html).toContain('id="agent-events-dialog"');
+    expect(html).toContain("data-agent-events-viewer");
+    expect(html).toMatch(/<dialog id="task-detail">[\s\S]*?<\/dialog>\s*<dialog id="agent-events-dialog"/);
+    expect(app).toContain("openAgentEventsDialog");
+    expect(app).not.toContain('id="agent-events-viewer"');
     expect(app).toContain("data-agent-event-filter");
     expect(app).toContain("实时跟随中");
     expect(app).toContain("下载原始 JSONL");

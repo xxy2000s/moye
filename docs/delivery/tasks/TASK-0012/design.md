@@ -16,7 +16,7 @@ Board
 
 ## DOM 与状态
 
-- Event Dialog 由 `public/app.js` 按当前 Trace 动态渲染到 `document.body`，不嵌套在 Task Detail DOM 中；
+- Event Dialog 由 `public/index.html` 提供稳定的 Task Detail 同级宿主，`public/app.js` 按当前 Trace 填充内容；它不嵌套在 Task Detail DOM 中；
 - 事件数据、cursor、filter、poll timer 属于一次 Event Dialog Session；
 - 打开时创建 Session 并加载第一页；关闭时停止 timer、移除 Dialog、恢复入口焦点；
 - Task Detail 的关闭逻辑先关闭活动 Event Dialog，避免遗留轮询或孤立遮罩；

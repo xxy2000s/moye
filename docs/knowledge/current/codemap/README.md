@@ -15,7 +15,7 @@
 | `src/restate/coding-services.ts` | CodingTaskWorkflow、Board 映射、Archive 子流程 | Workflow 独占 Coding Projection |
 | `src/trace/coding-trace.ts`、`telemetry.ts` | Coding Projection 到三层 Trace、稳定 OTel Span 与恢复建议的纯映射 | 无，只读派生；`TraceSink` 默认 Noop |
 | `src/demo/coding-fixture.ts`、`scripts/demo.ts`、`scripts/trace-compose.ts` | 隔离 Git Fixture、Fake/真实 CLI 可选 Demo 与可选 Phoenix 编排 | 不拥有生产状态；演示状态由 CodingTaskWorkflow 持有 |
-| `public/index.html`、`public/app.js` | 四列项目看板、Task 详情、Coding Trace 与可跟随/筛选的 Agent Events Viewer | 只读 Projection 与受控 Event/Artifact API |
+| `public/index.html`、`public/app.js` | 四列项目看板、Task 详情、Coding Trace 与独立弹窗承载的可跟随/筛选 Agent Events Viewer | 只读 Projection 与受控 Event/Artifact API |
 
 ## 模块图
 
@@ -72,7 +72,7 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 - `git/workspace-effect.ts` 通过 argv-only Git Adapter 管理隔离 Worktree；写操作前后都以 Branch、Worktree HEAD 和 ancestry 对账，Checkpoint 固定 Commit 与 Tree Object ID；
 - `coding/workflow.ts` 编排固定八阶段并记录 Step/Attempt/Evidence/Binding；`verification/gate.ts` 用稳定 Intent 对账 Gate；`git/merge-effect.ts` 只接受可信 Binding 并以 ref CAS 发布唯一 Merge；
 - `TaskAuthority` 保证同一 Task revision 只能由一个主 Workflow 推进；ProjectBoard 是二级查询投影；
-- Board 通过 `TaskAuthority.get` 解析主 Workflow，不扫描目录推断 Runtime 状态；Coding Trace 只从主 Projection 派生；`/agent-events` 从 Projection 的稳定 Run locator 读取受管流，以 cursor 分页并分类，前端运行中轮询且不设永久 200 条截断；完成后的原始下载与 Raw Model IO 继续校验投影白名单、受管根、realpath、大小和摘要；
+- Board 通过 `TaskAuthority.get` 解析主 Workflow，不扫描目录推断 Runtime 状态；Coding Trace 只从主 Projection 派生；`/agent-events` 从 Projection 的稳定 Run locator 读取受管流，以 cursor 分页并分类，前端在独立顶层 Dialog 中运行中轮询且不设永久 200 条截断，关闭 Dialog 即停止跟随并回到原 Task Detail；完成后的原始下载与 Raw Model IO 继续校验投影白名单、受管根、realpath、大小和摘要；
 - `telemetry.ts` 从持久化 Attempt 生成短 Span 并输出标准 OTLP/HTTP protobuf；导出失败只影响诊断，不回写 Task 业务终态；
 - Restate Journal 是运行时恢复事实，`docs/delivery/tasks` 是研发材料事实。
 

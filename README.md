@@ -76,7 +76,7 @@ Coding Task 出现在看板后，点击卡片默认先看到：
 1. 任务结论与 Task → Workflow → Agent Session → Git Commit 关联链；
 2. 需求与上下文、隔离工作区、Agent 编码、自动验证、合入分支、文档检查、归档七个阶段；
 3. 每个阶段展开后的 Attempt 和 Evidence；
-4. `查看 Agent Events` 在同一详情页内持续展示完整 Agent CLI JSONL，可筛选工具过程、展开原始 JSON，并通过游标读取全部事件。
+4. `查看 Agent Events` 打开独立弹窗持续展示完整 Agent CLI JSONL，可筛选工具过程、展开原始 JSON，并通过游标读取全部事件；关闭后回到原任务详情。
 
 Restate Journal、恢复建议、技术 Artifact 与原始事件收在“高级诊断”中。进入 Restate 的链接已经按 `CodingTaskWorkflow + task_id` 过滤；Restate 负责执行排障，Moye Board 才是任务业务视图。
 
