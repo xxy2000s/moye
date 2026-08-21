@@ -1,6 +1,6 @@
 # TASK-0009 Verification
 
-> 状态：Verified
+> 状态：Accepted
 > Spec Revision：1  
 > 验证日期：2026-08-21
 > 执行者：Goal `/root`（`GOAL_BOOTSTRAP`）
@@ -39,3 +39,9 @@
 - 旧 `moye-restate-demo` 已停止，E2E 临时容器、Receiver、Fixture 和 Playwright 临时会话均已清理；
 - 为最终人工验收保留 `moye-trace-demo` 与 `moye-phoenix-1`，数据位于忽略目录 `.moye-runtime/trace-demo` 和 Docker named volume；
 - Phoenix/OTLP 故障只影响诊断输出，不改变 Task Projection、Restate Journal、唯一 Merge 或 Archive 结果。
+
+## Runtime Closure 重试记录
+
+首次关闭调用 `inv_1duGGEqrlhxt3Whd8BjldCkZMiHzNb6PYE` 被 Bootstrap Gate 以 `BOOTSTRAP_VERIFICATION_NOT_ACCEPTED` 拒绝：本页使用了非协议枚举 `Verified`。拒绝发生在证据持久化和 Archive 之前，Git 工作区与 Task Package 未移动；Runtime Projection 只停留在 `EXECUTING / implementation / NOT_READY`。
+
+处置方式是先把材料状态修正为协议要求的 `Accepted` 并生成新 Result Commit，再保留本记录、精确 purge 已完成且失败的那一个 invocation，最后使用同一 `TASK-0009`、同一 Spec Revision 和同一 Workflow key 重新附着。没有清空或直接编辑 Task/Authority 状态，也没有创建第二个业务 Task。
