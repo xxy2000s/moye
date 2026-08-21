@@ -1,0 +1,26 @@
+schema_version: 1
+id: TASK-0014
+title: 统一 Docs、Implementation 与 Review Role Attempt 协议
+status: closed
+outcome: succeeded
+backlog_refs:
+  - BL-0015
+spec_revision: 1
+workflow_id: task/TASK-0014
+execution_mode: goal-bootstrap
+base_commit: 02a52a2277cf71c614223ab175552c660f43cdf4
+archive:
+  status: pending
+  archived_at: null
+  archived_path: null
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: task-artifact://TASK-0014/verification.md
+  implementation_commit: 4001f6008957feeb4a504d393b19663f4f380b3b
+execution_evidence:
+  executor_id: codex:/root
+  result_commit: 4001f6008957feeb4a504d393b19663f4f380b3b
+  verification_refs:
+    - task-artifact://TASK-0014/verification.md
+  docs_impact_ref: task-artifact://TASK-0014/docs-impact.yaml
