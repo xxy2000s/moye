@@ -1,0 +1,26 @@
+schema_version: 1
+id: TASK-0011
+title: 接入真实 Agent 完整事件流与交互看板
+status: closed
+outcome: succeeded
+backlog_refs:
+  - BL-0012
+spec_revision: 1
+workflow_id: task/TASK-0011
+execution_mode: goal-bootstrap
+base_commit: 2d1102d9035e309e609f1bd12e1b618a1648ec80
+archive:
+  status: pending
+  archived_at: null
+  archived_path: null
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: task-artifact://TASK-0011/verification.md
+  implementation_commit: 7a0e3cfebe83183289830361fefd7453d516ca43
+execution_evidence:
+  executor_id: goal:/root
+  result_commit: 7a0e3cfebe83183289830361fefd7453d516ca43
+  verification_refs:
+    - task-artifact://TASK-0011/verification.md
+  docs_impact_ref: task-artifact://TASK-0011/docs-impact.yaml
