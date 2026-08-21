@@ -23,7 +23,7 @@ tasks/
 
 | Task | 状态 | 目标 |
 |---|---|---|
-| — | — | 当前无 Active Task |
+| [TASK-0017](./TASK-0017/task.yaml) | Executing | Observer、Docs Impact Gate 与 Knowledge Candidate |
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 

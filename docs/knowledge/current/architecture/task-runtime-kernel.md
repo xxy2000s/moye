@@ -181,6 +181,18 @@ ProjectBoard 接收 Coding 的状态和事件摘要；`src/trace/coding-trace.ts
 
 这些恢复事实仍是纯领域协议，尚未接入 keyed Restate Core Workflow；当前单 Agent `CodingTaskWorkflow` 的既有恢复语义不变。
 
+### 5.0.8 当前已实现 Observer 与 Docs Impact Gate 切片
+
+`src/domain/core-observer.ts` 和 `src/domain/core-docs-impact.ts` 实现 Core Closure 前的只读诊断与文档门禁，仍不拥有独立 Runtime 状态：
+
+- Observer 只接收可由 TaskEnvelope、Core Projection 和持久化 Attempt/Artifact/Finding/Verification/Invocation 定位重建的摘要；它校验 Attempt 必须存在于 Projection，再派生阶段耗时、模型调用、Token/Cost、四类恢复次数和内容寻址 Report；
+- 长时间无进展、重复分类失败、预算逼近和待对账 UNKNOWN 形成稳定 Alert Candidate；Finding、Observer 与失败证据只生成 `PROPOSED` Knowledge Candidate，目标类型可为 Finding、Backlog、Pitfall、Runbook 或 Docs Impact，但不能声明已经提升长期知识；
+- Final Context Route 复用 TaskEnvelope 的初始 Intent/Context Plan，把实际 changed paths 和最终证据路径重新交给现有 Router；最终 Required Read/Review 只能扩张不能丢失，Route/Report/Gate 都可用 Expected Digest 恢复；
+- Docs Impact Report 必须精确处置 Final Route 的每个 Required Review；新 Markdown 必须同时声明图谱节点、关系和索引。`RubyDocsGraphAdapter` 使用 `shell:false` argv 调用现有 `docs_graph.rb route|validate|validate-impact` 并保存退出码和输出摘要；
+- Validator 失败产生可信 `BLOCKED` Gate，Core 保持 `DOCS_IMPACT_REQUIRED`；带 Verification 与通过 Review 的 Projection 只有接受可信 `PASSED` Gate 后才进入 `CLOSURE_REQUIRED`。Observer 崩溃不改变 Projection，重复 Gate/Report 由 Digest 收敛。
+
+当前生产 Trace 看板、Daemon 指标平台、知识自动提升和长期效果反馈仍保留在 BL-0006/BL-0007；最终三种 Outcome 与不可变 ClosureResult 由下一切片实现。
+
 ### 5.1 模型关系
 
 ```mermaid

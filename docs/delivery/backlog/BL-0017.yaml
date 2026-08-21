@@ -2,7 +2,7 @@ schema_version: 1
 id: "BL-0017"
 title: "将最终 Docs Impact 与 Knowledge Sync 接入 Core Workflow"
 kind: "feature"
-status: "ready"
+status: "converted_to_task"
 priority: "high"
 
 source_refs:
@@ -19,6 +19,7 @@ acceptance_outline:
   - "Finding、Observer 和失败证据只生成知识候选，不自动改写 Accepted ADR 或当前 Architecture"
 
 resolution:
-  task_refs: []
+  task_refs:
+    - TASK-0017
   duplicate_of:
-  reason: "与 BL-0006、BL-0007 的 Core 范围在 Slice 5 一并调度"
+  reason: "与 BL-0006、BL-0007 的 Core 子集一并调度为 TASK-0017"

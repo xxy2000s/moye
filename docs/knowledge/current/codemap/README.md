@@ -25,7 +25,7 @@ src/
 ├── backlog/           Git Backlog 文档加载、严格转换与批次摘要
 ├── coding/            八阶段单 Agent 编码 Workflow 编排与 Projection
 ├── demo/              隔离 Coding Demo Fixture 与安全清理
-├── domain/            纯领域状态、错误、Backlog、Board、Core Reducer 与 Review/Finding Gate
+├── domain/            纯领域状态、错误、Backlog、Board、Core Reducer、Observer、Docs Impact 与 Review/Finding Gate
 ├── archive/           Manifest、Bootstrap 关闭材料、原子移动与 Reconcile
 ├── effects/           带稳定 operation ledger 的幂等副作用样例
 ├── git/               Worktree、Checkpoint 与本地 Git Effect 对账
@@ -67,6 +67,7 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 
 - `domain` 不依赖 Restate、HTTP 或浏览器；
 - `domain/core-control.ts` 从已验证 TaskEnvelope 创建内容寻址 Core Projection 和 ControlDecision；唯一 Reducer 校验 Expected State/Version、Required Gate、单 Pending Role 与固定预算形状，分别持久化 Operation Retry、Role Attempt Retry、Finding-driven Repair、Spec Replan、Unknown Effect/Reconcile、Evidence Invalidation 和失败终态候选；
+- `domain/core-observer.ts` 从 Core 只读事实重建 Trace/Usage/Recovery 摘要、Alert 与 `PROPOSED` Knowledge Candidate，不接收状态写入口；`domain/core-docs-impact.ts` 用 argv-only Ruby Adapter 刷新 Final Route、校验逐项 disposition/新 Markdown 注册并保存 Graph/Impact Gate 证据；
 - `domain/review-finding.ts` 固定 Self Review、Candidate-bound Review Input、成功 ReviewResult、独立执行失败、Finding 稳定身份/追加处置和 Blocking Gate；Core 只接受绑定最近 Review Manifest Digest 的可信 Gate Result；
 - `agent/role-runner.ts` 为 Docs、Implementation、Review 提供统一 Attempt、Request、判别输出和内容寻址 Artifact Manifest；Fake Role Runner 用稳定 Intent/Manifest 对账证明已确认 Run 不重复，未知结果停止；真实多角色 Adapter 尚未接入；
 - `agent/runner.ts` 规范请求、运行中 JSONL Stream 与最终 Artifact；`codex-exec.ts` 和 `claude-print.ts` 只负责 argv-only Agent 子进程并把 stdout chunk 交给行边界写入器，不推进 Task 状态；Claude 原生 OTel/内容采集只注入当前子进程，默认关闭；
@@ -88,7 +89,7 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 | `src/archive/bootstrap-closure.ts`、`task-artifacts.ts` | 自举证据与提交不一致、归档后引用失效 | `tests/unit/bootstrap-closure.test.ts` |
 | `src/backlog/document-sync.ts` | 坏条目部分写入、枚举漂移、无意义重复同步 | `tests/unit/backlog-sync.test.ts`、真实 Restate E2E |
 | `src/domain/coding-task.ts` | Spec 漂移后沿用旧证据、Attempt 被复活、Shell 命令边界丢失 | `tests/unit/coding-task.test.ts` |
-| `src/domain/core-control.ts`、`review-finding.ts` | 过期/重复 Decision 推进状态、Retry/Repair/Replan 混淆、UNKNOWN 盲重试、Attempt 复活、Blocking Finding 逃逸、旧 Spec 证据复用、预算绕过或无限循环 | `tests/unit/core-control.test.ts`、`tests/unit/core-recovery.test.ts`、`tests/unit/role-runner.test.ts`、`tests/unit/review-finding.test.ts` |
+| `src/domain/core-control.ts`、`core-observer.ts`、`core-docs-impact.ts`、`review-finding.ts` | 过期 Decision、恢复动作混淆、UNKNOWN 盲重试、Observer 越权、虚构 Attempt、路由覆盖回退、Disposition/Markdown 漏项、失败 Docs Gate 误关闭、预算无限循环 | `tests/unit/core-control.test.ts`、`tests/unit/core-recovery.test.ts`、`tests/unit/core-observer.test.ts`、`tests/unit/core-docs-impact.test.ts`、Role/Review unit |
 | `src/git/workspace-effect.ts` | 路径/符号链接逃逸、Base 漂移、分支冲突、未知 Git 结果重复写 | `tests/unit/workspace-effect.test.ts` |
 | `src/coding/workflow.ts`、`src/verification/gate.ts`、`src/git/merge-effect.ts` | Gate 重放、Commit 漂移、Expected Base TOCTOU、状态越权、未知 Agent/Workspace/Merge 误判 | Coding unit + Worker restart/unknown Merge Restate E2E + Codex Fixture evidence |
 | `src/effects/counter.ts` | Step 确认前中断造成副作用重复 | `tests/unit/counter.test.ts`、E2E 计数断言 |

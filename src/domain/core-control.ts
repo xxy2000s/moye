@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 
 import type { TaskEnvelope } from "./coding-task.js";
 import { parseTaskEnvelope } from "./coding-task.js";
+import type { CoreDocsImpactGateResult } from "./core-docs-impact.js";
+import { assertTrustedCoreDocsImpactGateResult } from "./core-docs-impact.js";
 import { MoyeError, type MoyeErrorCategory } from "./errors.js";
 import type { ReviewGateResult } from "./review-finding.js";
 import { assertTrustedReviewGateResult } from "./review-finding.js";
@@ -211,6 +213,27 @@ export interface CoreTerminalCandidate {
   readonly createdAtProjectionVersion: number;
 }
 
+export interface CoreVerificationResultInput {
+  readonly taskId: string;
+  readonly specRevision: number;
+  readonly candidateCommit: string;
+  readonly evidenceRefs: readonly string[];
+}
+
+export interface CoreVerificationResult extends CoreVerificationResultInput {
+  readonly schemaVersion: 1;
+  readonly verdict: "PASSED";
+  readonly verificationDigest: string;
+}
+
+export interface AppliedDocsImpactGate {
+  readonly gateDigest: string;
+  readonly routeDigest: string;
+  readonly reportDigest: string;
+  readonly verdict: "PASSED" | "BLOCKED";
+  readonly appliedAtProjectionVersion: number;
+}
+
 export interface CoreProjection {
   readonly schemaVersion: 1;
   readonly taskId: string;
@@ -230,12 +253,15 @@ export interface CoreProjection {
   readonly reconcileHistory: readonly ReconcileRecord[];
   readonly invalidatedEvidence: readonly EvidenceInvalidation[];
   readonly terminalCandidate: CoreTerminalCandidate | null;
+  readonly verification: CoreVerificationResult | null;
+  readonly docsImpactGates: readonly AppliedDocsImpactGate[];
   readonly pendingRole: PendingRoleDispatch | null;
   readonly projectionDigest: string;
 }
 
 const trustedDecisions = new WeakSet<object>();
 const trustedProjections = new WeakSet<object>();
+const trustedVerifications = new WeakSet<object>();
 
 export function createInitialCoreProjection(
   envelope: TaskEnvelope,
@@ -262,6 +288,8 @@ export function createInitialCoreProjection(
     reconcileHistory: [],
     invalidatedEvidence: [],
     terminalCandidate: null,
+    verification: null,
+    docsImpactGates: [],
     pendingRole: null,
   });
 }
@@ -891,6 +919,90 @@ export function applyReviewGateResult(
   });
 }
 
+export function createCoreVerificationResult(input: CoreVerificationResultInput): CoreVerificationResult {
+  assertTaskId(input.taskId);
+  assertPositiveInteger(input.specRevision, "verification.specRevision");
+  if (!/^[0-9a-f]{40}([0-9a-f]{24})?$/.test(input.candidateCommit)) {
+    throw validation("INVALID_VERIFICATION_COMMIT", "Verification candidateCommit must be a full Git object ID");
+  }
+  const evidenceRefs = normalizeRefs(input.evidenceRefs, "verification.evidenceRefs");
+  if (evidenceRefs.length === 0) {
+    throw validation("VERIFICATION_EVIDENCE_REQUIRED", "Core Verification requires evidence");
+  }
+  const core = {
+    schemaVersion: 1 as const,
+    taskId: input.taskId,
+    specRevision: input.specRevision,
+    candidateCommit: input.candidateCommit,
+    evidenceRefs,
+    verdict: "PASSED" as const,
+  };
+  const result: CoreVerificationResult = {
+    ...core,
+    verificationDigest: digest("core-verification-result", core),
+  };
+  trustedVerifications.add(result);
+  return deepFreeze(result);
+}
+
+export function applyCoreVerificationResult(
+  projection: CoreProjection,
+  verification: CoreVerificationResult,
+): CoreProjection {
+  assertTrustedProjection(projection);
+  assertTrustedVerification(verification);
+  if (projection.verification !== null) {
+    if (projection.verification.verificationDigest !== verification.verificationDigest) {
+      throw conflict("CORE_VERIFICATION_CONFLICT", "A different Core Verification Result was already applied");
+    }
+    return projection;
+  }
+  if (projection.state !== "RUNNING" || projection.stage !== "VERIFICATION_REQUIRED" ||
+      projection.pendingRole !== null || projection.reviewGate?.verdict !== "PASSED") {
+    throw conflict("CORE_VERIFICATION_NOT_REQUIRED", `Core Verification cannot apply from stage ${projection.stage}`);
+  }
+  if (verification.taskId !== projection.taskId || verification.specRevision !== projection.specRevision ||
+      verification.candidateCommit !== projection.reviewGate.candidateCommit) {
+    throw conflict("CORE_VERIFICATION_TASK_MISMATCH", "Verification does not bind the passed Review candidate");
+  }
+  return finalizeProjection({
+    ...projectionWithoutDigest(projection),
+    projectionVersion: projection.projectionVersion + 1,
+    stage: "DOCS_IMPACT_REQUIRED",
+    verification,
+  });
+}
+
+export function applyCoreDocsImpactGate(
+  projection: CoreProjection,
+  gate: CoreDocsImpactGateResult,
+): CoreProjection {
+  assertTrustedProjection(projection);
+  assertTrustedCoreDocsImpactGateResult(gate);
+  const prior = projection.docsImpactGates.find((item) => item.gateDigest === gate.gateDigest);
+  if (prior !== undefined) return projection;
+  if (projection.state !== "RUNNING" || projection.stage !== "DOCS_IMPACT_REQUIRED" ||
+      projection.pendingRole !== null || projection.verification === null) {
+    throw conflict("DOCS_IMPACT_GATE_NOT_REQUIRED", `Docs Impact Gate cannot apply from stage ${projection.stage}`);
+  }
+  if (gate.taskId !== projection.taskId || gate.specRevision !== projection.specRevision) {
+    throw conflict("DOCS_IMPACT_GATE_TASK_MISMATCH", "Docs Impact Gate Task or Spec Revision does not match Core Projection");
+  }
+  const nextVersion = projection.projectionVersion + 1;
+  return finalizeProjection({
+    ...projectionWithoutDigest(projection),
+    projectionVersion: nextVersion,
+    stage: gate.verdict === "PASSED" ? "CLOSURE_REQUIRED" : "DOCS_IMPACT_REQUIRED",
+    docsImpactGates: [...projection.docsImpactGates, {
+      gateDigest: gate.gateDigest,
+      routeDigest: gate.routeDigest,
+      reportDigest: gate.reportDigest,
+      verdict: gate.verdict,
+      appliedAtProjectionVersion: nextVersion,
+    }],
+  });
+}
+
 export function parseCoreProjection(
   value: unknown,
   envelope: TaskEnvelope,
@@ -901,7 +1013,7 @@ export function parseCoreProjection(
       !Array.isArray(value["appliedDecisions"]) || !Array.isArray(value["completedRoleDispatches"]) ||
       !Array.isArray(value["reviewGateHistory"]) || !Array.isArray(value["roleAttemptFailures"]) ||
       !Array.isArray(value["recoveryActions"]) || !Array.isArray(value["reconcileHistory"]) ||
-      !Array.isArray(value["invalidatedEvidence"])) {
+      !Array.isArray(value["invalidatedEvidence"]) || !Array.isArray(value["docsImpactGates"])) {
     throw validation("INVALID_CORE_PROJECTION", "serialized CoreProjection has an invalid shape");
   }
   assertTaskId(value["taskId"] as string);
@@ -920,6 +1032,8 @@ export function parseCoreProjection(
   const reconcileHistory = value["reconcileHistory"].map(parseReconcileRecord);
   const invalidatedEvidence = value["invalidatedEvidence"].map(parseEvidenceInvalidation);
   const terminalCandidate = value["terminalCandidate"] === null ? null : parseTerminalCandidate(value["terminalCandidate"]);
+  const verification = value["verification"] === null ? null : parseCoreVerificationResult(value["verification"]);
+  const docsImpactGates = value["docsImpactGates"].map(parseAppliedDocsImpactGate);
   const pendingRole = value["pendingRole"] === null
     ? null
     : parsePendingRole(value["pendingRole"]);
@@ -942,6 +1056,8 @@ export function parseCoreProjection(
     reconcileHistory,
     invalidatedEvidence,
     terminalCandidate,
+    verification,
+    docsImpactGates,
     pendingRole,
   };
   const parsed = finalizeProjection(core);
@@ -1344,6 +1460,39 @@ function parseTerminalCandidate(value: unknown): CoreTerminalCandidate {
   };
 }
 
+function parseCoreVerificationResult(value: unknown): CoreVerificationResult {
+  if (!isRecord(value) || value["schemaVersion"] !== 1 || value["verdict"] !== "PASSED") {
+    throw validation("INVALID_CORE_VERIFICATION", "Core Verification Result is invalid");
+  }
+  const result = createCoreVerificationResult({
+    taskId: value["taskId"] as string,
+    specRevision: value["specRevision"] as number,
+    candidateCommit: value["candidateCommit"] as string,
+    evidenceRefs: value["evidenceRefs"] as readonly string[],
+  });
+  if (value["verificationDigest"] !== result.verificationDigest) {
+    throw conflict("CORE_VERIFICATION_INTEGRITY_FAILED", "Core Verification Result does not match its digest");
+  }
+  return result;
+}
+
+function parseAppliedDocsImpactGate(value: unknown): AppliedDocsImpactGate {
+  if (!isRecord(value) || (value["verdict"] !== "PASSED" && value["verdict"] !== "BLOCKED")) {
+    throw validation("INVALID_APPLIED_DOCS_GATE", "Applied Docs Impact Gate is invalid");
+  }
+  assertDigest(value["gateDigest"], "docsImpactGate.gateDigest");
+  assertDigest(value["routeDigest"], "docsImpactGate.routeDigest");
+  assertDigest(value["reportDigest"], "docsImpactGate.reportDigest");
+  assertPositiveInteger(value["appliedAtProjectionVersion"], "docsImpactGate.appliedAtProjectionVersion");
+  return {
+    gateDigest: value["gateDigest"],
+    routeDigest: value["routeDigest"],
+    reportDigest: value["reportDigest"],
+    verdict: value["verdict"],
+    appliedAtProjectionVersion: value["appliedAtProjectionVersion"] as number,
+  };
+}
+
 function normalizeRoleCompletion(input: RoleDispatchCompletionInput): RoleDispatchCompletionInput {
   if (typeof input.dispatchId !== "string" || !input.dispatchId.startsWith("dispatch:")) {
     throw validation("INVALID_ROLE_COMPLETION", "Role completion dispatchId is invalid");
@@ -1468,6 +1617,16 @@ function assertTrustedProjection(projection: CoreProjection): void {
   const { projectionDigest, ...core } = projection;
   if (projectionDigest !== digest("core-projection", core)) {
     throw conflict("CORE_PROJECTION_INTEGRITY_FAILED", "CoreProjection digest is stale");
+  }
+}
+
+function assertTrustedVerification(verification: CoreVerificationResult): void {
+  if (!trustedVerifications.has(verification) || !Object.isFrozen(verification)) {
+    throw validation("UNTRUSTED_CORE_VERIFICATION", "Core Verification Result must come from its domain protocol");
+  }
+  const { verificationDigest, ...core } = verification;
+  if (verificationDigest !== digest("core-verification-result", core)) {
+    throw conflict("CORE_VERIFICATION_INTEGRITY_FAILED", "Core Verification Result digest is stale");
   }
 }
 

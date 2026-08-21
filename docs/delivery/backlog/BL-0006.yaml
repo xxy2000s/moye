@@ -24,6 +24,7 @@ acceptance_outline:
   - "Core Slice 先交付只读 ObserverReport、成本/重试/异常摘要与告警候选；生产运营平台继续留在后续范围"
 
 resolution:
-  task_refs: []
+  task_refs:
+    - TASK-0017
   duplicate_of:
-  reason: "多 Agent Core Slice 5 只消费 Observer 所需子集，其余生产可观测性不提前实现"
+  reason: "TASK-0017 只消费多 Agent Core Slice 5 的只读 ObserverReport/告警候选子集；生产运营平台仍保持 Triaged"

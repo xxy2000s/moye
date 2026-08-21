@@ -26,6 +26,7 @@ acceptance_outline:
   - "Core Slice 先生成内容寻址知识候选并通过 Docs Gate；自动提升与长期效果反馈继续后置"
 
 resolution:
-  task_refs: []
+  task_refs:
+    - TASK-0017
   duplicate_of:
-  reason: "多 Agent Core Slice 5 只消费候选生成与文档门禁子集"
+  reason: "TASK-0017 只消费内容寻址 Knowledge Candidate 与 Docs Gate 子集；自动提升和长期效果反馈仍保持 Triaged"

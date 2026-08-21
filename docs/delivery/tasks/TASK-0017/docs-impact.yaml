@@ -1,0 +1,94 @@
+schema_version: 1
+task_id: TASK-0017
+graph_revision: 41
+intents: [task-create, task-runtime-change, coding-task-poc, docs-change]
+changed_paths:
+  - docs/delivery/backlog/BL-0006.yaml
+  - docs/delivery/backlog/BL-0007.yaml
+  - docs/delivery/backlog/BL-0017.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/tasks/TASK-0017/task.yaml
+  - docs/delivery/tasks/TASK-0017/spec.md
+  - docs/delivery/tasks/TASK-0017/design.md
+  - docs/delivery/tasks/TASK-0017/plan.md
+  - docs/delivery/tasks/TASK-0017/verification.md
+  - docs/delivery/tasks/TASK-0017/docs-impact.yaml
+  - docs/delivery/tasks/README.md
+  - docs/graph.yaml
+  - docs/sources/brainstorm/multi-agent-core-closure-requirements.md
+  - docs/knowledge/current/architecture/overview.md
+  - docs/knowledge/current/architecture/task-runtime-kernel.md
+  - docs/knowledge/current/codemap/README.md
+  - src/domain/core-control.ts
+  - src/domain/core-observer.ts
+  - src/domain/core-docs-impact.ts
+  - tests/unit/core-observer.test.ts
+  - tests/unit/core-docs-impact.test.ts
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - backlog-index
+    - tasks-index
+    - task-runtime-kernel
+    - durable-runtime-pitfalls
+    - overnight-multi-task-goal
+    - finding-backlog-docs-not-projected
+    - bl-0008-backlog-projection-sync
+    - bl-0002-single-agent-coding-loop
+    - restate-poc-architecture
+    - meta-index
+    - adr-0002-doc-lifecycle-roles
+    - bl-0006-production-observability
+    - bl-0007-knowledge-feedback-loop
+    - bl-0017-core-docs-impact
+    - sources-index
+    - architecture-index
+    - architecture-overview
+    - task-0017-manifest
+    - task-0017-spec
+    - task-0017-design
+    - task-0017-plan
+    - task-0017-verification
+    - task-0017-docs-impact
+    - brainstorm-index
+    - multi-agent-core-closure-requirements
+  reviewed:
+    architecture-overview: { outcome: updated, reason: "Current slice 登记只读 Observer、待审核知识候选和真实 Docs Impact Gate，并保留 Closure/生产平台边界" }
+    codemap: { outcome: updated, reason: "登记 core-observer/core-docs-impact 职责、依赖方向和高风险测试矩阵" }
+    task-runtime-kernel: { outcome: updated, reason: "新增 5.0.8，明确 Final Route、Observer 和可恢复文档 Gate 当前事实" }
+    document-control-plane: { outcome: unchanged, reason: "实现直接复用现有 Graph/Router/Impact 模型，没有改变文档角色、权威或提升规则" }
+    moye-task-control-skill: { outcome: unchanged, reason: "现有 Route、验证、Result Commit、Runtime Closure 与 Archive Gate 流程完整适用" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "Observer/Docs Gate 仍是领域与 Adapter，未注册新 Restate Service 或改变 PoC 选型" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "Knowledge Candidate 固定为 Proposed，未越权改写文档生命周期" }
+    tasks-index: { outcome: updated, reason: "登记 TASK-0017 Active Task；Archive 后由独立 housekeeping commit 收敛索引" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "当前 Core 路线已由母需求取代，不回写历史外围 Harness 讨论" }
+    multi-agent-core-closure-requirements: { outcome: updated, reason: "标记 CORE-REQ-05/06 / Slice 5 已由 TASK-0017 实现并通过验证，等待 Runtime 归档" }
+    task-spec-document-closure-brainstorm: { outcome: unchanged, reason: "候选与 Docs Gate 实现遵循其分层，不改写早期开放问题" }
+    bl-0006-production-observability: { outcome: updated, reason: "绑定 TASK-0017 只读 Observer 子集；生产运营范围继续保持 Triaged" }
+    bl-0007-knowledge-feedback-loop: { outcome: updated, reason: "绑定 TASK-0017 Knowledge Candidate 子集；自动提升和长期反馈继续保持 Triaged" }
+    bl-0017-core-docs-impact: { outcome: updated, reason: "转换为 TASK-0017 并实现 Final Route 与 Validator Gate" }
+    bl-0003-repair-replan-budget: { outcome: unchanged, reason: "Observer 只读取既有 Recovery/预算事实，不改变已完成 TASK-0016 的范围" }
+    bl-0010-agent-runtime-trace-demo: { outcome: unchanged, reason: "Observer 复用三层 Trace 原则，不改变既有 OTLP/Phoenix Demo Backlog 历史" }
+    task-0013-manifest: { outcome: unchanged, reason: "扩展 Core Projection Gate，不改写 Control Kernel 历史证据" }
+    task-0014-manifest: { outcome: unchanged, reason: "Observer 消费 Role 摘要，不改写 Role Runner 历史证据" }
+    task-0015-manifest: { outcome: unchanged, reason: "Knowledge Candidate 可引用 Finding，但不改写 Review/Finding 历史证据" }
+    task-0016-manifest: { outcome: unchanged, reason: "Observer 汇总 Recovery 事实，不改写 TASK-0016 历史证据" }
+    task-0017-manifest: { outcome: updated, reason: "Task 包记录实现计划、验证证据和 Docs Impact" }
+    task-0001-manifest: { outcome: unchanged, reason: "不改变基础 Task/Archive Runtime 历史事实" }
+    task-0002-manifest: { outcome: unchanged, reason: "不改变 Backlog 投影同步协议" }
+    task-0003-manifest: { outcome: unchanged, reason: "复用 TaskEnvelope Context Plan，不改写协议历史" }
+    task-0004-manifest: { outcome: unchanged, reason: "不改变 Git Workspace Effect 或 Checkpoint" }
+    task-0005-manifest: { outcome: unchanged, reason: "不改变既有 Coding AgentRunner 或真实 Adapter" }
+    task-0006-manifest: { outcome: unchanged, reason: "固定 Coding Workflow 与 Verification/Merge 行为保持不变" }
+    task-0007-manifest: { outcome: unchanged, reason: "遵守 Trace 只读派生原则，不改变既有 Coding Trace" }
+    task-0008-manifest: { outcome: unchanged, reason: "不改变 Coding Demo 或 Board" }
+    task-0009-manifest: { outcome: unchanged, reason: "不改变 OTLP/Phoenix Trace Demo" }
+    restate-poc-architecture: { outcome: unchanged, reason: "Core Observer/Docs Gate 尚未接入 Restate Service，不改变当前运行拓扑" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "继续使用 TypeScript 与既有 yaml 依赖，无新选型" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "ObserverReport 是业务只读摘要，不改变 TraceSink、OTLP 或 Phoenix 边界" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "Observer 无写权、Gate 失败可恢复、Digest 可重建，无新稳定陷阱" }
+    local-restate-poc-runbook: { outcome: unchanged, reason: "真实 Restate 回归沿用现有步骤，无操作变化" }
+    research-index: { outcome: not_applicable, reason: "本 Task 未引入外部资料、实验比较或新的选型证据" }
