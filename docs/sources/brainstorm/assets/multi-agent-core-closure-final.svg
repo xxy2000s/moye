@@ -1,0 +1,184 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2700" height="1900" viewBox="0 0 2700 1900">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#263238" flood-opacity="0.12"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10Z" fill="#514c45"/>
+    </marker>
+    <marker id="orangeArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10Z" fill="#b97716"/>
+    </marker>
+    <marker id="purpleArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10Z" fill="#76558d"/>
+    </marker>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #2e2a26; }
+      .title { font-size: 42px; font-weight: 780; }
+      .subtitle { font-size: 19px; fill: #69635b; }
+      .section { font-size: 25px; font-weight: 750; }
+      .node-title { font-size: 20px; font-weight: 730; text-anchor: middle; }
+      .node-sub { font-size: 15px; fill: #625d56; text-anchor: middle; }
+      .tiny { font-size: 14px; fill: #6a645c; }
+      .label { font-size: 15px; font-weight: 700; fill: #665c4d; }
+      .implemented { fill: #dcebdc; stroke: #4e7958; stroke-width: 2.5; }
+      .partial { fill: #fff0c9; stroke: #b77a21; stroke-width: 2.5; }
+      .missing { fill: #f6dddd; stroke: #a95b5b; stroke-width: 2.5; stroke-dasharray: 9 7; }
+      .observer { fill: #eee4f4; stroke: #76558d; stroke-width: 2.5; }
+      .runtime { fill: #e5f2fb; stroke: #4e7fa1; stroke-width: 2.5; }
+      .neutral { fill: #f2efe9; stroke: #938c82; stroke-width: 2; }
+      .flow { fill: none; stroke: #514c45; stroke-width: 3; marker-end: url(#arrow); }
+      .feedback { fill: none; stroke: #b97716; stroke-width: 3; marker-end: url(#orangeArrow); }
+      .observe { fill: none; stroke: #76558d; stroke-width: 2.4; stroke-dasharray: 8 7; marker-end: url(#purpleArrow); }
+      .badge-text { font-size: 13px; font-weight: 740; text-anchor: middle; }
+    </style>
+  </defs>
+
+  <rect width="2700" height="1900" fill="#faf7f0"/>
+  <text x="65" y="70" class="title">Moye 最终 Core 闭环：目标架构与当前实现差距</text>
+  <text x="65" y="108" class="subtitle">多 Agent 角色协作、单 Workflow 状态权威、单 Active Attempt；不引入多 Daemon 抢占、Lease、Fencing 或外围 Task Harness。</text>
+
+  <!-- Legend -->
+  <g>
+    <rect x="1830" y="36" width="805" height="92" rx="18" fill="#fffdf8" stroke="#d5cec4"/>
+    <rect x="1870" y="62" width="90" height="34" rx="17" class="implemented"/><text x="1915" y="84" class="badge-text">已具备</text>
+    <rect x="2010" y="62" width="90" height="34" rx="17" class="partial"/><text x="2055" y="84" class="badge-text">部分实现</text>
+    <rect x="2150" y="62" width="90" height="34" rx="17" class="missing"/><text x="2195" y="84" class="badge-text">尚未实现</text>
+    <text x="2280" y="83" class="tiny">状态基于 commit fab7fae 的代码与既有测试静态审计</text>
+  </g>
+
+  <rect x="45" y="165" width="2610" height="1685" rx="28" fill="#f5fbff" stroke="#5687a6" stroke-width="3"/>
+
+  <!-- Authority and policy -->
+  <text x="90" y="215" class="section">A. 控制关系：主 Agent 管决策，Workflow 管持久状态</text>
+  <g filter="url(#shadow)">
+    <rect x="90" y="250" width="610" height="160" rx="20" class="implemented"/>
+    <rect x="110" y="268" width="92" height="30" rx="15" fill="#4e7958"/><text x="156" y="288" class="badge-text" fill="#fff">已具备</text>
+    <text x="395" y="315" class="node-title">TaskEnvelope / Context Plan</text>
+    <text x="395" y="348" class="node-sub">task_id · spec_revision · base_sha · Acceptance · Validation Commands</text>
+    <text x="395" y="380" class="node-sub">内容摘要冻结，旧 Evidence 在 Spec / Context 漂移后失效</text>
+
+    <rect x="790" y="250" width="720" height="160" rx="20" class="implemented"/>
+    <rect x="810" y="268" width="92" height="30" rx="15" fill="#4e7958"/><text x="856" y="288" class="badge-text" fill="#fff">已具备</text>
+    <text x="1150" y="315" class="node-title">CoreClosureWorkflow / &lt;task_id&gt;</text>
+    <text x="1150" y="348" class="node-sub">Restate keyed Workflow · Projection · Journal · ctx.run · 单写状态权威</text>
+    <text x="1150" y="380" class="node-sub">当前名称为 CodingTaskWorkflow，阶段顺序仍固定写死</text>
+
+    <rect x="1600" y="250" width="965" height="160" rx="20" class="missing"/>
+    <rect x="1620" y="268" width="105" height="30" rx="15" fill="#a95b5b"/><text x="1672" y="288" class="badge-text" fill="#fff">尚未实现</text>
+    <text x="2082" y="315" class="node-title">Orchestrator Agent / Control Decision</text>
+    <text x="2082" y="348" class="node-sub">读取 Projection，派发角色 Attempt，提出 RETRY / REPAIR / REPLAN / WAIT / CLOSE</text>
+    <text x="2082" y="380" class="node-sub">Workflow 校验状态、预算、Expected Version 与 UNKNOWN 后才提交转换</text>
+  </g>
+  <path d="M700 330H790" class="flow"/>
+  <path d="M1510 330H1600" class="flow"/>
+  <path d="M1600 385H1510" class="feedback"/><text x="1555" y="405" class="label" text-anchor="middle">ControlDecision</text>
+
+  <!-- Delivery pipeline -->
+  <text x="90" y="480" class="section">B. 唯一研发主流程</text>
+  <g filter="url(#shadow)">
+    <rect x="90" y="520" width="320" height="160" rx="19" class="missing"/>
+    <rect x="110" y="538" width="105" height="30" rx="15" fill="#a95b5b"/><text x="162" y="558" class="badge-text" fill="#fff">尚未实现</text>
+    <text x="250" y="595" class="node-title">1 · Docs Agent</text>
+    <text x="250" y="628" class="node-sub">澄清 Spec / Plan / Design</text>
+    <text x="250" y="657" class="node-sub">必要 Architecture / ADR</text>
+
+    <rect x="455" y="520" width="320" height="160" rx="19" class="implemented"/>
+    <rect x="475" y="538" width="92" height="30" rx="15" fill="#4e7958"/><text x="521" y="558" class="badge-text" fill="#fff">已具备</text>
+    <text x="615" y="595" class="node-title">2 · Implementation Agent</text>
+    <text x="615" y="628" class="node-sub">Codex / Claude / Fake Runner</text>
+    <text x="615" y="657" class="node-sub">Run ID · JSONL · Artifact · Commit</text>
+
+    <rect x="820" y="520" width="320" height="160" rx="19" class="missing"/>
+    <rect x="840" y="538" width="105" height="30" rx="15" fill="#a95b5b"/><text x="892" y="558" class="badge-text" fill="#fff">尚未实现</text>
+    <text x="980" y="595" class="node-title">3 · Self Review</text>
+    <text x="980" y="628" class="node-sub">Diff / Static Check / Acceptance</text>
+    <text x="980" y="657" class="node-sub">当前没有独立 Step 与 Evidence</text>
+
+    <rect x="1185" y="520" width="320" height="160" rx="19" class="missing"/>
+    <rect x="1205" y="538" width="105" height="30" rx="15" fill="#a95b5b"/><text x="1257" y="558" class="badge-text" fill="#fff">尚未实现</text>
+    <text x="1345" y="595" class="node-title">4 · Review Agent</text>
+    <text x="1345" y="628" class="node-sub">独立 Code / Architecture Review</text>
+    <text x="1345" y="657" class="node-sub">输出结构化 Review Finding</text>
+
+    <rect x="1550" y="520" width="320" height="160" rx="19" class="implemented"/>
+    <rect x="1570" y="538" width="92" height="30" rx="15" fill="#4e7958"/><text x="1616" y="558" class="badge-text" fill="#fff">已具备</text>
+    <text x="1710" y="595" class="node-title">5 · Verification Gate</text>
+    <text x="1710" y="628" class="node-sub">argv-only 验收命令</text>
+    <text x="1710" y="657" class="node-sub">Evidence 与 Candidate Commit 绑定</text>
+
+    <rect x="1915" y="520" width="350" height="160" rx="19" class="partial"/>
+    <rect x="1935" y="538" width="105" height="30" rx="15" fill="#b77a21"/><text x="1987" y="558" class="badge-text" fill="#fff">部分实现</text>
+    <text x="2090" y="595" class="node-title">6 · Docs Impact &amp; Knowledge</text>
+    <text x="2090" y="628" class="node-sub">Router / Validator / Bootstrap 已有</text>
+    <text x="2090" y="657" class="node-sub">尚未接入 Coding Workflow 与经验回写</text>
+
+    <rect x="2310" y="520" width="255" height="160" rx="19" class="partial"/>
+    <rect x="2328" y="538" width="105" height="30" rx="15" fill="#b77a21"/><text x="2380" y="558" class="badge-text" fill="#fff">部分实现</text>
+    <text x="2437" y="595" class="node-title">7 · CORE CLOSED</text>
+    <text x="2437" y="628" class="node-sub">成功路径可 CLOSED</text>
+    <text x="2437" y="657" class="node-sub">失败/取消未统一收束</text>
+  </g>
+  <path d="M410 600H455" class="flow"/><path d="M775 600H820" class="flow"/><path d="M1140 600H1185" class="flow"/>
+  <path d="M1505 600H1550" class="flow"/><path d="M1870 600H1915" class="flow"/><path d="M2265 600H2310" class="flow"/>
+
+  <!-- Failure control loop -->
+  <text x="90" y="760" class="section">C. Review / Verification / Agent 失败后的控制循环</text>
+  <g filter="url(#shadow)">
+    <rect x="90" y="800" width="1110" height="225" rx="21" class="partial"/>
+    <rect x="110" y="818" width="105" height="30" rx="15" fill="#b77a21"/><text x="162" y="838" class="badge-text" fill="#fff">部分实现</text>
+    <text x="645" y="862" class="node-title">Finding / Error Classification</text>
+    <text x="150" y="905" class="node-title" text-anchor="start">当前已有</text>
+    <text x="290" y="905" class="tiny">errorCode / errorCategory · UNKNOWN_SIDE_EFFECT 保护 · Attempt Generation 领域原语</text>
+    <text x="150" y="947" class="node-title" text-anchor="start">当前缺少</text>
+    <text x="290" y="947" class="tiny">Review Finding Schema · 实现/方案/基础设施分类 · 统一预算 · Orchestrator ControlDecision</text>
+    <text x="645" y="990" class="node-sub">现在任何确定性 Agent 或 Verification 失败都会直接 FAILED_TERMINAL</text>
+
+    <rect x="1270" y="800" width="1295" height="225" rx="21" class="missing"/>
+    <rect x="1290" y="818" width="105" height="30" rx="15" fill="#a95b5b"/><text x="1342" y="838" class="badge-text" fill="#fff">尚未实现</text>
+    <text x="1917" y="862" class="node-title">同一 Core 内的恢复决策</text>
+    <line x1="1593" y1="890" x2="1593" y2="985" stroke="#d49a9a" stroke-width="2"/>
+    <line x1="1917" y1="890" x2="1917" y2="985" stroke="#d49a9a" stroke-width="2"/>
+    <line x1="2241" y1="890" x2="2241" y2="985" stroke="#d49a9a" stroke-width="2"/>
+    <text x="1431" y="914" class="node-title">RETRY</text><text x="1431" y="947" class="node-sub">明确未执行的 Operation</text><text x="1431" y="976" class="node-sub">↩ 当前阶段</text>
+    <text x="1755" y="914" class="node-title">REPAIR</text><text x="1755" y="947" class="node-sub">实现缺陷 → Attempt N+1</text><text x="1755" y="976" class="node-sub">↩ Implementation</text>
+    <text x="2079" y="914" class="node-title">REPLAN</text><text x="2079" y="947" class="node-sub">方案失效 → Spec Revision</text><text x="2079" y="976" class="node-sub">↩ Docs &amp; Design</text>
+    <text x="2403" y="914" class="node-title">WAIT / FAIL</text><text x="2403" y="947" class="node-sub">UNKNOWN 或预算耗尽</text><text x="2403" y="976" class="node-sub">保留证据后收束</text>
+  </g>
+  <path d="M1710 680V735H645V800" class="feedback"/><text x="1180" y="720" class="label">未通过 / 异常</text>
+  <path d="M1200 912H1270" class="feedback"/>
+
+  <!-- Observer lane -->
+  <g filter="url(#shadow)">
+    <rect x="90" y="1090" width="2475" height="205" rx="22" class="partial"/>
+    <rect x="110" y="1108" width="105" height="30" rx="15" fill="#b77a21"/><text x="162" y="1128" class="badge-text" fill="#fff">部分实现</text>
+    <text x="1327" y="1148" class="section" text-anchor="middle">Observer Agent：目标是持续旁路观察；当前已有确定性 Projection / Agent Events / Trace / Board / OTLP</text>
+    <text x="145" y="1192" class="node-title" text-anchor="start">当前已有</text>
+    <text x="290" y="1192" class="tiny">Workflow observe callback · ProjectBoard · Live Agent Events · Coding Trace · optional OTLP · Agent / Git / Verification Artifact 关联</text>
+    <text x="145" y="1234" class="node-title" text-anchor="start">当前缺少</text>
+    <text x="290" y="1234" class="tiny">真实 Observer Agent · 跨步骤异常归纳 · Token / Cost 汇总 · 告警 · Docs Impact / Pitfall / Backlog 候选输出</text>
+    <text x="1327" y="1272" class="node-sub">Observer 只能读取 Event / Projection / Artifact，不能推进状态、创建 Retry 或覆盖 Review Finding。</text>
+  </g>
+  <path d="M1345 680V1090" class="observe"/>
+
+  <!-- Restate base -->
+  <g filter="url(#shadow)">
+    <rect x="90" y="1360" width="2475" height="205" rx="22" class="implemented"/>
+    <rect x="110" y="1378" width="92" height="30" rx="15" fill="#4e7958"/><text x="156" y="1398" class="badge-text" fill="#fff">已具备</text>
+    <text x="1327" y="1418" class="section" text-anchor="middle">Restate Durable Runtime：整个 Core 的可靠执行基座</text>
+    <text x="145" y="1462" class="node-title" text-anchor="start">已验证</text>
+    <text x="270" y="1462" class="tiny">Keyed Workflow · Journal / Replay · ctx.run 有界 Operation Retry · Projection · Worker Restart · 独立 ArchiveWorkflow</text>
+    <text x="145" y="1504" class="node-title" text-anchor="start">外部副作用</text>
+    <text x="290" y="1504" class="tiny">Agent Run ID / Artifact 对账 · Verification Result Unknown 保护 · Git Merge 丢回执与 Worker 强杀恢复</text>
+    <text x="1327" y="1542" class="node-sub">Restate 已经足够支撑当前单机多角色闭环；现阶段不需要额外 Lease / Fencing / 分布式抢占层。</text>
+  </g>
+
+  <!-- Existing non-core capabilities -->
+  <rect x="90" y="1615" width="2475" height="70" rx="17" class="neutral"/>
+  <text x="1327" y="1644" class="node-title">当前代码还提前实现了部分外围能力</text>
+  <text x="1327" y="1672" class="node-sub">Worktree Provision ✓ · Verification-bound Merge + Reconcile ✓ · Board / Trace ✓ · Archive ✓ · Workspace Finalize / Cleanup Receipt ✗</text>
+
+  <text x="1350" y="1725" class="section" text-anchor="middle">当前真正的最短建设路径</text>
+  <text x="1350" y="1765" class="subtitle" text-anchor="middle">Orchestrator ControlDecision → Docs / Review 角色 Agent → Finding + Repair/Replan Loop → Coding Docs Impact → 统一 Core Closure Gate</text>
+  <text x="1350" y="1802" class="subtitle" text-anchor="middle">完成这五块后，单机、多角色、单 Active Attempt 的研发 Core 才能宣称成功、失败与中断均可闭环。</text>
+</svg>

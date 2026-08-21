@@ -1,6 +1,6 @@
 schema_version: 1
-graph_revision: 31
-updated_at: "2026-08-21"
+graph_revision: 32
+updated_at: "2026-08-22"
 
 entrypoints:
   human: root-readme
@@ -167,6 +167,22 @@ documents:
     scope: task-spec-and-document-closure
     authority: idea-input
     read_when: [task-lifecycle-design, spec-lifecycle-design, docs-change]
+
+  - id: task-lifecycle-worktree-convergence-brainstorm
+    path: docs/sources/brainstorm/task-lifecycle-and-worktree-convergence.md
+    type: brainstorm
+    status: superseded
+    scope: task-lifecycle-and-worktree-convergence
+    authority: idea-input
+    read_when: [task-lifecycle-design, coding-task-poc, worktree-lifecycle, requirement-discovery]
+
+  - id: multi-agent-core-closure-requirements
+    path: docs/sources/brainstorm/multi-agent-core-closure-requirements.md
+    type: brainstorm
+    status: draft
+    scope: multi-agent-core-closure
+    authority: idea-input
+    read_when: [coding-task-poc, task-lifecycle-design, requirement-discovery, workflow-change]
 
   - id: overnight-multi-task-goal
     path: docs/sources/brainstorm/overnight-multi-task-goal.md
@@ -1166,8 +1182,52 @@ relations:
     type: indexes
 
   - from: brainstorm-index
+    to: task-lifecycle-worktree-convergence-brainstorm
+    type: indexes
+
+  - from: brainstorm-index
+    to: multi-agent-core-closure-requirements
+    type: indexes
+
+  - from: brainstorm-index
     to: overnight-multi-task-goal
     type: indexes
+
+  - from: task-lifecycle-worktree-convergence-brainstorm
+    to: task-spec-document-closure-brainstorm
+    type: refines
+
+  - from: task-lifecycle-worktree-convergence-brainstorm
+    to: task-runtime-kernel
+    type: proposes_for
+
+  - from: task-lifecycle-worktree-convergence-brainstorm
+    to: restate-poc-architecture
+    type: informs
+
+  - from: multi-agent-core-closure-requirements
+    to: task-lifecycle-worktree-convergence-brainstorm
+    type: supersedes
+
+  - from: multi-agent-core-closure-requirements
+    to: task-runtime-kernel
+    type: proposes_for
+
+  - from: multi-agent-core-closure-requirements
+    to: restate-poc-architecture
+    type: informs
+
+  - from: multi-agent-core-closure-requirements
+    to: bl-0003-repair-replan-budget
+    type: refines
+
+  - from: multi-agent-core-closure-requirements
+    to: bl-0006-production-observability
+    type: refines
+
+  - from: multi-agent-core-closure-requirements
+    to: bl-0007-knowledge-feedback-loop
+    type: refines
 
   - from: task-spec-document-closure-brainstorm
     to: task-runtime-kernel

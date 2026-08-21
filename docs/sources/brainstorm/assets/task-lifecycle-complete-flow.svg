@@ -1,0 +1,262 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2800" height="2500" viewBox="0 0 2800 2500">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#37322c" flood-opacity="0.13"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0L10 5L0 10z" fill="#514b43"/>
+    </marker>
+    <marker id="orangeArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0L10 5L0 10z" fill="#a36f1f"/>
+    </marker>
+    <marker id="blueArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0L10 5L0 10z" fill="#3c6e91"/>
+    </marker>
+    <style>
+      .title{font:700 38px 'PingFang SC','Microsoft YaHei',sans-serif;fill:#25221e}
+      .subtitle{font:400 18px 'PingFang SC','Microsoft YaHei',sans-serif;fill:#675f56}
+      .section{font:700 22px 'PingFang SC','Microsoft YaHei',sans-serif;fill:#302c27}
+      .node-title{font:700 17px 'PingFang SC','Microsoft YaHei',sans-serif;fill:#292621;text-anchor:middle}
+      .node-sub{font:400 13px 'PingFang SC','Microsoft YaHei',sans-serif;fill:#60584f;text-anchor:middle}
+      .small{font:400 12px 'PingFang SC','Microsoft YaHei',sans-serif;fill:#665e55}
+      .label{font:600 13px 'PingFang SC','Microsoft YaHei',sans-serif;fill:#514b43;text-anchor:middle}
+      .num{font:700 15px 'PingFang SC','Microsoft YaHei',sans-serif;fill:#fff;text-anchor:middle}
+      .current{fill:#dcecdf;stroke:#4d7657;stroke-width:2}
+      .target{fill:#fff0cb;stroke:#a36f1f;stroke-width:2;stroke-dasharray:7 4}
+      .neutral{fill:#f4eee5;stroke:#8d8175;stroke-width:2}
+      .error{fill:#f6dddd;stroke:#a85c5c;stroke-width:2}
+      .terminal{fill:#e8e0f2;stroke:#735b89;stroke-width:2}
+      .restate{fill:#dcecf6;stroke:#3c6e91;stroke-width:2}
+      .evidence{fill:#eee7f5;stroke:#88719a;stroke-width:2}
+      .panel{fill:#fffdf8;stroke:#c8bdae;stroke-width:2}
+      .runtime-panel{fill:#eef6fb;stroke:#5f8ba7;stroke-width:3}
+      .flow{fill:none;stroke:#514b43;stroke-width:2.6;marker-end:url(#arrow)}
+      .exception-flow{fill:none;stroke:#a36f1f;stroke-width:2.3;marker-end:url(#orangeArrow)}
+      .runtime-flow{fill:none;stroke:#3c6e91;stroke-width:2.3;marker-end:url(#blueArrow)}
+    </style>
+  </defs>
+
+  <rect width="2800" height="2500" fill="#f7f3eb"/>
+  <text x="50" y="62" class="title">Moye 完整研发 Task 状态机：主流程 + 全部异常收敛</text>
+  <text x="50" y="96" class="subtitle">中间是唯一业务主干；左侧是业务返工、失败和取消；右侧是 Restate 重试、进程恢复、UNKNOWN 与 Reconcile。</text>
+
+  <g transform="translate(1900,34)">
+    <rect width="850" height="74" rx="14" fill="#fffdf8" stroke="#d2c8bb"/>
+    <line x1="18" y1="24" x2="76" y2="24" class="flow"/><text x="88" y="28" class="small">业务主线</text>
+    <line x1="180" y1="24" x2="238" y2="24" class="exception-flow"/><text x="250" y="28" class="small">业务异常</text>
+    <line x1="360" y1="24" x2="418" y2="24" class="runtime-flow"/><text x="430" y="28" class="small">Restate恢复</text>
+    <rect x="570" y="15" width="26" height="18" rx="4" class="current"/><text x="607" y="29" class="small">已有基础</text>
+    <rect x="700" y="15" width="26" height="18" rx="4" class="target"/><text x="737" y="29" class="small">待补齐</text>
+    <text x="20" y="58" class="small">返回阶段使用“↩ N”，避免跨图回线；所有终止路径最终汇入阶段 8～11。</text>
+  </g>
+
+  <!-- Demand outside Restate -->
+  <rect x="1110" y="135" width="580" height="120" rx="17" class="neutral" filter="url(#shadow)"/>
+  <circle cx="1142" cy="166" r="18" fill="#746b62"/><text x="1142" y="172" class="num">1</text>
+  <text x="1400" y="174" class="node-title">需求被调度为 Active Task</text>
+  <text x="1400" y="204" class="node-sub">Source → Backlog → Task Package</text>
+  <text x="1400" y="230" class="node-sub">此时尚未进入 Restate Coding Workflow</text>
+  <path d="M1400 255V325" class="flow"/>
+
+  <!-- Restate boundary -->
+  <rect x="60" y="300" width="2680" height="2100" rx="26" class="runtime-panel" filter="url(#shadow)"/>
+  <rect x="95" y="320" width="1040" height="47" rx="12" fill="#dcecf6" stroke="#5f8ba7"/>
+  <text x="615" y="351" class="node-title">Restate Durable Boundary：CodingTaskWorkflow/&lt;task_id&gt; + ArchiveWorkflow/&lt;task_id&gt;</text>
+  <text x="1180" y="350" class="small">Moye 定义状态和分支；Restate 持久执行、记录 Journal、恢复 Worker、提供 Timer / Signal / State。</text>
+
+  <!-- Center main spine -->
+  <text x="1400" y="405" class="section" text-anchor="middle">唯一业务主流程</text>
+
+  <g filter="url(#shadow)">
+    <rect x="1120" y="435" width="560" height="100" rx="16" class="target"/>
+    <circle cx="1152" cy="466" r="18" fill="#a36f1f"/><text x="1152" y="472" class="num">2</text>
+    <text x="1400" y="475" class="node-title">Task Admission / RECEIVED</text>
+    <text x="1400" y="505" class="node-sub">TaskAuthority.claim → Context Route → 冻结 TaskEnvelope / Base SHA / Digest</text>
+
+    <rect x="1160" y="580" width="480" height="95" rx="16" class="current"/>
+    <circle cx="1192" cy="611" r="18" fill="#4d7657"/><text x="1192" y="617" class="num">3</text>
+    <text x="1400" y="620" class="node-title">CONTEXT</text>
+    <text x="1400" y="650" class="node-sub">读取必需上下文，生成 Envelope Evidence</text>
+
+    <rect x="1160" y="720" width="480" height="95" rx="16" class="current"/>
+    <circle cx="1192" cy="751" r="18" fill="#4d7657"/><text x="1192" y="757" class="num">4</text>
+    <text x="1400" y="760" class="node-title">WORKSPACE</text>
+    <text x="1400" y="790" class="node-sub">创建或对账隔离 Worktree / Task Branch</text>
+
+    <rect x="1160" y="860" width="480" height="110" rx="16" class="current"/>
+    <circle cx="1192" cy="891" r="18" fill="#4d7657"/><text x="1192" y="897" class="num">5</text>
+    <text x="1400" y="900" class="node-title">IMPLEMENT · Attempt N</text>
+    <text x="1400" y="930" class="node-sub">Agent Run Intent → Agent执行 → Artifact / Session → Result Commit</text>
+    <text x="1400" y="954" class="node-sub">终态 Attempt 永不复活；重试创建 N+1</text>
+
+    <path d="M1400 1015L1605 1090L1400 1165L1195 1090Z" class="current"/>
+    <circle cx="1237" cy="1068" r="18" fill="#4d7657"/><text x="1237" y="1074" class="num">6</text>
+    <text x="1400" y="1078" class="node-title">VERIFY：验证是否通过？</text>
+    <text x="1400" y="1108" class="node-sub">命令结果、Commit Binding、Finding、Error Category</text>
+    <text x="1400" y="1134" class="node-sub">通过走主线；失败进入左侧业务决策</text>
+
+    <rect x="1160" y="1210" width="480" height="100" rx="16" class="current"/>
+    <circle cx="1192" cy="1241" r="18" fill="#4d7657"/><text x="1192" y="1247" class="num">7</text>
+    <text x="1400" y="1250" class="node-title">MERGE</text>
+    <text x="1400" y="1280" class="node-sub">Expected Base CAS → 唯一 Merge Commit → Git Facts 对账</text>
+
+    <rect x="1110" y="1360" width="580" height="115" rx="16" class="target"/>
+    <circle cx="1142" cy="1391" r="18" fill="#a36f1f"/><text x="1142" y="1397" class="num">8</text>
+    <text x="1400" y="1400" class="node-title">DOCS / FAILURE EVIDENCE GATE</text>
+    <text x="1400" y="1430" class="node-sub">成功、失败、取消都必须生成最终证据、Docs Impact 与 Closure 输入</text>
+    <text x="1400" y="1455" class="node-sub">Repair / Replan 尚未终结时不会进入此 Gate</text>
+
+    <rect x="1090" y="1525" width="620" height="130" rx="16" class="target"/>
+    <circle cx="1122" cy="1556" r="18" fill="#a36f1f"/><text x="1122" y="1562" class="num">9</text>
+    <text x="1400" y="1565" class="node-title">FINALIZE_WORKSPACE</text>
+    <text x="1400" y="1595" class="node-sub">停止 / Fence Agent → 保存 Commit / Patch / Artifact → worktree remove / prune</text>
+    <text x="1400" y="1620" class="node-sub">生成不可变 Workspace Manifest 与 Cleanup Receipt</text>
+
+    <path d="M1400 1695L1590 1760L1400 1825L1210 1760Z" class="target"/>
+    <text x="1400" y="1750" class="node-title">Cleanup Receipt</text>
+    <text x="1400" y="1778" class="node-title">已确认？</text>
+
+    <rect x="1160" y="1870" width="480" height="100" rx="16" class="target"/>
+    <circle cx="1192" cy="1901" r="18" fill="#a36f1f"/><text x="1192" y="1907" class="num">10</text>
+    <text x="1400" y="1910" class="node-title">CLOSURE GATE</text>
+    <text x="1400" y="1940" class="node-sub">无 Active Attempt / Unknown Effect，所有 Acceptance、Evidence、Docs、Cleanup 已确认</text>
+
+    <rect x="1160" y="2015" width="480" height="120" rx="16" class="terminal"/>
+    <text x="1400" y="2052" class="node-title">CLOSED（业务终态）</text>
+    <text x="1400" y="2082" class="node-sub">SUCCEEDED / FAILED_TERMINAL / CANCELLED</text>
+    <text x="1400" y="2107" class="node-sub">关闭不等于归档已完成</text>
+
+    <rect x="1160" y="2180" width="480" height="105" rx="16" class="current"/>
+    <circle cx="1192" cy="2211" r="18" fill="#4d7657"/><text x="1192" y="2217" class="num">11</text>
+    <text x="1400" y="2220" class="node-title">ArchiveWorkflow</text>
+    <text x="1400" y="2250" class="node-sub">freeze manifest → move package → ARCHIVED</text>
+  </g>
+
+  <!-- Main spine arrows -->
+  <path d="M1400 535V580" class="flow"/><path d="M1400 675V720" class="flow"/>
+  <path d="M1400 815V860" class="flow"/><path d="M1400 970V1015" class="flow"/>
+  <path d="M1400 1165V1210" class="flow"/><text x="1440" y="1194" class="label">通过</text>
+  <path d="M1400 1310V1360" class="flow"/><path d="M1400 1475V1525" class="flow"/>
+  <path d="M1400 1655V1695" class="flow"/><path d="M1400 1825V1870" class="flow"/>
+  <text x="1443" y="1852" class="label">是</text>
+  <path d="M1400 1970V2015" class="flow"/><path d="M1400 2135V2180" class="flow"/>
+
+  <!-- Left: business exception panel -->
+  <rect x="105" y="435" width="850" height="1040" rx="22" class="panel"/>
+  <text x="140" y="480" class="section">左侧：业务异常由 Moye 决策</text>
+  <text x="140" y="510" class="small">Restate不会替你决定Repair、Replan、Attempt Retry或终止；它只可靠执行这里的决定。</text>
+
+  <g filter="url(#shadow)">
+    <rect x="145" y="550" width="770" height="150" rx="16" class="target"/>
+    <text x="530" y="586" class="node-title">A. Agent 明确失败（阶段 5）</text>
+    <text x="530" y="617" class="node-sub">当前 Attempt → FAILED → Retry Policy 检查 Attempt / 时间 / 成本预算</text>
+    <text x="530" y="647" class="node-sub">可重试：创建 Attempt N+1，↩ 返回阶段 5</text>
+    <text x="530" y="675" class="node-sub">预算耗尽或不可重试：形成 FAILED_TERMINAL 候选 → 阶段 8</text>
+
+    <rect x="145" y="740" width="770" height="190" rx="16" class="target"/>
+    <text x="530" y="776" class="node-title">B. Verification 失败（阶段 6）</text>
+    <text x="530" y="807" class="node-sub">实现错误：Repair → 记录 Finding → 新 Attempt N+1 → ↩ 阶段 5</text>
+    <text x="530" y="837" class="node-sub">方案错误：Replan → 新 Plan / Spec Revision → 旧证据失效 → ↩ 阶段 3</text>
+    <text x="530" y="867" class="node-sub">结果未知：不分类为普通失败，转右侧 UNKNOWN / Reconcile</text>
+    <text x="530" y="897" class="node-sub">预算耗尽：形成 FAILED_TERMINAL 候选 → 阶段 8</text>
+
+    <rect x="145" y="970" width="770" height="150" rx="16" class="target"/>
+    <text x="530" y="1006" class="node-title">C. Merge 冲突或 Base 漂移（阶段 7）</text>
+    <text x="530" y="1037" class="node-sub">代码仍适用：更新候选并重新 Verify → ↩ 阶段 6</text>
+    <text x="530" y="1067" class="node-sub">方案不再适用：Replan / 新 Spec Revision → ↩ 阶段 3</text>
+    <text x="530" y="1095" class="node-sub">不能确认 Merge 是否发生：转右侧 UNKNOWN / Reconcile</text>
+
+    <rect x="145" y="1160" width="770" height="140" rx="16" class="error"/>
+    <text x="530" y="1196" class="node-title">D. 任意活动阶段收到 Cancel</text>
+    <text x="530" y="1227" class="node-sub">停止派发新 Attempt → 请求停止 / Fence 当前 Agent → 对账 Pending Effect</text>
+    <text x="530" y="1257" class="node-sub">保存已有 Commit / Patch / Artifact → 形成 CANCELLED 候选 → 阶段 8</text>
+
+    <rect x="185" y="1340" width="690" height="95" rx="16" class="error"/>
+    <text x="530" y="1375" class="node-title">统一终止出口</text>
+    <text x="530" y="1405" class="node-sub">FAILED_TERMINAL 或 CANCELLED 候选 → 阶段 8 → 阶段 9 收束 → 阶段 10 关闭</text>
+  </g>
+
+  <!-- Short connectors to business panel, no return spaghetti -->
+  <path d="M1160 915H990V625H915" class="exception-flow"/><text x="1035" y="900" class="label">明确失败</text>
+  <path d="M1195 1090H980V835H915" class="exception-flow"/><text x="1030" y="1072" class="label">未通过</text>
+  <path d="M1160 1260H980V1045H915" class="exception-flow"/><text x="1020" y="1240" class="label">冲突</text>
+  <path d="M875 1387H1030V1418H1110" class="exception-flow"/><text x="990" y="1375" class="label">终态候选</text>
+
+  <!-- Right: Restate runtime recovery panel -->
+  <rect x="1800" y="435" width="855" height="1030" rx="22" fill="#f5fbff" stroke="#5f8ba7" stroke-width="2.5"/>
+  <text x="1835" y="480" class="section">右侧：Restate如何保护每次外部操作</text>
+  <text x="1835" y="510" class="small">适用于Workspace、Agent、Verify、Merge、Docs、Cleanup和Archive；外部副作用仍需Moye Adapter对账。</text>
+
+  <g filter="url(#shadow)">
+    <rect x="1940" y="555" width="575" height="90" rx="16" class="restate"/>
+    <text x="2228" y="590" class="node-title">准备执行外部 Operation</text>
+    <text x="2228" y="620" class="node-sub">Restate Journal Durable Command；Moye先写稳定 Intent / Effect ID</text>
+
+    <path d="M2228 690L2440 765L2228 840L2016 765Z" class="restate"/>
+    <text x="2228" y="754" class="node-title">Operation 结果是什么？</text>
+    <text x="2228" y="783" class="node-sub">成功 / 明确未发生 / Worker中断 / 结果未知</text>
+
+    <rect x="1840" y="900" width="245" height="125" rx="16" class="current"/>
+    <text x="1962" y="936" class="node-title">成功并已确认</text>
+    <text x="1962" y="967" class="node-sub">Journal记录Outcome</text>
+    <text x="1962" y="996" class="node-sub">主流程继续下一阶段</text>
+
+    <rect x="2110" y="900" width="245" height="125" rx="16" class="restate"/>
+    <text x="2232" y="936" class="node-title">明确没有发生</text>
+    <text x="2232" y="967" class="node-sub">TRANSIENT_IO</text>
+    <text x="2232" y="996" class="node-sub">ctx.run有界重试</text>
+
+    <rect x="2380" y="900" width="245" height="125" rx="16" class="restate"/>
+    <text x="2502" y="936" class="node-title">Worker进程中断</text>
+    <text x="2502" y="967" class="node-sub">Journal仍存在</text>
+    <text x="2502" y="996" class="node-sub">新Worker Replay</text>
+
+    <rect x="1940" y="1080" width="575" height="105" rx="16" class="target"/>
+    <text x="2228" y="1116" class="node-title">UNKNOWN_SIDE_EFFECT：禁止盲目重试</text>
+    <text x="2228" y="1147" class="node-sub">读取 Intent、Artifact、Checkpoint、Git Ref、Marker、目录与外部系统事实</text>
+
+    <rect x="1835" y="1235" width="250" height="125" rx="16" class="current"/>
+    <text x="1960" y="1271" class="node-title">确认已经完成</text>
+    <text x="1960" y="1302" class="node-sub">ALREADY_APPLIED</text>
+    <text x="1960" y="1331" class="node-sub">记录Outcome并继续</text>
+
+    <rect x="2105" y="1235" width="250" height="125" rx="16" class="target"/>
+    <text x="2230" y="1271" class="node-title">确认没有发生</text>
+    <text x="2230" y="1302" class="node-sub">按Operation/Attempt策略</text>
+    <text x="2230" y="1331" class="node-sub">安全重试或新Attempt</text>
+
+    <rect x="2375" y="1235" width="250" height="125" rx="16" class="target"/>
+    <text x="2500" y="1271" class="node-title">仍然无法确认</text>
+    <text x="2500" y="1302" class="node-sub">WAIT / HUMAN GATE</text>
+    <text x="2500" y="1331" class="node-sub">不推进业务状态</text>
+  </g>
+  <path d="M2228 645V690" class="runtime-flow"/>
+  <path d="M2075 810L1962 900" class="runtime-flow"/><path d="M2228 840V900" class="runtime-flow"/><path d="M2382 810L2502 900" class="runtime-flow"/>
+  <path d="M2502 1025V1050H2228V1080" class="runtime-flow"/><text x="2400" y="1040" class="label">未确认</text>
+  <path d="M2228 1185V1210H1960V1235" class="runtime-flow"/><path d="M2228 1185V1235" class="runtime-flow"/><path d="M2228 1210H2500V1235" class="runtime-flow"/>
+
+  <!-- Bracket connecting all main effects to Restate panel -->
+  <path d="M1695 720H1745M1745 720V1655M1745 1655H1695" fill="none" stroke="#3c6e91" stroke-width="2.5"/>
+  <path d="M1745 1090H1800" class="runtime-flow"/>
+  <text x="1765" y="1068" class="small">阶段4～9</text>
+  <text x="1765" y="1085" class="small">外部Operation</text>
+
+  <!-- Cleanup-specific unknown branch -->
+  <rect x="1850" y="1525" width="760" height="145" rx="17" class="target" filter="url(#shadow)"/>
+  <text x="2230" y="1562" class="node-title">Cleanup Receipt 未确认 / 删除结果未知</text>
+  <text x="2230" y="1593" class="node-sub">Task保持 FINALIZING；检查Git worktree注册、物理目录、Branch和Workspace Manifest</text>
+  <text x="2230" y="1623" class="node-sub">确认 ALREADY_REMOVED 后回到阶段10；仍未知则等待人工，不允许伪装成 CLOSED</text>
+  <path d="M1590 1760H1735V1598H1850" class="runtime-flow"/><text x="1695" y="1738" class="label">否 / UNKNOWN</text>
+
+  <!-- Archive failure branch -->
+  <rect x="1850" y="2160" width="760" height="125" rx="17" class="error" filter="url(#shadow)"/>
+  <text x="2230" y="2197" class="node-title">Archive 失败</text>
+  <text x="2230" y="2228" class="node-sub">Task仍然保持 CLOSED；archive_status = FAILED；只重试或Reconcile ArchiveWorkflow</text>
+  <text x="2230" y="2257" class="node-sub">绝不重新执行Agent、Verification、Merge或已经确认的Cleanup</text>
+  <path d="M1640 2232H1850" class="exception-flow"/><text x="1745" y="2215" class="label">归档失败</text>
+
+  <!-- Durable evidence footer -->
+  <rect x="110" y="2315" width="2540" height="92" rx="13" class="evidence"/>
+  <text x="1380" y="2349" class="node-title">每次状态转换都持久化 Event / Projection；每次实际执行都绑定 Step / Attempt / Effect / Artifact / Checkpoint / Evidence Digest</text>
+  <text x="1380" y="2382" class="subtitle" text-anchor="middle">最终闭环：不论成功、失败还是取消，都必须解决 UNKNOWN、收束 Worktree、通过 Closure Gate，并得到唯一业务终态与独立归档结果。</text>
+</svg>

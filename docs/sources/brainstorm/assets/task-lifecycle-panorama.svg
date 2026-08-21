@@ -1,0 +1,179 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3400" height="2000" viewBox="0 0 3400 2000">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#37322c" flood-opacity="0.12"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0L10 5L0 10z" fill="#514b43"/>
+    </marker>
+    <marker id="blueArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0L10 5L0 10z" fill="#3c6e91"/>
+    </marker>
+    <style>
+      .title{font:700 38px 'PingFang SC','Microsoft YaHei',sans-serif;fill:#25221e}
+      .subtitle{font:400 18px 'PingFang SC','Microsoft YaHei',sans-serif;fill:#675f56}
+      .lane-title{font:700 21px 'PingFang SC','Microsoft YaHei',sans-serif;fill:#302c27;text-anchor:middle}
+      .phase-num{font:700 14px 'PingFang SC','Microsoft YaHei',sans-serif;fill:#fff;text-anchor:middle}
+      .phase-title{font:700 17px 'PingFang SC','Microsoft YaHei',sans-serif;fill:#302c27;text-anchor:middle}
+      .node-title{font:700 16px 'PingFang SC','Microsoft YaHei',sans-serif;fill:#292621;text-anchor:middle}
+      .node-sub{font:400 13px 'PingFang SC','Microsoft YaHei',sans-serif;fill:#60584f;text-anchor:middle}
+      .tiny{font:400 12px 'PingFang SC','Microsoft YaHei',sans-serif;fill:#665e55;text-anchor:middle}
+      .small{font:400 12px 'PingFang SC','Microsoft YaHei',sans-serif;fill:#665e55}
+      .label{font:600 13px 'PingFang SC','Microsoft YaHei',sans-serif;fill:#514b43;text-anchor:middle}
+      .panel{fill:#fffdf8;stroke:#c8bdae;stroke-width:2}
+      .current{fill:#dcecdf;stroke:#4d7657;stroke-width:2}
+      .target{fill:#fff0cb;stroke:#a36f1f;stroke-width:2;stroke-dasharray:7 4}
+      .neutral{fill:#f4eee5;stroke:#8d8175;stroke-width:1.8}
+      .error{fill:#f6dddd;stroke:#a85c5c;stroke-width:2}
+      .terminal{fill:#e8e0f2;stroke:#735b89;stroke-width:2}
+      .restate{fill:#dcecf6;stroke:#3c6e91;stroke-width:2}
+      .evidence{fill:#eee7f5;stroke:#88719a;stroke-width:1.8}
+      .flow{fill:none;stroke:#514b43;stroke-width:2.5;marker-end:url(#arrow)}
+      .blue-flow{fill:none;stroke:#3c6e91;stroke-width:2.2;marker-end:url(#blueArrow)}
+      .grid{stroke:#d7cec2;stroke-width:1.2;stroke-dasharray:5 6}
+    </style>
+  </defs>
+
+  <rect width="3400" height="2000" fill="#f7f3eb"/>
+  <text x="48" y="58" class="title">Moye 研发 Task 全生命周期全景图</text>
+  <text x="48" y="92" class="subtitle">横向看阶段，纵向看同一阶段的业务状态、外部执行、Restate 管控与持久证据。主线只向右，异常通过“返回阶段编号”表达。</text>
+
+  <g transform="translate(2550,32)">
+    <rect width="800" height="72" rx="14" fill="#fffdf8" stroke="#d2c8bb"/>
+    <rect x="18" y="16" width="26" height="18" rx="4" class="current"/><text x="55" y="30" class="small">已有基础</text>
+    <rect x="145" y="16" width="26" height="18" rx="4" class="target"/><text x="182" y="30" class="small">完整闭环待补</text>
+    <rect x="315" y="16" width="26" height="18" rx="4" class="restate"/><text x="352" y="30" class="small">Restate</text>
+    <rect x="445" y="16" width="26" height="18" rx="4" class="evidence"/><text x="482" y="30" class="small">持久证据</text>
+    <line x1="18" y1="54" x2="75" y2="54" class="flow"/><text x="88" y="58" class="small">业务主线</text>
+    <text x="240" y="58" class="small">↩ N = 新 Attempt / 新 Revision 后返回阶段 N</text>
+  </g>
+
+  <!-- Overall frame and phase headers -->
+  <rect x="30" y="125" width="3340" height="1815" rx="22" class="panel" filter="url(#shadow)"/>
+  <rect x="45" y="145" width="190" height="85" rx="14" fill="#e9e2d8" stroke="#aa9e91"/>
+  <text x="140" y="179" class="node-title">阅读方式</text>
+  <text x="140" y="205" class="node-sub">先横看业务主线</text>
+  <text x="140" y="224" class="node-sub">再竖看每列</text>
+
+  <!-- Phase columns -->
+  <g>
+    <rect x="250" y="145" width="280" height="85" rx="12" fill="#eee8df" stroke="#b9aea1"/><circle cx="278" cy="172" r="17" fill="#746b62"/><text x="278" y="178" class="phase-num">1</text><text x="390" y="178" class="phase-title">需求进入</text><text x="390" y="207" class="tiny">Source → Backlog</text>
+    <rect x="530" y="145" width="280" height="85" rx="12" fill="#fff0cb" stroke="#a36f1f"/><circle cx="558" cy="172" r="17" fill="#a36f1f"/><text x="558" y="178" class="phase-num">2</text><text x="670" y="178" class="phase-title">Task 建立</text><text x="670" y="207" class="tiny">Admission / Envelope</text>
+    <rect x="810" y="145" width="280" height="85" rx="12" fill="#e4f0e6" stroke="#6a8d72"/><circle cx="838" cy="172" r="17" fill="#4d7657"/><text x="838" y="178" class="phase-num">3</text><text x="950" y="178" class="phase-title">上下文</text><text x="950" y="207" class="tiny">CONTEXT</text>
+    <rect x="1090" y="145" width="280" height="85" rx="12" fill="#e4f0e6" stroke="#6a8d72"/><circle cx="1118" cy="172" r="17" fill="#4d7657"/><text x="1118" y="178" class="phase-num">4</text><text x="1230" y="178" class="phase-title">工作区</text><text x="1230" y="207" class="tiny">WORKSPACE</text>
+    <rect x="1370" y="145" width="280" height="85" rx="12" fill="#e4f0e6" stroke="#6a8d72"/><circle cx="1398" cy="172" r="17" fill="#4d7657"/><text x="1398" y="178" class="phase-num">5</text><text x="1510" y="178" class="phase-title">Agent 编码</text><text x="1510" y="207" class="tiny">IMPLEMENT</text>
+    <rect x="1650" y="145" width="280" height="85" rx="12" fill="#e4f0e6" stroke="#6a8d72"/><circle cx="1678" cy="172" r="17" fill="#4d7657"/><text x="1678" y="178" class="phase-num">6</text><text x="1790" y="178" class="phase-title">验证与决策</text><text x="1790" y="207" class="tiny">VERIFY / REPAIR / REPLAN</text>
+    <rect x="1930" y="145" width="280" height="85" rx="12" fill="#e4f0e6" stroke="#6a8d72"/><circle cx="1958" cy="172" r="17" fill="#4d7657"/><text x="1958" y="178" class="phase-num">7</text><text x="2070" y="178" class="phase-title">合入主干</text><text x="2070" y="207" class="tiny">MERGE</text>
+    <rect x="2210" y="145" width="280" height="85" rx="12" fill="#fff0cb" stroke="#a36f1f"/><circle cx="2238" cy="172" r="17" fill="#a36f1f"/><text x="2238" y="178" class="phase-num">8</text><text x="2350" y="178" class="phase-title">文档门禁</text><text x="2350" y="207" class="tiny">DOCS GATE</text>
+    <rect x="2490" y="145" width="280" height="85" rx="12" fill="#fff0cb" stroke="#a36f1f"/><circle cx="2518" cy="172" r="17" fill="#a36f1f"/><text x="2518" y="178" class="phase-num">9</text><text x="2630" y="178" class="phase-title">工作区收束</text><text x="2630" y="207" class="tiny">FINALIZE</text>
+    <rect x="2770" y="145" width="280" height="85" rx="12" fill="#fff0cb" stroke="#a36f1f"/><circle cx="2798" cy="172" r="17" fill="#a36f1f"/><text x="2798" y="178" class="phase-num">10</text><text x="2910" y="178" class="phase-title">业务关闭</text><text x="2910" y="207" class="tiny">CLOSURE GATE</text>
+    <rect x="3050" y="145" width="280" height="85" rx="12" fill="#e4f0e6" stroke="#6a8d72"/><circle cx="3078" cy="172" r="17" fill="#4d7657"/><text x="3078" y="178" class="phase-num">11</text><text x="3190" y="178" class="phase-title">独立归档</text><text x="3190" y="207" class="tiny">ARCHIVE</text>
+  </g>
+
+  <!-- Column grid -->
+  <g opacity="0.8">
+    <line x1="250" y1="235" x2="250" y2="1920" class="grid"/><line x1="530" y1="235" x2="530" y2="1920" class="grid"/><line x1="810" y1="235" x2="810" y2="1920" class="grid"/><line x1="1090" y1="235" x2="1090" y2="1920" class="grid"/><line x1="1370" y1="235" x2="1370" y2="1920" class="grid"/><line x1="1650" y1="235" x2="1650" y2="1920" class="grid"/><line x1="1930" y1="235" x2="1930" y2="1920" class="grid"/><line x1="2210" y1="235" x2="2210" y2="1920" class="grid"/><line x1="2490" y1="235" x2="2490" y2="1920" class="grid"/><line x1="2770" y1="235" x2="2770" y2="1920" class="grid"/><line x1="3050" y1="235" x2="3050" y2="1920" class="grid"/><line x1="3330" y1="235" x2="3330" y2="1920" class="grid"/>
+  </g>
+
+  <!-- Lane 1: documents and requirements -->
+  <rect x="45" y="250" width="190" height="240" rx="14" fill="#eee8df" stroke="#aa9e91"/>
+  <text x="140" y="342" class="lane-title">需求与文档</text><text x="140" y="373" class="node-sub">为什么做</text><text x="140" y="397" class="node-sub">输入和义务</text>
+  <rect x="250" y="250" width="3080" height="240" fill="#fbf8f2" stroke="#ddd4c8"/>
+  <g filter="url(#shadow)">
+    <rect x="275" y="305" width="230" height="120" rx="14" class="neutral"/><text x="390" y="338" class="node-title">Source / Backlog</text><text x="390" y="367" class="node-sub">需求、Finding、Incident</text><text x="390" y="390" class="node-sub">去重、优先级、调度</text>
+    <rect x="555" y="290" width="230" height="150" rx="14" class="target"/><text x="670" y="323" class="node-title">Active Task Package</text><text x="670" y="352" class="node-sub">Spec / Plan / Verification</text><text x="670" y="375" class="node-sub">Context Route + Base SHA</text><text x="670" y="398" class="node-sub">冻结 TaskEnvelope</text><text x="670" y="421" class="node-sub">REQ-LC-01</text>
+    <rect x="835" y="305" width="230" height="120" rx="14" class="neutral"/><text x="950" y="338" class="node-title">Required Read</text><text x="950" y="367" class="node-sub">Architecture / ADR</text><text x="950" y="390" class="node-sub">CodeMap / Pitfall / Runbook</text>
+    <rect x="1115" y="305" width="230" height="120" rx="14" class="neutral"/><text x="1230" y="338" class="node-title">Workspace Policy</text><text x="1230" y="367" class="node-sub">Base Ref / Base SHA</text><text x="1230" y="390" class="node-sub">Worktree Root / Branch</text>
+    <rect x="1395" y="305" width="230" height="120" rx="14" class="neutral"/><text x="1510" y="338" class="node-title">执行契约</text><text x="1510" y="367" class="node-sub">Requirements / Prompt</text><text x="1510" y="390" class="node-sub">Validation Commands</text>
+    <rect x="1675" y="285" width="230" height="160" rx="14" class="target"/><text x="1790" y="318" class="node-title">Finding / Decision</text><text x="1790" y="347" class="node-sub">Repair：新 Attempt ↩ 5</text><text x="1790" y="370" class="node-sub">Replan：新 Revision ↩ 3</text><text x="1790" y="393" class="node-sub">Unknown：Reconcile 原阶段</text><text x="1790" y="416" class="node-sub">预算耗尽 → 9</text>
+    <rect x="1955" y="305" width="230" height="120" rx="14" class="neutral"/><text x="2070" y="338" class="node-title">最终候选 Diff</text><text x="2070" y="367" class="node-sub">Verification 绑定 Commit</text><text x="2070" y="390" class="node-sub">Expected Base 不漂移</text>
+    <rect x="2235" y="295" width="230" height="140" rx="14" class="target"/><text x="2350" y="328" class="node-title">Docs Impact</text><text x="2350" y="357" class="node-sub">最终 Changed Paths 路由</text><text x="2350" y="380" class="node-sub">updated / unchanged / N/A</text><text x="2350" y="403" class="node-sub">文档图校验</text>
+    <rect x="2515" y="305" width="230" height="120" rx="14" class="target"/><text x="2630" y="338" class="node-title">Workspace Manifest</text><text x="2630" y="367" class="node-sub">Commit / Patch / Artifact</text><text x="2630" y="390" class="node-sub">Cleanup Policy</text>
+    <rect x="2795" y="305" width="230" height="120" rx="14" class="target"/><text x="2910" y="338" class="node-title">Closure Report</text><text x="2910" y="367" class="node-sub">Outcome + Evidence</text><text x="2910" y="390" class="node-sub">全部 Gate 结论</text>
+    <rect x="3075" y="305" width="230" height="120" rx="14" class="current"/><text x="3190" y="338" class="node-title">Archived Package</text><text x="3190" y="367" class="node-sub">Spec / Verify / Docs Impact</text><text x="3190" y="390" class="node-sub">Manifest / Closure</text>
+  </g>
+
+  <!-- Lane 2: business state -->
+  <rect x="45" y="505" width="190" height="290" rx="14" fill="#e4f0e6" stroke="#6a8d72"/>
+  <text x="140" y="610" class="lane-title">Moye 业务状态</text><text x="140" y="642" class="node-sub">只有 Workflow</text><text x="140" y="666" class="node-sub">可以推进</text><text x="140" y="710" class="node-sub">主线只向右</text>
+  <rect x="250" y="505" width="3080" height="290" fill="#f7fbf7" stroke="#ceddcc"/>
+  <g filter="url(#shadow)">
+    <rect x="280" y="590" width="220" height="105" rx="14" class="neutral"/><text x="390" y="624" class="node-title">SCHEDULED</text><text x="390" y="653" class="node-sub">Backlog 已调度</text><text x="390" y="676" class="node-sub">尚未启动 Runtime</text>
+    <rect x="560" y="580" width="220" height="125" rx="14" class="target"/><text x="670" y="614" class="node-title">RECEIVED</text><text x="670" y="643" class="node-sub">Authority Claim</text><text x="670" y="666" class="node-sub">Envelope Integrity</text><text x="670" y="689" class="node-sub">正式入口待统一</text>
+    <rect x="840" y="590" width="220" height="105" rx="14" class="current"/><text x="950" y="624" class="node-title">CONTEXT</text><text x="950" y="653" class="node-sub">上下文固定</text><text x="950" y="676" class="node-sub">产生 Envelope Evidence</text>
+    <rect x="1120" y="590" width="220" height="105" rx="14" class="current"/><text x="1230" y="624" class="node-title">WORKSPACE</text><text x="1230" y="653" class="node-sub">Worktree 可用</text><text x="1230" y="676" class="node-sub">所有权一致</text>
+    <rect x="1400" y="580" width="220" height="125" rx="14" class="current"/><text x="1510" y="614" class="node-title">IMPLEMENT</text><text x="1510" y="643" class="node-sub">Attempt N</text><text x="1510" y="666" class="node-sub">RUNNING → 终态</text><text x="1510" y="689" class="node-sub">重试创建 N+1</text>
+    <rect x="1670" y="545" width="240" height="195" rx="14" class="target"/><text x="1790" y="579" class="node-title">VERIFY + 决策</text><text x="1790" y="608" class="node-sub">通过 → 7 Merge</text><text x="1790" y="633" class="node-sub">实现问题 → Repair ↩ 5</text><text x="1790" y="658" class="node-sub">方案问题 → Replan ↩ 3</text><text x="1790" y="683" class="node-sub">结果未知 → Reconcile</text><text x="1790" y="708" class="node-sub">终止 / 取消 → 9</text>
+    <rect x="1960" y="590" width="220" height="105" rx="14" class="current"/><text x="2070" y="624" class="node-title">MERGE</text><text x="2070" y="653" class="node-sub">唯一 Merge Commit</text><text x="2070" y="676" class="node-sub">主干结果已确认</text>
+    <rect x="2240" y="590" width="220" height="105" rx="14" class="target"/><text x="2350" y="624" class="node-title">DOCS GATE</text><text x="2350" y="653" class="node-sub">文档义务全部处置</text><text x="2350" y="676" class="node-sub">不是只写 disposition</text>
+    <rect x="2520" y="580" width="220" height="125" rx="14" class="target"/><text x="2630" y="614" class="node-title">FINALIZING</text><text x="2630" y="643" class="node-sub">成功 / 失败 / 取消</text><text x="2630" y="666" class="node-sub">统一收束 Workspace</text><text x="2630" y="689" class="node-sub">未知结果必须对账</text>
+    <rect x="2800" y="575" width="220" height="135" rx="14" class="terminal"/><text x="2910" y="610" class="node-title">CLOSED</text><text x="2910" y="639" class="node-sub">SUCCEEDED</text><text x="2910" y="662" class="node-sub">FAILED_TERMINAL</text><text x="2910" y="685" class="node-sub">CANCELLED</text><text x="2910" y="703" class="node-sub">业务终态</text>
+    <rect x="3080" y="580" width="220" height="125" rx="14" class="current"/><text x="3190" y="614" class="node-title">Archive Status</text><text x="3190" y="643" class="node-sub">PENDING</text><text x="3190" y="666" class="node-sub">ARCHIVED / FAILED</text><text x="3190" y="689" class="node-sub">不重开业务 Task</text>
+  </g>
+  <path d="M500 643H560" class="flow"/><path d="M780 643H840" class="flow"/><path d="M1060 643H1120" class="flow"/><path d="M1340 643H1400" class="flow"/><path d="M1620 643H1670" class="flow"/><path d="M1910 643H1960" class="flow"/><path d="M2180 643H2240" class="flow"/><path d="M2460 643H2520" class="flow"/><path d="M2740 643H2800" class="flow"/><path d="M3020 643H3080" class="flow"/>
+
+  <!-- Lane 3: effects and execution -->
+  <rect x="45" y="810" width="190" height="295" rx="14" fill="#eee8df" stroke="#aa9e91"/>
+  <text x="140" y="920" class="lane-title">Agent / Git</text><text x="140" y="951" class="lane-title">外部副作用</text><text x="140" y="991" class="node-sub">Adapter 只返回结果</text><text x="140" y="1015" class="node-sub">不写 Task 状态</text>
+  <rect x="250" y="810" width="3080" height="295" fill="#fbf8f2" stroke="#ddd4c8"/>
+  <g filter="url(#shadow)">
+    <rect x="280" y="895" width="220" height="105" rx="14" class="neutral"/><text x="390" y="929" class="node-title">无执行副作用</text><text x="390" y="958" class="node-sub">只维护 Git 文档输入</text><text x="390" y="981" class="node-sub">尚未创建 Workflow</text>
+    <rect x="560" y="885" width="220" height="125" rx="14" class="target"/><text x="670" y="919" class="node-title">Admission Effect</text><text x="670" y="948" class="node-sub">解析 Task Package</text><text x="670" y="971" class="node-sub">冻结 Digest</text><text x="670" y="994" class="node-sub">重复提交对账</text>
+    <rect x="840" y="895" width="220" height="105" rx="14" class="current"/><text x="950" y="929" class="node-title">Context Artifact</text><text x="950" y="958" class="node-sub">task-envelope.json</text><text x="950" y="981" class="node-sub">content digest</text>
+    <rect x="1120" y="875" width="220" height="145" rx="14" class="current"/><text x="1230" y="909" class="node-title">Workspace Effect</text><text x="1230" y="938" class="node-sub">git worktree add</text><text x="1230" y="961" class="node-sub">Branch / HEAD 对账</text><text x="1230" y="984" class="node-sub">Effect ID</text><text x="1230" y="1007" class="node-sub">UNKNOWN 时停止</text>
+    <rect x="1400" y="875" width="220" height="145" rx="14" class="current"/><text x="1510" y="909" class="node-title">Agent Run Effect</text><text x="1510" y="938" class="node-sub">Run Intent / Run ID</text><text x="1510" y="961" class="node-sub">JSONL / Session / Artifact</text><text x="1510" y="984" class="node-sub">Result Commit</text><text x="1510" y="1007" class="node-sub">明确失败或 UNKNOWN</text>
+    <rect x="1680" y="865" width="220" height="165" rx="14" class="current"/><text x="1790" y="899" class="node-title">Verification Effect</text><text x="1790" y="928" class="node-sub">argv-only / shell:false</text><text x="1790" y="951" class="node-sub">Intent / Outcome</text><text x="1790" y="974" class="node-sub">Commit Binding</text><text x="1790" y="997" class="node-sub">Finding / RESULT_UNKNOWN</text><text x="1790" y="1020" class="node-sub">Retry Policy 决策</text>
+    <rect x="1960" y="875" width="220" height="145" rx="14" class="current"/><text x="2070" y="909" class="node-title">Merge Effect</text><text x="2070" y="938" class="node-sub">deterministic parents</text><text x="2070" y="961" class="node-sub">update-ref CAS</text><text x="2070" y="984" class="node-sub">marker / ancestry 对账</text><text x="2070" y="1007" class="node-sub">ALREADY_APPLIED</text>
+    <rect x="2240" y="885" width="220" height="125" rx="14" class="target"/><text x="2350" y="919" class="node-title">Docs Gate Effect</text><text x="2350" y="948" class="node-sub">route / validate</text><text x="2350" y="971" class="node-sub">validate-impact</text><text x="2350" y="994" class="node-sub">结果绑定当前 Task</text>
+    <rect x="2520" y="865" width="220" height="165" rx="14" class="target"/><text x="2630" y="899" class="node-title">Cleanup Effect</text><text x="2630" y="928" class="node-sub">冻结 Workspace Manifest</text><text x="2630" y="951" class="node-sub">保存 Commit / Patch</text><text x="2630" y="974" class="node-sub">worktree remove / prune</text><text x="2630" y="997" class="node-sub">Cleanup Receipt</text><text x="2630" y="1020" class="node-sub">ALREADY_REMOVED 对账</text>
+    <rect x="2800" y="885" width="220" height="125" rx="14" class="target"/><text x="2910" y="919" class="node-title">Closure Evaluation</text><text x="2910" y="948" class="node-sub">无 Active Attempt</text><text x="2910" y="971" class="node-sub">无 Pending / Unknown Effect</text><text x="2910" y="994" class="node-sub">全部 Gate + Receipt</text>
+    <rect x="3080" y="875" width="220" height="145" rx="14" class="current"/><text x="3190" y="909" class="node-title">Archive Effect</text><text x="3190" y="938" class="node-sub">freeze manifest</text><text x="3190" y="961" class="node-sub">atomic move</text><text x="3190" y="984" class="node-sub">source / target 对账</text><text x="3190" y="1007" class="node-sub">Archive Receipt</text>
+  </g>
+
+  <!-- Lane 4: Restate -->
+  <rect x="45" y="1120" width="190" height="365" rx="14" fill="#dcecf6" stroke="#3c6e91"/>
+  <text x="140" y="1245" class="lane-title">Restate</text><text x="140" y="1276" class="lane-title">持久运行</text><text x="140" y="1318" class="node-sub">托住流程</text><text x="140" y="1342" class="node-sub">不定义业务规则</text>
+  <rect x="250" y="1120" width="3080" height="365" fill="#eef6fb" stroke="#6d96b1"/>
+  <rect x="535" y="1142" width="2785" height="48" rx="12" fill="#dcecf6" stroke="#3c6e91"/>
+  <text x="1925" y="1174" class="node-title">CodingTaskWorkflow/&lt;task_id&gt;：阶段 2～10 使用同一个 Key；阶段 11 使用独立 ArchiveWorkflow/&lt;task_id&gt;</text>
+  <g filter="url(#shadow)">
+    <rect x="280" y="1220" width="220" height="100" rx="14" class="neutral"/><text x="390" y="1254" class="node-title">Runtime 尚未介入</text><text x="390" y="1283" class="node-sub">Source / Backlog</text><text x="390" y="1306" class="node-sub">仍由文档控制面管理</text>
+    <rect x="560" y="1208" width="220" height="125" rx="14" class="restate"/><text x="670" y="1242" class="node-title">Key + Authority</text><text x="670" y="1271" class="node-sub">run once</text><text x="670" y="1294" class="node-sub">owner + spec_revision</text><text x="670" y="1317" class="node-sub">重复提交拒绝</text>
+    <rect x="840" y="1220" width="220" height="100" rx="14" class="restate"/><text x="950" y="1254" class="node-title">Journal Command</text><text x="950" y="1283" class="node-sub">记录 Envelope Evidence</text><text x="950" y="1306" class="node-sub">持久时间与状态</text>
+    <rect x="1120" y="1208" width="220" height="125" rx="14" class="restate"/><text x="1230" y="1242" class="node-title">ctx.run</text><text x="1230" y="1271" class="node-sub">Workspace Operation</text><text x="1230" y="1294" class="node-sub">Operation Retry</text><text x="1230" y="1317" class="node-sub">重放前先对账</text>
+    <rect x="1400" y="1208" width="220" height="125" rx="14" class="restate"/><text x="1510" y="1242" class="node-title">ctx.run</text><text x="1510" y="1271" class="node-sub">Agent Operation</text><text x="1510" y="1294" class="node-sub">Intent 持久化</text><text x="1510" y="1317" class="node-sub">未确认结果不盲跑</text>
+    <rect x="1680" y="1198" width="220" height="145" rx="14" class="restate"/><text x="1790" y="1232" class="node-title">ctx.run + Wait</text><text x="1790" y="1261" class="node-sub">Verification Operation</text><text x="1790" y="1284" class="node-sub">Timer / Signal / Promise</text><text x="1790" y="1307" class="node-sub">等待 Repair / Human Gate</text><text x="1790" y="1330" class="node-sub">业务预算由 Moye 决定</text>
+    <rect x="1960" y="1208" width="220" height="125" rx="14" class="restate"/><text x="2070" y="1242" class="node-title">ctx.run</text><text x="2070" y="1271" class="node-sub">Merge Operation</text><text x="2070" y="1294" class="node-sub">Worker 挂掉后 Replay</text><text x="2070" y="1317" class="node-sub">已应用结果复用</text>
+    <rect x="2240" y="1208" width="220" height="125" rx="14" class="restate"/><text x="2350" y="1242" class="node-title">ctx.run</text><text x="2350" y="1271" class="node-sub">Docs Gate Operation</text><text x="2350" y="1294" class="node-sub">失败可保留状态</text><text x="2350" y="1317" class="node-sub">等待修复或终止</text>
+    <rect x="2520" y="1198" width="220" height="145" rx="14" class="restate"/><text x="2630" y="1232" class="node-title">ctx.run</text><text x="2630" y="1261" class="node-sub">Cleanup Operation</text><text x="2630" y="1284" class="node-sub">Worker Recovery</text><text x="2630" y="1307" class="node-sub">丢回执后 Reconcile</text><text x="2630" y="1330" class="node-sub">目标能力待接入</text>
+    <rect x="2800" y="1208" width="220" height="125" rx="14" class="restate"/><text x="2910" y="1242" class="node-title">Durable State</text><text x="2910" y="1271" class="node-sub">Projection = CLOSED</text><text x="2910" y="1294" class="node-sub">Outcome 固定</text><text x="2910" y="1317" class="node-sub">共享 Handler 可查询</text>
+    <rect x="3080" y="1198" width="220" height="145" rx="14" class="restate"/><text x="3190" y="1232" class="node-title">ArchiveWorkflow</text><text x="3190" y="1261" class="node-sub">独立 Workflow Key</text><text x="3190" y="1284" class="node-sub">ctx.run freeze / move</text><text x="3190" y="1307" class="node-sub">失败只重试 Archive</text><text x="3190" y="1330" class="node-sub">完成后按保留期可查询</text>
+  </g>
+  <rect x="560" y="1380" width="2740" height="70" rx="14" fill="#cfe4f1" stroke="#3c6e91"/>
+  <text x="1930" y="1408" class="node-title">任何阶段 Worker 被杀：Restate 保留 Journal → 新 Worker Replay → 已确认步骤不重跑 → 未确认外部副作用先 Reconcile</text>
+  <text x="1930" y="1434" class="node-sub">Restate 解决“流程怎么可靠继续”；Moye 仍然决定 Retry、Repair、Replan、Finalize 和 Closure。</text>
+
+  <!-- Lane 5: evidence and observability -->
+  <rect x="45" y="1500" width="190" height="420" rx="14" fill="#eee7f5" stroke="#88719a"/>
+  <text x="140" y="1635" class="lane-title">证据与查询</text><text x="140" y="1667" class="node-sub">交接靠持久事实</text><text x="140" y="1691" class="node-sub">不靠聊天历史</text><text x="140" y="1734" class="node-sub">Board / Trace</text><text x="140" y="1758" class="node-sub">只读派生</text>
+  <rect x="250" y="1500" width="3080" height="420" fill="#faf7fc" stroke="#d4c9dd"/>
+  <g filter="url(#shadow)">
+    <rect x="280" y="1570" width="220" height="110" rx="14" class="evidence"/><text x="390" y="1604" class="node-title">需求关联</text><text x="390" y="1633" class="node-sub">source_ref</text><text x="390" y="1656" class="node-sub">backlog_id</text>
+    <rect x="560" y="1555" width="220" height="140" rx="14" class="evidence"/><text x="670" y="1589" class="node-title">Task Identity</text><text x="670" y="1618" class="node-sub">task_id / spec_revision</text><text x="670" y="1641" class="node-sub">workflow_ref</text><text x="670" y="1664" class="node-sub">envelope_digest</text><text x="670" y="1687" class="node-sub">backlog_refs</text>
+    <rect x="840" y="1570" width="220" height="110" rx="14" class="evidence"/><text x="950" y="1604" class="node-title">Context Evidence</text><text x="950" y="1633" class="node-sub">Context Plan</text><text x="950" y="1656" class="node-sub">Envelope Artifact</text>
+    <rect x="1120" y="1555" width="220" height="140" rx="14" class="evidence"/><text x="1230" y="1589" class="node-title">Workspace Evidence</text><text x="1230" y="1618" class="node-sub">effect_id / branch</text><text x="1230" y="1641" class="node-sub">worktree path</text><text x="1230" y="1664" class="node-sub">base_sha / head_sha</text><text x="1230" y="1687" class="node-sub">checkpoint digest</text>
+    <rect x="1400" y="1545" width="220" height="160" rx="14" class="evidence"/><text x="1510" y="1579" class="node-title">Agent Evidence</text><text x="1510" y="1608" class="node-sub">attempt_id / generation</text><text x="1510" y="1631" class="node-sub">run_id / session_id</text><text x="1510" y="1654" class="node-sub">JSONL / stderr / manifest</text><text x="1510" y="1677" class="node-sub">result_commit</text><text x="1510" y="1700" class="node-sub">content digests</text>
+    <rect x="1680" y="1545" width="220" height="160" rx="14" class="evidence"/><text x="1790" y="1579" class="node-title">Verification Evidence</text><text x="1790" y="1608" class="node-sub">command results</text><text x="1790" y="1631" class="node-sub">verified_commit</text><text x="1790" y="1654" class="node-sub">evidence binding</text><text x="1790" y="1677" class="node-sub">Finding / error category</text><text x="1790" y="1700" class="node-sub">retry decision</text>
+    <rect x="1960" y="1555" width="220" height="140" rx="14" class="evidence"/><text x="2070" y="1589" class="node-title">Merge Evidence</text><text x="2070" y="1618" class="node-sub">merge_effect_id</text><text x="2070" y="1641" class="node-sub">merge_commit / parents</text><text x="2070" y="1664" class="node-sub">target_ref</text><text x="2070" y="1687" class="node-sub">reconcile result</text>
+    <rect x="2240" y="1570" width="220" height="110" rx="14" class="evidence"/><text x="2350" y="1604" class="node-title">Docs Evidence</text><text x="2350" y="1633" class="node-sub">docs-impact.yaml</text><text x="2350" y="1656" class="node-sub">graph validation</text>
+    <rect x="2520" y="1555" width="220" height="140" rx="14" class="evidence"/><text x="2630" y="1589" class="node-title">Cleanup Evidence</text><text x="2630" y="1618" class="node-sub">workspace manifest</text><text x="2630" y="1641" class="node-sub">cleanup_effect_id</text><text x="2630" y="1664" class="node-sub">cleanup receipt</text><text x="2630" y="1687" class="node-sub">final commit / patch</text>
+    <rect x="2800" y="1555" width="220" height="140" rx="14" class="evidence"/><text x="2910" y="1589" class="node-title">Closure Evidence</text><text x="2910" y="1618" class="node-sub">outcome</text><text x="2910" y="1641" class="node-sub">closure report</text><text x="2910" y="1664" class="node-sub">no active attempt/effect</text><text x="2910" y="1687" class="node-sub">closed_at</text>
+    <rect x="3080" y="1555" width="220" height="140" rx="14" class="evidence"/><text x="3190" y="1589" class="node-title">Archive Evidence</text><text x="3190" y="1618" class="node-sub">archive operation_id</text><text x="3190" y="1641" class="node-sub">manifest digest</text><text x="3190" y="1664" class="node-sub">archive_path</text><text x="3190" y="1687" class="node-sub">archive receipt</text>
+  </g>
+  <rect x="280" y="1750" width="3020" height="115" rx="16" fill="#e8e0f2" stroke="#735b89"/>
+  <text x="1790" y="1785" class="node-title">一个 task_id 串起全链路：Task Projection → Step / Attempt → Agent Session → Git Commit → Verification → Docs → Cleanup → Closure → Archive</text>
+  <text x="1790" y="1816" class="node-sub">ProjectBoard 展示业务结论；Trace API 聚合诊断证据；Restate Admin 展示 Invocation / Journal。三者都不能越权推进 Task 状态。</text>
+  <text x="1790" y="1845" class="node-sub">新 Agent 接管时读取 TaskEnvelope、Event、Checkpoint、Artifact 和 Runtime Status，而不是依赖聊天记录或旧 Worker 内存。</text>
+
+  <text x="55" y="1970" class="subtitle">目标闭环判定：无论 SUCCEEDED、FAILED_TERMINAL 或 CANCELLED，都必须完成副作用对账、Workspace Finalize、Closure Gate 和独立 Archive。</text>
+</svg>

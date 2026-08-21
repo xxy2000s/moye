@@ -1,0 +1,230 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2600" height="1700" viewBox="0 0 2600 1700">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#263238" flood-opacity="0.12"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#4f4a43"/>
+    </marker>
+    <marker id="orangeArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b97716"/>
+    </marker>
+    <marker id="purpleArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#76558d"/>
+    </marker>
+    <style>
+      text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; fill: #2d2a26; }
+      .title { font-size: 42px; font-weight: 760; }
+      .subtitle { font-size: 19px; fill: #6a645c; }
+      .section { font-size: 25px; font-weight: 740; }
+      .node-title { font-size: 19px; font-weight: 720; text-anchor: middle; }
+      .node-sub { font-size: 15px; fill: #625d56; text-anchor: middle; }
+      .tiny { font-size: 14px; fill: #6a645c; }
+      .label { font-size: 15px; font-weight: 700; fill: #6b5c48; }
+      .step { fill: #dcebdc; stroke: #557d5d; stroke-width: 2.4; }
+      .doc { fill: #fff0c9; stroke: #bd8129; stroke-width: 2.4; }
+      .observer { fill: #eee4f4; stroke: #76558d; stroke-width: 2.4; }
+      .decision { fill: #fff4d8; stroke: #b97716; stroke-width: 2.4; }
+      .success { fill: #d9ead8; stroke: #3f754e; stroke-width: 2.8; }
+      .failure { fill: #f6dddd; stroke: #a85d5d; stroke-width: 2.4; }
+      .runtime { fill: #e5f2fb; stroke: #4e7fa1; stroke-width: 2.4; }
+      .optional { fill: #f4f2ee; stroke: #a19a90; stroke-width: 2.4; stroke-dasharray: 10 8; }
+      .flow { fill: none; stroke: #4f4a43; stroke-width: 3; marker-end: url(#arrow); }
+      .feedback { fill: none; stroke: #b97716; stroke-width: 3; marker-end: url(#orangeArrow); }
+      .observe { fill: none; stroke: #76558d; stroke-width: 2.4; stroke-dasharray: 8 7; marker-end: url(#purpleArrow); }
+    </style>
+  </defs>
+
+  <rect width="2600" height="1700" fill="#faf7f0"/>
+  <text x="70" y="72" class="title">Moye 单开发者最小研发 Core 闭环</text>
+  <text x="70" y="108" class="subtitle">先证明研发本身可恢复、可审查、可验证、可沉淀；外层 Task Harness 保持可插拔，不进入当前闭环的必要条件。</text>
+
+  <!-- Scope pills -->
+  <g>
+    <rect x="70" y="142" width="240" height="42" rx="21" fill="#ece7df"/>
+    <text x="190" y="169" class="tiny" text-anchor="middle">单仓库 · 单 Task</text>
+    <rect x="325" y="142" width="260" height="42" rx="21" fill="#ece7df"/>
+    <text x="455" y="169" class="tiny" text-anchor="middle">单线程 · 一个 Active Attempt</text>
+    <rect x="600" y="142" width="535" height="42" rx="21" fill="#ece7df"/>
+    <text x="868" y="169" class="tiny" text-anchor="middle">Orchestrator · Docs · Implementation · Review · Observer 多角色协作</text>
+  </g>
+
+  <!-- Core boundary -->
+  <rect x="55" y="220" width="2025" height="1390" rx="28" fill="#f5fbff" stroke="#5687a6" stroke-width="3"/>
+  <rect x="85" y="248" width="720" height="48" rx="12" class="runtime"/>
+  <text x="445" y="279" class="node-title">CoreClosureWorkflow / &lt;task_id&gt;：唯一核心状态推进者</text>
+  <rect x="835" y="248" width="1170" height="48" rx="12" class="observer"/>
+  <text x="1420" y="279" class="label" text-anchor="middle">Orchestrator Agent：读取 Projection、派发 Docs / Implement / Review Attempt、提出控制决策；Workflow 校验后提交状态</text>
+
+  <!-- Input -->
+  <g filter="url(#shadow)">
+    <rect x="110" y="350" width="265" height="138" rx="18" class="doc"/>
+    <text x="242" y="384" class="node-title">输入：Core Task Spec</text>
+    <text x="242" y="417" class="node-sub">需求 · Acceptance</text>
+    <text x="242" y="446" class="node-sub">Context Plan · Base Commit</text>
+    <text x="242" y="475" class="node-sub">预算与 Validation Commands</text>
+  </g>
+
+  <!-- Main delivery stages -->
+  <g filter="url(#shadow)">
+    <rect x="435" y="350" width="250" height="138" rx="18" class="doc"/>
+    <circle cx="462" cy="377" r="17" fill="#a96d18"/><text x="462" y="383" font-size="16" font-weight="700" fill="#fff" text-anchor="middle">1</text>
+    <text x="560" y="388" class="node-title">Docs &amp; Design</text>
+    <text x="560" y="421" class="node-sub">Docs Agent：澄清 Spec / Plan</text>
+    <text x="560" y="450" class="node-sub">必要的 Architecture / ADR</text>
+    <text x="560" y="477" class="node-sub">预估 Docs Impact</text>
+
+    <rect x="745" y="350" width="250" height="138" rx="18" class="step"/>
+    <circle cx="772" cy="377" r="17" fill="#4f7658"/><text x="772" y="383" font-size="16" font-weight="700" fill="#fff" text-anchor="middle">2</text>
+    <text x="870" y="388" class="node-title">Implementation</text>
+    <text x="870" y="421" class="node-sub">Implementation Agent：代码与测试</text>
+    <text x="870" y="450" class="node-sub">生成 Commit / Patch</text>
+    <text x="870" y="477" class="node-sub">持久化 Artifact / Checkpoint</text>
+
+    <rect x="1055" y="350" width="250" height="138" rx="18" class="step"/>
+    <circle cx="1082" cy="377" r="17" fill="#4f7658"/><text x="1082" y="383" font-size="16" font-weight="700" fill="#fff" text-anchor="middle">3</text>
+    <text x="1180" y="388" class="node-title">Self Review</text>
+    <text x="1180" y="421" class="node-sub">Implementation Agent：Diff / Tests</text>
+    <text x="1180" y="450" class="node-sub">对照 Acceptance</text>
+    <text x="1180" y="477" class="node-sub">发现明显偏离与遗漏</text>
+
+    <rect x="1365" y="350" width="250" height="138" rx="18" class="observer"/>
+    <circle cx="1392" cy="377" r="17" fill="#76558d"/><text x="1392" y="383" font-size="16" font-weight="700" fill="#fff" text-anchor="middle">4</text>
+    <text x="1490" y="388" class="node-title">Review Agent</text>
+    <text x="1490" y="421" class="node-sub">独立阅读 Spec 与 Diff</text>
+    <text x="1490" y="450" class="node-sub">Code / Architecture Review</text>
+    <text x="1490" y="477" class="node-sub">只输出结构化 Finding</text>
+
+    <rect x="1675" y="350" width="250" height="138" rx="18" class="step"/>
+    <circle cx="1702" cy="377" r="17" fill="#4f7658"/><text x="1702" y="383" font-size="16" font-weight="700" fill="#fff" text-anchor="middle">5</text>
+    <text x="1800" y="388" class="node-title">Verification</text>
+    <text x="1800" y="421" class="node-sub">执行验收命令</text>
+    <text x="1800" y="450" class="node-sub">绑定 Candidate Commit</text>
+    <text x="1800" y="477" class="node-sub">产出可重复 Evidence</text>
+  </g>
+
+  <path d="M375 419H435" class="flow"/>
+  <path d="M685 419H745" class="flow"/>
+  <path d="M995 419H1055" class="flow"/>
+  <path d="M1305 419H1365" class="flow"/>
+  <path d="M1615 419H1675" class="flow"/>
+
+  <!-- Outcome decision -->
+  <path d="M1800 488V545" class="flow"/>
+  <path d="M1800 545L1930 625L1800 705L1670 625Z" class="decision" filter="url(#shadow)"/>
+  <text x="1800" y="617" class="node-title">Review + Verify</text>
+  <text x="1800" y="646" class="node-sub">都通过了吗？</text>
+
+  <!-- Finding handling -->
+  <path d="M1670 625H1540" class="feedback"/>
+  <text x="1572" y="606" class="label">否</text>
+  <g filter="url(#shadow)">
+    <rect x="720" y="560" width="820" height="185" rx="20" class="decision"/>
+    <text x="1130" y="600" class="section" text-anchor="middle">Finding 分类：Workflow 作决定，Agent 不自行循环</text>
+    <line x1="925" y1="620" x2="925" y2="720" stroke="#d2a45c" stroke-width="2"/>
+    <line x1="1130" y1="620" x2="1130" y2="720" stroke="#d2a45c" stroke-width="2"/>
+    <line x1="1335" y1="620" x2="1335" y2="720" stroke="#d2a45c" stroke-width="2"/>
+    <text x="822" y="652" class="node-title">实现缺陷</text>
+    <text x="822" y="681" class="node-sub">Repair + Attempt N+1</text>
+    <text x="822" y="709" class="node-sub">↩ 阶段 2</text>
+    <text x="1027" y="652" class="node-title">方案失效</text>
+    <text x="1027" y="681" class="node-sub">Replan / Spec Revision</text>
+    <text x="1027" y="709" class="node-sub">↩ 阶段 1</text>
+    <text x="1232" y="652" class="node-title">运行异常</text>
+    <text x="1232" y="681" class="node-sub">Retry / Reconcile</text>
+    <text x="1232" y="709" class="node-sub">↩ 当前 Operation</text>
+    <text x="1437" y="652" class="node-title">预算耗尽</text>
+    <text x="1437" y="681" class="node-sub">FAILED_TERMINAL</text>
+    <text x="1437" y="709" class="node-sub">保留全部失败证据</text>
+  </g>
+
+  <!-- Observer strip -->
+  <g filter="url(#shadow)">
+    <rect x="110" y="825" width="1430" height="175" rx="20" class="observer"/>
+    <text x="825" y="866" class="section" text-anchor="middle">Observer Agent：贯穿观察，但不负责 Review 决策，也不拥有状态</text>
+    <text x="160" y="908" class="node-title" text-anchor="start">观察输入</text>
+    <text x="160" y="939" class="tiny">Event · Step / Attempt · Agent Session · Diff · Test · Error · Token / Cost · Artifact Digest</text>
+    <text x="160" y="976" class="node-title" text-anchor="start">结构化输出</text>
+    <text x="325" y="976" class="tiny">Review Finding · Trace Summary · Docs Impact Candidate · Knowledge Writeback Candidate</text>
+  </g>
+  <path d="M1490 488V825" class="observe"/>
+  <path d="M825 825V760H1130V745" class="observe"/>
+
+  <!-- Passed path and knowledge closure -->
+  <path d="M1930 625H1985V850H1600" class="flow"/>
+  <text x="1950" y="606" class="label">是</text>
+  <g filter="url(#shadow)">
+    <rect x="1600" y="820" width="390" height="210" rx="20" class="doc"/>
+    <circle cx="1630" cy="850" r="17" fill="#a96d18"/><text x="1630" y="856" font-size="16" font-weight="700" fill="#fff" text-anchor="middle">6</text>
+    <text x="1795" y="858" class="node-title">Docs Impact &amp; Knowledge Sync</text>
+    <text x="1795" y="898" class="node-sub">Docs Agent：最终 Changed Paths 重新 Route</text>
+    <text x="1795" y="929" class="node-sub">updated / unchanged / not_applicable</text>
+    <text x="1795" y="960" class="node-sub">Pitfall / Finding / Backlog / Runbook 候选</text>
+    <text x="1795" y="991" class="node-sub">通过规则后才写回长期知识</text>
+  </g>
+
+  <path d="M1795 1030V1090" class="flow"/>
+  <g filter="url(#shadow)">
+    <rect x="1370" y="1090" width="620" height="190" rx="22" class="success"/>
+    <circle cx="1402" cy="1122" r="18" fill="#3f754e"/><text x="1402" y="1128" font-size="16" font-weight="700" fill="#fff" text-anchor="middle">7</text>
+    <text x="1680" y="1132" class="section" text-anchor="middle">CORE CLOSED</text>
+    <text x="1680" y="1170" class="node-sub">唯一 Candidate / Failure Outcome · 无 Active Attempt · 无未解释 UNKNOWN</text>
+    <text x="1680" y="1202" class="node-sub">Review 与 Verification 有证据 · Docs Impact 已处置 · Trace 可按 task_id 回放</text>
+    <text x="1680" y="1234" class="node-title">输出：CoreClosureResult + Commit + Evidence Bundle</text>
+    <text x="1680" y="1262" class="node-sub">+ Knowledge Sync Report</text>
+  </g>
+
+  <!-- Restate base -->
+  <g filter="url(#shadow)">
+    <rect x="110" y="1350" width="1880" height="190" rx="22" class="runtime"/>
+    <text x="1050" y="1393" class="section" text-anchor="middle">Restate Durable Runtime：支撑整个 Core，不定义研发语义</text>
+    <text x="165" y="1435" class="node-title" text-anchor="start">Restate 提供</text>
+    <text x="315" y="1435" class="tiny">Keyed Workflow · Journal / Replay · Durable Timer / Signal · Operation Retry · Worker Recovery · State / Query</text>
+    <text x="165" y="1475" class="node-title" text-anchor="start">Moye 提供</text>
+    <text x="315" y="1475" class="tiny">Attempt / Repair / Replan · Finding 分类 · Retry Budget · Effect Reconcile · Closure Gate · Evidence Binding</text>
+    <text x="1050" y="1515" class="node-sub">原则：已确认的昂贵操作不重复；未知副作用先 Reconcile；Worker 崩溃后从 Journal、Checkpoint 和 Artifact 接管。</text>
+  </g>
+
+  <!-- Optional outer harness -->
+  <rect x="2130" y="220" width="415" height="1390" rx="28" class="optional"/>
+  <text x="2337" y="270" class="section" text-anchor="middle">可选外层 Harness</text>
+  <text x="2337" y="302" class="tiny" text-anchor="middle">当前单人闭环不依赖，之后随时外挂</text>
+
+  <g filter="url(#shadow)">
+    <rect x="2180" y="350" width="315" height="105" rx="17" class="optional"/>
+    <text x="2337" y="388" class="node-title">Task Admission / Backlog</text>
+    <text x="2337" y="420" class="node-sub">需求池、调度、优先级</text>
+
+    <rect x="2180" y="490" width="315" height="105" rx="17" class="optional"/>
+    <text x="2337" y="528" class="node-title">Managed Worktree</text>
+    <text x="2337" y="560" class="node-sub">隔离、Cleanup、迁移</text>
+
+    <rect x="2180" y="630" width="315" height="105" rx="17" class="optional"/>
+    <text x="2337" y="668" class="node-title">Merge / PR / Release</text>
+    <text x="2337" y="700" class="node-sub">CAS、审批与发布门禁</text>
+
+    <rect x="2180" y="770" width="315" height="105" rx="17" class="optional"/>
+    <text x="2337" y="808" class="node-title">Distributed Executor Control</text>
+    <text x="2337" y="840" class="node-sub">多 Daemon、Lease、Fencing、Handoff</text>
+
+    <rect x="2180" y="910" width="315" height="105" rx="17" class="optional"/>
+    <text x="2337" y="948" class="node-title">Project Board</text>
+    <text x="2337" y="980" class="node-sub">跨 Task 视图与容量管理</text>
+
+    <rect x="2180" y="1050" width="315" height="105" rx="17" class="optional"/>
+    <text x="2337" y="1088" class="node-title">Archive / Retention</text>
+    <text x="2337" y="1120" class="node-sub">材料封存与生命周期策略</text>
+  </g>
+
+  <path d="M1990 1185H2180" class="flow" stroke-dasharray="9 7"/>
+  <text x="2085" y="1165" class="label" text-anchor="middle">消费 CoreClosureResult</text>
+
+  <rect x="2180" y="1240" width="315" height="220" rx="18" fill="#ebe8e2" stroke="#a19a90" stroke-width="2"/>
+  <text x="2337" y="1280" class="node-title">外层的接入契约</text>
+  <text x="2337" y="1317" class="node-sub">只消费稳定 Core Result</text>
+  <text x="2337" y="1348" class="node-sub">不改写 Core 历史与证据</text>
+  <text x="2337" y="1379" class="node-sub">失败只影响外层状态</text>
+  <text x="2337" y="1410" class="node-sub">同样可复用 Restate Runtime</text>
+
+  <text x="1300" y="1660" class="subtitle" text-anchor="middle">最小闭环的判据不是“已合入并归档”，而是“研发结论唯一、失败可解释、执行可恢复、证据可复查、经验已形成可消费输入”。</text>
+</svg>
