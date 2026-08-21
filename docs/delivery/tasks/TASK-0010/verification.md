@@ -34,3 +34,9 @@ TASK-0010 满足 Spec Revision 1：`查看 Agent Events` 不再打开 NDJSON 响
 - 每个字段及原始 JSON 都通过 HTML 转义后渲染；异常 JSON 行只按文本展示；
 - 最多渲染前 200 条事件，超出部分明确提示下载原始文件；
 - Projection、Domain Event、Restate Journal 和 Artifact 的权威边界未改变。
+
+## Runtime Closure 重试记录
+
+首次关闭调用 `inv_12JvUT9LtpIv1KybDkGiKh52OyTHR5LOGN` 被 Bootstrap Gate 以 `BOOTSTRAP_IMPACT_INCOMPLETE` 拒绝：Docs Impact 使用了 `docs/delivery/tasks/TASK-0010` 目录缩写，而关闭器要求逐项覆盖 Task Package 的六个实际文件。拒绝发生在关闭材料持久化和 Archive 之前，Runtime Projection 保持在 `EXECUTING / implementation / NOT_READY`。
+
+处置方式是补齐六个精确路径并生成新 Result Commit，然后仅 purge 上述已完成且失败的 invocation，再用同一 `TASK-0010`、同一 Spec Revision 和同一 Workflow key 重新附着。没有直接编辑 Runtime 状态，也不会创建第二个业务 Task。

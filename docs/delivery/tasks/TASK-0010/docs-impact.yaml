@@ -5,7 +5,12 @@ intents: [task-create, task-close, coding-task-poc, docs-change]
 changed_paths:
   - docs/delivery/backlog/BL-0011.yaml
   - docs/delivery/backlog/README.md
-  - docs/delivery/tasks/TASK-0010
+  - docs/delivery/tasks/TASK-0010/task.yaml
+  - docs/delivery/tasks/TASK-0010/spec.md
+  - docs/delivery/tasks/TASK-0010/design.md
+  - docs/delivery/tasks/TASK-0010/plan.md
+  - docs/delivery/tasks/TASK-0010/verification.md
+  - docs/delivery/tasks/TASK-0010/docs-impact.yaml
   - docs/delivery/tasks/README.md
   - docs/graph.yaml
   - public/app.js
@@ -41,6 +46,9 @@ docs:
     - task-0010-verification
     - task-0010-docs-impact
     - task-0010-plan
+    - task-0010-manifest
+    - task-0010-spec
+    - task-0010-design
   reviewed:
     moye-task-control-skill: { outcome: unchanged, reason: "现有 Skill 已覆盖本次 Task 的 Router、验证、关闭与归档流程" }
     architecture-overview: { outcome: unchanged, reason: "站内 Artifact 呈现方式变化，不改变 Harness、状态权威或证据面边界" }
