@@ -10,7 +10,7 @@
 
 > 本文是当前讨论收敛后的母需求，但在进入 Backlog、Active Task、Architecture 或 ADR 前仍属于 `idea-input`，不能直接覆盖当前代码和 Architecture 事实。
 
-> 消费进度：六个 Slice 已进入 Backlog；Slice 1 已由 [TASK-0013](../../delivery/tasks/archive/2026-08-22-TASK-0013/spec.md) 完成并归档，Slice 2 已由 [TASK-0014](../../delivery/tasks/archive/2026-08-22-TASK-0014/spec.md) 完成并归档。其余 Slice 只登记 Backlog，尚未伪造 Active Task 或实现事实。
+> 消费进度：六个 Slice 已进入 Backlog；Slice 1 已由 [TASK-0013](../../delivery/tasks/archive/2026-08-22-TASK-0013/spec.md) 完成并归档，Slice 2 已由 [TASK-0014](../../delivery/tasks/archive/2026-08-22-TASK-0014/spec.md) 完成并归档，Slice 3 已由 [TASK-0015](../../delivery/tasks/TASK-0015/spec.md) 完成实现与验证并等待 Runtime Archive Gate。其余 Slice 只登记 Backlog，尚未伪造 Active Task 或实现事实。
 
 ## 1. 需求结论
 

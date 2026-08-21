@@ -1,0 +1,83 @@
+schema_version: 1
+task_id: TASK-0015
+graph_revision: 37
+intents: [task-create, task-runtime-change, coding-task-poc, docs-change]
+changed_paths:
+  - docs/delivery/backlog/BL-0016.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/tasks/TASK-0015/task.yaml
+  - docs/delivery/tasks/TASK-0015/spec.md
+  - docs/delivery/tasks/TASK-0015/design.md
+  - docs/delivery/tasks/TASK-0015/plan.md
+  - docs/delivery/tasks/TASK-0015/verification.md
+  - docs/delivery/tasks/TASK-0015/docs-impact.yaml
+  - docs/delivery/tasks/README.md
+  - docs/graph.yaml
+  - docs/sources/brainstorm/multi-agent-core-closure-requirements.md
+  - docs/knowledge/current/architecture/overview.md
+  - docs/knowledge/current/architecture/task-runtime-kernel.md
+  - docs/knowledge/current/codemap/README.md
+  - src/domain/review-finding.ts
+  - src/domain/core-control.ts
+  - tests/unit/review-finding.test.ts
+  - tests/unit/role-runner.test.ts
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - backlog-index
+    - tasks-index
+    - task-runtime-kernel
+    - durable-runtime-pitfalls
+    - overnight-multi-task-goal
+    - finding-backlog-docs-not-projected
+    - bl-0008-backlog-projection-sync
+    - bl-0002-single-agent-coding-loop
+    - restate-poc-architecture
+    - meta-index
+    - adr-0002-doc-lifecycle-roles
+    - bl-0016-review-finding
+    - sources-index
+    - task-0015-manifest
+    - task-0015-spec
+    - task-0015-design
+    - task-0015-plan
+    - task-0015-verification
+    - task-0015-docs-impact
+    - multi-agent-core-closure-requirements
+    - brainstorm-index
+    - architecture-index
+    - architecture-overview
+  reviewed:
+    research-index: { outcome: unchanged, reason: "本 Task 未引入外部资料、实验比较或新的选型证据" }
+    architecture-overview: { outcome: updated, reason: "Current slice 登记 Self Review、Review/Finding Gate 能力及 Repair Loop 尚未实现的边界" }
+    codemap: { outcome: updated, reason: "登记 review-finding 领域模块、Core Gate 依赖和高风险测试证据" }
+    task-runtime-kernel: { outcome: updated, reason: "新增 5.0.6，并更新 Review 完成后必须经过 Blocking Gate 的当前状态" }
+    document-control-plane: { outcome: unchanged, reason: "领域 Finding 不等同文档 Finding Source；本 Task 不改变文档生命周期或提升规则" }
+    moye-task-control-skill: { outcome: unchanged, reason: "现有 Route、验证、Runtime Closure 与 Archive Gate 流程完整适用" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "纯领域 Review/Finding 协议尚未注册 Restate Service，不改变 PoC 选型" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "Task/Backlog/Source 消费继续遵循既有文档生命周期决策" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "当前 Core 路线已由母需求取代，不回写历史外围 Harness 讨论" }
+    multi-agent-core-closure-requirements: { outcome: updated, reason: "标记 CORE-REQ-03 / Slice 3 已由 TASK-0015 实现和验证，等待 Runtime 归档" }
+    bl-0003-repair-replan-budget: { outcome: unchanged, reason: "只建立 REPAIR_REQUIRED 停止点，尚未消费 Repair/Replan/预算循环 Slice" }
+    bl-0006-production-observability: { outcome: unchanged, reason: "不改变 Trace、Observer 或生产可观测范围" }
+    bl-0007-knowledge-feedback-loop: { outcome: unchanged, reason: "Review Finding 是 Task 领域事实，本 Task 不实现长期知识提升或反馈" }
+    task-spec-document-closure-brainstorm: { outcome: unchanged, reason: "遵循 Task/Spec/Document 分层，不改写早期开放问题" }
+    task-0013-manifest: { outcome: unchanged, reason: "扩展 Core Projection Gate，但不改写 TASK-0013 历史证据" }
+    task-0014-manifest: { outcome: unchanged, reason: "复用 Role Manifest 与 Artifact 协议，不改写 TASK-0014 历史证据" }
+    task-0001-manifest: { outcome: unchanged, reason: "不改变基础 Task/Archive Runtime 历史事实" }
+    task-0002-manifest: { outcome: unchanged, reason: "不改变 Backlog 投影同步协议" }
+    task-0003-manifest: { outcome: unchanged, reason: "复用 TaskEnvelope，不改写协议历史" }
+    task-0004-manifest: { outcome: unchanged, reason: "只绑定既有 Candidate/Checkpoint 引用，不改变 Git Effect" }
+    task-0005-manifest: { outcome: unchanged, reason: "不改变既有 Coding AgentRunner 或真实 Adapter" }
+    task-0006-manifest: { outcome: unchanged, reason: "固定 Coding Workflow 与 Verification/Merge 行为保持不变" }
+    task-0007-manifest: { outcome: unchanged, reason: "现有 Trace 与故障恢复验收保持不变" }
+    task-0008-manifest: { outcome: unchanged, reason: "不改变 Coding Demo 或 Board" }
+    task-0009-manifest: { outcome: unchanged, reason: "不改变 OTLP/Phoenix Trace Demo" }
+    restate-poc-architecture: { outcome: unchanged, reason: "Review/Finding 尚未接入 Restate Service，不改变当前运行拓扑" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "继续使用现有 TypeScript 基线，无新依赖或选型" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "不改变 TraceSink、OTLP 或 Phoenix 边界" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "实现遵守状态唯一写入、Attempt 不复活、历史不删除与摘要绑定，无新稳定陷阱" }
+    local-restate-poc-runbook: { outcome: unchanged, reason: "真实 Restate 回归沿用现有步骤，无操作变化" }

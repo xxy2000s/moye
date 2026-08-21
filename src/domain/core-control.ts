@@ -3,6 +3,8 @@ import { createHash } from "node:crypto";
 import type { TaskEnvelope } from "./coding-task.js";
 import { parseTaskEnvelope } from "./coding-task.js";
 import { MoyeError } from "./errors.js";
+import type { ReviewGateResult } from "./review-finding.js";
+import { assertTrustedReviewGateResult } from "./review-finding.js";
 import { assertTaskId } from "./task.js";
 
 export const CORE_ROLES = Object.freeze(["DOCS", "IMPLEMENTATION", "REVIEW"] as const);
@@ -26,6 +28,8 @@ export type CoreControlStage =
   | "IMPLEMENTATION_RUNNING"
   | "REVIEW_REQUIRED"
   | "REVIEW_RUNNING"
+  | "REVIEW_GATE_REQUIRED"
+  | "REPAIR_REQUIRED"
   | "VERIFICATION_REQUIRED"
   | "DOCS_IMPACT_REQUIRED"
   | "CLOSURE_REQUIRED"
@@ -125,6 +129,16 @@ export interface CompletedRoleDispatch extends RoleDispatchCompletionInput {
   readonly completedAtProjectionVersion: number;
 }
 
+export interface AppliedReviewGate {
+  readonly gateDigest: string;
+  readonly roleRunResultDigest: string;
+  readonly reviewResultDigest: string;
+  readonly candidateCommit: string;
+  readonly verdict: "PASSED" | "BLOCKED";
+  readonly unresolvedBlockingFindingRefs: readonly string[];
+  readonly appliedAtProjectionVersion: number;
+}
+
 export interface CoreProjection {
   readonly schemaVersion: 1;
   readonly taskId: string;
@@ -136,6 +150,7 @@ export interface CoreProjection {
   readonly budget: CoreBudget;
   readonly appliedDecisions: readonly AppliedControlDecision[];
   readonly completedRoleDispatches: readonly CompletedRoleDispatch[];
+  readonly reviewGate: AppliedReviewGate | null;
   readonly pendingRole: PendingRoleDispatch | null;
   readonly projectionDigest: string;
 }
@@ -160,6 +175,7 @@ export function createInitialCoreProjection(
     budget,
     appliedDecisions: [],
     completedRoleDispatches: [],
+    reviewGate: null,
     pendingRole: null,
   });
 }
@@ -379,6 +395,52 @@ export function completeRoleDispatch(
   });
 }
 
+export function applyReviewGateResult(
+  projection: CoreProjection,
+  gate: ReviewGateResult,
+): CoreProjection {
+  assertTrustedProjection(projection);
+  assertTrustedReviewGateResult(gate);
+  if (projection.reviewGate !== null) {
+    if (projection.reviewGate.gateDigest !== gate.gateDigest) {
+      throw conflict("REVIEW_GATE_CONFLICT", "A different Review Gate Result was already applied");
+    }
+    return projection;
+  }
+  if (projection.state !== "RUNNING" || projection.stage !== "REVIEW_GATE_REQUIRED" ||
+      projection.pendingRole !== null) {
+    throw conflict("REVIEW_GATE_NOT_REQUIRED", `Review Gate cannot apply from stage ${projection.stage}`);
+  }
+  if (gate.taskId !== projection.taskId || gate.specRevision !== projection.specRevision) {
+    throw conflict("REVIEW_GATE_TASK_MISMATCH", "Review Gate Task or Spec Revision does not match Core Projection");
+  }
+  const completedReview = projection.completedRoleDispatches.at(-1);
+  if (completedReview?.role !== "REVIEW" || completedReview.resultDigest !== gate.roleRunResultDigest) {
+    throw conflict("REVIEW_GATE_RESULT_MISMATCH", "Review Gate does not bind the latest completed Review Result");
+  }
+  if (gate.verdict === "PASSED" && gate.unresolvedBlockingFindingRefs.length > 0) {
+    throw conflict("REVIEW_GATE_VERDICT_CONTRADICTION", "PASSED Review Gate cannot retain Blocking Findings");
+  }
+  if (gate.verdict === "BLOCKED" && gate.unresolvedBlockingFindingRefs.length === 0) {
+    throw conflict("REVIEW_GATE_VERDICT_CONTRADICTION", "BLOCKED Review Gate requires Blocking Findings");
+  }
+  const nextVersion = projection.projectionVersion + 1;
+  return finalizeProjection({
+    ...projectionWithoutDigest(projection),
+    projectionVersion: nextVersion,
+    stage: gate.verdict === "PASSED" ? "VERIFICATION_REQUIRED" : "REPAIR_REQUIRED",
+    reviewGate: {
+      gateDigest: gate.gateDigest,
+      roleRunResultDigest: gate.roleRunResultDigest,
+      reviewResultDigest: gate.reviewResultDigest,
+      candidateCommit: gate.candidateCommit,
+      verdict: gate.verdict,
+      unresolvedBlockingFindingRefs: gate.unresolvedBlockingFindingRefs,
+      appliedAtProjectionVersion: nextVersion,
+    },
+  });
+}
+
 export function parseCoreProjection(
   value: unknown,
   envelope: TaskEnvelope,
@@ -397,6 +459,7 @@ export function parseCoreProjection(
   const budget = normalizeRemainingBudget(value["budget"]);
   const appliedDecisions = value["appliedDecisions"].map(parseAppliedDecision);
   const completedRoleDispatches = value["completedRoleDispatches"].map(parseCompletedRoleDispatch);
+  const reviewGate = value["reviewGate"] === null ? null : parseAppliedReviewGate(value["reviewGate"]);
   const pendingRole = value["pendingRole"] === null
     ? null
     : parsePendingRole(value["pendingRole"]);
@@ -411,6 +474,7 @@ export function parseCoreProjection(
     budget,
     appliedDecisions,
     completedRoleDispatches,
+    reviewGate,
     pendingRole,
   };
   const parsed = finalizeProjection(core);
@@ -575,7 +639,35 @@ function runningStageForRole(role: CoreRole): CoreControlStage {
 function completedStageForRole(role: CoreRole): CoreControlStage {
   if (role === "DOCS") return "IMPLEMENTATION_REQUIRED";
   if (role === "IMPLEMENTATION") return "REVIEW_REQUIRED";
-  return "VERIFICATION_REQUIRED";
+  return "REVIEW_GATE_REQUIRED";
+}
+
+function parseAppliedReviewGate(value: unknown): AppliedReviewGate {
+  if (!isRecord(value)) throw validation("INVALID_APPLIED_REVIEW_GATE", "applied Review Gate is invalid");
+  assertDigest(value["gateDigest"], "reviewGate.gateDigest");
+  assertDigest(value["roleRunResultDigest"], "reviewGate.roleRunResultDigest");
+  assertDigest(value["reviewResultDigest"], "reviewGate.reviewResultDigest");
+  if (typeof value["candidateCommit"] !== "string" ||
+      !/^[0-9a-f]{40}([0-9a-f]{24})?$/.test(value["candidateCommit"])) {
+    throw validation("INVALID_APPLIED_REVIEW_GATE", "reviewGate candidateCommit is invalid");
+  }
+  if (value["verdict"] !== "PASSED" && value["verdict"] !== "BLOCKED") {
+    throw validation("INVALID_APPLIED_REVIEW_GATE", "reviewGate verdict is invalid");
+  }
+  if (!Array.isArray(value["unresolvedBlockingFindingRefs"]) ||
+      !value["unresolvedBlockingFindingRefs"].every((item) => typeof item === "string")) {
+    throw validation("INVALID_APPLIED_REVIEW_GATE", "reviewGate Finding refs are invalid");
+  }
+  assertPositiveInteger(value["appliedAtProjectionVersion"], "reviewGate.appliedAtProjectionVersion");
+  return {
+    gateDigest: value["gateDigest"],
+    roleRunResultDigest: value["roleRunResultDigest"],
+    reviewResultDigest: value["reviewResultDigest"],
+    candidateCommit: value["candidateCommit"],
+    verdict: value["verdict"],
+    unresolvedBlockingFindingRefs: [...value["unresolvedBlockingFindingRefs"]],
+    appliedAtProjectionVersion: value["appliedAtProjectionVersion"] as number,
+  };
 }
 
 function roleScheduleReason(role: CoreRole): string {
@@ -651,7 +743,8 @@ function assertControlState(value: CoreControlState): void {
 function assertControlStage(value: CoreControlStage): void {
   const stages: readonly CoreControlStage[] = [
     "DOCS_REQUIRED", "DOCS_RUNNING", "IMPLEMENTATION_REQUIRED", "IMPLEMENTATION_RUNNING",
-    "REVIEW_REQUIRED", "REVIEW_RUNNING", "VERIFICATION_REQUIRED", "DOCS_IMPACT_REQUIRED",
+    "REVIEW_REQUIRED", "REVIEW_RUNNING", "REVIEW_GATE_REQUIRED", "REPAIR_REQUIRED",
+    "VERIFICATION_REQUIRED", "DOCS_IMPACT_REQUIRED",
     "CLOSURE_REQUIRED", "CLOSED",
   ];
   if (!stages.includes(value)) throw validation("INVALID_CORE_STAGE", `Invalid Core stage: ${String(value)}`);

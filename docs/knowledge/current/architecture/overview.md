@@ -29,7 +29,7 @@
 
 当前代码实现了总体架构中的本地单 Agent 垂直切片：Task/Archive Durable Workflow、冻结 TaskEnvelope、Step/Attempt/Evidence、隔离 Worktree、Fake/真实 Codex/Claude Adapter、运行中 Agent JSONL Stream、Verification、本地原子 Merge、查询投影、三层 Trace、CLI/Skill 和本地 Board。一键 Demo 可在隔离 Git Fixture 中选择 Fake、Codex 或 Claude，Board 把 Task、Workflow、Agent Session 与 Git Commit 聚合成中文七阶段业务旅程，并通过 cursor API 持续展示完整 CLI 事件；Restate UI 只作为高级运行时排障入口。
 
-多角色 Core 目前实现了纯领域 Control Kernel，以及 Docs、Implementation、Review 共用的 Role Attempt/Request/Result/Artifact 协议和确定性 Fake Role Runner。Projection 能按唯一 Pending Dispatch 依次推进三个角色 Gate，并保存完成的 Attempt Generation 与 Result Digest；稳定 Execution Intent、Manifest 对账和 `UNKNOWN_SIDE_EFFECT` 保护已由单测验证。它尚未接入 keyed Restate Core Workflow，真实 Codex/Claude 多角色 Adapter 与 Observer 也尚未实现。Daemon 集群、真实多角色调度、远程 Git/PR、完整 Repair/Replan、生产可观测性与知识蒸馏仍是目标架构，不能从纯领域协议推断为已实现。
+多角色 Core 目前实现了纯领域 Control Kernel，Docs、Implementation、Review 共用的 Role Attempt/Request/Result/Artifact 协议和确定性 Fake Role Runner，以及结构化 Self Review、ReviewResult、ReviewFinding 追加处置和 Blocking Gate。Projection 能按唯一 Pending Dispatch 依次推进三个角色；Review Run 完成后必须经内容寻址 Gate，才进入 Verification 或停在 Repair Required。稳定 Execution Intent、Manifest 对账和 `UNKNOWN_SIDE_EFFECT` 保护已由单测验证。它尚未接入 keyed Restate Core Workflow，真实 Codex/Claude 多角色 Adapter、Repair/Replan 循环与 Observer 也尚未实现。Daemon 集群、远程 Git/PR、生产可观测性与知识蒸馏仍是目标架构，不能从纯领域协议推断为已实现。
 
 ## 2. 设计结论
 

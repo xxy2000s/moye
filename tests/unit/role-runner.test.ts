@@ -84,7 +84,7 @@ describe("Role Agent Runner", () => {
 
     expect(projection).toMatchObject({
       projectionVersion: 7,
-      stage: "VERIFICATION_REQUIRED",
+      stage: "REVIEW_GATE_REQUIRED",
       pendingRole: null,
       completedRoleDispatches: [
         { role: "DOCS", attemptGeneration: 1 },

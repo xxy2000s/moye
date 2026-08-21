@@ -25,7 +25,7 @@ src/
 ├── backlog/           Git Backlog 文档加载、严格转换与批次摘要
 ├── coding/            八阶段单 Agent 编码 Workflow 编排与 Projection
 ├── demo/              隔离 Coding Demo Fixture 与安全清理
-├── domain/            纯领域状态、错误、Backlog、Board 与 Core ControlDecision Reducer
+├── domain/            纯领域状态、错误、Backlog、Board、Core Reducer 与 Review/Finding Gate
 ├── archive/           Manifest、Bootstrap 关闭材料、原子移动与 Reconcile
 ├── effects/           带稳定 operation ledger 的幂等副作用样例
 ├── git/               Worktree、Checkpoint 与本地 Git Effect 对账
@@ -67,6 +67,7 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 
 - `domain` 不依赖 Restate、HTTP 或浏览器；
 - `domain/core-control.ts` 从已验证 TaskEnvelope 创建内容寻址 Core Projection 和 ControlDecision；确定性 Orchestrator 只提出候选，Reducer 校验 Expected State/Version、Required Gate、单 Pending Role 与中央预算后才生成下一版 Projection；Role 完成入口校验成功 Result 摘要并依次推进 Docs、Implementation、Review Gate；
+- `domain/review-finding.ts` 固定 Self Review、Candidate-bound Review Input、成功 ReviewResult、独立执行失败、Finding 稳定身份/追加处置和 Blocking Gate；Core 只接受绑定最近 Review Manifest Digest 的可信 Gate Result；
 - `agent/role-runner.ts` 为 Docs、Implementation、Review 提供统一 Attempt、Request、判别输出和内容寻址 Artifact Manifest；Fake Role Runner 用稳定 Intent/Manifest 对账证明已确认 Run 不重复，未知结果停止；真实多角色 Adapter 尚未接入；
 - `agent/runner.ts` 规范请求、运行中 JSONL Stream 与最终 Artifact；`codex-exec.ts` 和 `claude-print.ts` 只负责 argv-only Agent 子进程并把 stdout chunk 交给行边界写入器，不推进 Task 状态；Claude 原生 OTel/内容采集只注入当前子进程，默认关闭；
 - `backlog/document-sync.ts` 先验证全部 YAML，再形成单个 ProjectBoard 批次；
@@ -87,7 +88,7 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 | `src/archive/bootstrap-closure.ts`、`task-artifacts.ts` | 自举证据与提交不一致、归档后引用失效 | `tests/unit/bootstrap-closure.test.ts` |
 | `src/backlog/document-sync.ts` | 坏条目部分写入、枚举漂移、无意义重复同步 | `tests/unit/backlog-sync.test.ts`、真实 Restate E2E |
 | `src/domain/coding-task.ts` | Spec 漂移后沿用旧证据、Attempt 被复活、Shell 命令边界丢失 | `tests/unit/coding-task.test.ts` |
-| `src/domain/core-control.ts` | 过期/重复 Decision 推进状态、跳过 Required Gate、失败 Result 完成 Dispatch、重复 Role 派发、预算绕过 | `tests/unit/core-control.test.ts`、`tests/unit/role-runner.test.ts` |
+| `src/domain/core-control.ts`、`review-finding.ts` | 过期/重复 Decision 推进状态、跳过 Required/Review Gate、失败 Result 完成 Dispatch、Blocking Finding 进入 Verification、Finding 历史被覆盖、预算绕过 | `tests/unit/core-control.test.ts`、`tests/unit/role-runner.test.ts`、`tests/unit/review-finding.test.ts` |
 | `src/git/workspace-effect.ts` | 路径/符号链接逃逸、Base 漂移、分支冲突、未知 Git 结果重复写 | `tests/unit/workspace-effect.test.ts` |
 | `src/coding/workflow.ts`、`src/verification/gate.ts`、`src/git/merge-effect.ts` | Gate 重放、Commit 漂移、Expected Base TOCTOU、状态越权、未知 Agent/Workspace/Merge 误判 | Coding unit + Worker restart/unknown Merge Restate E2E + Codex Fixture evidence |
 | `src/effects/counter.ts` | Step 确认前中断造成副作用重复 | `tests/unit/counter.test.ts`、E2E 计数断言 |

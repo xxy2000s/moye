@@ -142,7 +142,7 @@ ProjectBoard 接收 Coding 的状态和事件摘要；`src/trace/coding-trace.ts
 - `ControlDecision` 固定 Expected State、Expected Projection Version、Action、Target Role、Finding/Evidence 引用、预算申请、原因和规范 SHA-256 Digest；
 - 确定性 Fake Orchestrator 只从已验证的 `TaskEnvelope + CoreProjection` 生成当前 Required Gate 对应的 Docs、Implementation 或 Review Role 候选，不读取聊天历史、Agent 内存或本地临时路径；
 - Reducer 是当前切片唯一合法转换入口。它先识别已确认的相同 Decision 重放，再校验 Task/Spec、状态、版本、预算、单 Pending Role 和 Required Gate，保证丢失确认后不会重复派发；
-- `completeRoleDispatch` 只接受与唯一 Pending Dispatch、Role、Input Digest、Attempt ID/Generation 一致的成功结果摘要；相同完成重放不推进版本，不同结果冲突。线性 Gate 当前可推进至 `VERIFICATION_REQUIRED`；`RETRY`、`REPAIR`、`REPLAN`、Finding、Verification、最终 Docs Impact 和 Closure 仍由后续切片实现，不能由当前 Projection 伪造。
+- `completeRoleDispatch` 只接受与唯一 Pending Dispatch、Role、Input Digest、Attempt ID/Generation 一致的成功结果摘要；相同完成重放不推进版本，不同结果冲突。Docs 与 Implementation 完成后进入下一 Role Required，Review 完成后停在 `REVIEW_GATE_REQUIRED`；只有可信 Review Gate 可进入 `VERIFICATION_REQUIRED` 或 `REPAIR_REQUIRED`。`RETRY`、实际 `REPAIR`/`REPLAN` 循环、Verification、最终 Docs Impact 和 Closure 仍由后续切片实现，不能由当前 Projection 伪造。
 
 这个模块是未来 keyed `CoreClosureWorkflow/<task_id>` 的 Reducer，不拥有独立进程或第二套运行时状态。现有 `CodingTaskWorkflow` 在完整 Core Workflow 接入前继续保持当前行为。
 
@@ -158,6 +158,18 @@ ProjectBoard 接收 Coding 的状态和事件摘要；`src/trace/coding-trace.ts
 - Artifact Root 与输入 Scope 分离，拒绝文件系统根、直接符号链接和 Run 目录逃逸。
 
 现有 `src/agent/runner.ts`、Codex/Claude Adapter 和固定 Coding Workflow 契约保持不变。把真实 Role Request 映射到只读 Review/Docs 或可写 Implementation 进程，属于 Core Workflow 接入时的后续实现。
+
+### 5.0.6 当前已实现 Self Review、ReviewResult 与 Finding 切片
+
+`src/domain/review-finding.ts` 把 Implementation 自检和独立 Review 结果建模为可持久化领域事实，保持无 Restate、文件系统和模型依赖：
+
+- `ImplementationSelfReview` 固定 Task/Spec、Implementation Attempt/Run、Candidate Commit、Diff、Checkpoint、Test Evidence、Checklist 和 Verdict；只有全部 Checklist 通过的 `READY_FOR_REVIEW` 可以创建 Review Input；
+- `ReviewInput` 绑定 Candidate、Diff Digest、Checkpoint、Self Review Digest/Artifact 和验证证据。`ReviewResult` 只表示 Review Agent 成功执行后的 `PASSED | FINDINGS`，同时绑定 Role Run Manifest Digest；`ReviewExecutionFailure` 是独立错误事实，不能进入 Finding Gate；
+- `ReviewFinding` 固定 Category、Severity、Requirement/Evidence、Recommended Action 与 Review Producer。Finding ID 不随处置变化；Record Digest 覆盖当前状态和完整追加历史；OPEN 只能处置为 RESOLVED、SUPERSEDED 或 ACCEPTED_RISK，终态不能复活；
+- `ReviewGateResult` 要求 Result 中的 Finding 集合与当前 Finding Record 精确匹配。任一 `BLOCKING + OPEN` 产生 `BLOCKED`，否则 `PASSED`；Gate Digest 同时绑定业务 ReviewResult Digest 和 Role Run Manifest Digest；
+- Core Reducer 对最近完成的 Review Manifest 再做 Gate 绑定。通过进入 `VERIFICATION_REQUIRED`，阻塞进入 `REPAIR_REQUIRED`；相同 Gate 重放不推进版本，不同 Gate 冲突。
+
+`REPAIR_REQUIRED` 当前是明确停止点，不会自行创建 Implementation Attempt。Finding 驱动 Repair、Replan、Spec Revision/Evidence 失效与预算扣减属于下一切片。
 
 ### 5.1 模型关系
 

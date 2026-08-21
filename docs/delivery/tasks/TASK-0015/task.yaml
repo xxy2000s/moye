@@ -1,0 +1,19 @@
+schema_version: 1
+id: TASK-0015
+title: 实现 Self Review、ReviewResult 与 Finding 生命周期
+status: executing
+outcome:
+backlog_refs:
+  - BL-0016
+spec_revision: 1
+workflow_id: task/TASK-0015
+execution_mode: goal-bootstrap
+base_commit: cff2e11d594e32cbe1273fe7c675cc66f3770a4c
+archive:
+  status: not_ready
+  archived_at: null
+  archived_path: null
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
