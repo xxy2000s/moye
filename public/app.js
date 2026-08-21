@@ -164,7 +164,9 @@ function renderCodingTrace(trace, summary) {
   const events = trace.business.events.map(event => `
     <li><span class="sequence">${String(event.sequence).padStart(2, "0")}</span><strong>${escapeHtml(event.type)}</strong><span>${escapeHtml(stepLabel(event.step))}</span><time>${formatTime(event.at)}</time></li>`).join("");
   const artifacts = trace.technical.artifacts.map(artifact => `
-    <li><span>${escapeHtml(artifact.kind)}</span><code>${escapeHtml(artifact.artifactRef)}</code><small>${escapeHtml(shortDigest(artifact.contentDigest))}${artifact.bytes === undefined ? "" : ` · ${artifact.bytes} B`}</small></li>`).join("");
+    <li><span>${escapeHtml(artifact.kind)}</span><code>${escapeHtml(artifact.artifactRef)}</code><small>${escapeHtml(shortDigest(artifact.contentDigest))}${artifact.bytes === undefined ? "" : ` · ${artifact.bytes} B`}</small>${artifact.downloadUrl ? `<a href="${escapeAttribute(artifact.downloadUrl)}" target="_blank" rel="noreferrer">打开 ↗</a>` : ""}</li>`).join("");
+  const agentEvents = trace.technical.artifacts.find(artifact => artifact.kind === "agent-events" && artifact.downloadUrl);
+  const rawModelIo = trace.technical.artifacts.find(artifact => artifact.kind === "raw-model-io" && artifact.downloadUrl);
   const actions = trace.recovery.actions.map(action => `
     <li><strong>${escapeHtml(action.label)}</strong><span class="tag ${action.automatic ? "blue" : "yellow"}">${action.automatic ? "自动" : "人工"}</span><p>${escapeHtml(action.reason)}</p></li>`).join("");
 
@@ -188,6 +190,16 @@ function renderCodingTrace(trace, summary) {
       <div><span>归档状态</span><strong>${escapeHtml(archiveStatusLabel(task.archiveStatus))}</strong></div>
     </div>
     ${task.error ? `<p class="error-box"><strong>失败原因：</strong>${escapeHtml(task.error)}<br><span>下一步：${escapeHtml(trace.recovery.summary)}</span></p>` : ""}
+
+    <section class="diagnostic-actions" aria-label="诊断入口">
+      <div><small>Trace ID</small><code>${escapeHtml(trace.observability.traceId)}</code></div>
+      ${trace.observability.enabled && trace.observability.uiBaseUrl
+        ? `<a href="${escapeAttribute(trace.observability.uiBaseUrl)}" target="_blank" rel="noreferrer">打开 Trace（Phoenix）↗</a>`
+        : `<span class="diagnostic-disabled">Trace 后端未启用</span>`}
+      ${agentEvents ? `<a href="${escapeAttribute(agentEvents.downloadUrl)}" target="_blank" rel="noreferrer">查看 Agent Events ↗</a>` : ""}
+      ${rawModelIo ? `<a class="sensitive-link" href="${escapeAttribute(rawModelIo.downloadUrl)}" target="_blank" rel="noreferrer">查看 Raw Model IO（敏感）↗</a>` : ""}
+    </section>
+    <p class="trace-note">Trace 与 JSONL 只用于诊断；任务状态以 Moye Projection / Domain Event 为准，中断恢复以 Restate Journal 为准。</p>
 
     <section class="journey-section" aria-labelledby="journey-title">
       <div class="trace-heading"><div><p class="eyebrow">任务执行旅程</p><h3 id="journey-title">七个阶段，一眼看清做到哪里</h3></div><span>点击阶段查看证据</span></div>
@@ -287,7 +299,7 @@ function attemptStatusLabel(status) {
 }
 
 function runnerLabel(kind) {
-  return ({ fake: "Fake Agent（演示）", codex: "Codex Agent", process: "本地进程 Agent" })[String(kind || "").toLowerCase()] || kind || "等待分配";
+  return ({ fake: "Fake Agent（演示）", codex_exec: "Codex CLI", claude_print: "Claude CLI", process: "本地进程 Agent" })[String(kind || "").toLowerCase()] || kind || "等待分配";
 }
 
 function agentOutcomeLabel(outcome) {
@@ -352,6 +364,6 @@ function escapeHtml(value) {
 
 function escapeAttribute(value) {
   const text = String(value);
-  if (!/^https?:\/\//.test(text)) return "#";
+  if (!/^https?:\/\//.test(text) && !text.startsWith("/api/")) return "#";
   return escapeHtml(text);
 }

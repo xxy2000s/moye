@@ -3,14 +3,17 @@ import { createHash } from "node:crypto";
 import { writeFile } from "node:fs/promises";
 
 import { CodexExecAgentRunner } from "../agent/codex-exec.js";
+import { ClaudePrintAgentRunner } from "../agent/claude-print.js";
 import { FixtureCodingAgentRunner } from "../agent/fixture-coding.js";
 import type { FixtureMutation } from "../agent/fixture-coding.js";
 import type { FakeAgentScript } from "../agent/runner.js";
 import type { CodingWorkflowInput, CodingWorkflowProjection } from "../coding/workflow.js";
 import { runCodingWorkflow } from "../coding/workflow.js";
+import { loadConfig } from "../config.js";
 import type { TaskProjection } from "../domain/task.js";
 import type { GitCommandRunner } from "../git/workspace-effect.js";
 import { nodeGitCommandRunner } from "../git/workspace-effect.js";
+import { buildCodingTraceBatch, createTraceSink } from "../trace/telemetry.js";
 import { archiveWorkflow, projectBoard, taskAuthority } from "./services.js";
 
 interface CodingWorkflowState {
@@ -48,10 +51,9 @@ export const codingTaskWorkflow = restate.workflow({
       });
       const workflowEpoch = await ctx.date.now();
       let workflowTick = 0;
-      const agentRunner = input.runnerKind === "FAKE"
-        ? createFixtureRunner(input)
-        : new CodexExecAgentRunner();
-      return runCodingWorkflow(input, {
+      const config = loadConfig();
+      const agentRunner = createAgentRunner(input, config);
+      const projection = await runCodingWorkflow(input, {
         agentRunner,
         now: () => new Date(workflowEpoch + workflowTick++),
         gitRunner: createGitRunner(input),
@@ -88,6 +90,20 @@ export const codingTaskWorkflow = restate.workflow({
           };
         },
       });
+      if (config.observability.enabled) {
+        try {
+          await ctx.run("export-coding-trace", () => createTraceSink({
+            enabled: true,
+            endpoint: config.observability.otlpTracesEndpoint,
+          }).export(buildCodingTraceBatch(projection, {
+            serviceName: config.observability.serviceName,
+            projectName: config.observability.projectName,
+          })), { maxRetryAttempts: 1 });
+        } catch (error) {
+          process.stderr.write(`Moye trace export failed for ${projection.taskId}: ${error instanceof Error ? error.message : String(error)}\n`);
+        }
+      }
+      return projection;
     },
 
     status: restate.handlers.workflow.shared(
@@ -96,6 +112,24 @@ export const codingTaskWorkflow = restate.workflow({
     ),
   },
 });
+
+function createAgentRunner(input: CodingTaskWorkflowInput, config: ReturnType<typeof loadConfig>) {
+  if (input.runnerKind === "FAKE") return createFixtureRunner(input);
+  if (input.runnerKind === "CODEX_EXEC") return new CodexExecAgentRunner();
+  return new ClaudePrintAgentRunner({
+    telemetry: {
+      enabled: config.observability.claudeNativeTelemetry,
+      endpoint: config.observability.otlpTracesEndpoint,
+      serviceName: "claude-code",
+      projectName: config.observability.projectName,
+      captureUserPrompts: config.observability.captureUserPrompts,
+      captureAssistantResponses: config.observability.captureAssistantResponses,
+      captureToolDetails: config.observability.captureToolDetails,
+      captureToolContent: config.observability.captureToolContent,
+      captureRawApiBodies: config.observability.captureRawModelIo,
+    },
+  });
+}
 
 function createFixtureRunner(input: CodingTaskWorkflowInput): FixtureCodingAgentRunner {
   if (input.fake === undefined) {

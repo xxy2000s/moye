@@ -6,7 +6,10 @@ import { buildCodingTaskTrace } from "../../src/trace/coding-trace.js";
 describe("coding task trace", () => {
   it("links business attempts, Agent session, Git commits and technical artifacts", () => {
     const projection = closedProjection();
-    const trace = buildCodingTaskTrace(projection, { restateAdminUrl: "http://127.0.0.1:9070" });
+    const trace = buildCodingTaskTrace(projection, {
+      restateAdminUrl: "http://127.0.0.1:9070",
+      observability: { enabled: true, uiBaseUrl: "http://127.0.0.1:6006" },
+    });
 
     expect(trace.task).toMatchObject({ taskId: "TASK-TRACE-UNIT", state: "CLOSED", archiveStatus: "ARCHIVED" });
     expect(trace.business.steps[0]).toMatchObject({ stepId: "IMPLEMENT", status: "SUCCEEDED" });
@@ -17,6 +20,11 @@ describe("coding task trace", () => {
     expect(trace.technical.artifacts.map((artifact) => artifact.kind)).toEqual([
       "agent-events", "agent-stderr", "agent-final-message", "verification-evidence", "docs-result", "archive-receipt",
     ]);
+    expect(trace.technical.artifacts[0]?.downloadUrl).toBe("/api/tasks/TASK-TRACE-UNIT/artifacts/agent-events");
+    expect(trace.observability).toMatchObject({
+      authority: "diagnostic-only", enabled: true, provider: "otlp", uiBaseUrl: "http://127.0.0.1:6006",
+    });
+    expect(trace.observability.traceId).toMatch(/^[0-9a-f]{32}$/);
     expect(trace.durableRuntime).toMatchObject({
       workflowRef: "restate://CodingTaskWorkflow/TASK-TRACE-UNIT",
       workflowService: "CodingTaskWorkflow",

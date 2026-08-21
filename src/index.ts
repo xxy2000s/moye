@@ -24,6 +24,8 @@ const board = startBoardServer({
   ingressUrl: config.restateIngressUrl,
   restateAdminUrl: config.restateAdminUrl,
   publicRoot: join(process.cwd(), "public"),
+  artifactRoots: config.artifactRoots,
+  observability: config.observability,
 });
 board.on("listening", () => {
   process.stdout.write(`Moye board listening on ${config.boardPort}\n`);

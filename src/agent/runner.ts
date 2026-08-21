@@ -54,7 +54,7 @@ export interface AgentArtifactFile {
 export interface AgentRunResult {
   readonly schemaVersion: 1;
   readonly runId: string;
-  readonly runnerKind: "FAKE" | "CODEX_EXEC";
+  readonly runnerKind: "FAKE" | "CODEX_EXEC" | "CLAUDE_PRINT";
   readonly taskId: string;
   readonly specRevision: number;
   readonly stepId: "IMPLEMENT";
@@ -72,6 +72,7 @@ export interface AgentRunResult {
     readonly events: AgentArtifactFile;
     readonly stderr: AgentArtifactFile;
     readonly finalMessage: AgentArtifactFile;
+    readonly rawModelIo?: AgentArtifactFile;
   };
   readonly runDigest: string;
 }
@@ -84,6 +85,7 @@ export interface AgentExecutionCapture {
   readonly signal: NodeJS.Signals | null;
   readonly startedAt: string;
   readonly finishedAt: string;
+  readonly rawModelIo?: string;
 }
 
 export interface FakeAgentScript {
@@ -223,7 +225,7 @@ export async function persistAgentRun(
   if (capture.runnerKind !== request.runnerKind) {
     throw validation("AGENT_RUNNER_KIND_MISMATCH", "Execution capture does not match the planned Runner kind");
   }
-  const parsed = parseJsonl(capture.stdoutJsonl);
+  const parsed = parseJsonl(capture.stdoutJsonl, capture.runnerKind);
   const durationMs = Date.parse(capture.finishedAt) - Date.parse(capture.startedAt);
   const outcome: AgentRunOutcome = parsed.error !== undefined
     ? "INVALID_OUTPUT"
@@ -235,11 +237,15 @@ export async function persistAgentRun(
     events: Buffer.from(capture.stdoutJsonl, "utf8"),
     stderr: Buffer.from(capture.stderr, "utf8"),
     finalMessage: Buffer.from(finalMessage, "utf8"),
+    ...(capture.rawModelIo === undefined ? {} : { rawModelIo: Buffer.from(capture.rawModelIo, "utf8") }),
   };
   const artifacts = {
     events: artifactFile(request, "events.jsonl", contents.events),
     stderr: artifactFile(request, "stderr.log", contents.stderr),
     finalMessage: artifactFile(request, "final-message.txt", contents.finalMessage),
+    ...(contents.rawModelIo === undefined ? {} : {
+      rawModelIo: artifactFile(request, "raw-model-io.jsonl", contents.rawModelIo),
+    }),
   };
   const core = {
     schemaVersion: 1 as const,
@@ -269,6 +275,9 @@ export async function persistAgentRun(
   await writeStableFile(path.join(request.artifactPath, "events.jsonl"), contents.events);
   await writeStableFile(path.join(request.artifactPath, "stderr.log"), contents.stderr);
   await writeStableFile(path.join(request.artifactPath, "final-message.txt"), contents.finalMessage);
+  if (contents.rawModelIo !== undefined) {
+    await writeStableFile(path.join(request.artifactPath, "raw-model-io.jsonl"), contents.rawModelIo);
+  }
   const manifest = Buffer.from(`${JSON.stringify(result, null, 2)}\n`, "utf8");
   await writeStableFile(path.join(request.artifactPath, "manifest.json"), manifest);
   return result;
@@ -362,6 +371,9 @@ export async function parseAgentRunResult(
       events: readArtifactFile(artifactsInput["events"]),
       stderr: readArtifactFile(artifactsInput["stderr"]),
       finalMessage: readArtifactFile(artifactsInput["finalMessage"]),
+      ...(artifactsInput["rawModelIo"] === undefined ? {} : {
+        rawModelIo: readArtifactFile(artifactsInput["rawModelIo"]),
+      }),
     },
     runDigest: readString(input, "runDigest"),
   });
@@ -382,10 +394,13 @@ export async function parseAgentRunResult(
   await verifyArtifactFile(request, "events.jsonl", result.artifacts.events);
   await verifyArtifactFile(request, "stderr.log", result.artifacts.stderr);
   await verifyArtifactFile(request, "final-message.txt", result.artifacts.finalMessage);
+  if (result.artifacts.rawModelIo !== undefined) {
+    await verifyArtifactFile(request, "raw-model-io.jsonl", result.artifacts.rawModelIo);
+  }
   const finalContent = await readFile(path.join(request.artifactPath, "final-message.txt"), "utf8");
   if (finalContent !== result.finalMessage) throw conflict("FINAL_MESSAGE_MISMATCH", "Final message Artifact differs from manifest");
   const eventsContent = await readFile(path.join(request.artifactPath, "events.jsonl"), "utf8");
-  const parsedEvents = parseJsonl(eventsContent);
+  const parsedEvents = parseJsonl(eventsContent, result.runnerKind);
   const expectedOutcome: AgentRunOutcome = parsedEvents.error !== undefined
     ? "INVALID_OUTPUT"
     : result.exitCode === 0 && result.signal === null && parsedEvents.turnCompleted && parsedEvents.turnFailed !== true
@@ -409,7 +424,7 @@ function assertTrustedRequest(request: AgentRunRequest): void {
   }
 }
 
-function parseJsonl(stdout: string): {
+function parseJsonl(stdout: string, runnerKind: AgentRunResult["runnerKind"]): {
   readonly sessionId?: string;
   readonly finalMessage?: string;
   readonly turnCompleted: boolean;
@@ -427,6 +442,7 @@ function parseJsonl(stdout: string): {
       return { turnCompleted: false, error: `JSONL line ${index + 1} is invalid JSON` };
     }
   }
+  if (runnerKind === "CLAUDE_PRINT") return parseClaudeJsonl(events);
   const starts = events.filter((event) => event["type"] === "thread.started");
   if (events[0]?.["type"] !== "thread.started" || starts.length !== 1
       || typeof starts[0]?.["thread_id"] !== "string" || !starts[0]["thread_id"]) {
@@ -450,8 +466,35 @@ function parseJsonl(stdout: string): {
   };
 }
 
+function parseClaudeJsonl(events: readonly Record<string, unknown>[]): {
+  readonly sessionId?: string;
+  readonly finalMessage?: string;
+  readonly turnCompleted: boolean;
+  readonly turnFailed?: boolean;
+  readonly error?: string;
+} {
+  const starts = events.filter((event) => event["type"] === "system" && event["subtype"] === "init");
+  const sessionId = starts[0]?.["session_id"];
+  if (events[0]?.["type"] !== "system" || events[0]?.["subtype"] !== "init"
+      || starts.length !== 1 || typeof sessionId !== "string" || !sessionId) {
+    return { turnCompleted: false, error: "Claude stream-json must start with exactly one system/init carrying session_id" };
+  }
+  const results = events.filter((event) => event["type"] === "result");
+  const result = results.at(-1);
+  if (results.length !== 1 || result === undefined || typeof result["result"] !== "string") {
+    return { sessionId, turnCompleted: false, error: "Claude stream-json must end with exactly one result carrying result text" };
+  }
+  const isError = result["is_error"] === true || result["subtype"] === "error";
+  return {
+    sessionId,
+    finalMessage: result["result"] as string,
+    turnCompleted: true,
+    turnFailed: isError,
+  };
+}
+
 function validateCapture(capture: AgentExecutionCapture): void {
-  if (capture.runnerKind !== "FAKE" && capture.runnerKind !== "CODEX_EXEC") {
+  if (capture.runnerKind !== "FAKE" && capture.runnerKind !== "CODEX_EXEC" && capture.runnerKind !== "CLAUDE_PRINT") {
     throw validation("INVALID_RUNNER_KIND", "Unknown Agent Runner kind");
   }
   if (typeof capture.stdoutJsonl !== "string" || typeof capture.stderr !== "string") {
@@ -567,7 +610,9 @@ function readArtifactFile(value: unknown): AgentArtifactFile {
 }
 
 function readRunnerKind(value: unknown): AgentRunResult["runnerKind"] {
-  if (value !== "FAKE" && value !== "CODEX_EXEC") throw validation("INVALID_RUNNER_KIND", "Invalid runnerKind");
+  if (value !== "FAKE" && value !== "CODEX_EXEC" && value !== "CLAUDE_PRINT") {
+    throw validation("INVALID_RUNNER_KIND", "Invalid runnerKind");
+  }
   return value;
 }
 

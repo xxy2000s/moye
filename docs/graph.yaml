@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 23
+graph_revision: 24
 updated_at: "2026-08-21"
 
 entrypoints:
@@ -824,6 +824,14 @@ documents:
     authority: accepted-decision
     read_when: [restate-poc, dependency-change]
 
+  - id: adr-0004-otlp-phoenix-demo
+    path: docs/knowledge/decisions/adr/0004-use-otlp-contract-and-optional-phoenix.md
+    type: adr
+    status: accepted
+    scope: agent-runtime-observability
+    authority: accepted-decision
+    read_when: [observability-selection, dependency-change, coding-task-poc]
+
 relations:
   - from: root-readme
     to: docs-index
@@ -1476,6 +1484,22 @@ relations:
   - from: adr-0003-typescript-poc
     to: task-0001-manifest
     type: governs
+
+  - from: adr-index
+    to: adr-0004-otlp-phoenix-demo
+    type: indexes
+
+  - from: adr-0004-otlp-phoenix-demo
+    to: restate-poc-architecture
+    type: governs
+
+  - from: adr-0004-otlp-phoenix-demo
+    to: task-0009-manifest
+    type: governs
+
+  - from: task-0009-manifest
+    to: adr-0004-otlp-phoenix-demo
+    type: implements_decision
 
   - from: codemap
     to: architecture-overview

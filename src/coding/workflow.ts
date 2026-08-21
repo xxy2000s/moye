@@ -69,6 +69,7 @@ export interface CodingWorkflowProjection {
   readonly steps: readonly CodingStep[];
   readonly attempts: readonly StepAttempt[];
   readonly evidenceBindings: readonly EvidenceBinding[];
+  readonly artifactRoot?: string;
   readonly workspace?: { readonly effectId: string; readonly path: string; readonly branch: string };
   readonly agent?: AgentRunResult;
   readonly checkpoint?: GitCheckpoint;
@@ -115,6 +116,7 @@ export async function runCodingWorkflow(
     steps: envelope.pipeline,
     attempts: [],
     evidenceBindings: [],
+    artifactRoot: path.resolve(input.artifactRoot),
   });
   const publish = async (next: CodingWorkflowProjection): Promise<void> => {
     projection = deepFreeze(next);

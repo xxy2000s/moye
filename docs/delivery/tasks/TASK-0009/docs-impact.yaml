@@ -1,7 +1,7 @@
 schema_version: 1
 task_id: TASK-0009
-graph_revision: 23
-intents: [task-create, coding-task-poc, observability-selection, docs-change]
+graph_revision: 24
+intents: [task-create, task-close, coding-task-poc, observability-selection, docs-change]
 changed_paths:
   - docs/delivery/backlog/BL-0010.yaml
   - docs/delivery/backlog/README.md
@@ -22,6 +22,35 @@ changed_paths:
   - tests/e2e
   - compose.yaml
   - README.md
+  - package.json
+  - package-lock.json
+  - docs/knowledge/current/architecture/overview.md
+  - docs/knowledge/current/architecture/poc-01-restate.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/decisions/adr/0004-use-otlp-contract-and-optional-phoenix.md
+  - docs/knowledge/decisions/adr/README.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - public/app.js
+  - public/styles.css
+  - scripts/demo.ts
+  - scripts/trace-compose.ts
+  - src/agent/claude-print.ts
+  - src/agent/codex-exec.ts
+  - src/agent/runner.ts
+  - src/board/server.ts
+  - src/coding/workflow.ts
+  - src/config.ts
+  - src/index.ts
+  - src/restate/coding-services.ts
+  - src/trace/coding-trace.ts
+  - src/trace/telemetry.ts
+  - tests/e2e/coding-workflow.test.ts
+  - tests/e2e/demo.test.ts
+  - tests/unit/board-server.test.ts
+  - tests/unit/claude-agent.test.ts
+  - tests/unit/coding-trace.test.ts
+  - tests/unit/config.test.ts
+  - tests/unit/telemetry.test.ts
 docs:
   read:
     - agent-contract
@@ -48,14 +77,27 @@ docs:
     - task-0009-plan
     - task-0009-verification
     - task-0009-docs-impact
+    - adr-index
+    - adr-0004-otlp-phoenix-demo
+    - architecture-overview
+    - architecture-index
+    - local-restate-poc-runbook
+    - runbooks-index
+    - adr-0001-restate-poc
   reviewed:
     moye-task-control-skill: { outcome: unchanged, reason: "现有 Skill 已覆盖 Router、Docs Impact、Runtime Closure 与 Archive，无需改变控制流程" }
-    architecture-overview: { outcome: updated, reason: "待实现后登记轻量 OTLP/Phoenix 与 Evidence Plane 的实际边界" }
-    codemap: { outcome: updated, reason: "待实现后登记 TraceSink、Claude Adapter、Artifact API 与测试入口" }
-    local-restate-poc-runbook: { outcome: updated, reason: "待实现后登记 Phoenix、隐私开关与验收操作" }
+    architecture-overview: { outcome: updated, reason: "已登记轻量 OTLP/Phoenix、短 Span 与 Evidence Plane 的实际边界" }
+    codemap: { outcome: updated, reason: "已登记 TraceSink、Claude Adapter、Artifact API、Compose 与测试入口" }
+    local-restate-poc-runbook: { outcome: updated, reason: "已登记 Phoenix、端口、隐私开关、CLI 能见度与验收操作" }
     adr-0001-restate-poc: { outcome: unchanged, reason: "可观测输出不改变 Restate 作为首轮 durable runtime 的既有决策" }
     adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "沿用 Source/Backlog/Task/Knowledge 生命周期，不改变目录角色" }
     adr-0003-typescript-poc: { outcome: unchanged, reason: "实现继续使用既有 TypeScript 技术栈" }
+    adr-0004-otlp-phoenix-demo: { outcome: updated, reason: "冻结 OTLP 后端无关契约、默认 Noop、可选 Phoenix 与敏感内容默认关闭的决策" }
+    architecture-index: { outcome: unchanged, reason: "现有架构索引已通过 Overview 和 Restate PoC 路由，无需新增入口" }
+    runbooks-index: { outcome: unchanged, reason: "现有本地 Restate PoC Runbook 仍是唯一操作入口" }
+    durable-workflow-research: { outcome: unchanged, reason: "既有调研支持 Restate 与标准 OTel 分层；具体轻量选型由 ADR-0004 冻结" }
+    tasks-index: { outcome: updated, reason: "TASK-0009 关闭后将由 Runtime Archive 从 Active 索引迁入 Archived 索引" }
+    task-0009-manifest: { outcome: updated, reason: "Runtime Closure 将冻结结果提交、验证引用与 Archive 回执，不手工篡改状态" }
     task-spec-document-closure-brainstorm: { outcome: unchanged, reason: "本次实现沿用已收敛的 Task、Spec 与文档控制边界" }
     bl-0006-production-observability: { outcome: unchanged, reason: "保留生产级指标、告警和长期存储范围，仅通过 BL-0010 拆出轻量 Demo" }
     task-0002-manifest: { outcome: unchanged, reason: "复用既有 Backlog 到 Task 的自举与关闭事实，不改变同步协议" }

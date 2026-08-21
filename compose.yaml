@@ -1,0 +1,19 @@
+name: moye
+
+services:
+  phoenix:
+    profiles: ["trace"]
+    image: arizephoenix/phoenix:version-19.10.0
+    ports:
+      - "127.0.0.1:6006:6006"
+      - "127.0.0.1:4317:4317"
+    environment:
+      PHOENIX_WORKING_DIR: /mnt/data
+      PHOENIX_ALLOW_EXTERNAL_RESOURCES: "false"
+      PHOENIX_DEFAULT_RETENTION_POLICY_DAYS: "7"
+    volumes:
+      - phoenix_data:/mnt/data
+    restart: unless-stopped
+
+volumes:
+  phoenix_data:

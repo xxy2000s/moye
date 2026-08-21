@@ -2,7 +2,7 @@
 
 Moye 是一个面向代码研发任务的全自动、可恢复、可追踪 Harness。它以 Task 为业务聚合根，协调 Agent、Daemon、Worktree、测试、Review、Git 合并和知识沉淀，目标是让一次研发任务从需求进入到主干合入形成可验证闭环。
 
-当前状态：**首个本地单 Agent 编码闭环与三层 Trace 已实现并通过验收**。
+当前状态：**首个本地单 Agent 编码闭环、三层 Trace 与可选 OTLP/Phoenix 诊断 Demo 已实现并通过验收**。
 
 ## 当前目标
 
@@ -33,6 +33,14 @@ npm run demo
 ```
 
 命令会自动分配空闲端口、启动 Restate，并在隔离 Git Fixture 中用 Fake Agent 完成一次真实的 Coding Task：创建 Worktree、修改文件、提交、验证、合入和归档。它不会修改 Moye 仓库。打开终端中 `项目看板:` 后面的 URL，点击“已归档”列中的 Task，就能看到中文七阶段旅程；按 `Ctrl-C` 停止，演示数据保留在 `.moye-runtime/demo`。
+
+需要同时体验标准 Trace 时使用：
+
+```bash
+npm run demo:trace
+```
+
+该命令通过可选 Compose Profile 启动本地 Phoenix，再运行同一个隔离 Demo。Moye Board 会展示稳定 Trace ID、Phoenix 入口和经过摘要校验的 Agent Events。Phoenix 只负责技术诊断，默认 `npm run demo` 不启动它；停止 Trace 后端使用 `npm run trace:down`。
 
 ### 验证实现
 
@@ -67,7 +75,7 @@ Restate Journal、恢复建议、技术 Artifact 与原始事件收在“高级�
 curl http://127.0.0.1:3000/api/tasks/<task_id>/trace
 ```
 
-Trace 不会修改 Workflow 状态；业务 Projection、Restate Journal 与技术日志分别承担状态、恢复、诊断职责。
+Trace 不会修改 Workflow 状态；业务 Projection、Restate Journal 与技术日志分别承担状态、恢复、诊断职责。OTLP 默认关闭；Prompt、Response、Tool Content 和 Raw Model IO 也全部默认关闭，且不会修改用户的 Claude/Codex 全局配置。
 
 将 Git 中的 Backlog 文档显式同步到已启动的 ProjectBoard：
 
@@ -111,4 +119,4 @@ Moye 使用自己定义的 Task、证据和知识治理原则建设自身：
 
 ## 当前边界
 
-本轮已经实现 Task/Archive Workflow、单 Agent 本地编码 Workflow、Fake/真实 Codex Adapter、幂等 Worktree/Verification/Merge、Board Projection、三层 Trace 查询与恢复视图、CLI、项目 Skill 和故障注入测试。多 Daemon 调度、GitHub PR/Merge、鉴权、完整 Repair/Replan 与生产可观测性仍属于后续阶段。
+本轮已经实现 Task/Archive Workflow、单 Agent 本地编码 Workflow、Fake/真实 Codex 与 Claude Print Adapter、幂等 Worktree/Verification/Merge、Board Projection、三层 Trace 查询、标准 OTLP 输出、可选 Phoenix、受控 Artifact 下载、CLI、项目 Skill 和故障注入测试。多 Daemon 调度、GitHub PR/Merge、鉴权、完整 Repair/Replan，以及 Metrics/Logs/告警/SLO 等生产可观测性仍属于后续阶段。

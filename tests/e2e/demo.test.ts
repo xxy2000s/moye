@@ -60,11 +60,18 @@ describe("npm run demo", () => {
     expect(trace.git.resultCommit).toMatch(/^[0-9a-f]{40}$/);
     expect(trace.git.mergeCommit).toMatch(/^[0-9a-f]{40}$/);
     expect(trace.durableRuntime.invocationsUrl).toContain(encodeURIComponent(taskId));
+    expect(trace.observability).toMatchObject({ enabled: false, provider: "disabled" });
+    const eventsUrl = trace.technical.artifacts.find((artifact) => artifact.kind === "agent-events")?.downloadUrl;
+    expect(eventsUrl).toBe(`/api/tasks/${taskId}/artifacts/agent-events`);
+    const events = await (await fetch(`${boardUrl}${eventsUrl}`)).text();
+    expect(events).toContain(`agent-session-${taskId}`);
 
     const html = await (await fetch(boardUrl)).text();
     const app = await (await fetch(`${boardUrl}/app.js`)).text();
     expect(html).toContain("任务控制面 · Coding Demo");
     expect(app).toContain("七个阶段，一眼看清做到哪里");
+    expect(app).toContain("查看 Agent Events");
+    expect(app).toContain("打开 Trace（Phoenix）");
     await expect(stat(path.join(demoRoot, "coding-fixtures", taskId, "worktrees", taskId))).rejects.toMatchObject({ code: "ENOENT" });
   }, 10_000);
 });

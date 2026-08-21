@@ -1,6 +1,7 @@
 import { execFileSync, spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import net from "node:net";
+import { createServer, type Server } from "node:http";
 import os from "node:os";
 import path from "node:path";
 
@@ -20,12 +21,24 @@ let ingressPort = 0;
 let adminPort = 0;
 let servicePort = 0;
 let boardPort = 0;
+let otlpPort = 0;
 let service: ChildProcess | undefined;
 let logs = "";
+let otlpServer: Server | undefined;
+const otlpPayloads: Buffer[] = [];
 
 describe("Restate coding workflow", () => {
   beforeAll(async () => {
-    [ingressPort, adminPort, servicePort, boardPort] = await Promise.all([freePort(), freePort(), freePort(), freePort()]);
+    [ingressPort, adminPort, servicePort, boardPort, otlpPort] = await Promise.all([freePort(), freePort(), freePort(), freePort(), freePort()]);
+    otlpServer = createServer(async (request, response) => {
+      const chunks: Buffer[] = [];
+      for await (const chunk of request) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      if (request.url === "/v1/traces") otlpPayloads.push(Buffer.concat(chunks));
+      response.writeHead(200, { "content-type": "application/x-protobuf" });
+      response.end();
+    });
+    otlpServer.listen(otlpPort, "127.0.0.1");
+    await new Promise<void>((resolve) => otlpServer?.once("listening", () => resolve()));
     docker(["run", "--rm", "-d", "--name", containerName,
       "-p", `127.0.0.1:${ingressPort}:8080`, "-p", `127.0.0.1:${adminPort}:9070`,
       "docker.restate.dev/restatedev/restate:1.7.4"]);
@@ -39,6 +52,7 @@ describe("Restate coding workflow", () => {
 
   afterAll(async () => {
     await stopService("SIGTERM");
+    if (otlpServer !== undefined) await new Promise<void>((resolve) => otlpServer?.close(() => resolve()));
     spawnSync("docker", ["rm", "-f", containerName], { stdio: "ignore" });
     for (const fixture of fixtureRoots.splice(0)) await rm(fixture, { recursive: true, force: true });
   });
@@ -80,9 +94,19 @@ describe("Restate coding workflow", () => {
         adminBaseUrl: `http://127.0.0.1:${adminPort}`,
       },
       recovery: { classification: "NONE", actions: [] },
+      observability: { enabled: true, provider: "otlp", uiBaseUrl: "http://127.0.0.1:6006/" },
     });
     expect(trace.business.attempts).toHaveLength(6);
     expect(trace.technical.artifacts.map((artifact) => artifact.kind)).toContain("agent-stderr");
+    expect(trace.observability.traceId).toMatch(/^[0-9a-f]{32}$/);
+    const eventsArtifact = trace.technical.artifacts.find((artifact) => artifact.kind === "agent-events");
+    expect(eventsArtifact?.downloadUrl).toBe("/api/tasks/TASK-CODING-E2E/artifacts/agent-events");
+    const eventsResponse = await fetch(`http://127.0.0.1:${boardPort}${eventsArtifact?.downloadUrl}`);
+    expect(eventsResponse.status).toBe(200);
+    expect(eventsResponse.headers.get("content-type")).toContain("application/x-ndjson");
+    expect(await eventsResponse.text()).toContain("session-TASK-CODING-E2E");
+    await waitUntil(async () => otlpPayloads.some((payload) => payload.includes(Buffer.from("TASK-CODING-E2E"))), 10_000);
+    expect(Buffer.concat(otlpPayloads).includes(Buffer.from(trace.observability.traceId, "hex"))).toBe(true);
     await expect(invoke(
       `http://127.0.0.1:${ingressPort}`, "TaskWorkflow", "TASK-CODING-E2E", "run", {
         taskId: "TASK-CODING-E2E",
@@ -106,6 +130,8 @@ describe("Restate coding workflow", () => {
     expect(result).toMatchObject({ state: "FAILED", currentStep: "VERIFY", outcome: "FAILED_TERMINAL" });
     expect(result.merge).toBeUndefined();
     expect(git(fixture.repositoryRoot, "rev-parse", "master").trim()).toBe(fixture.baseSha);
+    await waitUntil(async () => otlpPayloads.some((payload) =>
+      payload.includes(Buffer.from("TASK-CODING-GATE-FAIL")) && payload.includes(Buffer.from("FAILED"))), 10_000);
   }, 30_000);
 
   it("reconciles a lost Merge activity acknowledgement without a second ref update", async () => {
@@ -293,6 +319,11 @@ async function startService(): Promise<void> {
       RESTATE_ADMIN_URL: `http://127.0.0.1:${adminPort}`,
       MOYE_TEST_FAULT_INJECTION: "enabled",
       MOYE_PROJECT_ID: "moye-coding-e2e",
+      MOYE_OBSERVABILITY_ENABLED: "true",
+      MOYE_OTLP_TRACES_ENDPOINT: `http://127.0.0.1:${otlpPort}/v1/traces`,
+      MOYE_TRACE_UI_URL: "http://127.0.0.1:6006",
+      MOYE_TRACE_PROJECT_NAME: "moye-coding-e2e",
+      MOYE_ARTIFACT_ROOTS: os.tmpdir(),
     },
     stdio: ["ignore", "pipe", "pipe"],
   });

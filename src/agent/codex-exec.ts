@@ -19,6 +19,7 @@ export interface AgentProcessInvocation {
   readonly argv: readonly string[];
   readonly cwd: string;
   readonly shell: false;
+  readonly env?: Readonly<Record<string, string>>;
 }
 
 export interface AgentProcessResult {
@@ -140,13 +141,15 @@ export class SpawnAgentProcessRunner implements AgentProcessRunner {
   }
 
   run(invocation: AgentProcessInvocation): Promise<AgentProcessResult> {
-    if (invocation.shell !== false || invocation.argv.some((value) => typeof value !== "string" || value.includes("\0"))) {
+    if (invocation.shell !== false || invocation.argv.some((value) => typeof value !== "string" || value.includes("\0"))
+        || Object.entries(invocation.env ?? {}).some(([key, value]) => !key || key.includes("\0") || value.includes("\0"))) {
       return Promise.reject(validation("UNSAFE_AGENT_INVOCATION", "Agent process must use NUL-free argv with shell=false"));
     }
     return new Promise((resolve, reject) => {
       const child = spawn(invocation.executable, [...invocation.argv], {
         cwd: invocation.cwd,
         shell: false,
+        env: invocation.env === undefined ? process.env : { ...process.env, ...invocation.env },
         stdio: ["ignore", "pipe", "pipe"],
       });
       let stdout = "";

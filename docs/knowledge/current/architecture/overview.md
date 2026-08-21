@@ -765,6 +765,8 @@ artifact.digest
 
 Prompt、源代码、模型完整输出和密钥不得直接作为 Span attribute。Trace 中只保存摘要、长度、digest 和受控 Artifact URI。
 
+当前轻量 PoC 已落地其中最小切片：Core 通过 `TraceSink` 默认 Noop，显式开启后输出标准 OTLP/HTTP protobuf；Phoenix 仅作为本地可选 UI。Coding Projection 中已经完成的 Attempt 被重建为短 Span，稳定 Task Trace ID 与 `task.id` 用于跨 Span 查询，Agent JSONL 则作为不可采样、带摘要的受控 Artifact 保留。Moye 不把 Trace、Phoenix 或 Agent CLI 原生遥测当作业务状态与恢复权威，详见 [ADR-0004](../../decisions/adr/0004-use-otlp-contract-and-optional-phoenix.md)。
+
 ### 14.4 日志
 
 日志必须是结构化日志，并自动带上当前 Trace Context 以及 Task Context。日志中的错误应引用对应的 Artifact、Attempt 和 Step，避免只能依靠全文搜索推断上下文。

@@ -6,7 +6,7 @@ import net from "node:net";
 import path from "node:path";
 
 import type { CodingWorkflowProjection } from "../src/coding/workflow.js";
-import { cleanupCodingDemoWorktree, createCodingDemoFixture } from "../src/demo/coding-fixture.js";
+import { cleanupCodingDemoWorktree, createCodingDemoFixture, type CodingDemoFixture } from "../src/demo/coding-fixture.js";
 import type { ProjectBoardSnapshot } from "../src/domain/board.js";
 import { invoke } from "../src/restate/ingress.js";
 
@@ -25,6 +25,9 @@ let restateProcess: ChildProcess | undefined;
 let serviceErrorLog = "";
 let startedContainer = false;
 let stopping = false;
+let fixture: CodingDemoFixture | undefined;
+let taskId = "";
+let backlogId = "";
 
 process.once("SIGINT", () => void cleanup(0));
 process.once("SIGTERM", () => void cleanup(0));
@@ -33,6 +36,18 @@ try {
   validateContainerName(containerName);
   requireCommand("docker", ["version", "--format", "{{.Server.Version}}"]);
   await mkdir(demoRoot, { recursive: true });
+  const suffix = Date.now().toString(36).toUpperCase();
+  taskId = `TASK-DEMO-${suffix}`;
+  backlogId = `BL-DEMO-${suffix}`;
+  const createdAt = new Date().toISOString();
+  fixture = await createCodingDemoFixture({
+    demoRoot,
+    taskId,
+    backlogId,
+    projectId,
+    graphRevision: 24,
+    createdAt,
+  });
   const ports = await allocateDistinctPorts(4);
   ingressPort = ports[0]!;
   adminPort = ports[1]!;
@@ -54,6 +69,7 @@ try {
       MOYE_BOARD_PORT: String(boardPort),
       MOYE_PROJECT_ID: projectId,
       MOYE_REPOSITORY_ROOT: process.cwd(),
+      MOYE_ARTIFACT_ROOTS: demoRoot,
     },
     stdio: ["ignore", "ignore", "pipe"],
   });
@@ -71,10 +87,6 @@ try {
   }, 15_000, "Moye board");
   await registerDeployment();
 
-  const suffix = Date.now().toString(36).toUpperCase();
-  const taskId = `TASK-DEMO-${suffix}`;
-  const backlogId = `BL-DEMO-${suffix}`;
-  const createdAt = new Date().toISOString();
   await postJson(`${boardUrl}/api/backlog`, {
     backlogId,
     title: "体验 Agent 编码、验证、合并与归档",
@@ -84,14 +96,6 @@ try {
     sourceRefs: ["demo"],
     taskRefs: [taskId],
     updatedAt: createdAt,
-  });
-  const fixture = await createCodingDemoFixture({
-    demoRoot,
-    taskId,
-    backlogId,
-    projectId,
-    graphRevision: 21,
-    createdAt,
   });
   const projection = await invoke<CodingWorkflowProjection>(
     ingressUrl, "CodingTaskWorkflow", taskId, "run", fixture.input,
@@ -106,6 +110,9 @@ try {
   process.stdout.write("\nMoye Coding Demo 已就绪\n\n");
   process.stdout.write(`  项目看板: ${boardUrl}\n`);
   process.stdout.write(`  Restate 排障: ${adminUrl}/ui/overview\n`);
+  if (process.env["MOYE_OBSERVABILITY_ENABLED"] === "true") {
+    process.stdout.write(`  Trace 看板: ${process.env["MOYE_TRACE_UI_URL"] ?? "http://127.0.0.1:6006"}\n`);
+  }
   process.stdout.write(`  Demo Task: ${taskId}\n`);
   process.stdout.write(`  Agent Session: ${projection.agent?.sessionId ?? "—"}\n`);
   process.stdout.write(`  Result / Merge: ${projection.checkpoint?.commitSha.slice(0, 10) ?? "—"} / ${projection.merge?.mergeCommit?.slice(0, 10) ?? "—"}\n\n`);

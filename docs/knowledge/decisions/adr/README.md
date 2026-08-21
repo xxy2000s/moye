@@ -19,6 +19,7 @@ Accepted ADR 不重写历史论证。改变决策时创建新 ADR，并在两份
 | [0001](./0001-use-restate-for-task-runtime-poc.md) | Accepted | 使用 Restate 开展首个 Task Runtime PoC |
 | [0002](./0002-organize-docs-by-lifecycle-role.md) | Accepted | 按 Sources、Delivery、Knowledge、Meta 组织文档 |
 | [0003](./0003-use-typescript-for-restate-poc.md) | Accepted | 首个 Restate PoC 使用 TypeScript |
+| [0004](./0004-use-otlp-contract-and-optional-phoenix.md) | Accepted | 使用 OTLP 契约与可选 Phoenix 作为轻量 Trace Demo |
 
 ## 新建 ADR
 

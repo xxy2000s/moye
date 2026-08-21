@@ -1,12 +1,13 @@
 import { once } from "node:events";
-import { mkdtemp, mkdir, rm, symlink, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdtemp, mkdir, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import type { Server } from "node:http";
 import os from "node:os";
 import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { startBoardServer } from "../../src/board/server.js";
+import { resolveAgentArtifactFile, startBoardServer } from "../../src/board/server.js";
 
 const roots: string[] = [];
 const servers: Server[] = [];
@@ -52,6 +53,35 @@ describe("board static server", () => {
     const escapedSeparator = await fetch(`${origin}/api/tasks/TASK-OK%2FTRACE`);
     expect(escapedSeparator.status).toBe(400);
     expect(await escapedSeparator.json()).toEqual({ error: "Invalid Task ID" });
+  });
+
+  it("resolves only allowlisted, digest-matched Agent artifacts inside configured roots", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "moye-board-artifact-"));
+    roots.push(root);
+    const artifactRoot = path.join(root, "artifacts");
+    const token = "a".repeat(64);
+    const runId = `agent-run:sha256:${token}`;
+    const runRoot = path.join(artifactRoot, "agent", `run-${token}`);
+    await mkdir(runRoot, { recursive: true });
+    const content = Buffer.from('{"type":"thread.started"}\n');
+    await writeFile(path.join(runRoot, "events.jsonl"), content);
+    const artifact = {
+      artifactRef: `agent-artifact://${runId}/events.jsonl`,
+      contentDigest: `sha256:${createHash("sha256").update(content).digest("hex")}`,
+      bytes: content.byteLength,
+    };
+
+    await expect(resolveAgentArtifactFile([root], artifactRoot, runId, "agent-events", artifact))
+      .resolves.toBe(await realpath(path.join(runRoot, "events.jsonl")));
+    await expect(resolveAgentArtifactFile([root], artifactRoot, runId, "agent-events", { ...artifact, bytes: artifact.bytes + 1 }))
+      .rejects.toThrow(/size mismatch/);
+
+    const outside = path.join(root, "outside.jsonl");
+    await writeFile(outside, content);
+    await rm(path.join(runRoot, "events.jsonl"));
+    await symlink(outside, path.join(runRoot, "events.jsonl"));
+    await expect(resolveAgentArtifactFile([root], artifactRoot, runId, "agent-events", artifact))
+      .rejects.toThrow(/escaped/);
   });
 });
 

@@ -149,6 +149,16 @@ dialog > form { position: sticky; top: 0; display: flex; justify-content: flex-e
 .correlation-node strong { overflow: hidden; color: var(--ink); font: 500 10px/1.35 "SF Mono", monospace; text-overflow: ellipsis; white-space: nowrap; }
 .overview-grid { margin-bottom: 42px; }
 
+.diagnostic-actions { display: flex; align-items: stretch; flex-wrap: wrap; gap: 8px; margin: -22px 0 10px; }
+.diagnostic-actions > div, .diagnostic-actions > a, .diagnostic-disabled { min-height: 44px; border: 1px solid var(--line); border-radius: 7px; padding: 10px 12px; display: inline-flex; align-items: center; gap: 8px; background: white; }
+.diagnostic-actions > div { flex-direction: column; align-items: flex-start; gap: 4px; }
+.diagnostic-actions small, .diagnostic-disabled { color: var(--muted); font: 9px/1.3 "SF Mono", monospace; }
+.diagnostic-actions code { font: 9px/1.4 "SF Mono", monospace; }
+.diagnostic-actions a { color: var(--ink); font-size: 11px; font-weight: 650; text-decoration: none; }
+.diagnostic-actions a:hover { border-color: var(--blue-ink); color: var(--blue-ink); }
+.diagnostic-actions .sensitive-link { border-color: #d9aa86; color: #82461f; }
+.artifact-list a { grid-column: 2; width: fit-content; color: var(--ink); font-size: 10px; text-underline-offset: 3px; }
+
 .journey-section { margin-top: 20px; }
 .journey-section > .trace-heading { padding: 0 4px; }
 .journey { position: relative; display: grid; gap: 8px; }
@@ -207,7 +217,7 @@ dialog > form { position: sticky; top: 0; display: flex; justify-content: flex-e
   #detail-content { padding: 24px; }
   .step-list, .trace-card-grid { grid-template-columns: 1fr; }
   .artifact-list li { grid-template-columns: 1fr; }
-  .artifact-list small { grid-column: 1; }
+  .artifact-list small, .artifact-list a { grid-column: 1; }
   .coding-timeline li { grid-template-columns: 28px 1fr; }
   .correlation-strip { align-items: stretch; flex-direction: column; }
   .correlation-strip > span[aria-hidden] { display: none; }

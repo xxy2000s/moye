@@ -1,5 +1,6 @@
 import { createReadStream } from "node:fs";
-import { realpath, stat } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { readFile, realpath, stat } from "node:fs/promises";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { extname, isAbsolute, relative, resolve } from "node:path";
 
@@ -11,6 +12,8 @@ import type { TaskWorkflowInput } from "../restate/services.js";
 import type { TaskAuthorityState } from "../restate/services.js";
 import type { CodingWorkflowProjection } from "../coding/workflow.js";
 import { buildCodingTaskTrace } from "../trace/coding-trace.js";
+import type { MoyeConfig } from "../config.js";
+import type { AgentArtifactFile } from "../agent/runner.js";
 
 export interface BoardServerOptions {
   readonly port: number;
@@ -18,6 +21,8 @@ export interface BoardServerOptions {
   readonly ingressUrl: string;
   readonly restateAdminUrl: string;
   readonly publicRoot: string;
+  readonly artifactRoots?: readonly string[];
+  readonly observability?: MoyeConfig["observability"];
 }
 
 export function startBoardServer(options: BoardServerOptions) {
@@ -63,7 +68,11 @@ async function route(
       writeJson(response, 400, { error: "Invalid Task ID" });
       return;
     }
-    if (segments.length > 2 || (segments.length === 2 && segments[1] !== "trace")) {
+    const traceRequest = segments.length === 2 && segments[1] === "trace";
+    const artifactKind = segments.length === 3 && segments[1] === "artifacts"
+      ? readArtifactKind(segments[2])
+      : undefined;
+    if (segments.length > 1 && !traceRequest && artifactKind === undefined) {
       writeJson(response, 404, { error: "Not found" });
       return;
     }
@@ -74,7 +83,7 @@ async function route(
       writeJson(response, 404, { error: "Task not found" });
       return;
     }
-    if (segments[1] === "trace") {
+    if (traceRequest) {
       if (authority.owner !== "CODING_WORKFLOW") {
         writeJson(response, 409, { error: "Detailed coding trace is not available for this Task workflow" });
         return;
@@ -85,7 +94,37 @@ async function route(
       writeJson(response, projection === null ? 404 : 200,
         projection === null ? { error: "Task trace not found" } : buildCodingTaskTrace(projection, {
           restateAdminUrl: options.restateAdminUrl,
+          ...(options.observability === undefined ? {} : { observability: options.observability }),
         }));
+      return;
+    }
+    if (artifactKind !== undefined) {
+      if (authority.owner !== "CODING_WORKFLOW") {
+        writeJson(response, 409, { error: "Agent Artifact is not available for this Task workflow" });
+        return;
+      }
+      const projection = await invoke<CodingWorkflowProjection | null>(
+        options.ingressUrl, "CodingTaskWorkflow", taskId, "status",
+      );
+      if (projection?.agent === undefined) {
+        writeJson(response, 404, { error: "Agent Artifact not found" });
+        return;
+      }
+      const artifact = artifactKind === "agent-events"
+        ? projection.agent.artifacts.events
+        : projection.agent.artifacts.rawModelIo;
+      if (artifact === undefined) {
+        writeJson(response, 404, { error: "Agent Artifact not found" });
+        return;
+      }
+      try {
+        const filePath = await resolveAgentArtifactFile(
+          options.artifactRoots ?? [], projection.artifactRoot, projection.agent.runId, artifactKind, artifact,
+        );
+        await serveVerifiedArtifact(filePath, artifactKind, response);
+      } catch {
+        writeJson(response, 404, { error: "Agent Artifact not found" });
+      }
       return;
     }
     const projection = authority.owner === "CODING_WORKFLOW"
@@ -131,6 +170,58 @@ async function route(
   }
 
   await serveStatic(url.pathname, method === "HEAD", response, options.publicRoot);
+}
+
+type DownloadableArtifactKind = "agent-events" | "raw-model-io";
+
+function readArtifactKind(value: string | undefined): DownloadableArtifactKind | undefined {
+  return value === "agent-events" || value === "raw-model-io" ? value : undefined;
+}
+
+export async function resolveAgentArtifactFile(
+  artifactRoots: readonly string[],
+  declaredArtifactRoot: string | undefined,
+  runId: string,
+  kind: DownloadableArtifactKind,
+  artifact: AgentArtifactFile,
+): Promise<string> {
+  const token = runId.slice(runId.lastIndexOf(":") + 1);
+  if (!/^[0-9a-f]{64}$/.test(token)) throw new Error("Invalid Agent Run ID");
+  if (declaredArtifactRoot === undefined) throw new Error("Task did not declare an Artifact Root");
+  const fileName = kind === "agent-events" ? "events.jsonl" : "raw-model-io.jsonl";
+  if (artifact.artifactRef !== `agent-artifact://${runId}/${fileName}`) throw new Error("Artifact reference mismatch");
+  const taskRoot = await realpath(declaredArtifactRoot);
+  let allowed = false;
+  for (const configuredRoot of artifactRoots) {
+    try { if (isSameOrWithin(await realpath(configuredRoot), taskRoot)) allowed = true; } catch { continue; }
+  }
+  if (!allowed) throw new Error("Task Artifact Root is outside configured roots");
+  const candidate = resolve(taskRoot, "agent", `run-${token}`, fileName);
+  if (!isSameOrWithin(taskRoot, candidate)) throw new Error("Artifact path escaped Task Artifact Root");
+  const actual = await realpath(candidate);
+  if (!isSameOrWithin(taskRoot, actual)) throw new Error("Artifact path escaped Task Artifact Root");
+  const info = await stat(actual);
+  if (!info.isFile() || info.size !== artifact.bytes) throw new Error("Artifact size mismatch");
+  const content = await readFile(actual);
+  const digest = `sha256:${createHash("sha256").update(content).digest("hex")}`;
+  if (digest !== artifact.contentDigest) throw new Error("Artifact digest mismatch");
+  return actual;
+}
+
+async function serveVerifiedArtifact(
+  filePath: string,
+  kind: DownloadableArtifactKind,
+  response: ServerResponse,
+): Promise<void> {
+  const info = await stat(filePath);
+  response.writeHead(200, {
+    "content-type": "application/x-ndjson; charset=utf-8",
+    "content-length": info.size,
+    "cache-control": "no-store",
+    "x-content-type-options": "nosniff",
+    "content-disposition": `inline; filename="${kind}.jsonl"`,
+  });
+  createReadStream(filePath).pipe(response);
 }
 
 async function readJson<T>(request: IncomingMessage): Promise<T> {

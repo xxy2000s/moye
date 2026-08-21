@@ -106,6 +106,10 @@ Board 固定展示需求池、进行中、待归档、已归档。通用 Task �
 
 `GET /api/tasks/<task_id>/trace` 和看板详情只读。默认页面把业务事实整理为“需求与上下文 → 隔离工作区 → Agent 编码 → 自动验证 → 合入分支 → 文档检查 → 归档”，并直接展示 `Task → CodingTaskWorkflow → Agent Session → Git Commit` 关联链。Journal、Artifact、原始事件和恢复建议渐进披露在高级诊断区；Restate 链接携带 Workflow service 与 Task key 过滤条件，而不是打开无上下文首页。恢复分类从已有 Projection 派生为 `NONE | WAIT_OR_RECONCILE | FAILED_TERMINAL | ARCHIVE_RETRY`，只说明应等待、对账、创建后续 Task 或重新附着 Archive，不直接推进状态。因此 Trace 不会成为第二套状态机，三层事实只通过 `task_id`、Attempt ID、Effect ID 和 Content Digest 关联。
 
+TASK-0009 在这个只读派生层增加后端无关 `TraceSink`：默认 Noop，显式开启后由官方 OpenTelemetry exporter 发送 OTLP/HTTP protobuf。稳定 Task Trace ID 只用于查询关联；每个已持久化 Attempt 映射为短 Span，Agent Run 是 IMPLEMENT Attempt 的子 Span，另有零时长 Task Snapshot，不创建持续数天的在线 root span。导出在 Coding Workflow 已得到业务 Projection 后执行，失败最多形成诊断日志，不能反向改变成功、失败或归档终态。Phoenix 是 `compose.yaml` 的可选本地 Profile，并非运行时依赖；该边界由 [ADR-0004](../../decisions/adr/0004-use-otlp-contract-and-optional-phoenix.md) 冻结。
+
+Agent Events 和可选 Raw Model IO 仍是内容寻址 Artifact。Board 下载 API 不接受路径参数，只接受 Task ID 与固定种类；服务从主 Projection 取得 allowlisted 引用，再验证声明根属于 `MOYE_ARTIFACT_ROOTS`、候选路径与 realpath 未逃逸、目标是普通文件，且大小和 SHA-256 与投影一致。Raw Model IO 仅在文件真实存在时出现在 UI，并标记为敏感证据。
+
 Workflow Projection 保留 Adapter 的结构化 `errorCode/errorCategory`。`UNKNOWN_SIDE_EFFECT` 在 Workspace、Agent、Verification 和 Merge 四个边界统一进入 `WAIT_OR_RECONCILE`；只有确定性失败才允许建议创建后续 Task。Board 静态文件路径在读取前同时校验 lexical path 与 `realpath` 位于 `publicRoot`，拒绝指向根外的符号链接。强杀/丢回执开关仅在显式 `MOYE_TEST_FAULT_INJECTION=enabled` 的测试进程中可用，不属于正常任务能力。
 
 ## 7. 验证结论
@@ -123,5 +127,6 @@ Workflow Projection 保留 Adapter 的结构化 `errorCode/errorCategory`。`UNK
 - Git ref 原子更新完成但 Merge Step 尚未确认时强杀 Worker，新 Worker 通过 Git facts 复用唯一 Merge；重复 Workflow 命令被 Restate 409 拒绝，Agent 异常退出形成可追踪终态且不合并。
 - Trace API 从单个 task_id 返回 6 个 Attempt、Agent Session、任务 Branch、Result/Merge Commit、Verification Evidence、技术 Artifact 和恢复分类。
 - 真实 Codex 只在临时 Fixture 中完成一次提交、验证与唯一 Merge，原始 JSONL 和摘要保存在 TASK-0006。
+- 默认 Noop 不产生网络请求；本地 OTLP Receiver 能解码稳定 Trace/Span ID、父子关系和 Task/Attempt/Agent 属性，真实 Restate Coding E2E 同时证明 Trace 导出与 Artifact 下载不会改变唯一 Merge。
 
 完整证据和命令见 [TASK-0001 Verification](../../../delivery/tasks/archive/2026-08-20-TASK-0001/verification.md) 与 [本地 PoC Runbook](../../guidance/runbooks/local-restate-poc.md)。本结论只证明最小恢复语义成立，不代表最终生产选型。

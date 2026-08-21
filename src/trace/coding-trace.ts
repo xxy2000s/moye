@@ -1,6 +1,7 @@
 import type { AgentArtifactFile } from "../agent/runner.js";
 import type { CodingPipelineStepId, StepAttempt } from "../domain/coding-task.js";
 import type { CodingWorkflowProjection } from "../coding/workflow.js";
+import { traceIdForTask } from "./telemetry.js";
 
 export type RecoveryClassification = "NONE" | "WAIT_OR_RECONCILE" | "FAILED_TERMINAL" | "ARCHIVE_RETRY";
 
@@ -89,7 +90,15 @@ export interface CodingTaskTrace {
       readonly artifactRef: string;
       readonly contentDigest: string;
       readonly bytes?: number;
+      readonly downloadUrl?: string;
     }[];
+  };
+  readonly observability: {
+    readonly authority: "diagnostic-only";
+    readonly enabled: boolean;
+    readonly provider: "disabled" | "otlp";
+    readonly traceId: string;
+    readonly uiBaseUrl?: string;
   };
   readonly recovery: {
     readonly classification: RecoveryClassification;
@@ -100,7 +109,10 @@ export interface CodingTaskTrace {
 
 export function buildCodingTaskTrace(
   projection: CodingWorkflowProjection,
-  options: { readonly restateAdminUrl?: string } = {},
+  options: {
+    readonly restateAdminUrl?: string;
+    readonly observability?: { readonly enabled: boolean; readonly uiBaseUrl: string };
+  } = {},
 ): CodingTaskTrace {
   const agent = projection.agent;
   const verification = projection.verification;
@@ -199,6 +211,13 @@ export function buildCodingTaskTrace(
       authority: "diagnostic-only" as const,
       artifacts: collectArtifacts(projection),
     },
+    observability: {
+      authority: "diagnostic-only" as const,
+      enabled: options.observability?.enabled ?? false,
+      provider: options.observability?.enabled === true ? "otlp" as const : "disabled" as const,
+      traceId: traceIdForTask(projection.taskId),
+      ...(options.observability?.enabled === true ? { uiBaseUrl: options.observability.uiBaseUrl } : {}),
+    },
     recovery,
   });
 }
@@ -273,14 +292,25 @@ function deriveRecovery(projection: CodingWorkflowProjection): CodingTaskTrace["
 }
 
 function collectArtifacts(projection: CodingWorkflowProjection): CodingTaskTrace["technical"]["artifacts"] {
-  const artifacts: Array<{ kind: string; artifactRef: string; contentDigest: string; bytes?: number }> = [];
-  const addAgentArtifact = (kind: string, artifact: AgentArtifactFile): void => {
-    artifacts.push({ kind, artifactRef: artifact.artifactRef, contentDigest: artifact.contentDigest, bytes: artifact.bytes });
+  const artifacts: Array<{ kind: string; artifactRef: string; contentDigest: string; bytes?: number; downloadUrl?: string }> = [];
+  const addAgentArtifact = (kind: string, artifact: AgentArtifactFile, downloadName?: string): void => {
+    artifacts.push({
+      kind,
+      artifactRef: artifact.artifactRef,
+      contentDigest: artifact.contentDigest,
+      bytes: artifact.bytes,
+      ...(downloadName === undefined ? {} : {
+        downloadUrl: `/api/tasks/${encodeURIComponent(projection.taskId)}/artifacts/${downloadName}`,
+      }),
+    });
   };
   if (projection.agent !== undefined) {
-    addAgentArtifact("agent-events", projection.agent.artifacts.events);
+    addAgentArtifact("agent-events", projection.agent.artifacts.events, "agent-events");
     addAgentArtifact("agent-stderr", projection.agent.artifacts.stderr);
     addAgentArtifact("agent-final-message", projection.agent.artifacts.finalMessage);
+    if (projection.agent.artifacts.rawModelIo !== undefined) {
+      addAgentArtifact("raw-model-io", projection.agent.artifacts.rawModelIo, "raw-model-io");
+    }
   }
   if (projection.verification !== undefined) {
     artifacts.push({
