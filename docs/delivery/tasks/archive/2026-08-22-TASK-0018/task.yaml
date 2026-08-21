@@ -1,0 +1,26 @@
+schema_version: 1
+id: TASK-0018
+title: 实现 Core ClosureResult 与真实 Restate 故障矩阵
+status: closed
+outcome: succeeded
+backlog_refs:
+  - BL-0018
+spec_revision: 1
+workflow_id: task/TASK-0018
+execution_mode: goal-bootstrap
+base_commit: 16ec478a84995c971f48d7a90a98c24ad582e185
+archive:
+  status: pending
+  archived_at: null
+  archived_path: null
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: task-artifact://TASK-0018/verification.md
+  implementation_commit: a09199b399b9da365d3ad7ee9a75a8e3d7a132cb
+execution_evidence:
+  executor_id: codex:/root
+  result_commit: a09199b399b9da365d3ad7ee9a75a8e3d7a132cb
+  verification_refs:
+    - task-artifact://TASK-0018/verification.md
+  docs_impact_ref: task-artifact://TASK-0018/docs-impact.yaml

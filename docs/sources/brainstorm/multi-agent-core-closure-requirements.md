@@ -10,7 +10,7 @@
 
 > 本文是当前讨论收敛后的母需求，但在进入 Backlog、Active Task、Architecture 或 ADR 前仍属于 `idea-input`，不能直接覆盖当前代码和 Architecture 事实。
 
-> 消费进度：六个 Slice 均已进入 Task 生命周期。Slice 1～5 已分别由 [TASK-0013](../../delivery/tasks/archive/2026-08-22-TASK-0013/spec.md)、[TASK-0014](../../delivery/tasks/archive/2026-08-22-TASK-0014/spec.md)、[TASK-0015](../../delivery/tasks/archive/2026-08-22-TASK-0015/spec.md)、[TASK-0016](../../delivery/tasks/archive/2026-08-22-TASK-0016/spec.md)、[TASK-0017](../../delivery/tasks/archive/2026-08-22-TASK-0017/spec.md) 完成并归档；Slice 6 由 [TASK-0018](../../delivery/tasks/TASK-0018/spec.md) 实现三种 Closure、keyed Core Workflow 与真实 Restate 故障矩阵，待通过 Runtime Archive Gate 后移动至归档目录。
+> 消费进度：六个 Slice 均已完成并通过 Runtime Archive Gate，分别由 [TASK-0013](../../delivery/tasks/archive/2026-08-22-TASK-0013/spec.md)、[TASK-0014](../../delivery/tasks/archive/2026-08-22-TASK-0014/spec.md)、[TASK-0015](../../delivery/tasks/archive/2026-08-22-TASK-0015/spec.md)、[TASK-0016](../../delivery/tasks/archive/2026-08-22-TASK-0016/spec.md)、[TASK-0017](../../delivery/tasks/archive/2026-08-22-TASK-0017/spec.md)、[TASK-0018](../../delivery/tasks/archive/2026-08-22-TASK-0018/spec.md) 保存实现与验证证据。
 
 ## 1. 需求结论
 

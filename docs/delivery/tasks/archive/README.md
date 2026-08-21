@@ -31,5 +31,6 @@ YYYY-MM-DD-TASK-NNNN
 | [TASK-0015](./2026-08-22-TASK-0015/spec.md) | Succeeded | 2026-08-22 | Self Review、ReviewResult 与 Finding 生命周期 |
 | [TASK-0016](./2026-08-22-TASK-0016/spec.md) | Succeeded | 2026-08-22 | Retry、Repair、Replan 与中央预算 |
 | [TASK-0017](./2026-08-22-TASK-0017/spec.md) | Succeeded | 2026-08-22 | Observer、Docs Impact Gate 与 Knowledge Candidate |
+| [TASK-0018](./2026-08-22-TASK-0018/spec.md) | Succeeded | 2026-08-22 | Core ClosureResult 与真实 Restate 故障矩阵 |
 
 Bootstrap Task 的 `task.yaml` 冻结在 Archive 开始前，因此其中 `archive.status: pending` 描述的是冻结点；最终 `ARCHIVED` 事实由目录位置、`archive-manifest.json` 和 ProjectBoard Projection 共同证明。TASK-0002 归档后文档图门禁曾发现 Spec 的 Active 相对链接因目录层级变化而失效，控制面只修正了该链接；修正前内容仍由 Result Commit `ff1954f4e4360e85276cf22aa30d6f5e8e396f84` 保存。后续 Task 使用不随 Active/Archive 深度变化的稳定引用。
