@@ -8,6 +8,7 @@ import { SpawnAgentProcessRunner } from "./codex-exec.js";
 import {
   assertTrustedAgentResult,
   claimAgentExecution,
+  openAgentEventStream,
   persistAgentRun,
   recordAgentExecutionUnknown,
   reconcileAgentRun,
@@ -78,6 +79,7 @@ export class ClaudePrintAgentRunner implements AgentRunner {
     if (this.#telemetry?.captureRawApiBodies === true) {
       await prepareClaudeRawApiDirectory(request);
     }
+    const eventStream = await openAgentEventStream(request);
     const startedAt = canonicalNow(this.#now);
     let processResult: AgentProcessResult;
     try {
@@ -85,7 +87,7 @@ export class ClaudePrintAgentRunner implements AgentRunner {
         this.#executable,
         request,
         this.#telemetry,
-      ));
+      ), { onStdoutChunk: (chunk) => eventStream.writeStdoutChunk(chunk) });
     } catch (error) {
       processResult = {
         stdout: "",
@@ -95,6 +97,7 @@ export class ClaudePrintAgentRunner implements AgentRunner {
       };
     }
     const finishedAt = canonicalNow(this.#now);
+    await eventStream.finalize(processResult.stdout);
     const rawModelIo = this.#telemetry?.captureRawApiBodies === true
       ? await collectRawApiBodies(request)
       : undefined;
@@ -121,7 +124,15 @@ export function createClaudePrintInvocation(
   }
   return Object.freeze({
     executable,
-    argv: Object.freeze(["-p", "--verbose", "--output-format", "stream-json", request.prompt]),
+    argv: Object.freeze([
+      "-p",
+      "--verbose",
+      "--output-format",
+      "stream-json",
+      "--permission-mode",
+      "acceptEdits",
+      request.prompt,
+    ]),
     cwd: request.workspaceRoot,
     shell: false,
     ...(telemetry?.enabled === true ? { env: buildClaudeTelemetryEnvironment(request, telemetry) } : {}),

@@ -122,6 +122,51 @@ describe("Restate coding workflow", () => {
     )).rejects.toThrow(/already owned by CODING_WORKFLOW/);
   }, 30_000);
 
+  it("exposes a growing controlled Agent JSONL stream through Restate and cursor pages", async () => {
+    const fixture = await workflowFixture("TASK-CODING-LIVE-EVENTS", false);
+    const events = [
+      { type: "thread.started", thread_id: "session-live-events" },
+      { type: "turn.started" },
+      { type: "item.started", item: { type: "command_execution", command: "git status" } },
+      { type: "item.completed", item: { type: "command_execution", exit_code: 0, aggregated_output: "clean" } },
+      { type: "item.completed", item: { type: "agent_message", text: "stream fixture committed" } },
+      { type: "turn.completed", usage: { input_tokens: 10, output_tokens: 4 } },
+    ];
+    const { fake: _fake, ...baseInput } = fixture.input;
+    const input: CodingTaskWorkflowInput = {
+      ...baseInput,
+      runnerKind: "CODEX_EXEC",
+      controlledStream: {
+        events,
+        mutation: { fileName: "result.txt", content: "restated\n" },
+        delayMs: 200,
+      },
+    };
+    const workflow = invoke<CodingWorkflowProjection>(
+      `http://127.0.0.1:${ingressPort}`, "CodingTaskWorkflow", "TASK-CODING-LIVE-EVENTS", "run", input,
+    );
+    let livePage: { total: number; completed: boolean; runnerKind: string } | undefined;
+    await waitUntil(async () => {
+      const response = await fetch(`http://127.0.0.1:${boardPort}/api/tasks/TASK-CODING-LIVE-EVENTS/agent-events?cursor=0&limit=200`);
+      if (!response.ok) return false;
+      livePage = await response.json() as typeof livePage;
+      return livePage !== undefined && livePage.total > 0 && livePage.total < events.length && !livePage.completed;
+    }, 10_000);
+    expect(livePage).toMatchObject({ completed: false, runnerKind: "CODEX_EXEC" });
+
+    const result = await workflow;
+    expect(result).toMatchObject({ state: "CLOSED", archiveStatus: "ARCHIVED", agent: { runnerKind: "CODEX_EXEC" } });
+    const first = await (await fetch(
+      `http://127.0.0.1:${boardPort}/api/tasks/TASK-CODING-LIVE-EVENTS/agent-events?cursor=0&limit=2`,
+    )).json() as { nextCursor: number; total: number; hasMore: boolean; completed: boolean; events: Array<{ category: string }> };
+    expect(first).toMatchObject({ nextCursor: 2, total: events.length, hasMore: true, completed: true });
+    const second = await (await fetch(
+      `http://127.0.0.1:${boardPort}/api/tasks/TASK-CODING-LIVE-EVENTS/agent-events?cursor=${first.nextCursor}&limit=200`,
+    )).json() as typeof first;
+    expect(second.events.length + first.events.length).toBe(events.length);
+    expect([...first.events, ...second.events].map((event) => event.category)).toEqual(expect.arrayContaining(["tool", "tool_result", "conversation"]));
+  }, 30_000);
+
   it("keeps target master unchanged when the Verification Gate fails", async () => {
     const fixture = await workflowFixture("TASK-CODING-GATE-FAIL", true);
     const result = await invoke<CodingWorkflowProjection>(

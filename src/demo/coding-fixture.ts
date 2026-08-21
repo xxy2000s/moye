@@ -7,7 +7,7 @@ import { createTaskEnvelope } from "../domain/coding-task.js";
 import type { CodingTaskWorkflowInput } from "../restate/coding-services.js";
 
 const execFileAsync = promisify(execFile);
-const fixtureContent = "由 Fake Agent 生成并通过验证。\n";
+const fixtureContent = "由 Moye Agent 生成并通过验证。\n";
 
 export interface CodingDemoFixtureOptions {
   readonly demoRoot: string;
@@ -15,6 +15,7 @@ export interface CodingDemoFixtureOptions {
   readonly backlogId: string;
   readonly projectId: string;
   readonly graphRevision: number;
+  readonly runnerKind?: CodingTaskWorkflowInput["runnerKind"];
   readonly createdAt?: string;
 }
 
@@ -30,6 +31,7 @@ export async function createCodingDemoFixture(options: CodingDemoFixtureOptions)
   const createdAt = options.createdAt ?? new Date().toISOString();
   assertIsoTime(createdAt);
   const demoRoot = path.resolve(options.demoRoot);
+  const runnerKind = options.runnerKind ?? "FAKE";
   if (demoRoot === path.parse(demoRoot).root) throw new Error("Demo root cannot be the filesystem root");
 
   const fixturesRoot = path.join(demoRoot, "coding-fixtures");
@@ -97,10 +99,10 @@ export async function createCodingDemoFixture(options: CodingDemoFixtureOptions)
     artifactRoot,
     baseRef: "refs/heads/master",
     targetRef: "refs/heads/master",
-    runnerKind: "FAKE",
-    prompt: "在隔离演示仓库中生成 agent-result.txt，提交结果，并交给验证和合并阶段。",
+    runnerKind,
+    prompt: realAgentPrompt(),
     docsDisposition: "not_applicable",
-    fake: {
+    ...(runnerKind !== "FAKE" ? {} : { fake: {
       script: {
         events: [
           { type: "thread.started", thread_id: `agent-session-${options.taskId}` },
@@ -114,10 +116,21 @@ export async function createCodingDemoFixture(options: CodingDemoFixtureOptions)
         durationMs: 420,
       },
       mutation: { fileName: "agent-result.txt", content: fixtureContent },
-    },
+    } }),
   };
 
   return { fixtureRoot, repositoryRoot, worktreePath, baseSha, input };
+}
+
+function realAgentPrompt(): string {
+  return [
+    "你正在一个隔离的 Moye 演示 Git Worktree 中完成一个确定性小任务。",
+    "请先读取 README.md，然后只创建 agent-result.txt，文件内容必须严格等于下一行（包含末尾换行）：",
+    fixtureContent.trimEnd(),
+    "完成后运行 git status，执行 git add -- agent-result.txt，并提交一次 Git commit。",
+    "提交信息使用：feat: add Moye agent demo result",
+    "不要修改其他文件，不要访问 Worktree 之外的路径。最后简要说明创建和提交结果。",
+  ].join("\n");
 }
 
 export async function cleanupCodingDemoWorktree(fixture: CodingDemoFixture): Promise<boolean> {

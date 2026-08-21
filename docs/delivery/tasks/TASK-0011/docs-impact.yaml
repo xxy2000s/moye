@@ -3,6 +3,7 @@ task_id: TASK-0011
 graph_revision: 28
 intents: [task-create, coding-task-poc, observability-selection, docs-change]
 changed_paths:
+  - README.md
   - docs/delivery/backlog/BL-0012.yaml
   - docs/delivery/backlog/README.md
   - docs/delivery/tasks/TASK-0011/task.yaml
@@ -13,6 +14,29 @@ changed_paths:
   - docs/delivery/tasks/TASK-0011/docs-impact.yaml
   - docs/delivery/tasks/README.md
   - docs/graph.yaml
+  - docs/knowledge/current/architecture/overview.md
+  - docs/knowledge/current/architecture/poc-01-restate.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/decisions/adr/0004-use-otlp-contract-and-optional-phoenix.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - package.json
+  - public/app.js
+  - public/styles.css
+  - scripts/demo.ts
+  - src/agent/claude-print.ts
+  - src/agent/codex-exec.ts
+  - src/agent/fixture-coding.ts
+  - src/agent/runner.ts
+  - src/board/server.ts
+  - src/coding/workflow.ts
+  - src/demo/coding-fixture.ts
+  - src/restate/coding-services.ts
+  - src/trace/coding-trace.ts
+  - tests/e2e/coding-workflow.test.ts
+  - tests/e2e/demo.test.ts
+  - tests/unit/agent-runner.test.ts
+  - tests/unit/board-server.test.ts
+  - tests/unit/claude-agent.test.ts
 docs:
   read:
     - agent-contract
@@ -32,6 +56,13 @@ docs:
     - meta-index
     - adr-0002-doc-lifecycle-roles
     - sources-index
+    - adr-0001-restate-poc
+    - architecture-overview
+    - architecture-index
+    - adr-0004-otlp-phoenix-demo
+    - adr-index
+    - local-restate-poc-runbook
+    - runbooks-index
     - bl-0012-real-agent-events
     - task-0011-manifest
     - task-0011-spec
@@ -56,3 +87,9 @@ docs:
     task-0009-manifest: { outcome: unchanged, reason: "扩展 Agent Events 采集与浏览，不改写已归档 Trace Demo 任务" }
     adr-0003-typescript-poc: { outcome: unchanged, reason: "继续使用现有 TypeScript 与原生浏览器 JavaScript 技术栈" }
     adr-0004-otlp-phoenix-demo: { outcome: updated, reason: "需要补充运行中 JSONL 事件流与最终不可变 Artifact 的边界" }
+    durable-workflow-research: { outcome: unchanged, reason: "本次实现沿用 Restate + 薄业务看板的既有研究结论，不产生新的运行时选型" }
+    codemap: { outcome: updated, reason: "已登记增量 JSONL Stream、cursor API、真实 Runner Demo 与交互查看器职责" }
+    restate-poc-architecture: { outcome: updated, reason: "已补充 Run locator、活动流安全读取、cursor 页面与完成 Artifact 边界" }
+    local-restate-poc-runbook: { outcome: updated, reason: "已加入 demo:codex/demo:claude、运行中查看、测试基线和真实 Codex 验收证据" }
+    root-readme: { outcome: updated, reason: "已增加真实 Runner 启动命令与完整 Agent Events 使用说明" }
+    tasks-index: { outcome: updated, reason: "TASK-0011 已登记为 Active Task，Runtime Archive 后会切换到归档入口" }

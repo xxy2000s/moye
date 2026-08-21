@@ -1,9 +1,11 @@
 import { spawn } from "node:child_process";
+import { StringDecoder } from "node:string_decoder";
 
 import { MoyeError } from "../domain/errors.js";
 import {
   assertTrustedAgentResult,
   claimAgentExecution,
+  openAgentEventStream,
   persistAgentRun,
   recordAgentExecutionUnknown,
   reconcileAgentRun,
@@ -29,8 +31,12 @@ export interface AgentProcessResult {
   readonly signal: NodeJS.Signals | null;
 }
 
+export interface AgentProcessObserver {
+  readonly onStdoutChunk?: (chunk: string) => Promise<void> | void;
+}
+
 export interface AgentProcessRunner {
-  run(invocation: AgentProcessInvocation): Promise<AgentProcessResult>;
+  run(invocation: AgentProcessInvocation, observer?: AgentProcessObserver): Promise<AgentProcessResult>;
 }
 
 export interface CodexExecRunnerOptions {
@@ -77,10 +83,13 @@ export class CodexExecAgentRunner implements AgentRunner {
         details: { runId: request.runId, attemptId: request.attemptId },
       });
     }
+    const eventStream = await openAgentEventStream(request);
     const startedAt = canonicalNow(this.#now);
     let processResult: AgentProcessResult;
     try {
-      processResult = await this.#processRunner.run(createCodexExecInvocation(this.#executable, request));
+      processResult = await this.#processRunner.run(createCodexExecInvocation(this.#executable, request), {
+        onStdoutChunk: (chunk) => eventStream.writeStdoutChunk(chunk),
+      });
     } catch (error) {
       processResult = {
         stdout: "",
@@ -90,6 +99,7 @@ export class CodexExecAgentRunner implements AgentRunner {
       };
     }
     const finishedAt = canonicalNow(this.#now);
+    await eventStream.finalize(processResult.stdout);
     return persistAgentRun(request, {
       runnerKind: "CODEX_EXEC",
       stdoutJsonl: processResult.stdout,
@@ -140,7 +150,7 @@ export class SpawnAgentProcessRunner implements AgentProcessRunner {
     }
   }
 
-  run(invocation: AgentProcessInvocation): Promise<AgentProcessResult> {
+  run(invocation: AgentProcessInvocation, observer?: AgentProcessObserver): Promise<AgentProcessResult> {
     if (invocation.shell !== false || invocation.argv.some((value) => typeof value !== "string" || value.includes("\0"))
         || Object.entries(invocation.env ?? {}).some(([key, value]) => !key || key.includes("\0") || value.includes("\0"))) {
       return Promise.reject(validation("UNSAFE_AGENT_INVOCATION", "Agent process must use NUL-free argv with shell=false"));
@@ -156,6 +166,10 @@ export class SpawnAgentProcessRunner implements AgentProcessRunner {
       let stderr = "";
       let bytes = 0;
       let settled = false;
+      let observerError: unknown;
+      let observerWrites = Promise.resolve();
+      const stdoutDecoder = new StringDecoder("utf8");
+      const stderrDecoder = new StringDecoder("utf8");
       const timeout = setTimeout(() => child.kill("SIGTERM"), this.#timeoutMs);
       const collect = (channel: "stdout" | "stderr", chunk: Buffer): void => {
         bytes += chunk.byteLength;
@@ -163,8 +177,16 @@ export class SpawnAgentProcessRunner implements AgentProcessRunner {
           child.kill("SIGTERM");
           return;
         }
-        if (channel === "stdout") stdout += chunk.toString("utf8");
-        else stderr += chunk.toString("utf8");
+        if (channel === "stdout") {
+          const text = stdoutDecoder.write(chunk);
+          stdout += text;
+          if (text && observer?.onStdoutChunk !== undefined) {
+            observerWrites = observerWrites.then(() => observer.onStdoutChunk!(text)).catch((error) => {
+              observerError = error;
+              child.kill("SIGTERM");
+            });
+          }
+        } else stderr += stderrDecoder.write(chunk);
       };
       child.stdout.on("data", (chunk: Buffer) => collect("stdout", chunk));
       child.stderr.on("data", (chunk: Buffer) => collect("stderr", chunk));
@@ -178,15 +200,30 @@ export class SpawnAgentProcessRunner implements AgentProcessRunner {
         if (settled) return;
         settled = true;
         clearTimeout(timeout);
-        if (bytes > this.#maxOutputBytes) {
-          reject(new MoyeError({
-            code: "AGENT_OUTPUT_LIMIT_EXCEEDED",
-            category: "TERMINAL",
-            message: `Agent output exceeded ${this.#maxOutputBytes} bytes`,
-          }));
-          return;
+        const stdoutTail = stdoutDecoder.end();
+        const stderrTail = stderrDecoder.end();
+        stdout += stdoutTail;
+        stderr += stderrTail;
+        if (stdoutTail && observer?.onStdoutChunk !== undefined) {
+          observerWrites = observerWrites.then(() => observer.onStdoutChunk!(stdoutTail)).catch((error) => {
+            observerError = error;
+          });
         }
-        resolve(Object.freeze({ stdout, stderr, exitCode, signal }));
+        void observerWrites.then(() => {
+          if (observerError !== undefined) {
+            reject(observerError);
+            return;
+          }
+          if (bytes > this.#maxOutputBytes) {
+            reject(new MoyeError({
+              code: "AGENT_OUTPUT_LIMIT_EXCEEDED",
+              category: "TERMINAL",
+              message: `Agent output exceeded ${this.#maxOutputBytes} bytes`,
+            }));
+            return;
+          }
+          resolve(Object.freeze({ stdout, stderr, exitCode, signal }));
+        });
       });
     });
   }

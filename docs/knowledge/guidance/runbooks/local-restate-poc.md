@@ -1,7 +1,7 @@
 # 本地运行 Restate PoC
 
 > 状态：Verified  
-> 验证日期：2026-08-20  
+> 验证日期：2026-08-21
 > 适用版本：Node.js 22、Restate SDK 1.16.7、Restate Server 1.7.4
 
 ## 1. 第一次体验
@@ -23,6 +23,8 @@ npm run demo
 6. 按 `Ctrl-C` 停止本地服务。
 
 Demo 使用隔离 Git Fixture 和确定性 Fake Agent，不修改 Moye 仓库。脚本只管理名为 `moye-restate-demo` 的容器，不删除其他容器；运行数据保存在 `.moye-runtime/demo`。
+
+使用真实本机 CLI 时运行 `npm run demo:codex` 或 `npm run demo:claude`。脚本仍只操作隔离 Fixture，并在 Workflow 发出请求后立即打印看板 URL；打开进行中的 Task，Agent Events 会从零开始持续增长。页面显示 Runner 类型，支持全部/对话/工具调用/工具结果/系统/错误筛选，并在完成后开放摘要校验的原始 JSONL 下载。命令复用本机已有认证，不修改用户级 Settings。
 
 ### 带 Trace 的可选体验
 
@@ -49,9 +51,9 @@ npm run check
 npm run test:e2e
 ```
 
-当前成功标准：17 个单元测试文件共 94 项、4 个 E2E 文件共 10 项通过；除归档恢复与 Backlog 同步外，E2E 还覆盖一键 Coding Demo、Fake Coding Workflow 的唯一 Merge、成功/失败 OTLP Trace、受控 Agent Events 下载、重复命令拒绝、Agent 异常退出、Verification 失败不合并、Merge 丢回执对账、Git 更新后 Worker 退出恢复，以及 Verification 期间 Worker 重启不重复命令。单元测试另外证明 Workspace/Agent/Merge 的 UNKNOWN 全部保留结构化错误并要求先对账，以及静态文件和 Agent Artifact 的符号链接、根目录逃逸或摘要不匹配都会被拒绝。
+当前成功标准：17 个单元测试文件共 96 项、4 个 E2E 文件共 11 项通过；除归档恢复与 Backlog 同步外，E2E 还覆盖一键 Coding Demo、Fake Coding Workflow 的唯一 Merge、运行中受控 JSONL Stream 与 cursor 完整读取、成功/失败 OTLP Trace、受控 Agent Artifact 下载、重复命令拒绝、Agent 异常退出、Verification 失败不合并、Merge 丢回执对账、Git 更新后 Worker 退出恢复，以及 Verification 期间 Worker 重启不重复命令。单元测试另外证明 chunk 跨行不会提前暴露半行、Workspace/Agent/Merge 的 UNKNOWN 全部保留结构化错误并要求先对账，以及静态文件、活动 Event Stream 和完成 Artifact 的符号链接、根目录逃逸、Intent 或摘要不匹配都会被拒绝。
 
-TASK-0006 的 `scripts/codex_fixture_smoke.mjs` 已执行一次真实 Codex 临时 Fixture，并把冻结证据存入对应 Task Archive。脚本会拒绝覆盖既有 `summary.json`，不属于日常回归命令；自动化测试只使用 Fake/受控进程。
+TASK-0011 已通过 `npm run demo:codex` 再次执行真实 Codex 隔离 Fixture：运行中事件从 4 条增长至 13 条，完成时冻结 17 条，包含命令执行、文件修改、Git Commit、工具结果和最终回答，并通过 Verification、唯一 Merge 与 Archive。自动化回归仍使用 Fake/受控进程，避免每次测试消耗模型额度。
 
 ## 3. 手工启动
 
@@ -112,7 +114,7 @@ curl http://127.0.0.1:3000/api/tasks/TASK-EXAMPLE/trace
 
 响应中的 `business` 才是业务状态事实；`durableRuntime.workflowRef` 用于定位 Journal，`durableRuntime.invocationsUrl` 是按 Workflow 服务和 Task key 过滤的 Restate 深链；`technical.artifacts` 只提供日志和证据引用。`recovery` 是从 Projection 派生的只读建议，不是新的控制命令。
 
-`observability.enabled` 只表示当前 Moye 进程已配置 OTLP，不代表 Task 状态成功，也不替代后端健康检查。`observability.traceId` 是稳定查询键；Agent Events 内联查看与原始下载使用同一个受控 API，仍要求 Task 声明的 Artifact Root 位于 `MOYE_ARTIFACT_ROOTS` 内，并通过投影白名单、大小和摘要校验。
+`observability.enabled` 只表示当前 Moye 进程已配置 OTLP，不代表 Task 状态成功，也不替代后端健康检查。`observability.traceId` 是稳定查询键；Agent Events 内联查看使用 `/agent-events?cursor=<n>&limit=<1..200>`，只从 Projection locator 解析 Run，运行中校验 execution intent 与路径，完成后原始下载再校验大小和摘要。Task 声明的 Artifact Root 必须位于 `MOYE_ARTIFACT_ROOTS` 内。
 
 打开 `http://127.0.0.1:3000` 查看 Moye Board。普通使用只需要 Moye；需要确认 Invocation、Journal 或 Replay 时，再从任务的“高级诊断”进入 `http://127.0.0.1:9070` Restate UI。二者通过 `task_id` 关联，但 Restate UI 不是项目任务看板。
 

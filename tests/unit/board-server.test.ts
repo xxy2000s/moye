@@ -7,7 +7,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { resolveAgentArtifactFile, startBoardServer } from "../../src/board/server.js";
+import { readAgentEventPage, resolveAgentArtifactFile, startBoardServer } from "../../src/board/server.js";
 
 const roots: string[] = [];
 const servers: Server[] = [];
@@ -82,6 +82,56 @@ describe("board static server", () => {
     await symlink(outside, path.join(runRoot, "events.jsonl"));
     await expect(resolveAgentArtifactFile([root], artifactRoot, runId, "agent-events", artifact))
       .rejects.toThrow(/escaped/);
+  });
+
+  it("pages and classifies a growing Agent Event stream without accepting a URL path", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "moye-board-live-events-"));
+    roots.push(root);
+    const artifactRoot = path.join(root, "artifacts");
+    const token = "b".repeat(64);
+    const runId = `agent-run:sha256:${token}`;
+    const runRoot = path.join(artifactRoot, "agent", `run-${token}`);
+    await mkdir(runRoot, { recursive: true });
+    const locator = {
+      runId,
+      runnerKind: "CODEX_EXEC" as const,
+      taskId: "TASK-LIVE-001",
+      specRevision: 1,
+      stepId: "IMPLEMENT" as const,
+      attemptId: "TASK-LIVE-001/IMPLEMENT/attempt-001",
+      eventsArtifactRef: `agent-artifact://${runId}/events.jsonl`,
+    };
+    await writeFile(path.join(runRoot, "execution-intent.json"), `${JSON.stringify({
+      schemaVersion: 1,
+      runId,
+      taskId: locator.taskId,
+      specRevision: locator.specRevision,
+      attemptId: locator.attemptId,
+      runnerKind: locator.runnerKind,
+    })}\n`);
+    await writeFile(path.join(runRoot, "events.jsonl"), [
+      { type: "thread.started", thread_id: "live-session" },
+      { type: "item.started", item: { type: "command_execution", command: "git status" } },
+      { type: "item.completed", item: { type: "command_execution", exit_code: 0 } },
+      { type: "item.completed", item: { type: "error", message: "hook failed" } },
+    ].map((event) => JSON.stringify(event)).join("\n") + "\n");
+
+    const first = await readAgentEventPage({
+      artifactRoots: [root], declaredArtifactRoot: artifactRoot, locator, cursor: 0, limit: 2,
+    });
+    expect(first).toMatchObject({ cursor: 0, nextCursor: 2, total: 4, hasMore: true, completed: false });
+    expect(first.events.map((event) => event.category)).toEqual(["system", "tool"]);
+    const second = await readAgentEventPage({
+      artifactRoots: [root], declaredArtifactRoot: artifactRoot, locator, cursor: first.nextCursor, limit: 2,
+    });
+    expect(second).toMatchObject({ nextCursor: 4, total: 4, hasMore: false, completed: false });
+    expect(second.events[0]).toMatchObject({ sequence: 3, category: "tool_result" });
+    expect(second.events[1]).toMatchObject({ sequence: 4, category: "error" });
+
+    await writeFile(path.join(runRoot, "execution-intent.json"), `${JSON.stringify({ taskId: "TASK-OTHER" })}\n`);
+    await expect(readAgentEventPage({
+      artifactRoots: [root], declaredArtifactRoot: artifactRoot, locator, cursor: 0, limit: 2,
+    })).rejects.toThrow(/does not match/);
   });
 });
 

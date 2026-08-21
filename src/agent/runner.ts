@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
-import { lstat, mkdir, readFile, readdir, realpath, rename, writeFile } from "node:fs/promises";
+import { appendFile, lstat, mkdir, readFile, readdir, realpath, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 
@@ -86,6 +86,12 @@ export interface AgentExecutionCapture {
   readonly startedAt: string;
   readonly finishedAt: string;
   readonly rawModelIo?: string;
+}
+
+export interface AgentEventStream {
+  readonly filePath: string;
+  writeStdoutChunk(chunk: string): Promise<void>;
+  finalize(expectedStdout: string): Promise<void>;
 }
 
 export interface FakeAgentScript {
@@ -327,6 +333,74 @@ export async function claimAgentExecution(request: AgentRunRequest): Promise<boo
     }
     return false;
   }
+}
+
+export async function openAgentEventStream(
+  request: AgentRunRequest,
+  maxBytes = 16 * 1024 * 1024,
+): Promise<AgentEventStream> {
+  assertTrustedRequest(request);
+  await assertRequestPathsSafe(request);
+  if (!Number.isSafeInteger(maxBytes) || maxBytes < 1024) {
+    throw validation("INVALID_AGENT_OUTPUT_LIMIT", "Agent event stream maxBytes must be at least 1024");
+  }
+  const intentPath = path.join(request.artifactPath, "execution-intent.json");
+  if (!(await pathExists(intentPath))) {
+    throw conflict("AGENT_EXECUTION_NOT_CLAIMED", "Agent event stream requires a durable execution intent");
+  }
+  const filePath = path.join(request.artifactPath, "events.jsonl");
+  await writeFile(filePath, "", { flag: "wx" });
+  let tail = "";
+  let writtenBytes = 0;
+  let finalized = false;
+
+  const write = async (content: string): Promise<void> => {
+    if (!content) return;
+    const bytes = Buffer.byteLength(content);
+    if (writtenBytes + bytes > maxBytes) {
+      throw new MoyeError({
+        code: "AGENT_OUTPUT_LIMIT_EXCEEDED",
+        category: "TERMINAL",
+        message: `Agent output exceeded ${maxBytes} bytes`,
+      });
+    }
+    await appendFile(filePath, content, "utf8");
+    writtenBytes += bytes;
+  };
+
+  return Object.freeze({
+    filePath,
+    async writeStdoutChunk(chunk: string): Promise<void> {
+      if (finalized) throw conflict("AGENT_EVENT_STREAM_FINALIZED", "Agent event stream is already finalized");
+      if (typeof chunk !== "string" || chunk.includes("\0")) {
+        throw validation("INVALID_AGENT_EVENT_CHUNK", "Agent event chunks must be NUL-free strings");
+      }
+      tail += chunk;
+      const boundary = tail.lastIndexOf("\n");
+      if (boundary < 0) return;
+      const completeLines = tail.slice(0, boundary + 1);
+      tail = tail.slice(boundary + 1);
+      await write(completeLines);
+    },
+    async finalize(expectedStdout: string): Promise<void> {
+      if (finalized) return;
+      finalized = true;
+      await write(tail);
+      tail = "";
+      if (Buffer.byteLength(expectedStdout) > maxBytes) {
+        throw new MoyeError({
+          code: "AGENT_OUTPUT_LIMIT_EXCEEDED",
+          category: "TERMINAL",
+          message: `Agent output exceeded ${maxBytes} bytes`,
+        });
+      }
+      const captured = await readFile(filePath, "utf8");
+      if (captured !== expectedStdout) {
+        await writeFile(filePath, expectedStdout, "utf8");
+        writtenBytes = Buffer.byteLength(expectedStdout);
+      }
+    },
+  });
 }
 
 export async function recordAgentExecutionUnknown(request: AgentRunRequest): Promise<void> {

@@ -45,7 +45,12 @@ export interface CodingTaskTrace {
     readonly attemptId: string;
     readonly exitCode: number | null;
     readonly signal: NodeJS.Signals | null;
-    readonly runDigest: string;
+    readonly runDigest?: string;
+  };
+  readonly agentEvents?: {
+    readonly viewUrl: string;
+    readonly downloadUrl?: string;
+    readonly completed: boolean;
   };
   readonly git: {
     readonly workspaceEffectId?: string;
@@ -115,6 +120,7 @@ export function buildCodingTaskTrace(
   } = {},
 ): CodingTaskTrace {
   const agent = projection.agent;
+  const agentRun = projection.agentRun;
   const verification = projection.verification;
   const recovery = deriveRecovery(projection);
   return deepFreeze({
@@ -148,16 +154,25 @@ export function buildCodingTaskTrace(
         evidenceRecords: binding.evidenceRecords.map(cloneEvidenceRecord),
       })),
     },
-    ...(agent === undefined ? {} : {
+    ...(agent === undefined && agentRun === undefined ? {} : {
       agent: {
-        runId: agent.runId,
-        ...(agent.sessionId === undefined ? {} : { sessionId: agent.sessionId }),
-        runnerKind: agent.runnerKind,
-        outcome: agent.outcome,
-        attemptId: agent.attemptId,
-        exitCode: agent.exitCode,
-        signal: agent.signal,
-        runDigest: agent.runDigest,
+        runId: agent?.runId ?? agentRun!.runId,
+        ...(agent?.sessionId === undefined ? {} : { sessionId: agent.sessionId }),
+        runnerKind: agent?.runnerKind ?? agentRun!.runnerKind,
+        outcome: agent?.outcome ?? "RUNNING",
+        attemptId: agent?.attemptId ?? agentRun!.attemptId,
+        exitCode: agent?.exitCode ?? null,
+        signal: agent?.signal ?? null,
+        ...(agent === undefined ? {} : { runDigest: agent.runDigest }),
+      },
+    }),
+    ...(agent === undefined && agentRun === undefined ? {} : {
+      agentEvents: {
+        viewUrl: `/api/tasks/${encodeURIComponent(projection.taskId)}/agent-events`,
+        ...(agent === undefined ? {} : {
+          downloadUrl: `/api/tasks/${encodeURIComponent(projection.taskId)}/artifacts/agent-events`,
+        }),
+        completed: agent !== undefined,
       },
     }),
     git: {

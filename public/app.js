@@ -27,9 +27,9 @@ const PIPELINE_STAGES = [
   { id: "ARCHIVE", label: "归档", description: "固化结果与回执，完成闭环" },
 ];
 
-const MAX_AGENT_EVENTS = 200;
-
 let lastProjectionSignature = "";
+let stopAgentEventsFollower = () => {};
+elements.dialog.addEventListener("close", () => stopAgentEventsFollower());
 document.querySelector("#refresh").addEventListener("click", loadBoard);
 await loadBoard();
 setInterval(loadBoard, 5000);
@@ -153,6 +153,7 @@ function renderLegacyTask(task) {
 }
 
 function renderCodingTrace(trace, summary) {
+  stopAgentEventsFollower();
   const task = trace.task;
   const conclusion = task.state === "CLOSED" && task.archiveStatus === "ARCHIVED"
     ? { icon: "✓", title: "任务已闭环", text: "编码、验证、合入、文档与归档证据均已确认。", tone: "success" }
@@ -167,7 +168,7 @@ function renderCodingTrace(trace, summary) {
     <li><span class="sequence">${String(event.sequence).padStart(2, "0")}</span><strong>${escapeHtml(event.type)}</strong><span>${escapeHtml(stepLabel(event.step))}</span><time>${formatTime(event.at)}</time></li>`).join("");
   const artifacts = trace.technical.artifacts.map(artifact => `
     <li><span>${escapeHtml(artifact.kind)}</span><code>${escapeHtml(artifact.artifactRef)}</code><small>${escapeHtml(shortDigest(artifact.contentDigest))}${artifact.bytes === undefined ? "" : ` · ${artifact.bytes} B`}</small>${artifact.downloadUrl ? `<a href="${escapeAttribute(artifact.downloadUrl)}" target="_blank" rel="noreferrer">${artifact.kind === "agent-events" ? "下载原始 JSONL" : "打开 ↗"}</a>` : ""}</li>`).join("");
-  const agentEvents = trace.technical.artifacts.find(artifact => artifact.kind === "agent-events" && artifact.downloadUrl);
+  const agentEvents = trace.agentEvents;
   const rawModelIo = trace.technical.artifacts.find(artifact => artifact.kind === "raw-model-io" && artifact.downloadUrl);
   const actions = trace.recovery.actions.map(action => `
     <li><strong>${escapeHtml(action.label)}</strong><span class="tag ${action.automatic ? "blue" : "yellow"}">${action.automatic ? "自动" : "人工"}</span><p>${escapeHtml(action.reason)}</p></li>`).join("");
@@ -201,12 +202,14 @@ function renderCodingTrace(trace, summary) {
       ${agentEvents ? `<button type="button" class="diagnostic-link" data-agent-events-trigger aria-controls="agent-events-viewer" aria-expanded="false">查看 Agent Events</button>` : ""}
       ${rawModelIo ? `<a class="sensitive-link" href="${escapeAttribute(rawModelIo.downloadUrl)}" target="_blank" rel="noreferrer">查看 Raw Model IO（敏感）↗</a>` : ""}
     </section>
-    ${agentEvents ? `<section id="agent-events-viewer" class="agent-events-viewer" data-agent-events-viewer data-source-url="${escapeAttribute(agentEvents.downloadUrl)}" aria-labelledby="agent-events-title" aria-live="polite" hidden>
+    ${agentEvents ? `<section id="agent-events-viewer" class="agent-events-viewer" data-agent-events-viewer data-source-url="${escapeAttribute(agentEvents.viewUrl)}" data-download-url="${escapeAttribute(agentEvents.downloadUrl || agentEvents.viewUrl.replace(/\/agent-events$/, "/artifacts/agent-events"))}" aria-labelledby="agent-events-title" aria-live="polite" hidden>
       <header>
-        <div><p class="eyebrow">Agent Runtime Artifact</p><h3 id="agent-events-title">Agent 交互事件</h3></div>
-        <div class="agent-events-actions"><span data-agent-events-status>尚未加载</span><a href="${escapeAttribute(agentEvents.downloadUrl)}" download>下载原始 JSONL</a></div>
+        <div><p class="eyebrow">Agent Runtime Event Stream</p><h3 id="agent-events-title">Agent 完整交互事件</h3><small data-agent-events-binding>${escapeHtml(trace.agent?.attemptId || "等待 Attempt")} · ${escapeHtml(runnerLabel(trace.agent?.runnerKind))}</small></div>
+        <div class="agent-events-actions"><span data-agent-events-status>尚未加载</span><a href="${escapeAttribute(agentEvents.downloadUrl || "#")}" data-agent-events-download${agentEvents.downloadUrl ? "" : " hidden"} download>下载原始 JSONL</a></div>
       </header>
+      <div class="agent-event-toolbar" data-agent-events-toolbar aria-label="事件分类筛选"></div>
       <div class="agent-events-content" data-agent-events-content></div>
+      <div class="agent-events-footer" data-agent-events-footer></div>
     </section>` : ""}
     <p class="trace-note">Trace 与 JSONL 只用于诊断；任务状态以 Moye Projection / Domain Event 为准，中断恢复以 Restate Journal 为准。</p>
 
@@ -245,80 +248,118 @@ function bindAgentEventsViewer() {
   const trigger = elements.detail.querySelector("[data-agent-events-trigger]");
   const viewer = elements.detail.querySelector("[data-agent-events-viewer]");
   if (!(trigger instanceof HTMLButtonElement) || !(viewer instanceof HTMLElement)) return;
-
-  trigger.addEventListener("click", async () => {
-    if (viewer.dataset.state === "loaded" || viewer.dataset.state === "empty") {
-      const willOpen = viewer.hidden;
-      viewer.hidden = !willOpen;
-      updateAgentEventsTrigger(trigger, willOpen);
-      if (willOpen) viewer.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      return;
-    }
-
-    if (viewer.dataset.state === "loading") return;
-    viewer.hidden = false;
+  const state = { cursor: 0, total: 0, events: [], completed: false, hasMore: false, filter: "all", loading: false, stopped: false, timer: 0 };
+  stopAgentEventsFollower = () => {
+    state.stopped = true;
+    if (state.timer) window.clearTimeout(state.timer);
+  };
+  const schedule = () => {
+    if (state.stopped || state.completed || state.hasMore || viewer.hidden) return;
+    state.timer = window.setTimeout(() => void loadPage(false), 1000);
+  };
+  const loadPage = async (drain) => {
+    if (state.loading || state.stopped) return;
+    state.loading = true;
     viewer.dataset.state = "loading";
     updateAgentEventsTrigger(trigger, true, true);
-    setAgentEventsStatus(viewer, "正在读取 Agent Events…");
-    viewer.querySelector("[data-agent-events-content]").innerHTML = '<div class="agent-events-loading" role="status">正在加载 JSONL 事件…</div>';
-
     try {
-      const response = await fetch(viewer.dataset.sourceUrl, { cache: "no-store" });
-      if (!response.ok) throw new Error(`读取失败（HTTP ${response.status}）`);
-      renderAgentEvents(viewer, await response.text());
-      updateAgentEventsTrigger(trigger, true);
-      viewer.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      do {
+        const source = new URL(viewer.dataset.sourceUrl, window.location.origin);
+        source.searchParams.set("cursor", String(state.cursor));
+        source.searchParams.set("limit", "200");
+        const response = await fetch(source, { cache: "no-store" });
+        if (!response.ok) throw new Error(`读取失败（HTTP ${response.status}）`);
+        const page = await response.json();
+        const known = new Set(state.events.map(event => event.sequence));
+        state.events.push(...page.events.filter(event => !known.has(event.sequence)));
+        state.cursor = page.nextCursor;
+        state.total = page.total;
+        state.hasMore = page.hasMore;
+        state.completed = page.completed;
+        if (state.stopped || !drain) break;
+      } while (state.hasMore);
+      viewer.dataset.state = state.completed ? "complete" : "following";
+      renderAgentEventsState(viewer, state, loadPage);
+      schedule();
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       viewer.dataset.state = "error";
       setAgentEventsStatus(viewer, "读取失败");
       viewer.querySelector("[data-agent-events-content]").innerHTML = `<div class="agent-events-error" role="alert"><strong>Agent Events 暂时无法读取</strong><p>${escapeHtml(message)}</p><button type="button" data-agent-events-retry>重新加载</button></div>`;
-      viewer.querySelector("[data-agent-events-retry]")?.addEventListener("click", () => {
-        viewer.dataset.state = "idle";
-        trigger.click();
-      }, { once: true });
-      updateAgentEventsTrigger(trigger, true);
-      trigger.textContent = "重新加载 Agent Events";
+      viewer.querySelector("[data-agent-events-retry]")?.addEventListener("click", () => void loadPage(false), { once: true });
+    } finally {
+      state.loading = false;
+      updateAgentEventsTrigger(trigger, !viewer.hidden);
     }
+  };
+  trigger.addEventListener("click", () => {
+    const willOpen = viewer.hidden;
+    viewer.hidden = !willOpen;
+    updateAgentEventsTrigger(trigger, willOpen);
+    if (!willOpen) {
+      if (state.timer) window.clearTimeout(state.timer);
+      return;
+    }
+    if (state.events.length === 0 && state.cursor === 0) {
+      viewer.querySelector("[data-agent-events-content]").innerHTML = '<div class="agent-events-loading" role="status">正在加载原始 JSONL 事件…</div>';
+      void loadPage(true);
+    } else schedule();
+    viewer.scrollIntoView({ behavior: "smooth", block: "nearest" });
   });
 }
 
-function renderAgentEvents(viewer, content) {
-  const lines = content.split(/\r?\n/).filter(line => line.trim().length > 0);
-  const visibleLines = lines.slice(0, MAX_AGENT_EVENTS);
+function renderAgentEventsState(viewer, state, loadPage) {
   const target = viewer.querySelector("[data-agent-events-content]");
-  if (lines.length === 0) {
-    viewer.dataset.state = "empty";
-    setAgentEventsStatus(viewer, "0 条事件");
-    target.innerHTML = '<div class="agent-events-empty">这个 Artifact 是空的，目前没有可展示的 Agent 事件。</div>';
-    return;
+  const visible = state.filter === "all" ? state.events : state.events.filter(event => event.category === state.filter);
+  setAgentEventsStatus(viewer, `已加载 ${state.events.length} / ${state.total} 条 · ${state.completed ? "已完成" : "实时跟随中"}`);
+  const download = viewer.querySelector("[data-agent-events-download]");
+  if (download instanceof HTMLAnchorElement && state.completed) {
+    download.href = viewer.dataset.downloadUrl;
+    download.hidden = false;
   }
-
-  viewer.dataset.state = "loaded";
-  setAgentEventsStatus(viewer, `${lines.length} 条事件`);
-  const events = visibleLines.map((line, index) => renderAgentEvent(line, index)).join("");
-  const overflow = lines.length > MAX_AGENT_EVENTS
-    ? `<p class="agent-events-overflow">为保持页面流畅，只展示前 ${MAX_AGENT_EVENTS} 条；其余 ${lines.length - MAX_AGENT_EVENTS} 条请下载原始 JSONL 查看。</p>`
-    : "";
-  target.innerHTML = `<ol class="agent-events-list">${events}</ol>${overflow}`;
+  const categories = [["all", "全部"], ["conversation", "对话"], ["tool", "工具调用"], ["tool_result", "工具结果"], ["system", "系统"], ["error", "错误"]];
+  const toolbar = viewer.querySelector("[data-agent-events-toolbar]");
+  toolbar.innerHTML = categories.map(([id, label]) => {
+    const count = id === "all" ? state.events.length : state.events.filter(event => event.category === id).length;
+    return `<button type="button" data-agent-event-filter="${id}" class="${state.filter === id ? "active" : ""}" aria-pressed="${state.filter === id}">${label}<span>${count}</span></button>`;
+  }).join("");
+  toolbar.querySelectorAll("[data-agent-event-filter]").forEach(button => button.addEventListener("click", () => {
+    state.filter = button.dataset.agentEventFilter;
+    renderAgentEventsState(viewer, state, loadPage);
+  }));
+  if (state.events.length === 0) {
+    target.innerHTML = `<div class="agent-events-empty">${state.completed ? "这个 Agent Run 没有输出事件。" : "Agent 已启动，正在等待第一条 JSONL 事件…"}</div>`;
+  } else if (visible.length === 0) {
+    target.innerHTML = '<div class="agent-events-empty">当前分类暂无事件；切换到“全部”可查看完整原始流。</div>';
+  } else {
+    target.innerHTML = `<ol class="agent-events-list">${visible.map(renderAgentEvent).join("")}</ol>`;
+  }
+  const footer = viewer.querySelector("[data-agent-events-footer]");
+  footer.innerHTML = state.hasMore
+    ? `<button type="button" data-agent-events-more>加载后续 200 条</button><button type="button" data-agent-events-all>加载到当前末尾</button>`
+    : `<span>${state.completed ? "完整事件流已加载" : "已到当前末尾，等待新事件…"}</span>`;
+  footer.querySelector("[data-agent-events-more]")?.addEventListener("click", () => void loadPage(false));
+  footer.querySelector("[data-agent-events-all]")?.addEventListener("click", () => void loadPage(true));
 }
 
-function renderAgentEvent(line, index) {
-  try {
-    const event = JSON.parse(line);
-    const type = eventType(event);
-    return `<li class="agent-event">
-      <div class="agent-event-heading"><span>${String(index + 1).padStart(2, "0")}</span><strong>${escapeHtml(type)}</strong></div>
-      <p>${escapeHtml(eventSummary(event, type))}</p>
-      <details><summary>查看原始 JSON</summary><pre>${escapeHtml(JSON.stringify(event, null, 2))}</pre></details>
-    </li>`;
-  } catch {
-    return `<li class="agent-event malformed">
-      <div class="agent-event-heading"><span>${String(index + 1).padStart(2, "0")}</span><strong>无法解析的 JSON 行</strong></div>
-      <p>这一行不是有效 JSON，已按普通文本保留。</p>
-      <details><summary>查看原始文本</summary><pre>${escapeHtml(line)}</pre></details>
+function renderAgentEvent(event) {
+  const sequence = String(event.sequence).padStart(2, "0");
+  if (event.parsed !== undefined) {
+    return `<li class="agent-event category-${escapeHtml(event.category)}">
+      <div class="agent-event-heading"><span>${sequence}</span><em>${escapeHtml(categoryLabel(event.category))}</em><strong>${escapeHtml(event.type)}</strong></div>
+      <p>${escapeHtml(eventSummary(event.parsed, event.type))}</p>
+      <details><summary>查看完整原始 JSON</summary><pre>${escapeHtml(JSON.stringify(event.parsed, null, 2))}</pre></details>
     </li>`;
   }
+  return `<li class="agent-event malformed">
+    <div class="agent-event-heading"><span>${sequence}</span><em>错误</em><strong>无法解析的 JSON 行</strong></div>
+    <p>这一行不是有效 JSON，已按原始文本完整保留。</p>
+    <details><summary>查看完整原始文本</summary><pre>${escapeHtml(event.raw)}</pre></details>
+  </li>`;
+}
+
+function categoryLabel(category) {
+  return ({ conversation: "对话", tool: "工具调用", tool_result: "工具结果", system: "系统", error: "错误" })[category] || category;
 }
 
 function eventType(event) {
@@ -334,6 +375,18 @@ function eventSummary(event, type) {
     : event?.message?.content;
   const direct = itemText || messageContent || event?.result || event?.text || event?.message;
   if (typeof direct === "string" && direct.trim()) return truncateEventText(direct.trim());
+  if (typeof event?.item?.message === "string") return truncateEventText(event.item.message);
+  if (typeof event?.item?.command === "string") {
+    const output = typeof event.item.aggregated_output === "string" ? event.item.aggregated_output.trim() : "";
+    return truncateEventText(`${event.type === "item.started" ? "执行命令" : "命令完成"}：${event.item.command}${output ? `；输出：${output}` : ""}`);
+  }
+  if (Array.isArray(event?.item?.changes)) {
+    return truncateEventText(`${event.type === "item.started" ? "准备修改文件" : "文件修改完成"}：${event.item.changes.map(change => change?.path || change?.file || "未知文件").join("、")}`);
+  }
+  const toolUse = Array.isArray(event?.message?.content) ? event.message.content.find(item => item?.type === "tool_use") : undefined;
+  if (toolUse) return truncateEventText(`调用工具：${toolUse.name || "unknown"} ${JSON.stringify(toolUse.input || {})}`);
+  const toolResult = Array.isArray(event?.message?.content) ? event.message.content.find(item => item?.type === "tool_result") : undefined;
+  if (toolResult) return truncateEventText(`工具结果：${typeof toolResult.content === "string" ? toolResult.content : JSON.stringify(toolResult.content || {})}`);
   if (event?.thread_id) return `Agent 会话已建立：${truncateEventText(String(event.thread_id))}`;
   if (event?.session_id) return `Agent 会话：${truncateEventText(String(event.session_id))}`;
   const labels = {

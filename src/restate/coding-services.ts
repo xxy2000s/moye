@@ -4,7 +4,7 @@ import { writeFile } from "node:fs/promises";
 
 import { CodexExecAgentRunner } from "../agent/codex-exec.js";
 import { ClaudePrintAgentRunner } from "../agent/claude-print.js";
-import { FixtureCodingAgentRunner } from "../agent/fixture-coding.js";
+import { FixtureCodingAgentRunner, StreamingFixtureCodingAgentRunner } from "../agent/fixture-coding.js";
 import type { FixtureMutation } from "../agent/fixture-coding.js";
 import type { FakeAgentScript } from "../agent/runner.js";
 import type { CodingWorkflowInput, CodingWorkflowProjection } from "../coding/workflow.js";
@@ -30,6 +30,11 @@ export interface CodingTaskWorkflowInput extends CodingWorkflowInput {
   readonly fake?: {
     readonly script: FakeAgentScript;
     readonly mutation: FixtureMutation;
+  };
+  readonly controlledStream?: {
+    readonly events: readonly Readonly<Record<string, unknown>>[];
+    readonly mutation: FixtureMutation;
+    readonly delayMs: number;
   };
   readonly fault?: {
     readonly loseMergeAcknowledgementOnceAt?: string;
@@ -115,6 +120,12 @@ export const codingTaskWorkflow = restate.workflow({
 
 function createAgentRunner(input: CodingTaskWorkflowInput, config: ReturnType<typeof loadConfig>) {
   if (input.runnerKind === "FAKE") return createFixtureRunner(input);
+  if (input.controlledStream !== undefined) {
+    if (process.env["MOYE_TEST_FAULT_INJECTION"] !== "enabled" || input.runnerKind !== "CODEX_EXEC") {
+      throw new restate.TerminalError("Controlled Agent stream is disabled outside explicit CODEX_EXEC test processes", { errorCode: 403 });
+    }
+    return new StreamingFixtureCodingAgentRunner(input.controlledStream);
+  }
   if (input.runnerKind === "CODEX_EXEC") return new CodexExecAgentRunner();
   return new ClaudePrintAgentRunner({
     telemetry: {

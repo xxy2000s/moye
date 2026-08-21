@@ -187,6 +187,26 @@ describe("agent runner", () => {
     expect(invocations[0]?.argv).not.toContain("--skip-git-repo-check");
   });
 
+  it("persists complete JSONL lines while a Codex process is still running", async () => {
+    const fixture = await createFixture();
+    const request = await requestFor(fixture, "CODEX_EXEC", "stream fixture");
+    const lines = successEvents("session-stream", "stream complete").map((event) => `${JSON.stringify(event)}\n`);
+    const processRunner: AgentProcessRunner = {
+      async run(_invocation, observer) {
+        await observer?.onStdoutChunk?.(lines[0]!.slice(0, 9));
+        expect(await readFile(path.join(request.artifactPath, "events.jsonl"), "utf8")).toBe("");
+        await observer?.onStdoutChunk?.(`${lines[0]!.slice(9)}${lines[1]!.slice(0, 5)}`);
+        expect(await readFile(path.join(request.artifactPath, "events.jsonl"), "utf8")).toBe(lines[0]);
+        await observer?.onStdoutChunk?.(`${lines[1]!.slice(5)}${lines.slice(2).join("")}`);
+        return { stdout: lines.join(""), stderr: "", exitCode: 0, signal: null };
+      },
+    };
+    const times = [new Date("2026-08-21T10:00:00.000Z"), new Date("2026-08-21T10:00:01.000Z")];
+    const result = await new CodexExecAgentRunner({ processRunner, now: () => times.shift()! }).run(request);
+    expect(result).toMatchObject({ outcome: "SUCCEEDED", sessionId: "session-stream" });
+    expect(await readFile(path.join(request.artifactPath, "events.jsonl"), "utf8")).toBe(lines.join(""));
+  });
+
   it("does not launch Codex again when a prior Run ID has an unknown result", async () => {
     const fixture = await createFixture();
     const request = await requestFor(fixture, "CODEX_EXEC", "unknown result fixture");

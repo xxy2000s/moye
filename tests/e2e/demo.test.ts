@@ -61,6 +61,14 @@ describe("npm run demo", () => {
     expect(trace.git.mergeCommit).toMatch(/^[0-9a-f]{40}$/);
     expect(trace.durableRuntime.invocationsUrl).toContain(encodeURIComponent(taskId));
     expect(trace.observability).toMatchObject({ enabled: false, provider: "disabled" });
+    expect(trace.agentEvents).toMatchObject({
+      viewUrl: `/api/tasks/${taskId}/agent-events`, completed: true,
+    });
+    const eventPage = await fetchJson<{ total: number; completed: boolean; events: unknown[] }>(
+      `${boardUrl}/api/tasks/${taskId}/agent-events?cursor=0&limit=2`,
+    );
+    expect(eventPage).toMatchObject({ total: 4, completed: true });
+    expect(eventPage.events).toHaveLength(2);
     const eventsUrl = trace.technical.artifacts.find((artifact) => artifact.kind === "agent-events")?.downloadUrl;
     expect(eventsUrl).toBe(`/api/tasks/${taskId}/artifacts/agent-events`);
     const events = await (await fetch(`${boardUrl}${eventsUrl}`)).text();
@@ -72,7 +80,10 @@ describe("npm run demo", () => {
     expect(app).toContain("七个阶段，一眼看清做到哪里");
     expect(app).toContain("查看 Agent Events");
     expect(app).toContain("data-agent-events-viewer");
+    expect(app).toContain("data-agent-event-filter");
+    expect(app).toContain("实时跟随中");
     expect(app).toContain("下载原始 JSONL");
+    expect(app).not.toContain("MAX_AGENT_EVENTS");
     expect(app).not.toContain("查看 Agent Events ↗");
     expect(app).toContain("打开 Trace（Phoenix）");
     await expect(stat(path.join(demoRoot, "coding-fixtures", taskId, "worktrees", taskId))).rejects.toMatchObject({ code: "ENOENT" });

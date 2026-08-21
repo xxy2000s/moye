@@ -71,6 +71,15 @@ export interface CodingWorkflowProjection {
   readonly evidenceBindings: readonly EvidenceBinding[];
   readonly artifactRoot?: string;
   readonly workspace?: { readonly effectId: string; readonly path: string; readonly branch: string };
+  readonly agentRun?: {
+    readonly runId: string;
+    readonly runnerKind: AgentRunResult["runnerKind"];
+    readonly taskId: string;
+    readonly specRevision: number;
+    readonly stepId: "IMPLEMENT";
+    readonly attemptId: string;
+    readonly eventsArtifactRef: string;
+  };
   readonly agent?: AgentRunResult;
   readonly checkpoint?: GitCheckpoint;
   readonly verification?: VerificationBinding | VerificationFailure;
@@ -226,6 +235,18 @@ export async function runCodingWorkflow(
       workspaceRoot: workspace.worktreePath,
       artifactRoot: path.join(input.artifactRoot, "agent"),
       prompt: input.prompt,
+    });
+    await publish({
+      ...projection,
+      agentRun: {
+        runId: agentRequest.runId,
+        runnerKind: agentRequest.runnerKind,
+        taskId: agentRequest.taskId,
+        specRevision: agentRequest.specRevision,
+        stepId: agentRequest.stepId,
+        attemptId: agentRequest.attemptId,
+        eventsArtifactRef: `agent-artifact://${agentRequest.runId}/events.jsonl`,
+      },
     });
     const agentActivity = await activity("agent-run", () => captureUnknownSideEffect(
       () => dependencies.agentRunner.run(agentRequest),

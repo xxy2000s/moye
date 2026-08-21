@@ -1,6 +1,6 @@
 import { createReadStream } from "node:fs";
 import { createHash } from "node:crypto";
-import { readFile, realpath, stat } from "node:fs/promises";
+import { lstat, open, readFile, realpath, stat } from "node:fs/promises";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { extname, isAbsolute, relative, resolve } from "node:path";
 
@@ -69,10 +69,11 @@ async function route(
       return;
     }
     const traceRequest = segments.length === 2 && segments[1] === "trace";
+    const agentEventsRequest = segments.length === 2 && segments[1] === "agent-events";
     const artifactKind = segments.length === 3 && segments[1] === "artifacts"
       ? readArtifactKind(segments[2])
       : undefined;
-    if (segments.length > 1 && !traceRequest && artifactKind === undefined) {
+    if (segments.length > 1 && !traceRequest && !agentEventsRequest && artifactKind === undefined) {
       writeJson(response, 404, { error: "Not found" });
       return;
     }
@@ -96,6 +97,47 @@ async function route(
           restateAdminUrl: options.restateAdminUrl,
           ...(options.observability === undefined ? {} : { observability: options.observability }),
         }));
+      return;
+    }
+    if (agentEventsRequest) {
+      if (authority.owner !== "CODING_WORKFLOW") {
+        writeJson(response, 409, { error: "Agent Events are not available for this Task workflow" });
+        return;
+      }
+      const cursor = readBoundedInteger(url.searchParams.get("cursor"), 0, 0, Number.MAX_SAFE_INTEGER);
+      const limit = readBoundedInteger(url.searchParams.get("limit"), 100, 1, 200);
+      if (cursor === undefined || limit === undefined) {
+        writeJson(response, 400, { error: "cursor must be a non-negative integer and limit must be between 1 and 200" });
+        return;
+      }
+      const projection = await invoke<CodingWorkflowProjection | null>(
+        options.ingressUrl, "CodingTaskWorkflow", taskId, "status",
+      );
+      const locator = projection?.agentRun ?? (projection?.agent === undefined ? undefined : {
+        runId: projection.agent.runId,
+        runnerKind: projection.agent.runnerKind,
+        taskId: projection.agent.taskId,
+        specRevision: projection.agent.specRevision,
+        stepId: projection.agent.stepId,
+        attemptId: projection.agent.attemptId,
+        eventsArtifactRef: projection.agent.artifacts.events.artifactRef,
+      });
+      if (projection === null || locator === undefined) {
+        writeJson(response, 404, { error: "Agent Event stream not found" });
+        return;
+      }
+      try {
+        writeJson(response, 200, await readAgentEventPage({
+          artifactRoots: options.artifactRoots ?? [],
+          declaredArtifactRoot: projection.artifactRoot,
+          locator,
+          ...(projection.agent === undefined ? {} : { completedArtifact: projection.agent.artifacts.events }),
+          cursor,
+          limit,
+        }));
+      } catch {
+        writeJson(response, 404, { error: "Agent Event stream not found" });
+      }
       return;
     }
     if (artifactKind !== undefined) {
@@ -174,6 +216,27 @@ async function route(
 
 type DownloadableArtifactKind = "agent-events" | "raw-model-io";
 
+export type AgentEventCategory = "conversation" | "tool" | "tool_result" | "system" | "error";
+
+export interface AgentEventPage {
+  readonly runId: string;
+  readonly runnerKind: string;
+  readonly taskId: string;
+  readonly attemptId: string;
+  readonly cursor: number;
+  readonly nextCursor: number;
+  readonly total: number;
+  readonly hasMore: boolean;
+  readonly completed: boolean;
+  readonly events: readonly {
+    readonly sequence: number;
+    readonly type: string;
+    readonly category: AgentEventCategory;
+    readonly raw: string;
+    readonly parsed?: unknown;
+  }[];
+}
+
 function readArtifactKind(value: string | undefined): DownloadableArtifactKind | undefined {
   return value === "agent-events" || value === "raw-model-io" ? value : undefined;
 }
@@ -206,6 +269,178 @@ export async function resolveAgentArtifactFile(
   const digest = `sha256:${createHash("sha256").update(content).digest("hex")}`;
   if (digest !== artifact.contentDigest) throw new Error("Artifact digest mismatch");
   return actual;
+}
+
+export async function readAgentEventPage(input: {
+  readonly artifactRoots: readonly string[];
+  readonly declaredArtifactRoot: string | undefined;
+  readonly locator: NonNullable<CodingWorkflowProjection["agentRun"]>;
+  readonly completedArtifact?: AgentArtifactFile;
+  readonly cursor: number;
+  readonly limit: number;
+}): Promise<AgentEventPage> {
+  if (!Number.isSafeInteger(input.cursor) || input.cursor < 0
+      || !Number.isSafeInteger(input.limit) || input.limit < 1 || input.limit > 200) {
+    throw new Error("Invalid Agent Event cursor");
+  }
+  if (input.locator.taskId === "" || input.locator.eventsArtifactRef !== `agent-artifact://${input.locator.runId}/events.jsonl`) {
+    throw new Error("Agent Event locator mismatch");
+  }
+  const completed = input.completedArtifact !== undefined;
+  const filePath = completed
+    ? await resolveAgentArtifactFile(
+      input.artifactRoots,
+      input.declaredArtifactRoot,
+      input.locator.runId,
+      "agent-events",
+      input.completedArtifact,
+    )
+    : await resolveLiveAgentEventFile(input.artifactRoots, input.declaredArtifactRoot, input.locator);
+  const content = filePath === undefined ? "" : await readUtf8Snapshot(filePath, 16 * 1024 * 1024);
+  const lines = content.split(/\r?\n/).filter((line) => line.trim().length > 0);
+  const selected = lines.slice(input.cursor, input.cursor + input.limit);
+  const events = selected.map((raw, offset) => {
+    const sequence = input.cursor + offset + 1;
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      return {
+        sequence,
+        type: agentEventType(parsed),
+        category: classifyAgentEvent(parsed),
+        raw,
+        parsed,
+      };
+    } catch {
+      return { sequence, type: "malformed-json", category: "error" as const, raw };
+    }
+  });
+  const nextCursor = input.cursor + selected.length;
+  return {
+    runId: input.locator.runId,
+    runnerKind: input.locator.runnerKind,
+    taskId: input.locator.taskId,
+    attemptId: input.locator.attemptId,
+    cursor: input.cursor,
+    nextCursor,
+    total: lines.length,
+    hasMore: nextCursor < lines.length,
+    completed,
+    events,
+  };
+}
+
+async function readUtf8Snapshot(filePath: string, maxBytes: number): Promise<string> {
+  const handle = await open(filePath, "r");
+  try {
+    const info = await handle.stat();
+    if (!info.isFile() || info.size > maxBytes) throw new Error("Agent Event stream exceeds the Board limit");
+    const buffer = Buffer.alloc(info.size);
+    let offset = 0;
+    while (offset < buffer.length) {
+      const result = await handle.read(buffer, offset, buffer.length - offset, offset);
+      if (result.bytesRead === 0) break;
+      offset += result.bytesRead;
+    }
+    return buffer.subarray(0, offset).toString("utf8");
+  } finally {
+    await handle.close();
+  }
+}
+
+async function resolveLiveAgentEventFile(
+  artifactRoots: readonly string[],
+  declaredArtifactRoot: string | undefined,
+  locator: NonNullable<CodingWorkflowProjection["agentRun"]>,
+): Promise<string | undefined> {
+  const token = locator.runId.slice(locator.runId.lastIndexOf(":") + 1);
+  if (!/^[0-9a-f]{64}$/.test(token)) throw new Error("Invalid Agent Run ID");
+  if (declaredArtifactRoot === undefined) throw new Error("Task did not declare an Artifact Root");
+  const taskRoot = await realpath(declaredArtifactRoot);
+  let allowed = false;
+  for (const configuredRoot of artifactRoots) {
+    try { if (isSameOrWithin(await realpath(configuredRoot), taskRoot)) allowed = true; } catch { continue; }
+  }
+  if (!allowed) throw new Error("Task Artifact Root is outside configured roots");
+  const runRoot = resolve(taskRoot, "agent", `run-${token}`);
+  if (!isSameOrWithin(taskRoot, runRoot)) throw new Error("Agent Run path escaped Task Artifact Root");
+  try {
+    const intentCandidate = resolve(runRoot, "execution-intent.json");
+    const intentInfo = await lstat(intentCandidate);
+    if (!intentInfo.isFile() || intentInfo.isSymbolicLink()) throw new Error("Agent intent is not a regular file");
+    const intentPath = await realpath(intentCandidate);
+    if (!isSameOrWithin(taskRoot, intentPath) || intentPath !== intentCandidate) throw new Error("Agent intent escaped Task Artifact Root");
+    const intent = JSON.parse(await readFile(intentPath, "utf8")) as Record<string, unknown>;
+    if (intent["runId"] !== locator.runId || intent["taskId"] !== locator.taskId
+        || intent["attemptId"] !== locator.attemptId || intent["runnerKind"] !== locator.runnerKind
+        || intent["specRevision"] !== locator.specRevision) {
+      throw new Error("Agent intent does not match the Task projection");
+    }
+    const candidate = resolve(runRoot, "events.jsonl");
+    const info = await lstat(candidate);
+    if (!info.isFile() || info.isSymbolicLink() || info.size > 16 * 1024 * 1024) {
+      throw new Error("Agent Event stream is unsafe");
+    }
+    const actual = await realpath(candidate);
+    if (!isSameOrWithin(taskRoot, actual) || actual !== candidate) throw new Error("Agent Event stream escaped Task Artifact Root");
+    return actual;
+  } catch (error) {
+    if (isNotFound(error)) return undefined;
+    throw error;
+  }
+}
+
+function agentEventType(value: unknown): string {
+  if (!isRecord(value)) return "non-object-json";
+  const item = isRecord(value["item"]) ? value["item"] : undefined;
+  const primary = stringValue(value["type"]) ?? stringValue(value["event"]) ?? stringValue(value["name"]);
+  const secondary = stringValue(item?.["type"]) ?? stringValue(value["subtype"]);
+  return [primary, secondary].filter(Boolean).join(" · ") || "unknown-event";
+}
+
+function classifyAgentEvent(value: unknown): AgentEventCategory {
+  if (!isRecord(value)) return "error";
+  const type = stringValue(value["type"]) ?? "";
+  const subtype = stringValue(value["subtype"]) ?? "";
+  const item = isRecord(value["item"]) ? value["item"] : undefined;
+  const itemType = stringValue(item?.["type"]) ?? "";
+  if (type === "error" || type === "turn.failed" || subtype === "error" || itemType === "error" || value["is_error"] === true) return "error";
+  if (type === "assistant") {
+    const content = isRecord(value["message"]) && Array.isArray(value["message"]["content"])
+      ? value["message"]["content"] as unknown[] : [];
+    return content.some((entry) => isRecord(entry) && entry["type"] === "tool_use") ? "tool" : "conversation";
+  }
+  if (type === "user") {
+    const content = isRecord(value["message"]) && Array.isArray(value["message"]["content"])
+      ? value["message"]["content"] as unknown[] : [];
+    return content.some((entry) => isRecord(entry) && entry["type"] === "tool_result") ? "tool_result" : "conversation";
+  }
+  if (type === "result") return "conversation";
+  if (itemType === "agent_message" || itemType === "reasoning") return "conversation";
+  if (["command_execution", "mcp_tool_call", "web_search", "file_change"].includes(itemType)) {
+    return type === "item.completed" ? "tool_result" : "tool";
+  }
+  if (type === "tool_use") return "tool";
+  if (type === "tool_result") return "tool_result";
+  return "system";
+}
+
+function readBoundedInteger(value: string | null, fallback: number, minimum: number, maximum: number): number | undefined {
+  if (value === null) return fallback;
+  if (!/^(0|[1-9][0-9]*)$/.test(value)) return undefined;
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed >= minimum && parsed <= maximum ? parsed : undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function stringValue(value: unknown): string | undefined {
+  return typeof value === "string" && value ? value : undefined;
+}
+
+function isNotFound(error: unknown): boolean {
+  return typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT";
 }
 
 async function serveVerifiedArtifact(

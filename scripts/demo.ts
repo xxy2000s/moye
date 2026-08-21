@@ -5,6 +5,7 @@ import { mkdir } from "node:fs/promises";
 import net from "node:net";
 import path from "node:path";
 
+import type { AgentRunResult } from "../src/agent/runner.js";
 import type { CodingWorkflowProjection } from "../src/coding/workflow.js";
 import { cleanupCodingDemoWorktree, createCodingDemoFixture, type CodingDemoFixture } from "../src/demo/coding-fixture.js";
 import type { ProjectBoardSnapshot } from "../src/domain/board.js";
@@ -13,6 +14,7 @@ import { invoke } from "../src/restate/ingress.js";
 const containerName = process.env["MOYE_DEMO_CONTAINER_NAME"] ?? "moye-restate-demo";
 const demoRoot = path.resolve(process.env["MOYE_DEMO_ROOT"] ?? ".moye-runtime/demo");
 const projectId = "moye-demo";
+const runnerKind = readRunnerKind(process.env["MOYE_DEMO_RUNNER"] ?? "FAKE");
 let ingressPort = 0;
 let adminPort = 0;
 let servicePort = 0;
@@ -35,6 +37,8 @@ process.once("SIGTERM", () => void cleanup(0));
 try {
   validateContainerName(containerName);
   requireCommand("docker", ["version", "--format", "{{.Server.Version}}"]);
+  if (runnerKind === "CODEX_EXEC") requireCommand("codex", ["--version"]);
+  if (runnerKind === "CLAUDE_PRINT") requireCommand("claude", ["--version"]);
   await mkdir(demoRoot, { recursive: true });
   const suffix = Date.now().toString(36).toUpperCase();
   taskId = `TASK-DEMO-${suffix}`;
@@ -45,8 +49,9 @@ try {
     taskId,
     backlogId,
     projectId,
-    graphRevision: 24,
+    graphRevision: 28,
     createdAt,
+    runnerKind,
   });
   const ports = await allocateDistinctPorts(4);
   ingressPort = ports[0]!;
@@ -97,9 +102,15 @@ try {
     taskRefs: [taskId],
     updatedAt: createdAt,
   });
-  const projection = await invoke<CodingWorkflowProjection>(
+  const workflow = invoke<CodingWorkflowProjection>(
     ingressUrl, "CodingTaskWorkflow", taskId, "run", fixture.input,
   );
+  process.stdout.write("\nMoye Coding Demo 已启动\n\n");
+  process.stdout.write(`  项目看板: ${boardUrl}\n`);
+  process.stdout.write(`  Demo Task: ${taskId}\n`);
+  process.stdout.write(`  Agent Runner: ${runnerLabel(runnerKind)}\n\n`);
+  process.stdout.write("现在即可打开看板；Agent Events 会在运行中持续刷新。\n");
+  const projection = await workflow;
   assertCompleted(projection);
   await waitUntil(async () => {
     const board = await fetchJson<ProjectBoardSnapshot>(`${boardUrl}/api/board`);
@@ -254,4 +265,14 @@ async function cleanup(exitCode: number): Promise<never> {
 
 function validateContainerName(value: string): void {
   if (!/^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$/.test(value)) throw new Error(`非法 Demo 容器名：${value}`);
+}
+
+function readRunnerKind(value: string): AgentRunResult["runnerKind"] {
+  const normalized = value.trim().toUpperCase().replace(/-/g, "_");
+  if (normalized === "FAKE" || normalized === "CODEX_EXEC" || normalized === "CLAUDE_PRINT") return normalized;
+  throw new Error(`MOYE_DEMO_RUNNER 仅支持 FAKE、CODEX_EXEC 或 CLAUDE_PRINT，收到：${value}`);
+}
+
+function runnerLabel(value: AgentRunResult["runnerKind"]): string {
+  return value === "CODEX_EXEC" ? "真实 Codex CLI" : value === "CLAUDE_PRINT" ? "真实 Claude CLI" : "Fake Agent（确定性演示）";
 }

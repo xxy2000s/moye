@@ -28,7 +28,7 @@ Moye 已有 Task Projection、Restate Journal 和本地 Agent Artifact，但缺�
 
 Moye Core 定义 `TraceSink`，默认使用 `NoopTraceSink`；显式开启后通过 OpenTelemetry 官方 OTLP/HTTP protobuf exporter 输出。`task.id` 是跨系统关联根，稳定 Trace ID 用于查询；从已持久化 Projection 重建有起止时间的短 Attempt/Agent Span，不创建跨天存活的 Task Span。
 
-Phoenix 19.10.0 只作为本地 Compose `trace` Profile 和演示 UI，不是 Moye 的运行依赖或业务权威。其他兼容 OTLP 的后端可以替换它。Agent JSONL、stderr、最终消息和可选 Raw Model IO 继续以内容摘要 Artifact 保存，并由 Moye Board 的白名单下载入口提供。
+Phoenix 19.10.0 只作为本地 Compose `trace` Profile 和演示 UI，不是 Moye 的运行依赖或业务权威。其他兼容 OTLP 的后端可以替换它。Agent JSONL 在 CLI 运行时先按完整行写入受管 Run Stream，并通过 Task Projection 中的稳定 Run locator 由 Moye Board cursor API 只读展示；运行结束后，JSONL、stderr、最终消息和可选 Raw Model IO 继续以内容摘要 Artifact 冻结。Stream 和 Artifact 都是诊断证据，不进入 Restate Journal，也不推进 Task 状态。
 
 Claude 原生遥测只通过单次子进程环境变量开启，不修改用户级配置；所有内容采集开关默认关闭。Codex CLI 未公开的原始 HTTP Request/Response 不在本决策承诺范围内。
 

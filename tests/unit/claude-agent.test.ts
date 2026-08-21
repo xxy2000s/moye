@@ -34,7 +34,7 @@ describe("Claude Print Agent adapter", () => {
       executable: "/usr/local/bin/claude",
       cwd: request.workspaceRoot,
       shell: false,
-      argv: ["-p", "--verbose", "--output-format", "stream-json", request.prompt],
+      argv: ["-p", "--verbose", "--output-format", "stream-json", "--permission-mode", "acceptEdits", request.prompt],
     });
     expect(invocation.env).toMatchObject({
       CLAUDE_CODE_ENABLE_TELEMETRY: "1",
