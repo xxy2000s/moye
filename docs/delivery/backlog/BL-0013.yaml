@@ -1,0 +1,26 @@
+schema_version: 1
+id: "BL-0013"
+title: "将 Agent Events 改为独立弹窗"
+kind: "feature"
+status: "converted_to_task"
+priority: "medium"
+
+source_refs:
+  - task-0011-manifest
+affected_areas:
+  - project-board
+  - agent-events
+  - user-experience
+
+acceptance_outline:
+  - "点击查看 Agent Events 时打开独立弹窗，不再挤占任务详情正文"
+  - "事件弹窗保留完整事件、分类筛选、原始 JSON、cursor 加载与下载能力"
+  - "关闭事件弹窗后返回原任务详情，键盘 Escape 与焦点行为可用"
+  - "桌面和窄屏均可独立滚动，任务详情与事件流不会形成嵌套滚动混乱"
+  - "自动化与真实浏览器验收通过"
+
+resolution:
+  task_refs:
+    - TASK-0012
+  duplicate_of:
+  reason: "用户验收真实事件流后要求将 Viewer 从详情内联区拆为独立弹窗"

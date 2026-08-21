@@ -25,6 +25,7 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 | [BL-0010](./BL-0010.yaml) | Converted | 实现轻量 Agent Runtime Trace 与 Phoenix Demo | TASK-0009 |
 | [BL-0011](./BL-0011.yaml) | Converted | 在 Moye 看板内联查看 Agent Events | TASK-0010 |
 | [BL-0012](./BL-0012.yaml) | Converted | 接入真实 Agent 完整事件流与交互看板 | TASK-0011 |
+| [BL-0013](./BL-0013.yaml) | Converted | 将 Agent Events 改为独立弹窗 | TASK-0012 |
 
 ## 本轮调度结果
 

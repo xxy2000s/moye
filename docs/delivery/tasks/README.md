@@ -23,7 +23,7 @@ tasks/
 
 | Task | 状态 | 目标 |
 |---|---|---|
-| — | — | 当前无 Active Task |
+| [TASK-0012](./TASK-0012/task.yaml) | Executing | 将 Agent Events 改为独立弹窗 |
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 

@@ -1,0 +1,66 @@
+schema_version: 1
+task_id: TASK-0012
+graph_revision: 30
+intents: [coding-task-poc, docs-change]
+changed_paths:
+  - README.md
+  - docs/delivery/backlog/BL-0013.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/tasks/TASK-0012/task.yaml
+  - docs/delivery/tasks/TASK-0012/spec.md
+  - docs/delivery/tasks/TASK-0012/design.md
+  - docs/delivery/tasks/TASK-0012/plan.md
+  - docs/delivery/tasks/TASK-0012/verification.md
+  - docs/delivery/tasks/TASK-0012/docs-impact.yaml
+  - docs/delivery/tasks/README.md
+  - docs/graph.yaml
+  - docs/knowledge/current/codemap/README.md
+  - public/app.js
+  - public/styles.css
+  - tests/e2e/demo.test.ts
+docs:
+  read:
+    - agent-contract
+    - root-readme
+    - docs-index
+    - codemap
+    - document-control-plane
+    - overnight-multi-task-goal
+    - finding-backlog-docs-not-projected
+    - bl-0008-backlog-projection-sync
+    - bl-0002-single-agent-coding-loop
+    - task-runtime-kernel
+    - restate-poc-architecture
+    - durable-runtime-pitfalls
+    - meta-index
+    - adr-0002-doc-lifecycle-roles
+    - bl-0013-agent-events-dialog
+    - backlog-index
+    - sources-index
+    - task-0012-manifest
+    - task-0012-spec
+    - task-0012-design
+    - task-0012-plan
+    - task-0012-verification
+    - task-0012-docs-impact
+    - tasks-index
+  reviewed:
+    local-restate-poc-runbook: { outcome: unchanged, reason: "启动、排障和真实 Agent Demo 命令均不改变" }
+    architecture-overview: { outcome: unchanged, reason: "只调整现有只读 Viewer 的呈现层，不改变系统边界或数据流" }
+    moye-task-control-skill: { outcome: unchanged, reason: "现有 Task 与文档关闭流程完整适用" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "不改变 Restate 选型或 durable workflow 行为" }
+    tasks-index: { outcome: updated, reason: "登记 TASK-0012 为 Active Task" }
+    task-spec-document-closure-brainstorm: { outcome: unchanged, reason: "沿用既有 Task/Spec/文档闭环边界" }
+    task-0002-manifest: { outcome: unchanged, reason: "不改变历史 Backlog 同步任务事实" }
+    task-0003-manifest: { outcome: unchanged, reason: "不改变历史编码任务协议" }
+    task-0004-manifest: { outcome: unchanged, reason: "不改变历史 Worktree/Git Effect" }
+    task-0005-manifest: { outcome: unchanged, reason: "不改变历史 AgentRunner 边界" }
+    task-0006-manifest: { outcome: unchanged, reason: "不改变历史 Coding Workflow" }
+    task-0007-manifest: { outcome: unchanged, reason: "只调整 Trace Viewer 呈现，不改写历史任务事实" }
+    task-0008-manifest: { outcome: unchanged, reason: "延续中文 Coding Demo，不改写历史任务事实" }
+    task-0009-manifest: { outcome: unchanged, reason: "不改变 Trace/OTLP 诊断边界" }
+    task-0001-manifest: { outcome: unchanged, reason: "不改变基础 Task/Archive 生命周期" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "继续使用现有 TypeScript 与原生浏览器 JavaScript" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "不改变 OTLP、Phoenix 或 Agent Artifact 决策" }
+    codemap: { outcome: updated, reason: "记录 Agent Events Viewer 采用独立 Dialog 呈现" }
+    task-0011-manifest: { outcome: unchanged, reason: "TASK-0012 细化其 Viewer 呈现，但不改写已归档任务事实" }
