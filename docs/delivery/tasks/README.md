@@ -23,7 +23,7 @@ tasks/
 
 | Task | 状态 | 目标 |
 |---|---|---|
-| — | — | 当前没有 Active Task |
+| [TASK-0009](./TASK-0009/spec.md) | Received / Executing by Goal Bootstrap | 轻量 Agent Runtime Trace 与 Phoenix Demo |
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 

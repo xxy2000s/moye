@@ -22,6 +22,7 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 | [BL-0007](./BL-0007.yaml) | Triaged | 实现经验候选、知识提升与效果反馈闭环 | — |
 | [BL-0008](./BL-0008.yaml) | Converted | 将 Backlog 文档幂等同步到项目看板 | TASK-0002 |
 | [BL-0009](./BL-0009.yaml) | Converted | 让一键 Demo 展示可理解的编码任务与 Agent 流转 | TASK-0008 |
+| [BL-0010](./BL-0010.yaml) | Converted | 实现轻量 Agent Runtime Trace 与 Phoenix Demo | TASK-0009 |
 
 ## 本轮调度结果
 

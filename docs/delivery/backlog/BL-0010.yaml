@@ -1,0 +1,28 @@
+schema_version: 1
+id: "BL-0010"
+title: "实现轻量 Agent Runtime Trace 与 Phoenix Demo"
+kind: "feature"
+status: "converted_to_task"
+priority: "high"
+
+source_refs:
+  - bl-0006-production-observability
+affected_areas:
+  - observability
+  - agent-runner
+  - tracing
+  - project-board
+  - developer-experience
+
+acceptance_outline:
+  - "Moye Core 只依赖稳定 TraceSink/OTLP 契约，未配置观测后端时保持零额外服务"
+  - "可选 Phoenix 本地服务接收 Moye Task/Attempt/Agent Trace，并能由 task_id 与 trace_id 关联"
+  - "Codex JSONL 与 Claude stream-json 原始事件按 Attempt 保存，Claude 原生 Telemetry 通过子进程环境注入而不修改全局 settings"
+  - "Task 详情提供 Trace、Agent Events 和可选 Raw Model IO 的诊断入口，同时保持 Workflow/Event 为业务权威"
+  - "单元测试、OTLP 集成测试、真实 Restate Coding E2E 与浏览器验收覆盖成功和失败 Trace"
+
+resolution:
+  task_refs:
+    - TASK-0009
+  duplicate_of:
+  reason: "从 BL-0006 拆出的可独立验收 Demo；生产指标、告警和长期存储仍保留在 BL-0006"

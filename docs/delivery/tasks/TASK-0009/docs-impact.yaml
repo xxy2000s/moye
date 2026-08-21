@@ -1,0 +1,68 @@
+schema_version: 1
+task_id: TASK-0009
+graph_revision: 23
+intents: [task-create, coding-task-poc, observability-selection, docs-change]
+changed_paths:
+  - docs/delivery/backlog/BL-0010.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/tasks/README.md
+  - docs/delivery/tasks/TASK-0009/task.yaml
+  - docs/delivery/tasks/TASK-0009/spec.md
+  - docs/delivery/tasks/TASK-0009/design.md
+  - docs/delivery/tasks/TASK-0009/plan.md
+  - docs/delivery/tasks/TASK-0009/verification.md
+  - docs/delivery/tasks/TASK-0009/docs-impact.yaml
+  - docs/graph.yaml
+  - src/trace
+  - src/agent
+  - src/board
+  - public
+  - scripts
+  - tests/unit
+  - tests/e2e
+  - compose.yaml
+  - README.md
+docs:
+  read:
+    - agent-contract
+    - root-readme
+    - docs-index
+    - codemap
+    - document-control-plane
+    - backlog-index
+    - tasks-index
+    - task-runtime-kernel
+    - overnight-multi-task-goal
+    - finding-backlog-docs-not-projected
+    - bl-0008-backlog-projection-sync
+    - bl-0002-single-agent-coding-loop
+    - restate-poc-architecture
+    - durable-runtime-pitfalls
+    - meta-index
+    - adr-0002-doc-lifecycle-roles
+    - bl-0010-agent-runtime-trace-demo
+    - sources-index
+    - task-0009-manifest
+    - task-0009-spec
+    - task-0009-design
+    - task-0009-plan
+    - task-0009-verification
+    - task-0009-docs-impact
+  reviewed:
+    moye-task-control-skill: { outcome: unchanged, reason: "现有 Skill 已覆盖 Router、Docs Impact、Runtime Closure 与 Archive，无需改变控制流程" }
+    architecture-overview: { outcome: updated, reason: "待实现后登记轻量 OTLP/Phoenix 与 Evidence Plane 的实际边界" }
+    codemap: { outcome: updated, reason: "待实现后登记 TraceSink、Claude Adapter、Artifact API 与测试入口" }
+    local-restate-poc-runbook: { outcome: updated, reason: "待实现后登记 Phoenix、隐私开关与验收操作" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "可观测输出不改变 Restate 作为首轮 durable runtime 的既有决策" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "沿用 Source/Backlog/Task/Knowledge 生命周期，不改变目录角色" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "实现继续使用既有 TypeScript 技术栈" }
+    task-spec-document-closure-brainstorm: { outcome: unchanged, reason: "本次实现沿用已收敛的 Task、Spec 与文档控制边界" }
+    bl-0006-production-observability: { outcome: unchanged, reason: "保留生产级指标、告警和长期存储范围，仅通过 BL-0010 拆出轻量 Demo" }
+    task-0002-manifest: { outcome: unchanged, reason: "复用既有 Backlog 到 Task 的自举与关闭事实，不改变同步协议" }
+    task-0001-manifest: { outcome: not_applicable, reason: "不改写历史 Task 事实" }
+    task-0003-manifest: { outcome: unchanged, reason: "复用既有 Task/Step/Attempt 标识协议" }
+    task-0004-manifest: { outcome: unchanged, reason: "不改变 Worktree 与 Git Effect 语义" }
+    task-0005-manifest: { outcome: updated, reason: "扩展既有 AgentRunner 以支持 Claude 与 Telemetry 环境注入" }
+    task-0006-manifest: { outcome: unchanged, reason: "在既有 Coding Workflow 之外增加非权威观测输出，不改变关闭或 Merge 语义" }
+    task-0007-manifest: { outcome: updated, reason: "在既有三层 Trace 查询中加入标准 OTLP 与 Artifact 入口" }
+    task-0008-manifest: { outcome: updated, reason: "在既有中文 Coding Demo 上增加可选 Phoenix 验收入口" }
