@@ -31,6 +31,7 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 | [BL-0016](./BL-0016.yaml) | Ready | 实现 Self Review、ReviewResult 与 Finding 生命周期 | — |
 | [BL-0017](./BL-0017.yaml) | Ready | 将最终 Docs Impact 与 Knowledge Sync 接入 Core Workflow | — |
 | [BL-0018](./BL-0018.yaml) | Ready | 实现统一 Core Closure Gate 与故障收敛矩阵 | — |
+| [BL-0019](./BL-0019.yaml) | Triaged | 修复 CLI close 未附着既有 TaskWorkflow | — |
 
 ## 本轮调度结果
 

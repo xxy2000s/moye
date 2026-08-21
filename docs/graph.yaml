@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 33
+graph_revision: 34
 updated_at: "2026-08-22"
 
 entrypoints:
@@ -272,6 +272,14 @@ documents:
     authority: finding
     read_when: [finding-intake, task-create, coding-task-poc]
 
+  - id: finding-cli-close-does-not-attach
+    path: docs/sources/findings/cli-close-does-not-attach.md
+    type: finding
+    status: confirmed
+    scope: task-cli-closure
+    authority: finding
+    read_when: [finding-intake, task-create, task-closure-change]
+
   - id: references-index
     path: docs/sources/references/README.md
     type: index
@@ -456,50 +464,58 @@ documents:
     authority: backlog
     read_when: [task-create, task-runtime-change, workflow-change]
 
+  - id: bl-0019-cli-close-attach
+    path: docs/delivery/backlog/BL-0019.yaml
+    type: backlog
+    status: triaged
+    scope: task-cli-closure
+    authority: backlog
+    read_when: [task-create, task-closure-change]
+
   - id: task-0013-manifest
-    path: docs/delivery/tasks/TASK-0013/task.yaml
+    path: docs/delivery/tasks/archive/2026-08-22-TASK-0013/task.yaml
     type: task-manifest
-    status: active
+    status: archived
     scope: core-control-kernel
     authority: task-artifact
     read_when: [task-runtime-change, workflow-change, task-execution, task-close]
 
   - id: task-0013-spec
-    path: docs/delivery/tasks/TASK-0013/spec.md
+    path: docs/delivery/tasks/archive/2026-08-22-TASK-0013/spec.md
     type: task-spec
-    status: active
+    status: archived
     scope: core-control-kernel
     authority: task-artifact
     read_when: [task-runtime-change, workflow-change, task-execution, task-close]
 
   - id: task-0013-design
-    path: docs/delivery/tasks/TASK-0013/design.md
+    path: docs/delivery/tasks/archive/2026-08-22-TASK-0013/design.md
     type: task-design
-    status: active
+    status: archived
     scope: core-control-kernel
     authority: task-artifact
     read_when: [task-runtime-change, workflow-change, task-execution]
 
   - id: task-0013-plan
-    path: docs/delivery/tasks/TASK-0013/plan.md
+    path: docs/delivery/tasks/archive/2026-08-22-TASK-0013/plan.md
     type: task-plan
-    status: active
+    status: archived
     scope: core-control-kernel
     authority: task-artifact
     read_when: [task-execution]
 
   - id: task-0013-verification
-    path: docs/delivery/tasks/TASK-0013/verification.md
+    path: docs/delivery/tasks/archive/2026-08-22-TASK-0013/verification.md
     type: verification
-    status: active
+    status: archived
     scope: core-control-kernel
     authority: task-evidence
     read_when: [task-close, task-archive]
 
   - id: task-0013-docs-impact
-    path: docs/delivery/tasks/TASK-0013/docs-impact.yaml
+    path: docs/delivery/tasks/archive/2026-08-22-TASK-0013/docs-impact.yaml
     type: docs-impact
-    status: active
+    status: archived
     scope: core-control-kernel
     authority: task-evidence
     read_when: [task-close, task-archive]
@@ -1353,6 +1369,14 @@ relations:
     to: finding-backlog-docs-not-projected
     type: indexes
 
+  - from: findings-index
+    to: finding-cli-close-does-not-attach
+    type: indexes
+
+  - from: finding-cli-close-does-not-attach
+    to: bl-0019-cli-close-attach
+    type: creates_backlog
+
   - from: brainstorm-index
     to: backlog-index
     type: feeds
@@ -1469,6 +1493,10 @@ relations:
     to: bl-0018-core-closure-faults
     type: indexes
 
+  - from: backlog-index
+    to: bl-0019-cli-close-attach
+    type: indexes
+
   - from: multi-agent-core-closure-requirements
     to: bl-0014-core-control-kernel
     type: creates_backlog
@@ -1493,7 +1521,7 @@ relations:
     to: task-0013-manifest
     type: schedules_into
 
-  - from: tasks-index
+  - from: archived-tasks-index
     to: task-0013-manifest
     type: indexes
 

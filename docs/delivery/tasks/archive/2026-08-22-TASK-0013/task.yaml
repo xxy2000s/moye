@@ -1,0 +1,26 @@
+schema_version: 1
+id: TASK-0013
+title: 实现 Core ControlDecision 与确定性控制内核
+status: closed
+outcome: succeeded
+backlog_refs:
+  - BL-0014
+spec_revision: 1
+workflow_id: task/TASK-0013
+execution_mode: goal-bootstrap
+base_commit: d784286a5114919cf56429925c81d2dad4adb801
+archive:
+  status: pending
+  archived_at: null
+  archived_path: null
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: task-artifact://TASK-0013/verification.md
+  implementation_commit: 1fd8454a2add8e96e9d1ce080046167773270f2d
+execution_evidence:
+  executor_id: codex:/root
+  result_commit: 1fd8454a2add8e96e9d1ce080046167773270f2d
+  verification_refs:
+    - task-artifact://TASK-0013/verification.md
+  docs_impact_ref: task-artifact://TASK-0013/docs-impact.yaml

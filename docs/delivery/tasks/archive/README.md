@@ -26,5 +26,6 @@ YYYY-MM-DD-TASK-NNNN
 | [TASK-0010](./2026-08-21-TASK-0010/spec.md) | Succeeded | 2026-08-21 | Moye 看板内联 Agent Events Viewer |
 | [TASK-0011](./2026-08-21-TASK-0011/spec.md) | Succeeded | 2026-08-21 | 真实 Agent 完整事件流与交互看板 |
 | [TASK-0012](./2026-08-21-TASK-0012/spec.md) | Succeeded | 2026-08-21 | Agent Events 独立弹窗 |
+| [TASK-0013](./2026-08-22-TASK-0013/spec.md) | Succeeded | 2026-08-22 | Core ControlDecision 与确定性控制内核 |
 
 Bootstrap Task 的 `task.yaml` 冻结在 Archive 开始前，因此其中 `archive.status: pending` 描述的是冻结点；最终 `ARCHIVED` 事实由目录位置、`archive-manifest.json` 和 ProjectBoard Projection 共同证明。TASK-0002 归档后文档图门禁曾发现 Spec 的 Active 相对链接因目录层级变化而失效，控制面只修正了该链接；修正前内容仍由 Result Commit `ff1954f4e4360e85276cf22aa30d6f5e8e396f84` 保存。后续 Task 使用不随 Active/Archive 深度变化的稳定引用。

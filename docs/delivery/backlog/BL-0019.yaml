@@ -1,0 +1,26 @@
+schema_version: 1
+id: "BL-0019"
+title: "修复 CLI close 未附着既有 TaskWorkflow"
+kind: "bug"
+status: "triaged"
+priority: "high"
+
+source_refs:
+  - finding-cli-close-does-not-attach
+affected_areas:
+  - cli
+  - task-runtime
+  - restate
+  - task-closure
+
+acceptance_outline:
+  - "create 后 close 能附着同一 keyed Workflow 并等待业务终态，不返回重复 run 的 409"
+  - "close 对运行中和已完成 Workflow 返回同一权威 Projection，不创建第二个生命周期"
+  - "尚未提交的 Task 使用 close 时有明确、可测试的语义，不通过吞掉未知 409 实现"
+  - "自动化覆盖 create→close、close 重放、失败终态和 Archive 失败仍保持 Core/Task Outcome 的情况"
+  - "CLI 帮助、Skill 和 Runbook 与实际 attach 行为一致"
+
+resolution:
+  task_refs: []
+  duplicate_of:
+  reason: "TASK-0013 标准 Runtime Closure 中真实复现并去重后登记"
