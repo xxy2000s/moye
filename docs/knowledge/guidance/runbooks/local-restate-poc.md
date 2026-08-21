@@ -30,7 +30,7 @@ Demo 使用隔离 Git Fixture 和确定性 Fake Agent，不修改 Moye 仓库。
 npm run demo:trace
 ```
 
-首次运行会拉取 Phoenix 镜像。命令启动可选 Phoenix Profile 后再启动同一个 Demo；终端会同时打印动态 Moye Board URL、动态 Restate URL 和固定的 Phoenix URL `http://127.0.0.1:6006`。在 Moye 已归档 Task 中复制 Trace ID，再打开 Phoenix 查询；Agent Events 从同一详情页打开。检查后停止前台 Demo，并运行：
+首次运行会拉取 Phoenix 镜像。命令启动可选 Phoenix Profile 后再启动同一个 Demo；终端会同时打印动态 Moye Board URL、动态 Restate URL 和固定的 Phoenix URL `http://127.0.0.1:6006`。在 Moye 已归档 Task 中复制 Trace ID，再打开 Phoenix 查询；点击 `查看 Agent Events` 后，JSONL 事件直接在同一 Task 详情内展开，不会默认下载。需要保存证据文件时再点击 `下载原始 JSONL`。检查后停止前台 Demo，并运行：
 
 ```bash
 npm run trace:status
@@ -112,7 +112,7 @@ curl http://127.0.0.1:3000/api/tasks/TASK-EXAMPLE/trace
 
 响应中的 `business` 才是业务状态事实；`durableRuntime.workflowRef` 用于定位 Journal，`durableRuntime.invocationsUrl` 是按 Workflow 服务和 Task key 过滤的 Restate 深链；`technical.artifacts` 只提供日志和证据引用。`recovery` 是从 Projection 派生的只读建议，不是新的控制命令。
 
-`observability.enabled` 只表示当前 Moye 进程已配置 OTLP，不代表 Task 状态成功，也不替代后端健康检查。`observability.traceId` 是稳定查询键；Agent Events 下载还需要 Task 声明的 Artifact Root 位于 `MOYE_ARTIFACT_ROOTS` 内。
+`observability.enabled` 只表示当前 Moye 进程已配置 OTLP，不代表 Task 状态成功，也不替代后端健康检查。`observability.traceId` 是稳定查询键；Agent Events 内联查看与原始下载使用同一个受控 API，仍要求 Task 声明的 Artifact Root 位于 `MOYE_ARTIFACT_ROOTS` 内，并通过投影白名单、大小和摘要校验。
 
 打开 `http://127.0.0.1:3000` 查看 Moye Board。普通使用只需要 Moye；需要确认 Invocation、Journal 或 Replay 时，再从任务的“高级诊断”进入 `http://127.0.0.1:9070` Restate UI。二者通过 `task_id` 关联，但 Restate UI 不是项目任务看板。
 

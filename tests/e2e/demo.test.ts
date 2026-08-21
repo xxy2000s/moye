@@ -71,6 +71,9 @@ describe("npm run demo", () => {
     expect(html).toContain("任务控制面 · Coding Demo");
     expect(app).toContain("七个阶段，一眼看清做到哪里");
     expect(app).toContain("查看 Agent Events");
+    expect(app).toContain("data-agent-events-viewer");
+    expect(app).toContain("下载原始 JSONL");
+    expect(app).not.toContain("查看 Agent Events ↗");
     expect(app).toContain("打开 Trace（Phoenix）");
     await expect(stat(path.join(demoRoot, "coding-fixtures", taskId, "worktrees", taskId))).rejects.toMatchObject({ code: "ENOENT" });
   }, 10_000);

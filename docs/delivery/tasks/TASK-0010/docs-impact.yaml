@@ -1,7 +1,7 @@
 schema_version: 1
 task_id: TASK-0010
 graph_revision: 26
-intents: [task-create, coding-task-poc, docs-change]
+intents: [task-create, task-close, coding-task-poc, docs-change]
 changed_paths:
   - docs/delivery/backlog/BL-0011.yaml
   - docs/delivery/backlog/README.md
@@ -14,6 +14,7 @@ changed_paths:
   - README.md
   - docs/knowledge/current/codemap/README.md
   - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - docs/knowledge/current/architecture/poc-01-restate.md
 docs:
   read:
     - agent-contract
@@ -36,9 +37,14 @@ docs:
     - bl-0011-inline-agent-events-viewer
     - local-restate-poc-runbook
     - runbooks-index
+    - architecture-index
+    - task-0010-verification
+    - task-0010-docs-impact
+    - task-0010-plan
   reviewed:
     moye-task-control-skill: { outcome: unchanged, reason: "现有 Skill 已覆盖本次 Task 的 Router、验证、关闭与归档流程" }
     architecture-overview: { outcome: unchanged, reason: "站内 Artifact 呈现方式变化，不改变 Harness、状态权威或证据面边界" }
+    restate-poc-architecture: { outcome: updated, reason: "已同步 Agent Events 从显式下载到站内限量解析展示的当前实现" }
     codemap: { outcome: updated, reason: "需要登记 Board 内联 Agent Events Viewer 的代码职责" }
     local-restate-poc-runbook: { outcome: updated, reason: "用户操作从默认下载改为任务详情内联查看，需要同步体验步骤" }
     adr-0001-restate-poc: { outcome: unchanged, reason: "不改变 Restate durable runtime 决策" }
@@ -55,3 +61,4 @@ docs:
     task-0007-manifest: { outcome: unchanged, reason: "不改变三层 Trace 的状态与恢复语义" }
     task-0008-manifest: { outcome: updated, reason: "中文 Coding Demo 的 Task 详情增加 Agent Events 内联交互" }
     task-0009-manifest: { outcome: updated, reason: "TASK-0009 提供的 Agent Events 下载入口被扩展为默认内联查看" }
+    tasks-index: { outcome: updated, reason: "TASK-0010 已登记为 Active Task，Runtime 关闭后将由 Archive 更新为归档入口" }

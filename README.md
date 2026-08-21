@@ -40,7 +40,7 @@ npm run demo
 npm run demo:trace
 ```
 
-该命令通过可选 Compose Profile 启动本地 Phoenix，再运行同一个隔离 Demo。Moye Board 会展示稳定 Trace ID、Phoenix 入口和经过摘要校验的 Agent Events。Phoenix 只负责技术诊断，默认 `npm run demo` 不启动它；停止 Trace 后端使用 `npm run trace:down`。
+该命令通过可选 Compose Profile 启动本地 Phoenix，再运行同一个隔离 Demo。Moye Board 会展示稳定 Trace ID、Phoenix 入口和经过摘要校验的 Agent Events；点击 `查看 Agent Events` 会直接在当前 Task 详情中展开事件，只有点击 `下载原始 JSONL` 才会下载文件。Phoenix 只负责技术诊断，默认 `npm run demo` 不启动它；停止 Trace 后端使用 `npm run trace:down`。
 
 ### 验证实现
 
@@ -65,7 +65,8 @@ Coding Task 出现在看板后，点击卡片默认先看到：
 
 1. 任务结论与 Task → Workflow → Agent Session → Git Commit 关联链；
 2. 需求与上下文、隔离工作区、Agent 编码、自动验证、合入分支、文档检查、归档七个阶段；
-3. 每个阶段展开后的 Attempt 和 Evidence。
+3. 每个阶段展开后的 Attempt 和 Evidence；
+4. `查看 Agent Events` 在同一详情页内展示 Agent CLI 交互事件和可展开的原始 JSON。
 
 Restate Journal、恢复建议、技术 Artifact 与原始事件收在“高级诊断”中。进入 Restate 的链接已经按 `CodingTaskWorkflow + task_id` 过滤；Restate 负责执行排障，Moye Board 才是任务业务视图。
 
