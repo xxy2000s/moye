@@ -1,0 +1,26 @@
+schema_version: 1
+id: "BL-0018"
+title: "实现统一 Core Closure Gate 与故障收敛矩阵"
+kind: "feature"
+status: "ready"
+priority: "high"
+
+source_refs:
+  - multi-agent-core-closure-requirements
+affected_areas:
+  - core-closure
+  - task-runtime
+  - restate
+  - fault-injection
+
+acceptance_outline:
+  - "SUCCEEDED、FAILED_TERMINAL 与 CANCELLED 通过同一 Gate 生成唯一不可变 CoreClosureResult"
+  - "关闭前 Required Attempt、未知副作用、Blocking Finding、Docs Impact 与预算均有明确结论"
+  - "重复 Close 返回同一 Closure Digest，外围 Merge、Archive 或 Board 失败不改写 Core Outcome"
+  - "真实 Restate 故障矩阵覆盖成功、Repair、Replan、UNKNOWN、预算耗尽、取消、Worker 重启和回执丢失"
+  - "从 task_id 可关联 Decision、Attempt、Session、Artifact、Finding、Verification、Docs Impact 与 Closure"
+
+resolution:
+  task_refs: []
+  duplicate_of:
+  reason: "等待前五个 Slice 后调度最终 Closure 与故障矩阵"

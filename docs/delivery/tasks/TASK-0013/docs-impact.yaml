@@ -1,0 +1,82 @@
+schema_version: 1
+task_id: TASK-0013
+graph_revision: 33
+intents: [requirement-discovery, source-intake, backlog-triage, task-create, task-runtime-change, docs-change]
+changed_paths:
+  - docs/delivery/backlog/BL-0003.yaml
+  - docs/delivery/backlog/BL-0006.yaml
+  - docs/delivery/backlog/BL-0007.yaml
+  - docs/delivery/backlog/BL-0014.yaml
+  - docs/delivery/backlog/BL-0015.yaml
+  - docs/delivery/backlog/BL-0016.yaml
+  - docs/delivery/backlog/BL-0017.yaml
+  - docs/delivery/backlog/BL-0018.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/tasks/TASK-0013/task.yaml
+  - docs/delivery/tasks/TASK-0013/spec.md
+  - docs/delivery/tasks/TASK-0013/design.md
+  - docs/delivery/tasks/TASK-0013/plan.md
+  - docs/delivery/tasks/TASK-0013/verification.md
+  - docs/delivery/tasks/TASK-0013/docs-impact.yaml
+  - docs/delivery/tasks/README.md
+  - docs/graph.yaml
+  - docs/sources/brainstorm/multi-agent-core-closure-requirements.md
+  - docs/knowledge/current/architecture/overview.md
+  - docs/knowledge/current/architecture/task-runtime-kernel.md
+  - docs/knowledge/current/codemap/README.md
+  - src/domain/core-control.ts
+  - tests/unit/core-control.test.ts
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - sources-index
+    - backlog-index
+    - tasks-index
+    - task-runtime-kernel
+    - durable-runtime-pitfalls
+    - meta-index
+    - adr-0002-doc-lifecycle-roles
+    - bl-0003-repair-replan-budget
+    - bl-0006-production-observability
+    - bl-0007-knowledge-feedback-loop
+    - bl-0014-core-control-kernel
+    - bl-0015-role-attempt-protocol
+    - bl-0016-review-finding
+    - bl-0017-core-docs-impact
+    - bl-0018-core-closure-faults
+    - task-0013-manifest
+    - task-0013-spec
+    - task-0013-design
+    - task-0013-plan
+    - task-0013-verification
+    - task-0013-docs-impact
+    - multi-agent-core-closure-requirements
+    - brainstorm-index
+    - architecture-overview
+    - architecture-index
+  reviewed:
+    research-index: { outcome: unchanged, reason: "本 Task 未引入外部资料、实验比较或新的选型证据" }
+    architecture-overview: { outcome: updated, reason: "Current slice 明确新增纯领域 Control Kernel，同时保留 Restate 与真实多 Role 尚未实现的边界" }
+    codemap: { outcome: updated, reason: "登记 core-control 模块、依赖方向、高风险和单测证据" }
+    task-runtime-kernel: { outcome: updated, reason: "新增 5.0.4，记录当前已实现 ControlDecision/Projection/Reducer 事实与后续边界" }
+    moye-task-control-skill: { outcome: unchanged, reason: "现有 Context Route、Docs Impact、Runtime Closure 与 Archive 流程完整适用" }
+    restate-poc-architecture: { outcome: unchanged, reason: "纯领域 Control Kernel 尚未注册 Restate Service，不改写现有 PoC 运行拓扑或已验证事实" }
+    task-spec-document-closure-brainstorm: { outcome: unchanged, reason: "母需求已经在其上进一步收敛；本 Task 不回写旧 Brainstorm 历史" }
+    multi-agent-core-closure-requirements: { outcome: updated, reason: "标记六个 Slice 已进入 Backlog、Slice 1 由 TASK-0013 部分消费" }
+    bl-0010-agent-runtime-trace-demo: { outcome: unchanged, reason: "不改变已完成的 Trace/Phoenix Demo 或 BL-0006 剩余生产范围" }
+    task-0001-manifest: { outcome: unchanged, reason: "不改写基础 Task/Archive 历史事实" }
+    task-0002-manifest: { outcome: unchanged, reason: "不改写 Backlog Sync 历史事实" }
+    task-0003-manifest: { outcome: unchanged, reason: "复用 TaskEnvelope，不改写协议 Task 的历史证据" }
+    task-0004-manifest: { outcome: unchanged, reason: "不改变 Worktree、Checkpoint 或 Git Effect" }
+    task-0005-manifest: { outcome: unchanged, reason: "本 Slice 不接入 Role Runner，不改写 AgentRunner 历史事实" }
+    task-0006-manifest: { outcome: unchanged, reason: "现有固定 Coding Workflow 保持不变" }
+    task-0007-manifest: { outcome: unchanged, reason: "现有 Trace 与恢复验收保持不变" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "继续遵循 Restate PoC 决策，但本 Slice 没有新增 Workflow 注册" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "Backlog、Active Task 和 Source 消费继续遵循既有目录决策" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "继续使用现有 TypeScript 技术基线，无新选型" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "不改变 TraceSink、OTLP 或 Phoenix 边界" }
+    local-restate-poc-runbook: { outcome: not_applicable, reason: "没有新增或改变 Runtime 启停、恢复或排障操作" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "实现遵守状态唯一写入、Attempt 不复活、隐藏上下文非状态与中央预算风险，无新稳定陷阱" }

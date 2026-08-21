@@ -1,0 +1,24 @@
+schema_version: 1
+id: "BL-0015"
+title: "统一 Docs、Implementation 与 Review Role Attempt 协议"
+kind: "feature"
+status: "ready"
+priority: "high"
+
+source_refs:
+  - multi-agent-core-closure-requirements
+affected_areas:
+  - agent-runtime
+  - task-runtime
+  - artifacts
+
+acceptance_outline:
+  - "三种 Role 共享稳定 Request、Run ID、Attempt Generation、Artifact Manifest 与 Result Digest"
+  - "不同 Role 固定各自输出 Schema，Implementation 同时形成 Checkpoint 与 Self Review"
+  - "任意时刻最多一个 Active Role Attempt，终态 Attempt 不得复活"
+  - "已确认 Role Run 在 Worker 恢复后复用 Artifact，不重复调用模型"
+
+resolution:
+  task_refs: []
+  duplicate_of:
+  reason: "等待 Control Kernel 完成后调度 Slice 2"

@@ -1,7 +1,7 @@
 # CodeMap
 
 > 状态：Current  
-> 更新日期：2026-08-21
+> 更新日期：2026-08-22
 
 本文件映射当前已经存在并通过测试的代码，不描述未来平台。
 
@@ -25,7 +25,7 @@ src/
 ├── backlog/           Git Backlog 文档加载、严格转换与批次摘要
 ├── coding/            八阶段单 Agent 编码 Workflow 编排与 Projection
 ├── demo/              隔离 Coding Demo Fixture 与安全清理
-├── domain/            纯领域状态、错误、Backlog 和 Board 分类
+├── domain/            纯领域状态、错误、Backlog、Board 与 Core ControlDecision Reducer
 ├── archive/           Manifest、Bootstrap 关闭材料、原子移动与 Reconcile
 ├── effects/           带稳定 operation ledger 的幂等副作用样例
 ├── git/               Worktree、Checkpoint 与本地 Git Effect 对账
@@ -66,6 +66,7 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 ```
 
 - `domain` 不依赖 Restate、HTTP 或浏览器；
+- `domain/core-control.ts` 从已验证 TaskEnvelope 创建内容寻址 Core Projection 和 ControlDecision；确定性 Orchestrator 只提出候选，Reducer 校验 Expected State/Version、Required Gate、单 Pending Role 与中央预算后才生成下一版 Projection；
 - `agent/runner.ts` 规范请求、运行中 JSONL Stream 与最终 Artifact；`codex-exec.ts` 和 `claude-print.ts` 只负责 argv-only Agent 子进程并把 stdout chunk 交给行边界写入器，不推进 Task 状态；Claude 原生 OTel/内容采集只注入当前子进程，默认关闭；
 - `backlog/document-sync.ts` 先验证全部 YAML，再形成单个 ProjectBoard 批次；
 - `archive/file-archive.ts` 只依赖领域输入和文件系统；自举关闭模块还调用本地 Git、Ruby 文档门禁和 Task Artifact Resolver；
@@ -85,6 +86,7 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 | `src/archive/bootstrap-closure.ts`、`task-artifacts.ts` | 自举证据与提交不一致、归档后引用失效 | `tests/unit/bootstrap-closure.test.ts` |
 | `src/backlog/document-sync.ts` | 坏条目部分写入、枚举漂移、无意义重复同步 | `tests/unit/backlog-sync.test.ts`、真实 Restate E2E |
 | `src/domain/coding-task.ts` | Spec 漂移后沿用旧证据、Attempt 被复活、Shell 命令边界丢失 | `tests/unit/coding-task.test.ts` |
+| `src/domain/core-control.ts` | 过期/重复 Decision 推进状态、跳过 Docs Gate、重复 Role 派发、预算绕过 | `tests/unit/core-control.test.ts` |
 | `src/git/workspace-effect.ts` | 路径/符号链接逃逸、Base 漂移、分支冲突、未知 Git 结果重复写 | `tests/unit/workspace-effect.test.ts` |
 | `src/coding/workflow.ts`、`src/verification/gate.ts`、`src/git/merge-effect.ts` | Gate 重放、Commit 漂移、Expected Base TOCTOU、状态越权、未知 Agent/Workspace/Merge 误判 | Coding unit + Worker restart/unknown Merge Restate E2E + Codex Fixture evidence |
 | `src/effects/counter.ts` | Step 确认前中断造成副作用重复 | `tests/unit/counter.test.ts`、E2E 计数断言 |

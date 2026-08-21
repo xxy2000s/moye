@@ -2,8 +2,8 @@
 
 > 文档类型：Detailed Design  
 > 状态：Draft  
-> 版本：v0.1  
-> 更新日期：2026-08-19  
+> 版本：v0.2
+> 更新日期：2026-08-22
 > 上位文档：[全自动研发闭环 Harness 架构设计](./overview.md)
 
 ## 1. 文档目的
@@ -133,6 +133,18 @@ Daemon 调度、角色 Agent、Worktree、Git、Gate 和知识沉淀都建立在
 ProjectBoard 接收 Coding 的状态和事件摘要；`src/trace/coding-trace.ts` 再从只读 Coding Projection 派生三层 Trace：业务 Event/Step/Attempt/Evidence 是任务事实，Restate Journal 是 durable execution/replay 事实，Agent/Verification/Git Artifact 是诊断证据。Workflow 把 Adapter 的 `code + category` 结构化保存到失败 Projection；任何 `UNKNOWN_SIDE_EFFECT`，无论发生在 Workspace、Agent、Verification 或 Merge，都只能派生等待/对账建议，不能建议并行新 Task。Trace 没有写入口，不能复活 Attempt 或形成第二套状态机。完整 Repair/Replan 操作仍属于后续切片。
 
 `TaskAuthority.get` 为查询层返回冻结的 owner 与 Spec Revision，Board 据此访问唯一主 Workflow，不扫描目录猜测类型。Git ref 更新完成后 Worker 退出的路径由相同 Merge Effect 重放：先读取 marker、双亲和 target ancestry，确认已应用后返回 `ALREADY_APPLIED`，再由 Workflow 确认 Step。
+
+### 5.0.4 当前已实现 Core Control Kernel 切片
+
+`src/domain/core-control.ts` 已实现多角色 Core Workflow 使用的纯领域控制内核，但尚未接入 Restate 主循环：
+
+- `CoreProjection` 固定 Task、Spec Revision、Envelope Digest、Projection Version、Control State、Stage、中央预算摘要、Applied Decision 和唯一 Pending Role Dispatch；
+- `ControlDecision` 固定 Expected State、Expected Projection Version、Action、Target Role、Finding/Evidence 引用、预算申请、原因和规范 SHA-256 Digest；
+- 确定性 Fake Orchestrator 只从已验证的 `TaskEnvelope + CoreProjection` 生成初始 Docs Role 候选，不读取聊天历史、Agent 内存或本地临时路径；
+- Reducer 是当前切片唯一合法转换入口。它先识别已确认的相同 Decision 重放，再校验 Task/Spec、状态、版本、预算、单 Pending Role 和 Required Gate，保证丢失确认后不会重复派发；
+- 初始阶段只允许 `SCHEDULE_ROLE/DOCS`。`RETRY`、`REPAIR`、`REPLAN`、Role 完成、Finding、Verification、Docs Impact 和 Closure 仍由后续切片实现，不能由当前 Projection 伪造。
+
+这个模块是未来 keyed `CoreClosureWorkflow/<task_id>` 的 Reducer，不拥有独立进程或第二套运行时状态。现有 `CodingTaskWorkflow` 在完整 Core Workflow 接入前继续保持当前行为。
 
 ### 5.1 模型关系
 

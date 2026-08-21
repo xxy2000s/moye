@@ -7,6 +7,7 @@ priority: "high"
 
 source_refs:
   - task-spec-document-closure-brainstorm
+  - multi-agent-core-closure-requirements
 affected_areas:
   - task-runtime
   - retry-policy
@@ -20,8 +21,9 @@ acceptance_outline:
   - "Task 维护统一的时间、Attempt、Repair、Replan、模型调用和成本预算"
   - "预算耗尽后进入明确终态或人工 Gate，不产生无限嵌套循环"
   - "故障测试覆盖实现失败、计划失败、重复投递和预算耗尽"
+  - "当前调度只覆盖单机、单 Task、单 Active Attempt；多 Daemon Lease/Fencing 继续由 BL-0004 承担"
 
 resolution:
   task_refs: []
   duplicate_of:
-  reason:
+  reason: "按多 Agent Core 母需求收窄为 Slice 4；不再依赖多 Daemon 调度"

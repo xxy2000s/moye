@@ -7,6 +7,7 @@ priority: "medium"
 
 source_refs:
   - durable-workflow-research
+  - multi-agent-core-closure-requirements
 affected_areas:
   - observability
   - tracing
@@ -20,8 +21,9 @@ acceptance_outline:
   - "看板展示耗时、重试、预算、阻塞原因、Daemon 和当前恢复动作"
   - "形成卡住、预算耗尽、未知副作用和重复故障的告警信号"
   - "支持从 Task 详情跳转到对应 Invocation、日志和证据 Artifact"
+  - "Core Slice 先交付只读 ObserverReport、成本/重试/异常摘要与告警候选；生产运营平台继续留在后续范围"
 
 resolution:
   task_refs: []
   duplicate_of:
-  reason:
+  reason: "多 Agent Core Slice 5 只消费 Observer 所需子集，其余生产可观测性不提前实现"

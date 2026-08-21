@@ -23,7 +23,7 @@ tasks/
 
 | Task | 状态 | 目标 |
 |---|---|---|
-| — | — | 当前无 Active Task |
+| [TASK-0013](./TASK-0013/task.yaml) | Executing | Core ControlDecision 与确定性控制内核 |
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 

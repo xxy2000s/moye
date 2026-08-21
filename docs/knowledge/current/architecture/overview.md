@@ -2,8 +2,8 @@
 
 > 文档类型：Architecture  
 > 状态：Draft  
-> 版本：v0.1  
-> 更新日期：2026-08-19
+> 版本：v0.2
+> 更新日期：2026-08-22
 
 ## 1. 背景
 
@@ -27,7 +27,9 @@
 
 ### 1.2 当前实现切片
 
-当前代码实现了总体架构中的本地单 Agent 垂直切片：Task/Archive Durable Workflow、冻结 TaskEnvelope、Step/Attempt/Evidence、隔离 Worktree、Fake/真实 Codex/Claude Adapter、运行中 Agent JSONL Stream、Verification、本地原子 Merge、查询投影、三层 Trace、CLI/Skill 和本地 Board。一键 Demo 可在隔离 Git Fixture 中选择 Fake、Codex 或 Claude，Board 把 Task、Workflow、Agent Session 与 Git Commit 聚合成中文七阶段业务旅程，并通过 cursor API 持续展示完整 CLI 事件；Restate UI 只作为高级运行时排障入口。Daemon 集群、多角色调度、远程 Git/PR、完整 Repair/Replan、生产可观测性与知识蒸馏仍是目标架构，不能从本 PoC 的目录推断为已实现。
+当前代码实现了总体架构中的本地单 Agent 垂直切片：Task/Archive Durable Workflow、冻结 TaskEnvelope、Step/Attempt/Evidence、隔离 Worktree、Fake/真实 Codex/Claude Adapter、运行中 Agent JSONL Stream、Verification、本地原子 Merge、查询投影、三层 Trace、CLI/Skill 和本地 Board。一键 Demo 可在隔离 Git Fixture 中选择 Fake、Codex 或 Claude，Board 把 Task、Workflow、Agent Session 与 Git Commit 聚合成中文七阶段业务旅程，并通过 cursor API 持续展示完整 CLI 事件；Restate UI 只作为高级运行时排障入口。
+
+多角色 Core 目前只新增了纯领域 Control Kernel：内容寻址的 `ControlDecision`、版本化 `CoreProjection`、确定性 Fake Orchestrator、单 Pending Role 和初始 Docs Gate 校验已经实现；它尚未接入 keyed Restate Core Workflow，也尚未运行 Docs、Implementation、Review、Observer 等角色。Daemon 集群、真实多角色调度、远程 Git/PR、完整 Repair/Replan、生产可观测性与知识蒸馏仍是目标架构，不能从纯领域协议推断为已实现。
 
 ## 2. 设计结论
 

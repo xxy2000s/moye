@@ -1,7 +1,7 @@
 # 多 Agent 研发 Core 闭环需求基线
 
 > 文档类型：Brainstorm / Requirement Baseline  
-> 状态：Draft / Ready for Backlog Split  
+> 状态：Draft / Partially Consumed
 > 基线日期：2026-08-22  
 > 目标范围：单机、单仓库、单 Task、多 Agent 角色、单 Active Attempt  
 > 当前实现基线：commit `fab7fae`
@@ -9,6 +9,8 @@
 > 目标消费方：Backlog、Active Task Spec、Task Runtime、Coding Workflow、Agent Runtime、Document Control Plane
 
 > 本文是当前讨论收敛后的母需求，但在进入 Backlog、Active Task、Architecture 或 ADR 前仍属于 `idea-input`，不能直接覆盖当前代码和 Architecture 事实。
+
+> 消费进度：六个 Slice 已进入 Backlog；Slice 1 由 [TASK-0013](../../delivery/tasks/TASK-0013/spec.md) 执行。其余 Slice 只登记 Backlog，尚未伪造 Active Task 或实现事实。
 
 ## 1. 需求结论
 

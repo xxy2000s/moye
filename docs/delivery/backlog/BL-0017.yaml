@@ -1,0 +1,24 @@
+schema_version: 1
+id: "BL-0017"
+title: "将最终 Docs Impact 与 Knowledge Sync 接入 Core Workflow"
+kind: "feature"
+status: "ready"
+priority: "high"
+
+source_refs:
+  - multi-agent-core-closure-requirements
+affected_areas:
+  - document-control
+  - task-runtime
+  - knowledge-lifecycle
+
+acceptance_outline:
+  - "TaskEnvelope 固定初始 Context Plan，实际 changed paths 扩张和最终结果触发重新 Route"
+  - "Docs Agent 对所有 Required Review 给出可验证 disposition 与理由"
+  - "Workflow 执行文档图谱校验和 Docs Impact Gate，失败时保持可恢复"
+  - "Finding、Observer 和失败证据只生成知识候选，不自动改写 Accepted ADR 或当前 Architecture"
+
+resolution:
+  task_refs: []
+  duplicate_of:
+  reason: "与 BL-0006、BL-0007 的 Core 范围在 Slice 5 一并调度"

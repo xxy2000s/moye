@@ -1,0 +1,26 @@
+schema_version: 1
+id: "BL-0014"
+title: "实现 Core ControlDecision 与确定性控制内核"
+kind: "feature"
+status: "converted_to_task"
+priority: "high"
+
+source_refs:
+  - multi-agent-core-closure-requirements
+affected_areas:
+  - task-runtime
+  - core-closure
+  - orchestrator
+
+acceptance_outline:
+  - "定义带 Expected State、Projection Version、Evidence 与稳定 Digest 的 ControlDecision"
+  - "Workflow 可用的纯领域 Reducer 拒绝过期、重复冲突、非法跳转和存在 Active Role 时的派发"
+  - "确定性 Orchestrator 只根据持久化 Projection 和 TaskEnvelope 生成可重建决策"
+  - "重放相同 Decision 不重复派发已经确认的 Role Work"
+  - "单元测试覆盖合法、过期、重复、非法和 Orchestrator 重启场景"
+
+resolution:
+  task_refs:
+    - TASK-0013
+  duplicate_of:
+  reason: "由多 Agent Core 母需求 Slice 1 调度为首个 Control Kernel Task"

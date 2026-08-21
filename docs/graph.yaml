@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 32
+graph_revision: 33
 updated_at: "2026-08-22"
 
 entrypoints:
@@ -415,6 +415,94 @@ documents:
     scope: agent-events-dialog
     authority: backlog
     read_when: [task-create, coding-task-poc]
+
+  - id: bl-0014-core-control-kernel
+    path: docs/delivery/backlog/BL-0014.yaml
+    type: backlog
+    status: converted_to_task
+    scope: core-control-kernel
+    authority: backlog
+    read_when: [task-create, task-runtime-change, workflow-change]
+
+  - id: bl-0015-role-attempt-protocol
+    path: docs/delivery/backlog/BL-0015.yaml
+    type: backlog
+    status: ready
+    scope: core-role-attempt
+    authority: backlog
+    read_when: [task-create, task-runtime-change, workflow-change]
+
+  - id: bl-0016-review-finding
+    path: docs/delivery/backlog/BL-0016.yaml
+    type: backlog
+    status: ready
+    scope: core-review-finding
+    authority: backlog
+    read_when: [task-create, task-runtime-change, workflow-change]
+
+  - id: bl-0017-core-docs-impact
+    path: docs/delivery/backlog/BL-0017.yaml
+    type: backlog
+    status: ready
+    scope: core-docs-impact
+    authority: backlog
+    read_when: [task-create, docs-change, workflow-change]
+
+  - id: bl-0018-core-closure-faults
+    path: docs/delivery/backlog/BL-0018.yaml
+    type: backlog
+    status: ready
+    scope: core-closure-fault-matrix
+    authority: backlog
+    read_when: [task-create, task-runtime-change, workflow-change]
+
+  - id: task-0013-manifest
+    path: docs/delivery/tasks/TASK-0013/task.yaml
+    type: task-manifest
+    status: active
+    scope: core-control-kernel
+    authority: task-artifact
+    read_when: [task-runtime-change, workflow-change, task-execution, task-close]
+
+  - id: task-0013-spec
+    path: docs/delivery/tasks/TASK-0013/spec.md
+    type: task-spec
+    status: active
+    scope: core-control-kernel
+    authority: task-artifact
+    read_when: [task-runtime-change, workflow-change, task-execution, task-close]
+
+  - id: task-0013-design
+    path: docs/delivery/tasks/TASK-0013/design.md
+    type: task-design
+    status: active
+    scope: core-control-kernel
+    authority: task-artifact
+    read_when: [task-runtime-change, workflow-change, task-execution]
+
+  - id: task-0013-plan
+    path: docs/delivery/tasks/TASK-0013/plan.md
+    type: task-plan
+    status: active
+    scope: core-control-kernel
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0013-verification
+    path: docs/delivery/tasks/TASK-0013/verification.md
+    type: verification
+    status: active
+    scope: core-control-kernel
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0013-docs-impact
+    path: docs/delivery/tasks/TASK-0013/docs-impact.yaml
+    type: docs-impact
+    status: active
+    scope: core-control-kernel
+    authority: task-evidence
+    read_when: [task-close, task-archive]
 
   - id: task-0012-manifest
     path: docs/delivery/tasks/archive/2026-08-21-TASK-0012/task.yaml
@@ -1360,6 +1448,82 @@ relations:
   - from: backlog-index
     to: bl-0013-agent-events-dialog
     type: indexes
+
+  - from: backlog-index
+    to: bl-0014-core-control-kernel
+    type: indexes
+
+  - from: backlog-index
+    to: bl-0015-role-attempt-protocol
+    type: indexes
+
+  - from: backlog-index
+    to: bl-0016-review-finding
+    type: indexes
+
+  - from: backlog-index
+    to: bl-0017-core-docs-impact
+    type: indexes
+
+  - from: backlog-index
+    to: bl-0018-core-closure-faults
+    type: indexes
+
+  - from: multi-agent-core-closure-requirements
+    to: bl-0014-core-control-kernel
+    type: creates_backlog
+
+  - from: multi-agent-core-closure-requirements
+    to: bl-0015-role-attempt-protocol
+    type: creates_backlog
+
+  - from: multi-agent-core-closure-requirements
+    to: bl-0016-review-finding
+    type: creates_backlog
+
+  - from: multi-agent-core-closure-requirements
+    to: bl-0017-core-docs-impact
+    type: creates_backlog
+
+  - from: multi-agent-core-closure-requirements
+    to: bl-0018-core-closure-faults
+    type: creates_backlog
+
+  - from: bl-0014-core-control-kernel
+    to: task-0013-manifest
+    type: schedules_into
+
+  - from: tasks-index
+    to: task-0013-manifest
+    type: indexes
+
+  - from: task-0013-spec
+    to: task-0013-manifest
+    type: belongs_to
+
+  - from: task-0013-design
+    to: task-0013-spec
+    type: refines
+
+  - from: task-0013-plan
+    to: task-0013-manifest
+    type: belongs_to
+
+  - from: task-0013-verification
+    to: task-0013-manifest
+    type: verifies
+
+  - from: task-0013-docs-impact
+    to: task-0013-manifest
+    type: reports_on
+
+  - from: task-0013-manifest
+    to: multi-agent-core-closure-requirements
+    type: implements_slice_of
+
+  - from: task-0013-manifest
+    to: task-runtime-kernel
+    type: implements_slice_of
 
   - from: bl-0013-agent-events-dialog
     to: task-0012-manifest

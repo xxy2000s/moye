@@ -1,0 +1,26 @@
+schema_version: 1
+id: "BL-0016"
+title: "实现 Self Review、ReviewResult 与 Finding 生命周期"
+kind: "feature"
+status: "ready"
+priority: "high"
+
+source_refs:
+  - multi-agent-core-closure-requirements
+affected_areas:
+  - review
+  - findings
+  - verification
+  - task-runtime
+
+acceptance_outline:
+  - "Implementation Attempt 必须产出结构化 Self Review"
+  - "Review 输入绑定 Spec Revision、Candidate Commit、Diff 与验证证据"
+  - "ReviewResult 和 ReviewFinding 使用稳定 Digest、分类、严重级别、证据与状态"
+  - "Blocking Finding 阻止 Verification 和成功关闭，Repair 后保留并处置历史 Finding"
+  - "Review Agent 执行失败与 Review 发现实现问题使用不同错误语义"
+
+resolution:
+  task_refs: []
+  duplicate_of:
+  reason: "等待统一 Role Attempt 协议后调度 Slice 3"
