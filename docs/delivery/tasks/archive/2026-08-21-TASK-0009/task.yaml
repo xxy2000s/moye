@@ -1,0 +1,26 @@
+schema_version: 1
+id: TASK-0009
+title: 实现轻量 Agent Runtime Trace 与 Phoenix Demo
+status: closed
+outcome: succeeded
+backlog_refs:
+  - BL-0010
+spec_revision: 1
+workflow_id: task/TASK-0009
+execution_mode: goal-bootstrap
+base_commit: e572b69a238ae0cbc2599b2ef41f41f3a71757ef
+archive:
+  status: pending
+  archived_at: null
+  archived_path: null
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: task-artifact://TASK-0009/verification.md
+  implementation_commit: f3f4898415ab9b72a49a04e2d80df818809b35ed
+execution_evidence:
+  executor_id: goal:/root
+  result_commit: f3f4898415ab9b72a49a04e2d80df818809b35ed
+  verification_refs:
+    - task-artifact://TASK-0009/verification.md
+  docs_impact_ref: task-artifact://TASK-0009/docs-impact.yaml

@@ -3,7 +3,7 @@
 > 状态：Accepted  
 > 日期：2026-08-21  
 > 决策者：Moye PoC  
-> 关联文档：[TASK-0009 Spec](../../../delivery/tasks/TASK-0009/spec.md)、[Restate PoC 架构](../../current/architecture/poc-01-restate.md)
+> 关联文档：[TASK-0009 Spec](../../../delivery/tasks/archive/2026-08-21-TASK-0009/spec.md)、[Restate PoC 架构](../../current/architecture/poc-01-restate.md)
 
 ## Context
 
