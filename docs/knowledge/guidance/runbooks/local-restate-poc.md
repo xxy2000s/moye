@@ -105,6 +105,21 @@ npm run cli -- backlog sync --dir docs/delivery/backlog --project moye
 - `archive` 和 `reconcile` 连接同一 keyed ArchiveWorkflow。
 - `backlog sync` 在提交前校验完整 YAML 批次；重复同步按 Source Digest 收敛；运行时独有记录默认保留并报告。
 - `CodingTaskWorkflow/<task_id>` 接受冻结 Envelope 和 Fixture/Codex Runner 配置；主状态与事件摘要同步到 Board，点击 Coding Task 卡片可以查看 Attempt/Evidence、Journal 定位和技术日志分层 Trace。
+- `CoreClosureWorkflow/<task_id>` 接受冻结 Envelope、确定性场景和受管 Artifact Root；它当前是 Core 收敛 PoC/API，不会投影到 Board，也不替代 Coding Workflow。
+
+Core Workflow 的只读状态可直接从 Restate Ingress 查询：
+
+```bash
+curl -sS -X POST http://127.0.0.1:8080/CoreClosureWorkflow/TASK-EXAMPLE/status \
+  -H 'content-type: application/json' \
+  --data 'null'
+```
+
+返回 `EXECUTING` 表示 Scenario Effect 尚未确认；`CLOSED` 必须同时带唯一 `outcome`、`closureDigest`、`sourceProjectionDigest` 和 Artifact 引用。不要把空 status 当作失败终态，也不要因查询超时提交另一个 Workflow key。六场景和强杀恢复的可重复验收命令是：
+
+```bash
+npx vitest run tests/e2e/core-closure-workflow.test.ts
+```
 
 直接查询 Coding Trace：
 
@@ -144,7 +159,7 @@ curl http://127.0.0.1:3000/api/tasks/TASK-EXAMPLE/trace
 
 可见性边界：Moye Trace 能看到 Task、Step、Attempt、Agent Run、状态和耗时；Codex 只保证保存 CLI 暴露的 `--json` JSONL，无法承诺未暴露的原始 HTTP Request/Response Body；Claude 保存 `stream-json`，启用原生 OTel 后可增加其 CLI 提供的 Span/Metric。只有显式开启内容或 Raw Body 变量时才可能看到模型正文，开启前应把本地 Phoenix 和 Artifact 按敏感数据处理。
 
-`MOYE_TEST_FAULT_INJECTION=enabled` 只允许自动化测试子进程开启 Git 强杀/丢回执注入。正常开发、演示和部署不要设置它；未显式开启时，带 `fault` 的 Coding Workflow 会在任何 Git 操作前被 403 拒绝。
+`MOYE_TEST_FAULT_INJECTION=enabled` 只允许自动化测试子进程开启 Git 或 Core Artifact 强杀/丢回执注入。正常开发、演示和部署不要设置它；未显式开启时，带 `fault` 的 Coding/Core Workflow 会在执行副作用前被拒绝。
 
 ## 6. 故障判读
 
@@ -152,6 +167,7 @@ curl http://127.0.0.1:3000/api/tasks/TASK-EXAMPLE/trace
 - Coding Trace 显示 `WAIT_OR_RECONCILE`：先用 `workflowRef` 检查 Journal；涉及 Verification/Agent/Git 未知结果时先核对稳定 Intent、Artifact 或 Git Effect marker，不能盲目重跑；
 - Coding Trace 显示 `FAILED_TERMINAL`：保留失败 Attempt，修复需求后创建新 Task 或新 Spec Revision，不要复活旧 Attempt；
 - Coding Trace 显示 `ARCHIVE_RETRY`：业务已关闭，只重新附着同一 ArchiveWorkflow，不重新编码；
+- Core status 停在 `EXECUTING` 且 Service 曾退出：保持同一 `task_id` 和 Artifact Root 重启 Service，让 Restate 重放；若只存在 Scenario Intent 而没有结果，按 UNKNOWN 对账，不能删除 Intent 后盲目重跑；
 - source 不存在、target 存在：Archive Reconcile 将其识别为已移动；
 - source/target 都存在且摘要不同：不要删除任何一端，记录冲突并人工判定；
 - Restate 返回 `META0014`：Service Endpoint 不是 HTTP/2；当前 `src/index.ts` 已使用 HTTP/2，不要改回普通 `node:http`；

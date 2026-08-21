@@ -213,6 +213,24 @@ export interface CoreTerminalCandidate {
   readonly createdAtProjectionVersion: number;
 }
 
+export interface CoreCancellationInput {
+  readonly reason: string;
+  readonly cancelledAttemptId?: string;
+  readonly artifactRefs: readonly string[];
+  readonly evidenceRefs: readonly string[];
+}
+
+export interface CoreCancellationCandidate {
+  readonly candidateId: string;
+  readonly outcome: "CANCELLED";
+  readonly reason: string;
+  readonly lastAttemptId: string | null;
+  readonly artifactRefs: readonly string[];
+  readonly evidenceRefs: readonly string[];
+  readonly candidateDigest: string;
+  readonly createdAtProjectionVersion: number;
+}
+
 export interface CoreVerificationResultInput {
   readonly taskId: string;
   readonly specRevision: number;
@@ -253,6 +271,7 @@ export interface CoreProjection {
   readonly reconcileHistory: readonly ReconcileRecord[];
   readonly invalidatedEvidence: readonly EvidenceInvalidation[];
   readonly terminalCandidate: CoreTerminalCandidate | null;
+  readonly cancellationCandidate: CoreCancellationCandidate | null;
   readonly verification: CoreVerificationResult | null;
   readonly docsImpactGates: readonly AppliedDocsImpactGate[];
   readonly pendingRole: PendingRoleDispatch | null;
@@ -288,6 +307,7 @@ export function createInitialCoreProjection(
     reconcileHistory: [],
     invalidatedEvidence: [],
     terminalCandidate: null,
+    cancellationCandidate: null,
     verification: null,
     docsImpactGates: [],
     pendingRole: null,
@@ -732,7 +752,7 @@ function applyReplan(
     envelopeDigest: envelope.envelopeDigest,
     decision,
     role: "DOCS",
-    generation: 1,
+    generation: nextRoleGeneration(projection, "DOCS"),
     sourceDigest: projection.reviewGate.gateDigest,
   });
   return finalizeProjection({
@@ -919,6 +939,77 @@ export function applyReviewGateResult(
   });
 }
 
+export function requestCoreCancellation(
+  projection: CoreProjection,
+  input: CoreCancellationInput,
+): CoreProjection {
+  assertTrustedProjection(projection);
+  const reason = requiredString(input.reason, "cancellation.reason");
+  const artifactRefs = normalizeRefs(input.artifactRefs, "cancellation.artifactRefs");
+  const evidenceRefs = normalizeRefs(input.evidenceRefs, "cancellation.evidenceRefs");
+  if (evidenceRefs.length === 0) {
+    throw validation("CANCELLATION_EVIDENCE_REQUIRED", "Core Cancellation requires evidence");
+  }
+  const lastAttemptId = input.cancelledAttemptId === undefined
+    ? null
+    : requiredString(input.cancelledAttemptId, "cancelledAttemptId");
+  if (projection.cancellationCandidate !== null) {
+    const existing = projection.cancellationCandidate;
+    if (existing.reason !== reason || existing.lastAttemptId !== lastAttemptId ||
+        canonicalJson(existing.artifactRefs) !== canonicalJson(artifactRefs) ||
+        canonicalJson(existing.evidenceRefs) !== canonicalJson(evidenceRefs)) {
+      throw conflict("CORE_CANCELLATION_CONFLICT", "Core already has a different Cancellation Candidate");
+    }
+    return projection;
+  }
+  if (projection.state !== "RUNNING" && projection.state !== "WAITING_HUMAN") {
+    throw conflict("CORE_CANCELLATION_NOT_ALLOWED", `Core cannot cancel from ${projection.state}`);
+  }
+  if (projection.pendingReconcile !== null) {
+    throw conflict("CORE_CANCELLATION_RECONCILE_REQUIRED", "Unknown Effect must be reconciled before cancellation");
+  }
+  if (projection.pendingRole !== null) {
+    const expected = `${projection.taskId}/CORE-${projection.pendingRole.role}/attempt-${String(projection.pendingRole.generation).padStart(3, "0")}`;
+    if (lastAttemptId !== expected) {
+      throw conflict("CORE_CANCELLATION_ATTEMPT_MISMATCH", "Cancellation must terminate the current Pending Role Attempt");
+    }
+  } else if (lastAttemptId !== null) {
+    const known = [...projection.completedRoleDispatches, ...projection.roleAttemptFailures]
+      .some((item) => item.attemptId === lastAttemptId);
+    if (!known) throw conflict("CORE_CANCELLATION_ATTEMPT_MISMATCH", "Cancellation last Attempt is not a Core fact");
+  }
+  const nextVersion = projection.projectionVersion + 1;
+  const identity = {
+    taskId: projection.taskId,
+    specRevision: projection.specRevision,
+    reason,
+    lastAttemptId,
+    artifactRefs,
+    evidenceRefs,
+  };
+  const candidateId = `cancellation-candidate:${digestHex("core-cancellation-id", identity)}`;
+  const core = {
+    candidateId,
+    outcome: "CANCELLED" as const,
+    reason,
+    lastAttemptId,
+    artifactRefs,
+    evidenceRefs,
+  };
+  return finalizeProjection({
+    ...projectionWithoutDigest(projection),
+    projectionVersion: nextVersion,
+    state: "CLOSING",
+    stage: "CLOSURE_REQUIRED",
+    pendingRole: null,
+    cancellationCandidate: {
+      ...core,
+      candidateDigest: digest("core-cancellation-candidate", core),
+      createdAtProjectionVersion: nextVersion,
+    },
+  });
+}
+
 export function createCoreVerificationResult(input: CoreVerificationResultInput): CoreVerificationResult {
   assertTaskId(input.taskId);
   assertPositiveInteger(input.specRevision, "verification.specRevision");
@@ -1031,7 +1122,12 @@ export function parseCoreProjection(
   const pendingReconcile = value["pendingReconcile"] === null ? null : parsePendingReconcile(value["pendingReconcile"]);
   const reconcileHistory = value["reconcileHistory"].map(parseReconcileRecord);
   const invalidatedEvidence = value["invalidatedEvidence"].map(parseEvidenceInvalidation);
-  const terminalCandidate = value["terminalCandidate"] === null ? null : parseTerminalCandidate(value["terminalCandidate"]);
+  const terminalCandidate = value["terminalCandidate"] === null
+    ? null
+    : parseTerminalCandidate(value["terminalCandidate"], value["taskId"] as string, value["specRevision"] as number);
+  const cancellationCandidate = value["cancellationCandidate"] === null
+    ? null
+    : parseCancellationCandidate(value["cancellationCandidate"], value["taskId"] as string, value["specRevision"] as number);
   const verification = value["verification"] === null ? null : parseCoreVerificationResult(value["verification"]);
   const docsImpactGates = value["docsImpactGates"].map(parseAppliedDocsImpactGate);
   const pendingRole = value["pendingRole"] === null
@@ -1056,6 +1152,7 @@ export function parseCoreProjection(
     reconcileHistory,
     invalidatedEvidence,
     terminalCandidate,
+    cancellationCandidate,
     verification,
     docsImpactGates,
     pendingRole,
@@ -1436,7 +1533,7 @@ function parseEvidenceInvalidation(value: unknown): EvidenceInvalidation {
   };
 }
 
-function parseTerminalCandidate(value: unknown): CoreTerminalCandidate {
+function parseTerminalCandidate(value: unknown, taskId: string, specRevision: number): CoreTerminalCandidate {
   if (!isRecord(value) || typeof value["candidateId"] !== "string" ||
       !value["candidateId"].startsWith("terminal-candidate:") || !Array.isArray(value["evidenceRefs"]) ||
       value["outcome"] !== "FAILED_TERMINAL" || value["reason"] !== "BUDGET_EXHAUSTED") {
@@ -1447,17 +1544,55 @@ function parseTerminalCandidate(value: unknown): CoreTerminalCandidate {
     reason: "BUDGET_EXHAUSTED" as const,
     evidenceRefs: normalizeRefs(value["evidenceRefs"] as string[], "terminalCandidate.evidenceRefs"),
   };
-  const candidateDigest = digest("core-terminal-candidate", { candidateId: value["candidateId"], ...core });
+  const candidateId = `terminal-candidate:${digestHex("core-terminal-candidate-id", {
+    taskId,
+    specRevision,
+    ...core,
+  })}`;
+  const candidateDigest = digest("core-terminal-candidate", { candidateId, ...core });
   assertPositiveInteger(value["createdAtProjectionVersion"], "createdAtProjectionVersion");
-  if (value["candidateDigest"] !== candidateDigest) {
+  if (value["candidateId"] !== candidateId || value["candidateDigest"] !== candidateDigest) {
     throw conflict("TERMINAL_CANDIDATE_INTEGRITY_FAILED", "Terminal Candidate does not match its digest");
   }
   return {
-    candidateId: value["candidateId"],
+    candidateId,
     ...core,
     candidateDigest,
     createdAtProjectionVersion: value["createdAtProjectionVersion"] as number,
   };
+}
+
+function parseCancellationCandidate(value: unknown, taskId: string, specRevision: number): CoreCancellationCandidate {
+  if (!isRecord(value) || typeof value["candidateId"] !== "string" ||
+      !value["candidateId"].startsWith("cancellation-candidate:") || value["outcome"] !== "CANCELLED" ||
+      !Array.isArray(value["artifactRefs"]) || !Array.isArray(value["evidenceRefs"])) {
+    throw validation("INVALID_CANCELLATION_CANDIDATE", "Cancellation Candidate is invalid");
+  }
+  const identity = {
+    taskId,
+    specRevision,
+    reason: requiredString(value["reason"], "cancellation.reason"),
+    lastAttemptId: value["lastAttemptId"] === null
+      ? null
+      : requiredString(value["lastAttemptId"], "cancellation.lastAttemptId"),
+    artifactRefs: normalizeRefs(value["artifactRefs"] as string[], "cancellation.artifactRefs"),
+    evidenceRefs: normalizeRefs(value["evidenceRefs"] as string[], "cancellation.evidenceRefs"),
+  };
+  const candidateId = `cancellation-candidate:${digestHex("core-cancellation-id", identity)}`;
+  const core = {
+    candidateId,
+    outcome: "CANCELLED" as const,
+    reason: identity.reason,
+    lastAttemptId: identity.lastAttemptId,
+    artifactRefs: identity.artifactRefs,
+    evidenceRefs: identity.evidenceRefs,
+  };
+  assertPositiveInteger(value["createdAtProjectionVersion"], "createdAtProjectionVersion");
+  const candidateDigest = digest("core-cancellation-candidate", core);
+  if (value["candidateId"] !== candidateId || value["candidateDigest"] !== candidateDigest) {
+    throw conflict("CANCELLATION_CANDIDATE_INTEGRITY_FAILED", "Cancellation Candidate does not match its digest");
+  }
+  return { ...core, candidateDigest, createdAtProjectionVersion: value["createdAtProjectionVersion"] as number };
 }
 
 function parseCoreVerificationResult(value: unknown): CoreVerificationResult {

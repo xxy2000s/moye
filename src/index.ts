@@ -7,11 +7,12 @@ import { startBoardServer } from "./board/server.js";
 import { loadConfig } from "./config.js";
 import { archiveWorkflow, projectBoard, taskAuthority, taskWorkflow } from "./restate/services.js";
 import { codingTaskWorkflow } from "./restate/coding-services.js";
+import { coreClosureWorkflow } from "./restate/core-services.js";
 
 const config = loadConfig();
 const endpoint = createServer(
   restate.createEndpointHandler({
-    services: [projectBoard, taskAuthority, taskWorkflow, archiveWorkflow, codingTaskWorkflow],
+    services: [projectBoard, taskAuthority, taskWorkflow, archiveWorkflow, codingTaskWorkflow, coreClosureWorkflow],
   }),
 );
 endpoint.listen(config.servicePort, "0.0.0.0", () => {

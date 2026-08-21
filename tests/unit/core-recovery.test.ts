@@ -178,7 +178,7 @@ describe("Core recovery control", () => {
       specRevision: 2,
       envelopeDigest: nextEnvelope.envelopeDigest,
       stage: "DOCS_RUNNING",
-      pendingRole: { role: "DOCS", generation: 1 },
+      pendingRole: { role: "DOCS", generation: 2 },
       budget: { replansRemaining: 0 },
       recoveryActions: expect.arrayContaining([expect.objectContaining({ action: "REPLAN" })]),
     });

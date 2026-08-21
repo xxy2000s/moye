@@ -30,7 +30,7 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 | [BL-0015](./BL-0015.yaml) | Converted | 统一 Docs、Implementation 与 Review Role Attempt 协议 | TASK-0014 |
 | [BL-0016](./BL-0016.yaml) | Converted | 实现 Self Review、ReviewResult 与 Finding 生命周期 | TASK-0015 |
 | [BL-0017](./BL-0017.yaml) | Converted | 将最终 Docs Impact 与 Knowledge Sync 接入 Core Workflow | TASK-0017 |
-| [BL-0018](./BL-0018.yaml) | Ready | 实现统一 Core Closure Gate 与故障收敛矩阵 | — |
+| [BL-0018](./BL-0018.yaml) | Converted | 实现统一 Core Closure Gate 与故障收敛矩阵 | TASK-0018 |
 | [BL-0019](./BL-0019.yaml) | Triaged | 修复 CLI close 未附着既有 TaskWorkflow | — |
 
 ## 本轮调度结果
@@ -39,6 +39,6 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 
 Backlog 的 `resolution.task_refs` 只登记实际创建过的稳定 Task ID；它不替代 Runtime Task 状态，执行与归档事实仍以 Task Projection 和归档证据为准。
 
-多 Agent Core 闭环按母需求的六个 Slice 顺序调度：BL-0014、BL-0015、BL-0016、BL-0003、BL-0006/BL-0007/BL-0017、BL-0018。Slice 1～4 已归档，Slice 5 已创建 TASK-0017；BL-0006/BL-0007 只部分消费并保留生产范围，Slice 6 完成前置 Task 后再绑定真实 Task ID。
+多 Agent Core 闭环按母需求的六个 Slice 顺序调度：BL-0014、BL-0015、BL-0016、BL-0003、BL-0006/BL-0007/BL-0017、BL-0018。Slice 1～5 已归档，Slice 6 已创建 TASK-0018；BL-0006/BL-0007 只部分消费并保留生产范围。
 
 新建时复制 [`backlog-item.yaml`](../../meta/templates/backlog-item.yaml)，文件名使用 `<backlog-id>.yaml`。

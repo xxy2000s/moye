@@ -2,7 +2,7 @@ schema_version: 1
 id: "BL-0018"
 title: "实现统一 Core Closure Gate 与故障收敛矩阵"
 kind: "feature"
-status: "ready"
+status: "converted_to_task"
 priority: "high"
 
 source_refs:
@@ -21,6 +21,7 @@ acceptance_outline:
   - "从 task_id 可关联 Decision、Attempt、Session、Artifact、Finding、Verification、Docs Impact 与 Closure"
 
 resolution:
-  task_refs: []
+  task_refs:
+    - TASK-0018
   duplicate_of:
-  reason: "等待前五个 Slice 后调度最终 Closure 与故障矩阵"
+  reason: "前五个 Slice 已完成后调度为最终 TASK-0018"

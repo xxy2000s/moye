@@ -29,7 +29,7 @@
 
 当前代码实现了总体架构中的本地单 Agent 垂直切片：Task/Archive Durable Workflow、冻结 TaskEnvelope、Step/Attempt/Evidence、隔离 Worktree、Fake/真实 Codex/Claude Adapter、运行中 Agent JSONL Stream、Verification、本地原子 Merge、查询投影、三层 Trace、CLI/Skill 和本地 Board。一键 Demo 可在隔离 Git Fixture 中选择 Fake、Codex 或 Claude，Board 把 Task、Workflow、Agent Session 与 Git Commit 聚合成中文七阶段业务旅程，并通过 cursor API 持续展示完整 CLI 事件；Restate UI 只作为高级运行时排障入口。
 
-多角色 Core 目前实现了纯领域 Control Kernel，Docs、Implementation、Review 共用的 Role Attempt/Request/Result/Artifact 协议和确定性 Fake Role Runner，以及结构化 Self Review、ReviewFinding Gate 和四类有界恢复。只读 Observer 能从 Projection/Attempt/Artifact 定位重建 Trace、成本、告警与待审核知识候选；最终 changed paths 可重新执行 Context Route，逐项 Docs Impact 经现有 Graph Validator 通过后才从 `DOCS_IMPACT_REQUIRED` 进入 `CLOSURE_REQUIRED`。Observer 不拥有业务状态，候选不能自动提升为 ADR 或 Architecture，Gate 失败保持可恢复。它尚未接入 keyed Restate Core Workflow，真实 Codex/Claude 多角色 Adapter 和最终 Closure 仍未实现。Daemon 集群、远程 Git/PR、生产运营平台与自动知识反馈仍是目标架构，不能从纯领域协议推断为已实现。
+多角色 Core 已实现纯领域 Control Kernel，Docs、Implementation、Review 共用的 Role Attempt/Request/Result/Artifact 协议和确定性 Fake Role Runner，以及结构化 Self Review、ReviewFinding Gate 和四类有界恢复。只读 Observer 能从 Projection/Attempt/Artifact 定位重建 Trace、成本、告警与待审核知识候选；最终 changed paths 可重新执行 Context Route，逐项 Docs Impact 经现有 Graph Validator 通过后才从 `DOCS_IMPACT_REQUIRED` 进入 `CLOSURE_REQUIRED`。`CoreClosureWorkflow/<task_id>` 现已作为唯一 Restate 写入者，通过内容寻址 Scenario Artifact 串联成功、Repair、Replan、UNKNOWN 对账、预算终止和取消，并让三种 Outcome 都生成不可变 Closure Result。Observer 不拥有业务状态，候选不能自动提升为 ADR 或 Architecture，Gate 失败保持可恢复。当前 Scenario Adapter 使用确定性事实做控制闭环验收；真实 Codex/Claude 多角色 Adapter、Core Board UI、Daemon 集群、远程 Git/PR、生产运营平台与自动知识反馈仍未实现，不能从 PoC 收敛证据推断为已完成。
 
 ## 2. 设计结论
 

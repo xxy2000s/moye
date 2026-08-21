@@ -1,7 +1,7 @@
 # 多 Agent 研发 Core 闭环需求基线
 
 > 文档类型：Brainstorm / Requirement Baseline  
-> 状态：Draft / Partially Consumed
+> 状态：Draft / Fully Consumed
 > 基线日期：2026-08-22  
 > 目标范围：单机、单仓库、单 Task、多 Agent 角色、单 Active Attempt  
 > 当前实现基线：commit `fab7fae`
@@ -10,7 +10,7 @@
 
 > 本文是当前讨论收敛后的母需求，但在进入 Backlog、Active Task、Architecture 或 ADR 前仍属于 `idea-input`，不能直接覆盖当前代码和 Architecture 事实。
 
-> 消费进度：六个 Slice 已进入 Backlog；Slice 1～5 已分别由 [TASK-0013](../../delivery/tasks/archive/2026-08-22-TASK-0013/spec.md)、[TASK-0014](../../delivery/tasks/archive/2026-08-22-TASK-0014/spec.md)、[TASK-0015](../../delivery/tasks/archive/2026-08-22-TASK-0015/spec.md)、[TASK-0016](../../delivery/tasks/archive/2026-08-22-TASK-0016/spec.md)、[TASK-0017](../../delivery/tasks/archive/2026-08-22-TASK-0017/spec.md) 完成并归档。Slice 6 只登记 Backlog，尚未伪造 Active Task 或实现事实。
+> 消费进度：六个 Slice 均已进入 Task 生命周期。Slice 1～5 已分别由 [TASK-0013](../../delivery/tasks/archive/2026-08-22-TASK-0013/spec.md)、[TASK-0014](../../delivery/tasks/archive/2026-08-22-TASK-0014/spec.md)、[TASK-0015](../../delivery/tasks/archive/2026-08-22-TASK-0015/spec.md)、[TASK-0016](../../delivery/tasks/archive/2026-08-22-TASK-0016/spec.md)、[TASK-0017](../../delivery/tasks/archive/2026-08-22-TASK-0017/spec.md) 完成并归档；Slice 6 由 [TASK-0018](../../delivery/tasks/TASK-0018/spec.md) 实现三种 Closure、keyed Core Workflow 与真实 Restate 故障矩阵，待通过 Runtime Archive Gate 后移动至归档目录。
 
 ## 1. 需求结论
 
@@ -416,6 +416,8 @@ CLOSED.outcome
 - 失败/取消收束；
 - 全边界 Worker Kill、重复投递和回执丢失测试。
 
+消费结果：TASK-0018 已实现统一 Closure Gate、Core Scenario Artifact 对账和 `CoreClosureWorkflow/<task_id>`。真实 Restate 验证覆盖成功、Repair、Replan、UNKNOWN→Reconcile、预算耗尽、取消、Docs Gate 首次失败、Observer 失败、异步回执丢失与 Worker 重启；确定性 Scenario Adapter 是控制闭环证据，不代表真实多角色模型质量。
+
 ## 10. 完成定义
 
 本母需求只有在以下证据同时存在时才算被完整消费：
@@ -428,6 +430,8 @@ CLOSED.outcome
 - 成功、失败和取消各产生一个唯一 CoreClosureResult；
 - 当前 CodeMap、Architecture 和相关 ADR 已完成影响判断；
 - 新 Agent 只读取 Task Package、Projection、Artifact 和本文即可继续实现，不依赖历史聊天。
+
+上述证据已由 TASK-0013～TASK-0018 的 Task Package、Result Commit 和验证记录覆盖。本 Brainstorm 保留为来源基线，不再直接形成新的实现约束；后续真实多角色 Adapter、Core UI 或生产平台工作必须重新进入 Backlog/Task 生命周期。
 
 ## 11. Backlog 提升建议
 

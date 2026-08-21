@@ -45,7 +45,7 @@ interface ArchiveWorkflowState {
 }
 
 export interface TaskAuthorityState {
-  owner: "TASK_WORKFLOW" | "CODING_WORKFLOW";
+  owner: "TASK_WORKFLOW" | "CODING_WORKFLOW" | "CORE_WORKFLOW";
   specRevision: number;
 }
 

@@ -136,15 +136,15 @@ ProjectBoard 接收 Coding 的状态和事件摘要；`src/trace/coding-trace.ts
 
 ### 5.0.4 当前已实现 Core Control Kernel 切片
 
-`src/domain/core-control.ts` 已实现多角色 Core Workflow 使用的纯领域控制内核，但尚未接入 Restate 主循环：
+`src/domain/core-control.ts` 已实现多角色 Core Workflow 使用的纯领域控制内核；TASK-0018 已通过确定性 Scenario Adapter 把它接入 Restate，领域规则仍不依赖运行时：
 
 - `CoreProjection` 固定 Task、Spec Revision、Envelope Digest、Projection Version、Control State、Stage、中央预算摘要、Applied Decision、已完成 Role Dispatch 摘要和唯一 Pending Role Dispatch；
 - `ControlDecision` 固定 Expected State、Expected Projection Version、Action、Target Role、Finding/Evidence 引用、预算申请、原因和规范 SHA-256 Digest；
 - 确定性 Fake Orchestrator 只从已验证的 `TaskEnvelope + CoreProjection` 生成当前 Required Gate 对应的 Docs、Implementation 或 Review Role 候选，不读取聊天历史、Agent 内存或本地临时路径；
 - Reducer 是当前切片唯一合法转换入口。它先识别已确认的相同 Decision 重放，再校验 Task/Spec、状态、版本、预算、单 Pending Role 和 Required Gate，保证丢失确认后不会重复派发；
-- `completeRoleDispatch` 只接受与唯一 Pending Dispatch、Role、Input Digest、Attempt ID/Generation 一致的成功结果摘要；相同完成重放不推进版本，不同结果冲突。Docs 与 Implementation 完成后进入下一 Role Required，Review 完成后停在 `REVIEW_GATE_REQUIRED`；只有可信 Review Gate 可进入 `VERIFICATION_REQUIRED` 或 `REPAIR_REQUIRED`。Verification、最终 Docs Impact 和 Closure 仍由后续切片实现，不能由当前 Projection 伪造。
+- `completeRoleDispatch` 只接受与唯一 Pending Dispatch、Role、Input Digest、Attempt ID/Generation 一致的成功结果摘要；相同完成重放不推进版本，不同结果冲突。Docs 与 Implementation 完成后进入下一 Role Required，Review 完成后停在 `REVIEW_GATE_REQUIRED`；只有可信 Review Gate 可进入 `VERIFICATION_REQUIRED` 或 `REPAIR_REQUIRED`，Verification、Docs Impact 和 Closure 继续通过各自可信协议进入 Reducer。
 
-这个模块是未来 keyed `CoreClosureWorkflow/<task_id>` 的 Reducer，不拥有独立进程或第二套运行时状态。现有 `CodingTaskWorkflow` 在完整 Core Workflow 接入前继续保持当前行为。
+这个模块是 keyed `CoreClosureWorkflow/<task_id>` 的 Reducer，不拥有独立进程或第二套运行时状态。现有 `CodingTaskWorkflow` 继续保持原单 Agent 行为，与 Core PoC 并存但不能共同认领同一 Task。
 
 ### 5.0.5 当前已实现统一 Role Agent 协议切片
 
@@ -176,7 +176,7 @@ ProjectBoard 接收 Coding 的状态和事件摘要；`src/trace/coding-trace.ts
 - 明确 Role 失败先形成内容寻址 Failure Record；`RETRY(role)` 必须绑定最近失败，创建新 Dispatch 和 Generation N+1，只扣 Role Attempt/Model Call 预算；`RETRY(operation)` 不改变 Pending Role 或 Attempt Generation，只扣 Operation Retry 预算；
 - 外部结果未知时，`WAIT` 保存 Unknown Effect 并进入 `WAITING_RECONCILE`。只有带证据的 `CONFIRMED | NOT_APPLIED` 对账才能恢复 RUNNING；等待期间 Reducer 拒绝 Retry、Repair 和 Replan；
 - Blocking Review Gate 的 `REPAIR` 必须精确绑定全部未解决 Finding 和当前 Gate，保留 Gate 历史并派发 Implementation Generation N+1；Repair 原子扣减 Repair、Role Attempt 和 Model Call；
-- `REPLAN` 必须绑定同一 Task 的 Spec Revision N+1 TaskEnvelope 和精确 Blocking Finding，派发新 Spec 的 Docs Generation 1，同时显式记录旧 Envelope、Role Result、Review Gate 与 Finding 引用失效，历史事实不删除；
+- `REPLAN` 必须绑定同一 Task 的 Spec Revision N+1 TaskEnvelope 和精确 Blocking Finding，派发新 Spec 的 Docs Attempt Generation N+1，同时显式记录旧 Envelope、Role Result、Review Gate 与 Finding 引用失效，历史事实不删除；Attempt Generation 在整个 Task 内连续，不能因 Spec Revision 变化发生 ID 碰撞；
 - 每种 Decision 都有固定预算形状，Reducer 先完整校验再扣减，不能把 Operation Retry 夹带进 Role Retry/Repair/Replan。Required Gate 缺少所需预算时，确定性决策只产生一个内容寻址 `FAILED_TERMINAL` 候选并进入 `CLOSING`；最终 ClosureResult 仍由后续 Closure 切片生成。
 
 这些恢复事实仍是纯领域协议，尚未接入 keyed Restate Core Workflow；当前单 Agent `CodingTaskWorkflow` 的既有恢复语义不变。
@@ -191,7 +191,20 @@ ProjectBoard 接收 Coding 的状态和事件摘要；`src/trace/coding-trace.ts
 - Docs Impact Report 必须精确处置 Final Route 的每个 Required Review；新 Markdown 必须同时声明图谱节点、关系和索引。`RubyDocsGraphAdapter` 使用 `shell:false` argv 调用现有 `docs_graph.rb route|validate|validate-impact` 并保存退出码和输出摘要；
 - Validator 失败产生可信 `BLOCKED` Gate，Core 保持 `DOCS_IMPACT_REQUIRED`；带 Verification 与通过 Review 的 Projection 只有接受可信 `PASSED` Gate 后才进入 `CLOSURE_REQUIRED`。Observer 崩溃不改变 Projection，重复 Gate/Report 由 Digest 收敛。
 
-当前生产 Trace 看板、Daemon 指标平台、知识自动提升和长期效果反馈仍保留在 BL-0006/BL-0007；最终三种 Outcome 与不可变 ClosureResult 由下一切片实现。
+当前生产 Trace 看板、Daemon 指标平台、知识自动提升和长期效果反馈仍保留在 BL-0006/BL-0007。
+
+### 5.0.9 当前已实现 Core Closure 与真实 Restate 收敛切片
+
+`src/domain/core-closure.ts`、`src/core/` 和 `src/restate/core-services.ts` 把前述领域协议接入唯一 keyed `CoreClosureWorkflow/<task_id>`：
+
+- Closure 输入必须是 Expected Digest 验证后的 TaskEnvelope、Core Projection 和显式 Trace Index。Active Attempt 或 Pending Reconcile 非零时拒绝关闭；Outcome 只能从 Projection 推导，调用方不能选择或覆盖；
+- `SUCCEEDED` 必须同时绑定 Passed Review Candidate、Verification 和最终 Passed Docs Impact；预算耗尽的 Terminal Candidate 形成 `FAILED_TERMINAL`；Cancellation Candidate 保存原因、最后 Attempt、Artifact 和命令证据并形成 `CANCELLED`；
+- 三种 Outcome 都生成内容寻址、深冻结的 `CoreClosureResult` 和 `ClosedCoreProjection`。Trace Index 覆盖 Control Decision、Attempt、Session、Artifact、Finding、Verification、Docs Impact、Observer 与 Restate Invocation；恢复时重算完整 Closure Digest；
+- `CoreClosureWorkflow` 先通过 `TaskAuthority` 声明 `CORE_WORKFLOW` 主权，再在一个 Restate `ctx.run` 中调用确定性 Scenario Artifact Adapter，并只持久化 `EXECUTING → CLOSED` Projection。`status` 是共享只读查询，Observer 错误只保存诊断文本，不改变主状态；
+- Scenario Adapter 以 Task/Revision/Envelope/场景/Invocation 派生稳定 operation ID。完整结果按 Digest 对账，`.pending` 结果先原子完成 rename，仅有 Intent 时返回 `UNKNOWN_SIDE_EFFECT`，禁止第二次昂贵执行；测试专用 Worker Kill 发生在结果 rename 后、Step 确认前，新 Worker 只读取同一 Artifact；
+- 当前 Adapter 用确定性 Fake Role/Review/Verification/Docs 事实验证控制闭环，不声称真实多角色模型质量。Board、Archive、外层 Merge 仍是正交外围状态，也尚未为 Core 新增 UI 投影。
+
+真实 Restate 1.7.4 验证覆盖线性成功、Repair、Replan、UNKNOWN→Reconcile、预算耗尽、取消、Docs Gate 首次失败恢复、Observer 失败、异步提交回执丢失和 Worker `SIGKILL`。所有场景最终只有一个 Closure Digest，持久化后的场景执行计数保持 1。
 
 ### 5.1 模型关系
 

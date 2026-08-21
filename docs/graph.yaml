@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 42
+graph_revision: 43
 updated_at: "2026-08-22"
 
 entrypoints:
@@ -709,6 +709,54 @@ documents:
     type: docs-impact
     status: archived
     scope: core-observer-docs-impact
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0018-manifest
+    path: docs/delivery/tasks/TASK-0018/task.yaml
+    type: task-manifest
+    status: active
+    scope: core-closure-fault-matrix
+    authority: task-artifact
+    read_when: [task-runtime-change, workflow-change, task-execution, task-close]
+
+  - id: task-0018-spec
+    path: docs/delivery/tasks/TASK-0018/spec.md
+    type: task-spec
+    status: active
+    scope: core-closure-fault-matrix
+    authority: task-artifact
+    read_when: [task-runtime-change, workflow-change, task-execution, task-close]
+
+  - id: task-0018-design
+    path: docs/delivery/tasks/TASK-0018/design.md
+    type: task-design
+    status: active
+    scope: core-closure-fault-matrix
+    authority: task-artifact
+    read_when: [task-runtime-change, workflow-change, task-execution]
+
+  - id: task-0018-plan
+    path: docs/delivery/tasks/TASK-0018/plan.md
+    type: task-plan
+    status: active
+    scope: core-closure-fault-matrix
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0018-verification
+    path: docs/delivery/tasks/TASK-0018/verification.md
+    type: verification
+    status: active
+    scope: core-closure-fault-matrix
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0018-docs-impact
+    path: docs/delivery/tasks/TASK-0018/docs-impact.yaml
+    type: docs-impact
+    status: active
+    scope: core-closure-fault-matrix
     authority: task-evidence
     read_when: [task-close, task-archive]
 
@@ -1894,6 +1942,42 @@ relations:
     type: refines
 
   - from: task-0017-manifest
+    to: task-runtime-kernel
+    type: implements_slice_of
+
+  - from: bl-0018-core-closure-faults
+    to: task-0018-manifest
+    type: schedules_into
+
+  - from: tasks-index
+    to: task-0018-manifest
+    type: indexes
+
+  - from: task-0018-spec
+    to: task-0018-manifest
+    type: belongs_to
+
+  - from: task-0018-design
+    to: task-0018-spec
+    type: refines
+
+  - from: task-0018-plan
+    to: task-0018-manifest
+    type: belongs_to
+
+  - from: task-0018-verification
+    to: task-0018-manifest
+    type: verifies
+
+  - from: task-0018-docs-impact
+    to: task-0018-manifest
+    type: reports_on
+
+  - from: task-0018-manifest
+    to: task-0017-manifest
+    type: refines
+
+  - from: task-0018-manifest
     to: task-runtime-kernel
     type: implements_slice_of
 
