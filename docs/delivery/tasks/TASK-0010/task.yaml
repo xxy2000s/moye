@@ -1,0 +1,19 @@
+schema_version: 1
+id: TASK-0010
+title: 在 Moye 看板内联查看 Agent Events
+status: received
+outcome:
+backlog_refs:
+  - BL-0011
+spec_revision: 1
+workflow_id: task/TASK-0010
+execution_mode: goal-bootstrap
+base_commit: 4c6faac3409b93a764e8c5ad1b268715f18e8ae3
+archive:
+  status: not_ready
+  archived_at: null
+  archived_path: null
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null

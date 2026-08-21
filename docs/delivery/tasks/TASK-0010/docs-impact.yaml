@@ -1,0 +1,57 @@
+schema_version: 1
+task_id: TASK-0010
+graph_revision: 26
+intents: [task-create, coding-task-poc, docs-change]
+changed_paths:
+  - docs/delivery/backlog/BL-0011.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/tasks/TASK-0010
+  - docs/delivery/tasks/README.md
+  - docs/graph.yaml
+  - public/app.js
+  - public/styles.css
+  - tests/e2e/demo.test.ts
+  - README.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+docs:
+  read:
+    - agent-contract
+    - root-readme
+    - docs-index
+    - codemap
+    - document-control-plane
+    - backlog-index
+    - tasks-index
+    - task-runtime-kernel
+    - overnight-multi-task-goal
+    - finding-backlog-docs-not-projected
+    - bl-0008-backlog-projection-sync
+    - bl-0002-single-agent-coding-loop
+    - restate-poc-architecture
+    - durable-runtime-pitfalls
+    - meta-index
+    - adr-0002-doc-lifecycle-roles
+    - sources-index
+    - bl-0011-inline-agent-events-viewer
+    - local-restate-poc-runbook
+    - runbooks-index
+  reviewed:
+    moye-task-control-skill: { outcome: unchanged, reason: "现有 Skill 已覆盖本次 Task 的 Router、验证、关闭与归档流程" }
+    architecture-overview: { outcome: unchanged, reason: "站内 Artifact 呈现方式变化，不改变 Harness、状态权威或证据面边界" }
+    codemap: { outcome: updated, reason: "需要登记 Board 内联 Agent Events Viewer 的代码职责" }
+    local-restate-poc-runbook: { outcome: updated, reason: "用户操作从默认下载改为任务详情内联查看，需要同步体验步骤" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "不改变 Restate durable runtime 决策" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "沿用 Backlog、Active Task 与 Archive 角色" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "继续使用现有 TypeScript 与原生浏览器 JavaScript 技术栈" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "不改变 OTLP、Phoenix、Artifact 与敏感数据边界，仅改善 Artifact 的站内呈现" }
+    task-spec-document-closure-brainstorm: { outcome: unchanged, reason: "任务与文档控制边界不变" }
+    task-0001-manifest: { outcome: not_applicable, reason: "不改写历史 Task 事实" }
+    task-0002-manifest: { outcome: unchanged, reason: "不改变 Backlog 投影协议" }
+    task-0003-manifest: { outcome: unchanged, reason: "不改变 Task、Step 或 Attempt 协议" }
+    task-0004-manifest: { outcome: unchanged, reason: "不改变 Worktree 与 Git Effect" }
+    task-0005-manifest: { outcome: unchanged, reason: "不改变 Agent Runner 或 Artifact 生成格式" }
+    task-0006-manifest: { outcome: unchanged, reason: "不改变 Coding Workflow、Verification 或 Merge" }
+    task-0007-manifest: { outcome: unchanged, reason: "不改变三层 Trace 的状态与恢复语义" }
+    task-0008-manifest: { outcome: updated, reason: "中文 Coding Demo 的 Task 详情增加 Agent Events 内联交互" }
+    task-0009-manifest: { outcome: updated, reason: "TASK-0009 提供的 Agent Events 下载入口被扩展为默认内联查看" }

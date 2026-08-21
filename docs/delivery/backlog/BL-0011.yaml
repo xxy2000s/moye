@@ -1,0 +1,26 @@
+schema_version: 1
+id: "BL-0011"
+title: "在 Moye 看板内联查看 Agent Events"
+kind: "feature"
+status: "converted_to_task"
+priority: "medium"
+
+source_refs:
+  - task-0009-manifest
+affected_areas:
+  - project-board
+  - agent-artifact
+  - observability
+  - user-experience
+
+acceptance_outline:
+  - "点击 Agent Events 后留在当前 Task 详情中，并以内联事件列表展示 JSONL 内容"
+  - "事件查看器提供加载、空数据、读取失败与异常 JSON 行状态，且所有 Agent 内容安全转义"
+  - "默认入口不再触发浏览器下载；原始 JSONL 仍作为明确标注的次级下载入口"
+  - "自动化测试与真实浏览器验收覆盖交互、键盘语义和窄屏布局"
+
+resolution:
+  task_refs:
+    - TASK-0010
+  duplicate_of:
+  reason: "TASK-0009 验收后的可用性反馈；不改变 Artifact 安全边界与 Task 状态权威"
