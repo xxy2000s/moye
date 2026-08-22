@@ -1,6 +1,6 @@
 # TASK-0024 Verification
 
-> 状态：Passed  
+> 状态：Accepted
 > 验证日期：2026-08-22
 
 ## 自动化
