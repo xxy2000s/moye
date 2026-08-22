@@ -76,8 +76,13 @@ describe("npm run demo", () => {
 
     const html = await (await fetch(boardUrl)).text();
     const app = await (await fetch(`${boardUrl}/app.js`)).text();
-    expect(html).toContain("任务控制面 · Coding Demo");
-    expect(app).toContain("八个阶段，一眼看清做到哪里");
+    expect(html).toContain("不是进度条");
+    expect(html).toContain("本页面只读，不创建或推进 Task");
+    expect(html).toContain("等待归档，或失败终止后等待后续动作");
+    expect(app).toContain("Runtime State Machine");
+    expect(app).toContain('task.outcome === "FAILED_TERMINAL" ? "FAILED" : task.state');
+    expect(app).toContain("实际转换 History");
+    expect(app).toContain("查看完整合法边");
     expect(app).toContain("查看 Agent Events");
     expect(html).toContain('id="agent-events-dialog"');
     expect(html).toContain("data-agent-events-viewer");

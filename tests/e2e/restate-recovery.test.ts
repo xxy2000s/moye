@@ -97,7 +97,16 @@ describe("Restate process-loss recovery", () => {
     expect(detailResponse.status).toBe(200);
     expect(await detailResponse.json()).toEqual(finalTask);
     const traceResponse = await fetch(`http://127.0.0.1:${boardPort}/api/tasks/${taskId}/trace`);
-    expect(traceResponse.status).toBe(409);
+    expect(traceResponse.status).toBe(200);
+    expect(await traceResponse.json()).toMatchObject({
+      traceKind: "TASK",
+      stateMachine: {
+        authority: "derived-from-runtime-projection",
+        workflow: "TaskWorkflow",
+        current: { overall: "ARCHIVED", historyCurrent: "ARCHIVED", consistency: "VERIFIED" },
+      },
+      durableRuntime: { workflowService: "TaskWorkflow", workflowKey: taskId },
+    });
   }, 70_000);
 
   it("exhausts a broken pipeline step, closes as terminal failure, then archives evidence", async () => {

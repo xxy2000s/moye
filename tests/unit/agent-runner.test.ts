@@ -182,8 +182,10 @@ describe("agent runner", () => {
     expect(invocations[0]).toEqual(createCodexExecInvocation("/usr/local/bin/codex", request));
     expect(invocations[0]).toMatchObject({ cwd: request.workspaceRoot, shell: false });
     expect(invocations[0]?.argv).toEqual([
-      "exec", "--json", "--sandbox", "workspace-write", "--cd", request.workspaceRoot, prompt,
+      "exec", "--json", "--sandbox", "workspace-write", "--cd", request.workspaceRoot,
+      "--add-dir", request.workspaceGitCommonDir, prompt,
     ]);
+    expect(request.workspaceGitCommonDir).not.toBe(request.workspaceRoot);
     expect(invocations[0]?.argv).not.toContain("--skip-git-repo-check");
   });
 

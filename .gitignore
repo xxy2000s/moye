@@ -4,3 +4,4 @@ coverage/
 .moye-runtime/
 *.log
 .DS_Store
+.playwright-cli/

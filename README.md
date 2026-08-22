@@ -2,7 +2,7 @@
 
 Moye 是一个面向代码研发任务的全自动、可恢复、可追踪 Harness。它以 Task 为业务聚合根，协调 Agent、Daemon、Worktree、测试、Review、Git 合并和知识沉淀，目标是让一次研发任务从需求进入到主干合入形成可验证闭环。
 
-当前状态：**页面可提交真实 Codex/Claude 本地编码任务；隔离 Worktree、独立只读 Review、一次自动 Repair、验证、Git 合入、关闭与归档闭环已通过真实 Codex 验收**。
+当前状态：**Board 已能只读审计 Task 的合法状态机与实际 Event 路径；隔离 Worktree、独立只读 Review、一次自动 Repair、验证、Git 合入、关闭与归档闭环已通过真实 Codex 验收**。
 
 ## 当前目标
 
@@ -32,7 +32,7 @@ npm install
 npm run demo
 ```
 
-命令会自动分配空闲端口、启动 Restate，并在隔离 Git Fixture 中用确定性 Fake Agent 完成一次 Coding Task：创建 Worktree、修改文件、提交、验证、合入和归档。它不会修改 Moye 仓库。打开终端中 `项目看板:` 后面的 URL，点击“已归档”列中的 Task，就能看到中文七阶段旅程；按 `Ctrl-C` 停止，演示数据保留在 `.moye-runtime/demo`。
+命令会自动分配空闲端口、启动 Restate，并在隔离 Git Fixture 中用确定性 Fake Agent 完成一次 Coding Task：创建 Worktree、修改文件、提交、验证、合入和归档。它不会修改 Moye 仓库。打开终端中 `项目看板:` 后面的 URL，点击“已归档”列中的 Task，可以核对合法边、实际 Event 转换、Attempt/Evidence 和归档终态；按 `Ctrl-C` 停止，演示数据保留在 `.moye-runtime/demo`。
 
 要让本机真实 Agent 完成同一个隔离任务，使用：
 
@@ -64,7 +64,7 @@ npm run test:e2e
 
 `test:e2e` 会启动隔离的 Restate 1.7.4 容器、强杀 Service、重启并验证唯一归档，结束后自动清理容器。开发启动、服务注册、CLI 和看板操作见 [本地 PoC Runbook](./docs/knowledge/guidance/runbooks/local-restate-poc.md)。
 
-启动 Restate、注册 Moye 服务后，Board 顶部的“真实 Agent 任务”表单可直接提交允许仓库。产品 API 只接受 `CODEX_EXEC` 或 `CLAUDE_PRINT`，不会回落 Fake。真实、隔离、可重复的产品验收命令是：
+启动 Restate、注册 Moye 服务后，Board 是只读审计界面，不创建或推进 Task。通用 Task 可由 CLI 提交；真实 Coding Task 可由同源 API 或验收脚本提交。产品 API 只接受 `CODEX_EXEC` 或 `CLAUDE_PRINT`，不会回落 Fake。真实、隔离、可重复的产品验收命令是：
 
 ```bash
 npm run acceptance:live
@@ -79,10 +79,11 @@ CLI 统一使用 `npm run cli -- <command>`；项目 Agent 应使用 [moye-task-
 
 Coding Task 出现在看板后，点击卡片默认先看到：
 
-1. 任务结论与 Task → Workflow → Agent Session → Git Commit 关联链；
-2. 需求与上下文、隔离工作区、Agent 编码、自动验证、独立审查、合入分支、文档检查、归档八个阶段；
-3. 每个阶段展开后的 Attempt 和 Evidence；
-4. `查看 Agent Events` 打开独立弹窗持续展示完整 Agent CLI JSONL，可筛选工具过程、展开原始 JSON，并通过游标读取全部事件；关闭后回到原任务详情。
+1. 当前业务状态、独立 Archive 状态，以及 Projection 与 Event History 是否一致；
+2. 当前版本允许的 normal、Repair、failure、archive 边，与这次 Task 实际走过的边；
+3. 每条实际转换绑定的 Event sequence/type/time；
+4. StepAttempt Generation、Agent/Review Session、Verification、Evidence 和 Git 结果；
+5. `查看 Agent Events` 打开独立弹窗持续展示完整 Agent CLI JSONL，可筛选工具过程、展开原始 JSON，并通过游标读取全部事件；关闭后回到原任务详情。
 
 Restate Journal、恢复建议、技术 Artifact 与原始事件收在“高级诊断”中。进入 Restate 的链接已经按 `CodingTaskWorkflow + task_id` 过滤；Restate 负责执行排障，Moye Board 才是任务业务视图。
 
@@ -136,4 +137,4 @@ Moye 使用自己定义的 Task、证据和知识治理原则建设自身：
 
 ## 当前边界
 
-本轮已经实现 Task/Archive Workflow、单 Agent 本地编码 Workflow、Fake/真实 Codex 与 Claude Print Adapter、增量 Agent JSONL、cursor 查询与交互看板、幂等 Worktree/Verification/Merge、Board Projection、三层 Trace 查询、标准 OTLP 输出、可选 Phoenix、受控 Artifact 下载、CLI、项目 Skill 和故障注入测试。多 Daemon 调度、GitHub PR/Merge、鉴权、完整 Repair/Replan，以及 Metrics/Logs/告警/SLO 等生产可观测性仍属于后续阶段。
+本轮已经实现 Task/Archive Workflow、单 Agent 本地编码 Workflow、Fake/真实 Codex 与 Claude Print Adapter、独立 Review 与一次 Repair、增量 Agent JSONL、cursor 查询与只读状态机看板、幂等 Worktree/Verification/Merge、Board Projection、三层 Trace 查询、标准 OTLP 输出、可选 Phoenix、受控 Artifact 下载、CLI、项目 Skill 和故障注入测试。多 Daemon 调度、GitHub PR/Merge、鉴权、完整 Core Replan，以及 Metrics/Logs/告警/SLO 等生产可观测性仍属于后续阶段。

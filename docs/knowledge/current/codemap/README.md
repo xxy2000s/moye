@@ -16,9 +16,9 @@
 | `src/restate/core-services.ts` | CoreClosureWorkflow 与只读 status | Workflow 独占 Core Projection；Scenario Adapter 只返回可验证 Artifact |
 | `src/product/live-task.ts` | 校验页面真实任务、仓库白名单与 Git refs，并冻结 Coding Workflow 输入 | 不推进状态；只构造提交材料 |
 | `src/review/live-review.ts` | 调用独立 Codex/Claude 只读 Review，生成结构化 Verdict、Finding 和 Artifact | 不推进状态；Workflow 消费已验证结果 |
-| `src/trace/coding-trace.ts`、`telemetry.ts` | Coding Projection 到三层 Trace、稳定 OTel Span 与恢复建议的纯映射 | 无，只读派生；`TraceSink` 默认 Noop |
+| `src/trace/state-machine.ts`、`coding-trace.ts`、`telemetry.ts` | Coding/通用 Task Projection 到状态机 Definition/History、三层 Trace、稳定 OTel Span 与恢复建议的纯映射 | 无，只读派生；`TraceSink` 默认 Noop |
 | `src/demo/coding-fixture.ts`、`scripts/demo.ts`、`scripts/trace-compose.ts` | 隔离 Git Fixture、Fake/真实 CLI 可选 Demo 与可选 Phoenix 编排 | 不拥有生产状态；演示状态由 CodingTaskWorkflow 持有 |
-| `public/index.html`、`public/app.js` | 真实任务提交、四列项目看板、Task 详情、Coding Trace 与独立弹窗承载的可跟随/筛选 Agent Events Viewer | 提交入口与只读 Projection；不直接推进状态 |
+| `public/index.html`、`public/app.js` | 四列只读项目看板、Task 状态机 Definition/History、执行证据与独立弹窗承载的可跟随/筛选 Agent Events Viewer | 只读 Projection；不创建或推进状态 |
 
 ## 模块图
 
@@ -79,16 +79,16 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 - `domain/review-finding.ts` 固定 Self Review、Candidate-bound Review Input、成功 ReviewResult、独立执行失败、Finding 稳定身份/追加处置和 Blocking Gate；Core 只接受绑定最近 Review Manifest Digest 的可信 Gate Result；
 - `core/workflow.ts` 用确定性 Scenario Adapter 贯通线性成功、Repair、Replan、UNKNOWN→Reconcile、预算终止和取消；`core/scenario-artifact.ts` 在昂贵执行前写稳定 Intent，复用已确认结果并把仅有 Intent 的情况停为 UNKNOWN；
 - `agent/role-runner.ts` 为 Core PoC 的 Docs、Implementation、Review 提供统一 Attempt、Request、判别输出和内容寻址 Artifact Manifest；Fake Role Runner 用稳定 Intent/Manifest 对账证明已确认 Run 不重复，未知结果停止；通用 Core Role Runner 的真实 Adapter 尚未接入；
-- `agent/runner.ts` 规范请求、运行中 JSONL Stream 与最终 Artifact；`codex-exec.ts` 和 `claude-print.ts` 只负责 argv-only Agent 子进程并把 stdout chunk 交给行边界写入器，不推进 Task 状态；Claude 原生 OTel/内容采集只注入当前子进程，默认关闭；
+- `agent/runner.ts` 规范请求、验证 Worktree/Git common dir、运行中 JSONL Stream 与最终 Artifact；`codex-exec.ts` 以 `workspace-write + --add-dir <validated-git-common-dir>` 允许真实 commit，`claude-print.ts` 维持自己的 argv-only 边界；两者只把 stdout chunk 交给行边界写入器，不推进 Task 状态；Claude 原生 OTel/内容采集只注入当前子进程，默认关闭；
 - `product/live-task.ts` 只接受 `CODEX_EXEC | CLAUDE_PRINT`，在进入 Runtime 前拒绝 Fake、越界仓库、非 Git 仓库和冲突 ref；它创建受管 Task Package、Artifact Root、Worktree Root 与冻结 Envelope；
 - `review/live-review.ts` 使用与 Implementation 独立的 CLI Session 和只读权限生成结构化 Verdict/Finding；Intent 已存在而 Manifest 缺失时返回 UNKNOWN，不盲目重跑；
 - `backlog/document-sync.ts` 先验证全部 YAML，再形成单个 ProjectBoard 批次；
 - `archive/file-archive.ts` 只依赖领域输入和文件系统；自举关闭模块还调用本地 Git、Ruby 文档门禁和 Task Artifact Resolver；
 - `git/workspace-effect.ts` 通过 argv-only Git Adapter 管理隔离 Worktree；写操作前后都以 Branch、Worktree HEAD 和 ancestry 对账，Checkpoint 固定 Commit 与 Tree Object ID；
-- `coding/workflow.ts` 编排固定八阶段并记录 Step/Attempt/Evidence/Binding；产品路径在 Verification 后执行独立真实 Review，Blocking Finding 触发至多一次真实 Repair、重新验证和重新 Review；`verification/gate.ts` 用稳定 Intent 对账 Gate；`git/merge-effect.ts` 只接受可信 Binding 并以 ref CAS 发布唯一 Merge；
+- `coding/workflow.ts` 编排固定主路径并记录 Step/Attempt/Evidence/Binding；Implementation 完成后才进入 Verification，Verification 完成后才进入独立真实 Review；Blocking Finding 创建新的 IMPLEMENT Generation N+1，再重新验证和 Review；`verification/gate.ts` 用稳定 Intent 对账 Gate；`git/merge-effect.ts` 只接受可信 Binding 并以 ref CAS 发布唯一 Merge；
 - `TaskAuthority` 保证同一 Task revision 只能由一个主 Workflow 推进；ProjectBoard 是二级查询投影；
 - `CoreClosureWorkflow/<task_id>` 通过 `ctx.run` 调用 Scenario Artifact Adapter，持久化 `EXECUTING → CLOSED` 查询投影；它不把 Board、Archive、Observer 或外层 Merge 状态写进 Core Outcome；
-- Board 通过 `TaskAuthority.get` 解析主 Workflow，不扫描目录推断 Runtime 状态；Coding Trace 只从主 Projection 派生；`/agent-events` 从 Projection 的稳定 Run locator 读取受管流，以 cursor 分页并分类，前端在独立顶层 Dialog 中运行中轮询且不设永久 200 条截断，关闭 Dialog 即停止跟随并回到原 Task Detail；完成后的原始下载与 Raw Model IO 继续校验投影白名单、受管根、realpath、大小和摘要；
+- Board 通过 `TaskAuthority.get` 解析主 Workflow，不扫描目录推断 Runtime 状态；`state-machine.ts` 只从连续 Event History 标记实际 traversed 边，并同时列出合法未走边、当前 Projection/Event 一致性和 Attempt/Run/Evidence；通用 Task 与 Coding Task 都可审计，Board 无状态写入口；`/agent-events` 从 Projection 的稳定 Run locator 读取受管流，以 cursor 分页并分类，前端在独立顶层 Dialog 中运行中轮询且不设永久 200 条截断，关闭 Dialog 即停止跟随并回到原 Task Detail；完成后的原始下载与 Raw Model IO 继续校验投影白名单、受管根、realpath、大小和摘要；
 - `telemetry.ts` 从持久化 Attempt 生成短 Span 并输出标准 OTLP/HTTP protobuf；导出失败只影响诊断，不回写 Task 业务终态；
 - Restate Journal 是运行时恢复事实，`docs/delivery/tasks` 是研发材料事实。
 
@@ -105,7 +105,7 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 | `src/core/workflow.ts`、`src/core/scenario-artifact.ts`、`src/restate/core-services.ts` | 已确认昂贵场景重复、Intent-only 盲重试、Worker 退出后重复结果、回执丢失产生第二个 Closure | Core Workflow unit + 真实 Restate 六场景/异步回执/SIGKILL E2E |
 | `src/git/workspace-effect.ts` | 路径/符号链接逃逸、Base 漂移、分支冲突、未知 Git 结果重复写 | `tests/unit/workspace-effect.test.ts` |
 | `src/product/live-task.ts`、`src/review/live-review.ts` | Fake 混入产品入口、仓库越界、ref 冲突、Review 复用 Implementation 结论、Finding 未阻断 Merge、未知 Review 盲重跑 | Live Task unit + `npm run acceptance:live` 真实 Codex 双 Session 验收 |
-| `src/coding/workflow.ts`、`src/verification/gate.ts`、`src/git/merge-effect.ts` | Gate 重放、Commit 漂移、Expected Base TOCTOU、状态越权、未知 Agent/Workspace/Merge 误判 | Coding unit + Worker restart/unknown Merge Restate E2E + Codex Fixture evidence |
+| `src/coding/workflow.ts`、`src/trace/state-machine.ts`、`src/verification/gate.ts`、`src/git/merge-effect.ts` | Event 倒序补写、Repair 复用旧 Attempt、虚构 traversed 边、Gate 重放、Commit 漂移、Expected Base TOCTOU、状态越权、未知 Agent/Workspace/Merge 误判 | Coding/State Machine unit + Worker restart/unknown Merge Restate E2E + Codex Fixture evidence |
 | `src/effects/counter.ts` | Step 确认前中断造成副作用重复 | `tests/unit/counter.test.ts`、E2E 计数断言 |
 | `src/restate/services.ts` | 重放、错误分类、投影漂移 | `tests/e2e/restate-recovery.test.ts` |
 | `src/trace/coding-trace.ts`、`telemetry.ts`、`src/board/server.ts` | 状态源混淆、OTLP 关联漂移、UNKNOWN 恢复建议越权、Artifact/静态路径逃逸 | Trace/OTLP/Board unit + Coding/Legacy Restate E2E、只读派生、realpath + digest 校验 |

@@ -128,6 +128,8 @@ export function createCodexExecInvocation(
       "workspace-write",
       "--cd",
       request.workspaceRoot,
+      "--add-dir",
+      request.workspaceGitCommonDir,
       request.prompt,
     ]),
     cwd: request.workspaceRoot,

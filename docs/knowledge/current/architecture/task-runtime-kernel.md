@@ -130,7 +130,7 @@ Daemon 调度、角色 Agent、Worktree、Git、Gate 和知识沉淀都建立在
 - Fake Coding Runner 用 Commit marker 对账中断点；真实 Codex 在进程启动前写稳定 Intent，缺少完整结果时标记 UNKNOWN 并禁止自动重启；
 - Docs Step 即使 `not_applicable` 也生成明确 Artifact；证据不齐不能 CLOSED，Restate 路径在 CLOSED 后调用独立 ArchiveWorkflow。
 
-ProjectBoard 接收 Coding 的状态和事件摘要；`src/trace/coding-trace.ts` 再从只读 Coding Projection 派生三层 Trace：业务 Event/Step/Attempt/Evidence 是任务事实，Restate Journal 是 durable execution/replay 事实，Agent/Verification/Git Artifact 是诊断证据。Workflow 把 Adapter 的 `code + category` 结构化保存到失败 Projection；任何 `UNKNOWN_SIDE_EFFECT`，无论发生在 Workspace、Agent、Verification 或 Merge，都只能派生等待/对账建议，不能建议并行新 Task。Trace 没有写入口，不能复活 Attempt 或形成第二套状态机。完整 Repair/Replan 操作仍属于后续切片。
+ProjectBoard 接收 Coding 的状态和事件摘要；`src/trace/state-machine.ts` 与 `coding-trace.ts` 再从只读 Projection 派生状态机 Definition/History 和三层 Trace：业务 Event/Step/Attempt/Evidence 是任务事实，Restate Journal 是 durable execution/replay 事实，Agent/Verification/Git Artifact 是诊断证据。只有连续 Event History 能把合法边标为 traversed；Projection 与 History 终点不一致时显式报告 `MISMATCH`，不能由页面补齐。Workflow 把 Adapter 的 `code + category` 结构化保存到失败 Projection；任何 `UNKNOWN_SIDE_EFFECT`，无论发生在 Workspace、Agent、Verification 或 Merge，都只能派生等待/对账建议，不能建议并行新 Task。Trace 没有写入口，不能复活 Attempt 或形成第二套状态机。Coding 已实现一次 Finding-driven Repair；完整 Core Replan 仍属于后续切片。
 
 `TaskAuthority.get` 为查询层返回冻结的 owner 与 Spec Revision，Board 据此访问唯一主 Workflow，不扫描目录猜测类型。Git ref 更新完成后 Worker 退出的路径由相同 Merge Effect 重放：先读取 marker、双亲和 target ancestry，确认已应用后返回 `ALREADY_APPLIED`，再由 Workflow 确认 Step。
 
@@ -213,6 +213,16 @@ Board `POST /api/tasks` 只接受 `CODEX_EXEC | CLAUDE_PRINT`，在任何 Runtim
 真实 Implementation Commit 先绑定 Verification，再由第二个只读 CLI Session 产生结构化 ReviewResult。存在 Blocking Finding 时，Workflow 在固定一次 Repair 预算内创建新的 Implementation Agent Run、Checkpoint、Verification 和 Review；预算耗尽则保留 Findings 并失败，不合入。通过后才允许 Merge、Docs disposition、业务关闭与独立 Archive。所有实际 Agent Run 都有稳定 Run ID 和 Artifact；产品 Trace 展示 Review/Repair，但 Board 与 Trace 仍不能推进状态。
 
 该产品切片复用 Core 不变量，但当前状态所有者仍是 CodingTaskWorkflow；完整 Docs Role、Spec Replan 和 `CoreClosureResult` 接线仍属于后续 Core 产品化，不得从页面可用性推断为已完成。
+
+### 5.0.11 当前已实现只读状态机审计切片
+
+Board 不再把静态阶段条或任务提交表单当作闭环证明。`GET /api/tasks/<task_id>/trace` 对 CodingTaskWorkflow 与通用 TaskWorkflow 都返回版本化 State Machine Trace：`definition` 列出当前代码允许的 normal、Repair、failure、archive 边；`history` 只从连续 Runtime Event 派生，并保留 sequence、type、time 和 detail；`current.consistency` 核对 Projection 终点与 Event History 终点。未出现在 History 的合法边只能显示为“允许但未发生”。
+
+Coding Workflow 在实际外部操作前发布对应 `STEP_STARTED`：Implementation 完成并固定 Checkpoint 后结束其 Attempt，再进入 Verification；Verification 通过后才进入 Review。Blocking Finding 先形成 `REVIEW_FINDINGS`，再创建 IMPLEMENT Generation N+1 的独立 StepAttempt、Agent Run 和 Checkpoint，随后创建 VERIFY Generation N+1 并重新 Review。Projection 同时保留 Agent Run、Checkpoint、Verification 与 Review 历史，页面可用 Attempt ID、Run/Session ID 和 Digest 交叉核对。
+
+真实 Codex 仍运行在 `workspace-write`，但受管 Git Worktree 的 commit 必须写入外部 common dir。`AgentRunRequest` 先验证 Worktree top-level 和 Git common dir，再由 Adapter 用 `--add-dir <workspaceGitCommonDir>` 增加唯一额外可写根；不得用 `danger-full-access` 规避这个边界。
+
+该视图仍只覆盖当前已经实现的 Coding/TaskWorkflow 状态，不冒充总体架构中规划的 Lease、Fencing、完整 Replan 或多 Daemon 状态。Board、Trace Builder 和浏览器均没有状态推进命令。
 
 ### 5.1 模型关系
 

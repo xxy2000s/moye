@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 45
+graph_revision: 46
 updated_at: "2026-08-22"
 
 entrypoints:
@@ -479,6 +479,70 @@ documents:
     scope: live-agent-product-loop
     authority: backlog
     read_when: [task-create, coding-task-poc, workflow-change]
+
+  - id: finding-task-state-machine-not-visible
+    path: docs/sources/findings/task-state-machine-not-visible.md
+    type: finding
+    status: confirmed
+    scope: task-state-machine-visibility
+    authority: finding
+    read_when: [finding-intake, task-create, coding-task-poc]
+
+  - id: bl-0021-task-state-machine-visibility
+    path: docs/delivery/backlog/BL-0021.yaml
+    type: backlog
+    status: converted_to_task
+    scope: task-state-machine-visibility
+    authority: backlog
+    read_when: [task-create, coding-task-poc, workflow-change]
+
+  - id: task-0020-manifest
+    path: docs/delivery/tasks/TASK-0020/task.yaml
+    type: task-manifest
+    status: active
+    scope: task-state-machine-visibility
+    authority: task-artifact
+    read_when: [task-runtime-change, workflow-change, task-execution, task-close]
+
+  - id: task-0020-spec
+    path: docs/delivery/tasks/TASK-0020/spec.md
+    type: task-spec
+    status: active
+    scope: task-state-machine-visibility
+    authority: task-artifact
+    read_when: [coding-task-poc, workflow-change, task-execution, task-close]
+
+  - id: task-0020-design
+    path: docs/delivery/tasks/TASK-0020/design.md
+    type: task-design
+    status: active
+    scope: task-state-machine-visibility
+    authority: task-artifact
+    read_when: [coding-task-poc, workflow-change, task-execution]
+
+  - id: task-0020-plan
+    path: docs/delivery/tasks/TASK-0020/plan.md
+    type: task-plan
+    status: active
+    scope: task-state-machine-visibility
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0020-verification
+    path: docs/delivery/tasks/TASK-0020/verification.md
+    type: verification
+    status: active
+    scope: task-state-machine-visibility
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0020-docs-impact
+    path: docs/delivery/tasks/TASK-0020/docs-impact.yaml
+    type: docs-impact
+    status: active
+    scope: task-state-machine-visibility
+    authority: task-evidence
+    read_when: [task-close, task-archive]
 
   - id: task-0019-manifest
     path: docs/delivery/tasks/archive/2026-08-22-TASK-0019/task.yaml
@@ -2070,6 +2134,54 @@ relations:
     type: refines
 
   - from: task-0019-manifest
+    to: task-runtime-kernel
+    type: implements_slice_of
+
+  - from: findings-index
+    to: finding-task-state-machine-not-visible
+    type: indexes
+
+  - from: finding-task-state-machine-not-visible
+    to: bl-0021-task-state-machine-visibility
+    type: creates_backlog
+
+  - from: backlog-index
+    to: bl-0021-task-state-machine-visibility
+    type: indexes
+
+  - from: bl-0021-task-state-machine-visibility
+    to: task-0020-manifest
+    type: schedules_into
+
+  - from: tasks-index
+    to: task-0020-manifest
+    type: indexes
+
+  - from: task-0020-spec
+    to: task-0020-manifest
+    type: belongs_to
+
+  - from: task-0020-design
+    to: task-0020-spec
+    type: refines
+
+  - from: task-0020-plan
+    to: task-0020-manifest
+    type: belongs_to
+
+  - from: task-0020-verification
+    to: task-0020-manifest
+    type: verifies
+
+  - from: task-0020-docs-impact
+    to: task-0020-manifest
+    type: reports_on
+
+  - from: task-0020-manifest
+    to: task-0019-manifest
+    type: refines
+
+  - from: task-0020-manifest
     to: task-runtime-kernel
     type: implements_slice_of
 

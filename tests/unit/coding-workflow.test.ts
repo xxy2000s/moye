@@ -5,12 +5,15 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { FixtureCodingAgentRunner } from "../../src/agent/fixture-coding.js";
+import { FixtureCodingAgentRunner, StreamingFixtureCodingAgentRunner } from "../../src/agent/fixture-coding.js";
+import type { AgentRunner } from "../../src/agent/runner.js";
 import { CODING_WORKFLOW_STEPS, runCodingWorkflow } from "../../src/coding/workflow.js";
 import { createTaskEnvelope } from "../../src/domain/coding-task.js";
 import { MoyeError } from "../../src/domain/errors.js";
 import { nodeGitCommandRunner } from "../../src/git/workspace-effect.js";
 import type { GitCommandRunner } from "../../src/git/workspace-effect.js";
+import type { LiveReviewRunner } from "../../src/review/live-review.js";
+import { buildCodingStateMachine } from "../../src/trace/state-machine.js";
 
 const roots: string[] = [];
 afterEach(async () => { for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true }); });
@@ -83,6 +86,72 @@ describe("coding workflow", () => {
     expect(result).toMatchObject({ state: "CLOSED", archiveStatus: "ARCHIVED" });
     expect(result.merge).toMatchObject({ outcome: "ALREADY_APPLIED", reconciledAfterUnknown: true });
     expect(mergeCalls).toBe(1);
+  });
+
+  it("records Review findings as a real Repair edge with a new IMPLEMENT Attempt", async () => {
+    const fixture = await createFixture();
+    const implementation = streamingRunner("session-implementation", "result.txt", "workflow done\n");
+    const repair = streamingRunner("session-repair", "repair.txt", "review finding repaired\n");
+    const agentRunner: AgentRunner = {
+      run(request) {
+        return (request.attemptId.endsWith("attempt-001") ? implementation : repair).run(request);
+      },
+    };
+    let reviewCalls = 0;
+    const reviewRunner: LiveReviewRunner = {
+      async run(request) {
+        reviewCalls += 1;
+        const findings = reviewCalls === 1
+          ? [{ severity: "BLOCKING" as const, title: "missing repair marker", details: "repair.txt must be committed" }]
+          : [];
+        return {
+          schemaVersion: 1,
+          runId: `review-run-${reviewCalls}`,
+          taskId: request.taskId,
+          specRevision: request.specRevision,
+          attempt: request.attempt,
+          runnerKind: request.runnerKind,
+          sessionId: `session-review-${reviewCalls}`,
+          commitSha: request.commitSha,
+          outcome: "SUCCEEDED",
+          verdict: findings.length > 0 ? "FINDINGS" : "PASSED",
+          summary: findings.length > 0 ? "one blocking finding" : "repair accepted",
+          findings,
+          exitCode: 0,
+          signal: null,
+          startedAt: `2026-08-20T00:00:0${reviewCalls}.000Z`,
+          finishedAt: `2026-08-20T00:00:0${reviewCalls}.100Z`,
+          eventsArtifactRef: `review-artifact://review-run-${reviewCalls}/events.jsonl`,
+          manifestArtifactRef: `review-artifact://review-run-${reviewCalls}/manifest.json`,
+          resultDigest: `review-result:${reviewCalls}`,
+        };
+      },
+    };
+
+    const result = await runCodingWorkflow({
+      ...fixture.input,
+      runnerKind: "CODEX_EXEC",
+      reviewMode: "REAL",
+      maxRepairAttempts: 1,
+    }, { agentRunner, reviewRunner, now: clock() });
+
+    expect(result).toMatchObject({ state: "CLOSED", archiveStatus: "ARCHIVED", repairCount: 1 });
+    expect(result.reviews?.map(({ verdict }) => verdict)).toEqual(["FINDINGS", "PASSED"]);
+    expect(result.agentRuns?.map(({ attemptId, sessionId }) => ({ attemptId, sessionId }))).toEqual([
+      { attemptId: `${result.taskId}/IMPLEMENT/attempt-001`, sessionId: "session-implementation" },
+      { attemptId: `${result.taskId}/IMPLEMENT/attempt-002`, sessionId: "session-repair" },
+    ]);
+    expect(result.attempts.filter(({ stepId }) => stepId === "IMPLEMENT").map(({ generation, status }) => ({ generation, status })))
+      .toEqual([{ generation: 1, status: "SUCCEEDED" }, { generation: 2, status: "SUCCEEDED" }]);
+    expect(result.attempts.filter(({ stepId }) => stepId === "VERIFY").map(({ generation, status }) => ({ generation, status })))
+      .toEqual([{ generation: 1, status: "SUCCEEDED" }, { generation: 2, status: "SUCCEEDED" }]);
+
+    const machine = buildCodingStateMachine(result);
+    expect(machine.current).toMatchObject({ overall: "ARCHIVED", historyCurrent: "ARCHIVED", consistency: "VERIFIED" });
+    expect(machine.history.map(({ from, to }) => `${from}->${to}`)).toContain("REVIEW->IMPLEMENT");
+    expect(machine.definition.edges).toContainEqual(expect.objectContaining({
+      from: "REVIEW", to: "IMPLEMENT", kind: "REPAIR", traversed: true,
+    }));
   });
 
   it("keeps business closure when the independent Archive effect fails", async () => {
@@ -213,6 +282,19 @@ async function createFixture(failValidation = false) {
 function clock(): () => Date {
   let value = Date.parse("2026-08-20T00:00:00.000Z");
   return () => { const current = new Date(value); value += 10; return current; };
+}
+
+function streamingRunner(sessionId: string, fileName: string, content: string): StreamingFixtureCodingAgentRunner {
+  return new StreamingFixtureCodingAgentRunner({
+    events: [
+      { type: "thread.started", thread_id: sessionId },
+      { type: "turn.started" },
+      { type: "item.completed", item: { type: "agent_message", text: `${fileName} committed` } },
+      { type: "turn.completed" },
+    ],
+    mutation: { fileName, content },
+    delayMs: 0,
+  });
 }
 
 function git(cwd: string, ...argv: string[]): string {

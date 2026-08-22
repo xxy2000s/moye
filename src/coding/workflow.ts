@@ -9,6 +9,7 @@ import type { CodingPipelineStepId, CodingStep, EvidenceBinding, StepAttempt, Ta
 import {
   bindEvidence,
   createInitialAttempt,
+  createRetryAttempt,
   finishAttempt,
   parseTaskEnvelope,
   recordAttemptEvidence,
@@ -89,7 +90,9 @@ export interface CodingWorkflowProjection {
   readonly reviews?: readonly LiveReviewResult[];
   readonly repairCount?: number;
   readonly checkpoint?: GitCheckpoint;
+  readonly checkpoints?: readonly GitCheckpoint[];
   readonly verification?: VerificationBinding | VerificationFailure;
+  readonly verifications?: readonly (VerificationBinding | VerificationFailure)[];
   readonly merge?: LocalMergeResult;
   readonly docs?: { readonly artifactRef: string; readonly contentDigest: string; readonly disposition: string };
   readonly archive?: CodingArchiveReceipt;
@@ -143,7 +146,10 @@ export async function runCodingWorkflow(
     await publish(withEvent({ ...projection, currentStep: step }, "STEP_STARTED", step, canonicalNow(now)));
     const codingStep = findCodingStep(envelope, step);
     if (codingStep !== undefined) {
-      const scheduled = createInitialAttempt(codingStep, canonicalNow(now));
+      const previousAttempts = projection.attempts.filter((attempt) => attempt.stepId === step);
+      const scheduled = previousAttempts.length === 0
+        ? createInitialAttempt(codingStep, canonicalNow(now))
+        : createRetryAttempt(codingStep, previousAttempts, canonicalNow(now));
       const running = startAttempt(scheduled, canonicalNow(now));
       await publish({ ...projection, attempts: [...projection.attempts, running] });
     }
@@ -279,15 +285,11 @@ export async function runCodingWorkflow(
       JSON.parse(JSON.stringify(checkpointRaw)) as unknown,
       checkpointRaw.checkpointDigest,
     );
-    await publish({ ...projection, checkpoint });
-    if (input.reviewMode !== "REAL") {
-      await succeed("IMPLEMENT", checkpoint.commitSha, {
-        artifactName: "agent-events.jsonl", contentDigest: agent.artifacts.events.contentDigest,
-      });
-      await start("VERIFY");
-    } else {
-      await publish({ ...projection, currentStep: "VERIFY" });
-    }
+    await publish({ ...projection, checkpoint, checkpoints: [...(projection.checkpoints ?? []), checkpoint] });
+    await succeed("IMPLEMENT", checkpoint.commitSha, {
+      artifactName: "agent-events.jsonl", contentDigest: agent.artifacts.events.contentDigest,
+    });
+    await start("VERIFY");
     let verificationEpoch = Date.parse(canonicalNow(now));
     let verificationRaw = await activity("verification-gate-1", () => {
       let verificationTick = 0;
@@ -311,12 +313,14 @@ export async function runCodingWorkflow(
     } else {
       verification = deepFreeze(JSON.parse(JSON.stringify(verificationRaw)) as VerificationFailure);
     }
-    await publish({ ...projection, verification });
+    await publish({ ...projection, verification, verifications: [...(projection.verifications ?? []), verification] });
     if (!verification.passed) return fail("VERIFY", verification.code, {
       code: verification.code,
       category: verification.code === "RESULT_UNKNOWN" ? "UNKNOWN_SIDE_EFFECT" : "TERMINAL",
     });
-    let finalReview: LiveReviewResult | undefined;
+    await succeed("VERIFY", verification.verificationDigest, {
+      artifactName: "verification.json", contentDigest: verification.evidenceContentDigest,
+    });
     if (input.reviewMode === "REAL") {
       if (input.runnerKind === "FAKE" || dependencies.reviewRunner === undefined) {
         return fail("REVIEW", "Real Review requires a real runner", { code: "REAL_REVIEW_RUNNER_REQUIRED", category: "VALIDATION" });
@@ -328,7 +332,7 @@ export async function runCodingWorkflow(
       let reviewAttempt = 1;
       let repairCount = 0;
       while (true) {
-        await publish({ ...projection, currentStep: "REVIEW" });
+        await start("REVIEW");
         const review = await activity(`review-agent-${reviewAttempt}`, () => dependencies.reviewRunner!.run({
           taskId: envelope.taskId,
           specRevision: envelope.specRevision,
@@ -343,7 +347,6 @@ export async function runCodingWorkflow(
             ...envelope.requirements.flatMap((requirement) => [requirement.title, ...requirement.acceptanceCriteria]),
           ].join("\n"),
         }));
-        finalReview = review;
         await publish({ ...projection, review, reviews: [...(projection.reviews ?? []), review], repairCount });
         if (review.outcome !== "SUCCEEDED" || review.verdict === null) {
           return fail("REVIEW", review.summary || `Review outcome ${review.outcome}`, {
@@ -351,7 +354,10 @@ export async function runCodingWorkflow(
             category: review.outcome === "FAILED" ? "TERMINAL" : "VALIDATION",
           });
         }
-        if (review.verdict === "PASSED") break;
+        if (review.verdict === "PASSED") {
+          await succeed("REVIEW", review.resultDigest);
+          break;
+        }
         await publish(withEvent(projection, "REVIEW_FINDINGS", "REVIEW", canonicalNow(now), review.resultDigest));
         if (repairCount >= maxRepairs) {
           return fail("REVIEW", `Review has ${review.findings.filter((finding) => finding.severity === "BLOCKING").length} blocking finding(s) after ${repairCount} repair(s)`, {
@@ -360,12 +366,14 @@ export async function runCodingWorkflow(
         }
         repairCount += 1;
         const generation = repairCount + 1;
-        await publish(withEvent({ ...projection, currentStep: "IMPLEMENT", repairCount }, "REPAIR_STARTED", "IMPLEMENT", canonicalNow(now), review.resultDigest));
+        await start("IMPLEMENT");
+        await publish(withEvent({ ...projection, repairCount }, "REPAIR_STARTED", "IMPLEMENT", canonicalNow(now), review.resultDigest));
+        const repairAttempt = requireRunningAttempt(projection, "IMPLEMENT");
         const repairRequest = await createAgentRunRequest({
           taskId: envelope.taskId,
           specRevision: envelope.specRevision,
           stepId: "IMPLEMENT",
-          attemptId: `${envelope.taskId}/IMPLEMENT/attempt-${String(generation).padStart(3, "0")}`,
+          attemptId: repairAttempt.attemptId,
           runnerKind: input.runnerKind,
           workspaceRoot: workspace.worktreePath,
           artifactRoot: path.join(input.artifactRoot, "agent"),
@@ -397,10 +405,16 @@ export async function runCodingWorkflow(
           repairRequest,
           repairActivity.value.runDigest,
         );
+        agent = repaired;
+        await publish({
+          ...projection,
+          agent,
+          agentRuns: [...(projection.agentRuns ?? []), agent],
+          repairCount,
+        });
         if (repaired.outcome !== "SUCCEEDED") return fail("IMPLEMENT", `Repair Agent outcome ${repaired.outcome}`, {
           code: `AGENT_OUTCOME_${repaired.outcome}`, category: "TERMINAL",
         });
-        agent = repaired;
         const repairedCheckpointRaw = await activity(`result-checkpoint-${generation}`, () => createGitCheckpoint(
           workspace, canonicalNow(now), dependencies.gitRunner,
         ));
@@ -408,6 +422,17 @@ export async function runCodingWorkflow(
           JSON.parse(JSON.stringify(repairedCheckpointRaw)) as unknown,
           repairedCheckpointRaw.checkpointDigest,
         );
+        await publish({
+          ...projection,
+          checkpoint,
+          checkpoints: [...(projection.checkpoints ?? []), checkpoint],
+          repairCount,
+        });
+        await succeed("IMPLEMENT", checkpoint.commitSha, {
+          artifactName: "agent-events.jsonl", contentDigest: agent.artifacts.events.contentDigest,
+        });
+        await publish(withEvent(projection, "REPAIR_SUCCEEDED", "IMPLEMENT", canonicalNow(now), checkpoint.commitSha));
+        await start("VERIFY");
         verificationEpoch = Date.parse(canonicalNow(now));
         verificationRaw = await activity(`verification-gate-${generation}`, () => {
           let verificationTick = 0;
@@ -422,33 +447,19 @@ export async function runCodingWorkflow(
           : deepFreeze(JSON.parse(JSON.stringify(verificationRaw)) as VerificationFailure);
         await publish({
           ...projection,
-          agent,
-          agentRuns: [...(projection.agentRuns ?? []), agent],
-          checkpoint,
           verification,
+          verifications: [...(projection.verifications ?? []), verification],
           repairCount,
         });
         if (!verification.passed) return fail("VERIFY", verification.code, {
           code: verification.code,
           category: verification.code === "RESULT_UNKNOWN" ? "UNKNOWN_SIDE_EFFECT" : "TERMINAL",
         });
-        await publish(withEvent(projection, "REPAIR_SUCCEEDED", "IMPLEMENT", canonicalNow(now), checkpoint.commitSha));
+        await succeed("VERIFY", verification.verificationDigest, {
+          artifactName: "verification.json", contentDigest: verification.evidenceContentDigest,
+        });
         reviewAttempt += 1;
       }
-    }
-
-    if (input.reviewMode === "REAL") {
-      await succeed("IMPLEMENT", checkpoint.commitSha, {
-        artifactName: "agent-events.jsonl", contentDigest: agent.artifacts.events.contentDigest,
-      });
-      await start("VERIFY");
-    }
-    await succeed("VERIFY", verification.verificationDigest, {
-      artifactName: "verification.json", contentDigest: verification.evidenceContentDigest,
-    });
-    if (finalReview !== undefined) {
-      await start("REVIEW");
-      await succeed("REVIEW", finalReview.resultDigest);
     }
 
     await start("MERGE");

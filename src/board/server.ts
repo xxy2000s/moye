@@ -11,6 +11,7 @@ import { invoke, send } from "../restate/ingress.js";
 import type { TaskAuthorityState } from "../restate/services.js";
 import type { CodingWorkflowProjection } from "../coding/workflow.js";
 import { buildCodingTaskTrace } from "../trace/coding-trace.js";
+import { buildTaskStateMachine } from "../trace/state-machine.js";
 import type { MoyeConfig } from "../config.js";
 import type { AgentArtifactFile } from "../agent/runner.js";
 import { buildLiveCodingTask, listLiveCapabilities } from "../product/live-task.js";
@@ -97,18 +98,38 @@ async function route(
       return;
     }
     if (traceRequest) {
-      if (authority.owner !== "CODING_WORKFLOW") {
-        writeJson(response, 409, { error: "Detailed coding trace is not available for this Task workflow" });
+      if (authority.owner === "CORE_WORKFLOW") {
+        writeJson(response, 409, { error: "Core state machine is available from CoreClosureWorkflow status only" });
         return;
       }
-      const projection = await invoke<CodingWorkflowProjection | null>(
-        options.ingressUrl, "CodingTaskWorkflow", taskId, "status",
+      if (authority.owner === "CODING_WORKFLOW") {
+        const projection = await invoke<CodingWorkflowProjection | null>(
+          options.ingressUrl, "CodingTaskWorkflow", taskId, "status",
+        );
+        writeJson(response, projection === null ? 404 : 200,
+          projection === null ? { error: "Task trace not found" } : buildCodingTaskTrace(projection, {
+            restateAdminUrl: options.restateAdminUrl,
+            ...(options.observability === undefined ? {} : { observability: options.observability }),
+          }));
+        return;
+      }
+      const projection = await invoke<TaskProjection | null>(
+        options.ingressUrl, "TaskWorkflow", taskId, "status",
       );
-      writeJson(response, projection === null ? 404 : 200,
-        projection === null ? { error: "Task trace not found" } : buildCodingTaskTrace(projection, {
-          restateAdminUrl: options.restateAdminUrl,
-          ...(options.observability === undefined ? {} : { observability: options.observability }),
-        }));
+      writeJson(response, projection === null ? 404 : 200, projection === null ? { error: "Task trace not found" } : {
+        schemaVersion: 1,
+        traceKind: "TASK",
+        task: projection,
+        stateMachine: buildTaskStateMachine(projection),
+        durableRuntime: {
+          authority: "Restate Journal",
+          workflowRef: `restate://TaskWorkflow/${projection.taskId}`,
+          workflowService: "TaskWorkflow",
+          workflowKey: projection.taskId,
+          adminBaseUrl: options.restateAdminUrl,
+          invocationsUrl: buildWorkflowInvocationsUrl(options.restateAdminUrl, "TaskWorkflow", projection.taskId),
+        },
+      });
       return;
     }
     if (agentEventsRequest) {
@@ -226,6 +247,15 @@ async function route(
 }
 
 type DownloadableArtifactKind = "agent-events" | "raw-model-io";
+
+function buildWorkflowInvocationsUrl(adminBaseUrl: string, service: string, taskId: string): string {
+  const url = new URL("/ui/invocations", adminBaseUrl);
+  url.searchParams.set("filter_target_service_name", JSON.stringify({ operation: "IN", value: [service] }));
+  url.searchParams.set("filter_target_service_key", JSON.stringify({ operation: "EQUALS", value: taskId }));
+  url.searchParams.set("sort_field", "created_at");
+  url.searchParams.set("sort_order", "DESC");
+  return url.toString();
+}
 
 export type AgentEventCategory = "conversation" | "tool" | "tool_result" | "system" | "error";
 

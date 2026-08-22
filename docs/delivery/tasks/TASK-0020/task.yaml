@@ -1,0 +1,26 @@
+schema_version: 1
+id: TASK-0020
+title: 在页面展示真实 Task 状态机与转换证据
+status: executing
+outcome:
+backlog_refs:
+  - BL-0021
+spec_revision: 1
+workflow_id: task/TASK-0020
+execution_mode: goal-bootstrap
+base_commit: e47fee442b8780cb341c446f9275a40cf4be6b22
+archive:
+  status: not_ready
+  archived_at:
+  archived_path:
+result:
+  pull_request:
+  merge_commit:
+  closure_report: task-artifact://TASK-0020/verification.md
+  implementation_commit:
+execution_evidence:
+  executor_id: codex:/root
+  result_commit:
+  verification_refs:
+    - task-artifact://TASK-0020/verification.md
+  docs_impact_ref: task-artifact://TASK-0020/docs-impact.yaml

@@ -2,6 +2,7 @@ import type { AgentArtifactFile } from "../agent/runner.js";
 import type { CodingPipelineStepId, StepAttempt } from "../domain/coding-task.js";
 import type { CodingWorkflowProjection } from "../coding/workflow.js";
 import { traceIdForTask } from "./telemetry.js";
+import { buildCodingStateMachine, type TaskStateMachineTrace } from "./state-machine.js";
 
 export type RecoveryClassification = "NONE" | "WAIT_OR_RECONCILE" | "FAILED_TERMINAL" | "ARCHIVE_RETRY";
 
@@ -14,6 +15,7 @@ export interface RecoveryAction {
 
 export interface CodingTaskTrace {
   readonly schemaVersion: 1;
+  readonly traceKind: "CODING";
   readonly task: {
     readonly taskId: string;
     readonly specRevision: number;
@@ -122,6 +124,7 @@ export interface CodingTaskTrace {
     readonly summary: string;
     readonly actions: readonly RecoveryAction[];
   };
+  readonly stateMachine: TaskStateMachineTrace;
 }
 
 export function buildCodingTaskTrace(
@@ -137,6 +140,7 @@ export function buildCodingTaskTrace(
   const recovery = deriveRecovery(projection);
   return deepFreeze({
     schemaVersion: 1 as const,
+    traceKind: "CODING" as const,
     task: {
       taskId: projection.taskId,
       specRevision: projection.specRevision,
@@ -267,6 +271,7 @@ export function buildCodingTaskTrace(
       ...(options.observability?.enabled === true ? { uiBaseUrl: options.observability.uiBaseUrl } : {}),
     },
     recovery,
+    stateMachine: buildCodingStateMachine(projection),
   });
 }
 

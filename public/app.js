@@ -10,8 +10,6 @@ const elements = {
   detail: document.querySelector("#detail-content"),
   eventsDialog: document.querySelector("#agent-events-dialog"),
   eventsViewer: document.querySelector("#agent-events-dialog [data-agent-events-viewer]"),
-  taskForm: document.querySelector("#live-task-form"),
-  taskStatus: document.querySelector("#task-submit-status"),
 };
 
 const lanes = {
@@ -49,80 +47,8 @@ elements.eventsDialog.addEventListener("close", () => {
   shouldRestoreAgentEventsFocus = true;
 });
 document.querySelector("#refresh").addEventListener("click", loadBoard);
-elements.taskForm.addEventListener("submit", submitLiveTask);
-await loadLiveCapabilities();
 await loadBoard();
 setInterval(loadBoard, 5000);
-
-async function loadLiveCapabilities() {
-  const repository = elements.taskForm.elements.repositoryRoot;
-  try {
-    const response = await fetch("/api/live-capabilities", { cache: "no-store" });
-    if (!response.ok) throw new Error(await response.text());
-    const capabilities = await response.json();
-    repository.replaceChildren(...capabilities.repositoryRoots.map(root => {
-      const option = document.createElement("option");
-      option.value = root;
-      option.textContent = root;
-      return option;
-    }));
-    if (capabilities.repositoryRoots.length === 0) {
-      repository.innerHTML = '<option value="">没有配置可执行仓库</option>';
-    }
-  } catch (error) {
-    repository.innerHTML = '<option value="">仓库配置读取失败</option>';
-    elements.taskStatus.textContent = error instanceof Error ? error.message : String(error);
-    elements.taskStatus.className = "submit-error";
-  }
-}
-
-async function submitLiveTask(event) {
-  event.preventDefault();
-  const form = elements.taskForm;
-  const button = form.querySelector('button[type="submit"]');
-  button.disabled = true;
-  elements.taskStatus.className = "";
-  elements.taskStatus.textContent = "正在校验仓库并提交到 Runtime…";
-  try {
-    const data = new FormData(form);
-    const validationCommands = String(data.get("validationCommands") || "").split(/\r?\n/)
-      .map(line => line.trim()).filter(Boolean).map((line, index) => ({
-        commandId: `CMD-LIVE-${String(index + 1).padStart(2, "0")}`,
-        argv: JSON.parse(line),
-      }));
-    if (validationCommands.some(command => !Array.isArray(command.argv) || command.argv.length === 0)) {
-      throw new Error("每条验证命令必须是非空 JSON 字符串数组");
-    }
-    const response = await fetch("/api/tasks", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        title: String(data.get("title") || ""),
-        objective: String(data.get("objective") || ""),
-        acceptanceCriteria: String(data.get("acceptanceCriteria") || "").split(/\r?\n/).map(line => line.trim()).filter(Boolean),
-        repositoryRoot: String(data.get("repositoryRoot") || ""),
-        baseBranch: String(data.get("baseBranch") || ""),
-        targetBranch: String(data.get("targetBranch") || ""),
-        runnerKind: String(data.get("runnerKind") || ""),
-        docsDisposition: String(data.get("docsDisposition") || ""),
-        validationCommands,
-      }),
-    });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || `提交失败（HTTP ${response.status}）`);
-    elements.taskStatus.className = "submit-success";
-    elements.taskStatus.textContent = `${result.taskId} 已由真实 ${String(data.get("runnerKind"))} 接收；可在“进行中”查看。`;
-    form.elements.title.value = "";
-    form.elements.objective.value = "";
-    form.elements.acceptanceCriteria.value = "";
-    await loadBoard();
-  } catch (error) {
-    elements.taskStatus.className = "submit-error";
-    elements.taskStatus.textContent = error instanceof Error ? error.message : String(error);
-  } finally {
-    button.disabled = false;
-  }
-}
 
 async function loadBoard() {
   try {
@@ -178,11 +104,12 @@ function taskCard(task, index) {
   const card = cardShell(index, "button");
   card.type = "button";
   card.setAttribute("aria-label", `查看任务 ${task.taskId}：${task.title}`);
+  const visibleState = task.outcome === "FAILED_TERMINAL" ? "FAILED" : task.state;
   card.innerHTML = `
     <div class="card-meta"><span>${escapeHtml(task.taskId)}</span><span>R${task.specRevision}</span></div>
     <h3>${escapeHtml(task.title)}</h3>
     <div class="card-footer">
-      <span class="tag ${stateColor(task.state)}">${escapeHtml(taskStateLabel(task.state))}</span>
+      <span class="tag ${stateColor(visibleState)}">${escapeHtml(taskStateLabel(visibleState))}</span>
       <span class="tag ${archiveColor(task.archiveStatus)}">${escapeHtml(archiveStatusLabel(task.archiveStatus))}</span>
     </div>`;
   card.addEventListener("click", () => openTask(task));
@@ -200,15 +127,11 @@ async function openTask(summary) {
   try {
     const taskId = summary.taskId;
     const traceResponse = await fetch(`/api/tasks/${encodeURIComponent(taskId)}/trace`, { cache: "no-store" });
-    if (traceResponse.ok) {
-      renderCodingTrace(await traceResponse.json(), summary);
-      elements.dialog.showModal();
-      return;
-    }
-    if (traceResponse.status !== 409) throw new Error(`轨迹查询失败（${traceResponse.status}）`);
-    const response = await fetch(`/api/tasks/${encodeURIComponent(taskId)}`, { cache: "no-store" });
-    if (!response.ok) throw new Error(`任务查询失败（${response.status}）`);
-    renderLegacyTask(await response.json());
+    if (!traceResponse.ok) throw new Error(`轨迹查询失败（${traceResponse.status}）`);
+    const trace = await traceResponse.json();
+    if (trace.traceKind === "CODING") renderCodingTrace(trace, summary);
+    else if (trace.traceKind === "TASK") renderTaskTrace(trace);
+    else throw new Error(`未知 Trace 类型：${String(trace.traceKind)}`);
     elements.dialog.showModal();
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -221,13 +144,14 @@ async function openTask(summary) {
   }
 }
 
-function renderLegacyTask(task) {
+function renderTaskTrace(trace) {
+  const task = trace.task;
   const events = task.events.map(event => `
-    <li><span class="sequence">${String(event.sequence).padStart(2, "0")}</span><strong>${escapeHtml(event.type)}</strong><time>${formatTime(event.at)}</time></li>`).join("");
+    <li><span class="sequence">${String(event.sequence).padStart(2, "0")}</span><strong>${escapeHtml(event.type)}</strong><span>${escapeHtml(event.detail || "—")}</span><time>${formatTime(event.at)}</time></li>`).join("");
   elements.detail.innerHTML = `
     <span class="detail-id">${escapeHtml(task.taskId)} · 规格版本 R${task.specRevision}</span>
     <h2 class="detail-title">${escapeHtml(task.title)}</h2>
-    <p class="legacy-note"><strong>基础任务生命周期</strong>　这个任务不是 Coding Task，因此没有 Agent、Worktree、验证和 Git 合入轨迹。</p>
+    <p class="legacy-note"><strong>TaskWorkflow 业务聚合</strong>　以下状态和转换全部来自这个 Task 的 Runtime Projection/Event；没有 Coding Agent、Worktree 或 Git 事实时不会伪造。</p>
     <div class="detail-grid">
       <div><span>任务状态</span><strong>${escapeHtml(taskStateLabel(task.state))}</strong></div>
       <div><span>归档状态</span><strong>${escapeHtml(archiveStatusLabel(task.archiveStatus))}</strong></div>
@@ -236,10 +160,12 @@ function renderLegacyTask(task) {
       <div><span>工作流定位</span><strong>TaskWorkflow/${escapeHtml(task.taskId)}</strong></div>
       <div><span>需求来源</span><strong>${task.backlogRefs.map(escapeHtml).join(", ") || "—"}</strong></div>
     </div>
+    ${renderStateMachine(trace.stateMachine)}
     ${task.archivePath ? `<p class="result-ref"><span>归档结果</span><code>${escapeHtml(task.archivePath)}</code></p>` : ""}
     ${task.error ? `<p class="error-box">${escapeHtml(task.error)}</p>` : ""}
-    <p class="eyebrow">持久化事件轨迹</p>
-    <ol class="timeline">${events}</ol>`;
+    <details class="advanced-panel"><summary><span>原始 Domain Event</span><small>状态机 History 的逐条来源</small></summary><ol class="timeline">${events}</ol>
+      ${trace.durableRuntime.invocationsUrl ? `<a class="runtime-link" href="${escapeAttribute(trace.durableRuntime.invocationsUrl)}" target="_blank" rel="noreferrer">在 Restate 中核对 Journal ↗</a>` : ""}
+    </details>`;
 }
 
 function renderCodingTrace(trace, summary) {
@@ -284,6 +210,8 @@ function renderCodingTrace(trace, summary) {
     </div>
     ${task.error ? `<p class="error-box"><strong>失败原因：</strong>${escapeHtml(task.error)}<br><span>下一步：${escapeHtml(trace.recovery.summary)}</span></p>` : ""}
 
+    ${renderStateMachine(trace.stateMachine)}
+
     <section class="diagnostic-actions" aria-label="诊断入口">
       <div><small>Trace ID</small><code>${escapeHtml(trace.observability.traceId)}</code></div>
       ${trace.observability.enabled && trace.observability.uiBaseUrl
@@ -295,7 +223,7 @@ function renderCodingTrace(trace, summary) {
     <p class="trace-note">Trace 与 JSONL 只用于诊断；任务状态以 Moye Projection / Domain Event 为准，中断恢复以 Restate Journal 为准。</p>
 
     <section class="journey-section" aria-labelledby="journey-title">
-      <div class="trace-heading"><div><p class="eyebrow">任务执行旅程</p><h3 id="journey-title">八个阶段，一眼看清做到哪里</h3></div><span>点击阶段查看证据</span></div>
+      <div class="trace-heading"><div><p class="eyebrow">Step / Attempt Evidence</p><h3 id="journey-title">按阶段核对 Attempt 与 Evidence</h3></div><span>状态由上方 Event History 证明</span></div>
       <div class="journey">${journey}</div>
     </section>
 
@@ -323,6 +251,61 @@ function renderCodingTrace(trace, summary) {
     </details>`;
 
   bindAgentEventsDialog(trace);
+}
+
+function renderStateMachine(machine) {
+  const nodeLane = domain => machine.definition.nodes.filter(node => node.domain === domain).map(node => `
+    <li class="machine-node status-${node.status.toLowerCase()}">
+      <small>${escapeHtml(node.id)}</small><strong>${escapeHtml(node.label)}</strong>
+      <span>${node.status === "CURRENT" ? "当前" : node.status === "VISITED" ? "已进入" : "未进入"}</span>
+    </li>`).join("");
+  const transitions = machine.history.map(item => `
+    <li class="machine-transition domain-${item.domain.toLowerCase()}">
+      <span class="sequence">${String(item.sequence).padStart(2, "0")}</span>
+      <div><strong>${escapeHtml(item.from)} <i aria-hidden="true">→</i> ${escapeHtml(item.to)}</strong><small>${escapeHtml(item.eventType)} · ${formatTime(item.at)}</small>${item.detail ? `<code>${escapeHtml(shortDigest(item.detail))}</code>` : ""}</div>
+    </li>`).join("");
+  const edges = machine.definition.edges.map(item => `
+    <li class="machine-edge kind-${item.kind.toLowerCase()} ${item.traversed ? "traversed" : ""}">
+      <code>${escapeHtml(item.from)} → ${escapeHtml(item.to)}</code><span>${escapeHtml(machineEdgeLabel(item.kind))}</span><small>${escapeHtml(item.label)}</small>
+    </li>`).join("");
+  const executions = machine.executions.map(item => `
+    <li class="machine-execution">
+      <div><span class="tag ${executionColor(item.state)}">${escapeHtml(executionKindLabel(item.kind))}</span><strong>${escapeHtml(item.step)}${item.generation === undefined ? "" : ` · G${item.generation}`}</strong><em>${escapeHtml(item.state)}</em></div>
+      <code>${escapeHtml(item.id)}</code>
+      ${item.attemptId ? `<small>Attempt ${escapeHtml(item.attemptId)}</small>` : ""}
+      ${item.sessionId ? `<small>Session ${escapeHtml(item.sessionId)}</small>` : ""}
+      ${item.producer ? `<small>Producer ${escapeHtml(item.producer)}</small>` : ""}
+      ${item.evidenceDigests.length ? `<small>Evidence ${item.evidenceDigests.map(value => escapeHtml(shortDigest(value))).join(" · ")}</small>` : ""}
+    </li>`).join("");
+  return `<section class="state-machine-section" aria-labelledby="state-machine-title">
+    <div class="trace-heading"><div><p class="eyebrow">Runtime State Machine</p><h3 id="state-machine-title">合法转换与本次实际路径</h3></div><span class="machine-integrity ${machine.current.consistency.toLowerCase()}">${machine.current.consistency === "VERIFIED" ? "Event / Projection 一致" : "Event / Projection 不一致"}</span></div>
+    <p class="trace-note">定义说明代码允许哪些边；History 只列这次 Task 的 Domain Event 实际证明的转换。页面不能写状态。</p>
+    <div class="machine-current">
+      <div><span>业务状态</span><strong>${escapeHtml(machine.current.business)}</strong></div>
+      <div><span>Archive 状态</span><strong>${escapeHtml(machine.current.archive)}</strong></div>
+      <div><span>整体落点</span><strong>${escapeHtml(machine.current.overall)}</strong></div>
+      <div><span>Event 重建</span><strong>${escapeHtml(machine.current.historyCurrent)}</strong></div>
+    </div>
+    <div class="machine-lane"><header><span>主状态机</span><small>Business Projection</small></header><ol>${nodeLane("BUSINESS")}</ol></div>
+    <div class="machine-lane archive-lane"><header><span>归档状态机</span><small>与业务 CLOSED 正交</small></header><ol>${nodeLane("ARCHIVE")}</ol></div>
+    <div class="machine-history"><h4>实际转换 History · ${machine.history.length} 条</h4><ol>${transitions || "<li>尚无可还原的状态转换</li>"}</ol></div>
+    <div class="machine-executions"><h4>执行实例 · ${machine.executions.length} 个</h4><ul>${executions || "<li>这个 Workflow 没有 Agent/Attempt 执行实例。</li>"}</ul></div>
+    <details class="machine-definition"><summary><span>查看完整合法边</span><small>实线标记本次已走过；Repair/Failure/Archive 分支不会隐藏</small></summary><ul>${edges}</ul></details>
+  </section>`;
+}
+
+function machineEdgeLabel(kind) {
+  return ({ NORMAL: "主路径", REPAIR: "Repair 回边", FAILURE: "失败分支", ARCHIVE: "归档分支" })[kind] || kind;
+}
+
+function executionKindLabel(kind) {
+  return ({ STEP_ATTEMPT: "Step Attempt", AGENT_RUN: "Agent Run", REVIEW_RUN: "Review Run", VERIFICATION: "Verification", BOOTSTRAP_EVIDENCE: "Bootstrap Evidence" })[kind] || kind;
+}
+
+function executionColor(state) {
+  if (["SUCCEEDED", "PASSED", "ACCEPTED"].includes(state)) return "green";
+  if (["FAILED", "FAILED_TERMINAL", "COMMAND_FAILED"].includes(state)) return "red";
+  return "blue";
 }
 
 function bindAgentEventsDialog(trace) {

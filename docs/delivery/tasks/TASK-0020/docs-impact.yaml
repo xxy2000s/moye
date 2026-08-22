@@ -1,0 +1,136 @@
+schema_version: 1
+task_id: TASK-0020
+graph_revision: 46
+intents: [finding-intake, task-create, workflow-change, coding-task-poc, docs-change]
+changed_paths:
+  - .gitignore
+  - README.md
+  - docs/delivery/backlog/BL-0021.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/tasks/README.md
+  - docs/delivery/tasks/TASK-0020/design.md
+  - docs/delivery/tasks/TASK-0020/docs-impact.yaml
+  - docs/delivery/tasks/TASK-0020/plan.md
+  - docs/delivery/tasks/TASK-0020/spec.md
+  - docs/delivery/tasks/TASK-0020/task.yaml
+  - docs/delivery/tasks/TASK-0020/verification.md
+  - docs/graph.yaml
+  - docs/knowledge/current/architecture/overview.md
+  - docs/knowledge/current/architecture/poc-01-restate.md
+  - docs/knowledge/current/architecture/task-runtime-kernel.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - docs/sources/findings/README.md
+  - docs/sources/findings/task-state-machine-not-visible.md
+  - output/playwright/task-state-machine-ordinary-repo.png
+  - output/playwright/task-state-machine-proof.png
+  - public/app.js
+  - public/index.html
+  - public/styles.css
+  - src/agent/codex-exec.ts
+  - src/board/server.ts
+  - src/coding/workflow.ts
+  - src/trace/coding-trace.ts
+  - src/trace/state-machine.ts
+  - tests/e2e/demo.test.ts
+  - tests/e2e/restate-recovery.test.ts
+  - tests/unit/agent-runner.test.ts
+  - tests/unit/coding-workflow.test.ts
+  - tests/unit/state-machine-trace.test.ts
+docs:
+  read:
+    - agent-contract
+    - root-readme
+    - docs-index
+    - codemap
+    - document-control-plane
+    - findings-index
+    - backlog-index
+    - tasks-index
+    - task-runtime-kernel
+    - overnight-multi-task-goal
+    - finding-backlog-docs-not-projected
+    - bl-0008-backlog-projection-sync
+    - bl-0002-single-agent-coding-loop
+    - restate-poc-architecture
+    - durable-runtime-pitfalls
+    - meta-index
+    - adr-0002-doc-lifecycle-roles
+    - bl-0021-task-state-machine-visibility
+    - sources-index
+    - task-0020-design
+    - task-0020-docs-impact
+    - task-0020-plan
+    - task-0020-spec
+    - task-0020-manifest
+    - task-0020-verification
+    - architecture-overview
+    - architecture-index
+    - local-restate-poc-runbook
+    - runbooks-index
+    - finding-task-state-machine-not-visible
+    - moye-task-control-skill
+    - adr-0001-restate-poc
+    - task-lifecycle-worktree-convergence-brainstorm
+    - multi-agent-core-closure-requirements
+    - task-spec-document-closure-brainstorm
+    - task-0013-manifest
+    - task-0014-manifest
+    - task-0015-manifest
+    - task-0016-manifest
+    - task-0017-manifest
+    - task-0018-manifest
+    - task-0019-manifest
+    - task-0001-manifest
+    - task-0002-manifest
+    - task-0003-manifest
+    - task-0004-manifest
+    - task-0005-manifest
+    - task-0006-manifest
+    - task-0007-manifest
+    - task-0008-manifest
+    - task-0009-manifest
+    - adr-0003-typescript-poc
+    - adr-0004-otlp-phoenix-demo
+  reviewed:
+    architecture-overview: { outcome: updated, reason: "明确 Board 是只读状态机审计面，并登记 Coding 与通用 Task 的 Event-derived Trace" }
+    local-restate-poc-runbook: { outcome: updated, reason: "增加状态机查询判读、只读 Board 入口和普通 Worktree Git common dir 排障" }
+    moye-task-control-skill: { outcome: unchanged, reason: "现有 Route、Result Commit、Runtime Closure、Docs Impact 与 Archive Gate 流程完整适用；状态机展示不增加写入口" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "继续使用已接受的 Restate PoC，不将本次真实验收外推为最终生产选型" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "实现遵循既有 Worktree 作为缓存、Git/Artifact 作为可迁移事实的原则，不重写历史讨论" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "本次只完善已落地 Coding Workflow 的可审计性，不宣称通用多 Agent Core 已全部接线" }
+    task-spec-document-closure-brainstorm: { outcome: unchanged, reason: "Task Spec 与文档 Closure 模型没有变化，继续使用现有 Task Artifact 和 Docs Impact Gate" }
+    task-0013-manifest: { outcome: unchanged, reason: "状态机 Trace 不改变 Core Control Kernel 的历史交付事实" }
+    task-0014-manifest: { outcome: unchanged, reason: "只展示现有 Role/Review 执行证据，不改写通用 Role Runner 历史" }
+    task-0015-manifest: { outcome: unchanged, reason: "沿用 Review/Finding 语义并修正事件时序，不改变协议历史" }
+    task-0016-manifest: { outcome: unchanged, reason: "Repair 新 Generation 遵守既有预算模型，不改变 Recovery/Replan 协议历史" }
+    task-0017-manifest: { outcome: unchanged, reason: "只读状态机不改变 Observer 或 Knowledge Candidate 协议" }
+    task-0018-manifest: { outcome: unchanged, reason: "Coding 状态机视图不改变确定性 Core Closure 故障矩阵" }
+    task-0019-manifest: { outcome: unchanged, reason: "本任务修复 TASK-0019 后续发现的可见性和普通仓库 Git 边界，不改写其历史交付证据" }
+    task-0001-manifest: { outcome: unchanged, reason: "复用 Task/Archive Runtime 和独立 Archive 语义，不改变历史事实" }
+    task-0002-manifest: { outcome: unchanged, reason: "Finding 与 Backlog 按既有转换规则登记" }
+    task-0003-manifest: { outcome: unchanged, reason: "继续使用冻结 TaskEnvelope 与 Digest，不改变协议" }
+    task-0004-manifest: { outcome: unchanged, reason: "Git common dir 放行基于既有已验证 Workspace 边界，不改变 Worktree Effect 所有权" }
+    task-0005-manifest: { outcome: unchanged, reason: "复用真实 Codex Adapter，只修正其最小 Git metadata 可写根" }
+    task-0006-manifest: { outcome: unchanged, reason: "Coding Workflow 仍是唯一状态推进者；只修正 Verification/Review/Repair 的真实事件边界" }
+    task-0007-manifest: { outcome: unchanged, reason: "Trace 继续只读派生，不形成第二套主状态机" }
+    task-0008-manifest: { outcome: unchanged, reason: "Fake 仍仅用于隔离自动化，产品成功证据来自真实 Codex" }
+    task-0009-manifest: { outcome: unchanged, reason: "状态机与 Agent Events 展示不改变 OTLP/Phoenix 选择或敏感内容边界" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "继续使用 TypeScript 与现有依赖，没有新增框架或基础设施" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "Event-derived 状态机不改变 OTLP/Phoenix 的诊断定位" }
+    codemap: { outcome: updated, reason: "登记 state-machine Trace Builder、Board 状态机 UI、Coding 时序与 Codex Git common dir 高风险边界" }
+    task-runtime-kernel: { outcome: updated, reason: "明确当前已实现的只读状态机审计、真实事件顺序和普通 Worktree commit 边界" }
+    restate-poc-architecture: { outcome: updated, reason: "登记 Definition/History 分离、Projection 一致性校验及普通本地 Git 仓库真实闭环结论" }
+    document-control-plane: { outcome: unchanged, reason: "继续执行 Router、Graph、Impact Validator 和 Task Artifact 规则" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "未知副作用、幂等和 Reconcile 行为没有改变；本次 Git 权限缺陷已进入真实 Finding/Backlog/Task" }
+    findings-index: { outcome: updated, reason: "登记页面无法审计 Task 状态机及普通仓库 Git commit 失败的真实 Finding" }
+    backlog-index: { outcome: updated, reason: "登记 BL-0021 并绑定 TASK-0020" }
+    tasks-index: { outcome: updated, reason: "登记 TASK-0020 Active Task；Runtime Archive 后由 housekeeping commit 收敛" }
+    finding-task-state-machine-not-visible: { outcome: updated, reason: "记录真实黑盒症状、事件倒序和 Git common dir 根因及修复验证" }
+    bl-0021-task-state-machine-visibility: { outcome: updated, reason: "创建并转换为 TASK-0020，验收限定为真实 Runtime 与真实 Agent 证据" }
+    task-0020-manifest: { outcome: updated, reason: "冻结 Bootstrap Task 的 Base、执行者和 Closure Evidence 引用" }
+    task-0020-spec: { outcome: updated, reason: "定义状态机、Event/Attempt、通用 Trace、真实 Codex 与普通仓库 Git 验收要求" }
+    task-0020-design: { outcome: updated, reason: "定义 Projection 主权、Definition/History 分离、Workflow 时序和最小 Git 可写边界" }
+    task-0020-plan: { outcome: updated, reason: "记录实现、回归、真实任务和浏览器验收进展" }
+    task-0020-verification: { outcome: updated, reason: "固化普通仓库真实 Task、双 Session、Event History、Git、Live Acceptance 与浏览器证据" }
+    task-0020-docs-impact: { outcome: updated, reason: "覆盖最终 Context Route 的 required_review 与所有实际变更路径" }

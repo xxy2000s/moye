@@ -1,0 +1,30 @@
+schema_version: 1
+id: "BL-0021"
+title: "在 Board 展示可审计的 Task 状态机"
+kind: "bug"
+status: "converted_to_task"
+priority: "critical"
+
+source_refs:
+  - task-state-machine-not-visible
+affected_areas:
+  - project-board
+  - coding-trace
+  - coding-workflow
+  - task-attempt
+  - archive
+
+acceptance_outline:
+  - "页面以只读方式展示状态机定义、当前状态和由 Runtime Event 还原的实际转换历史"
+  - "合法主路径、Review→Implementation Repair 回边、失败分支和独立 Archive 分支明确可见"
+  - "每次真实 Implementation/Repair 都有独立 StepAttempt；Review Run、验证和证据能绑定到对应转换"
+  - "通用 TaskWorkflow 也能从真实 Event 展示 RECEIVED→EXECUTING→VERIFYING→CLOSED 与 Archive 历史"
+  - "页面不再以任务提交表单作为主能力，不把静态阶段模板冒充 Runtime 事实"
+  - "至少一个真实 Codex Coding Task 可在 Board 中查看完整实际路径、两个独立模型 Session、Git 结果和 Archive 终态"
+  - "真实 Codex 在受管 Worktree 中拥有完成 Git commit 所需的、已验证 Git common dir 写权限，不依赖系统临时目录特例"
+
+resolution:
+  task_refs:
+    - TASK-0020
+  duplicate_of:
+  reason: "用户确认需要可审计状态机而非 Web 任务提交入口"
