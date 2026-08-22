@@ -1,0 +1,26 @@
+schema_version: 1
+id: TASK-0027
+title: 优化状态机边标签与合法路径详情
+status: closed
+outcome: succeeded
+backlog_refs:
+  - BL-0028
+spec_revision: 1
+workflow_id: task/TASK-0027
+execution_mode: goal-bootstrap
+base_commit: 0c28fecf111abe3d2e9e2a3ab665c22b55ea26bd
+archive:
+  status: pending
+  archived_at: null
+  archived_path: null
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: task-artifact://TASK-0027/verification.md
+  implementation_commit: 312d448e2d0e1d5209be990770de27a73ebfdcb6
+execution_evidence:
+  executor_id: codex:/root
+  result_commit: 312d448e2d0e1d5209be990770de27a73ebfdcb6
+  verification_refs:
+    - task-artifact://TASK-0027/verification.md
+  docs_impact_ref: task-artifact://TASK-0027/docs-impact.yaml
