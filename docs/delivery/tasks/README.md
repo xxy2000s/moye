@@ -21,9 +21,7 @@ tasks/
 
 ## 当前 Active Task
 
-| Task | 状态 | 目标 |
-|---|---|---|
-| [TASK-0025](./TASK-0025/spec.md) | Executing | 补齐状态机节点的执行与系统管控下钻 |
+当前没有 Active Task。
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 
