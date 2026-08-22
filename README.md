@@ -2,7 +2,7 @@
 
 Moye 是一个面向代码研发任务的全自动、可恢复、可追踪 Harness。它以 Task 为业务聚合根，协调 Agent、Daemon、Worktree、测试、Review、Git 合并和知识沉淀，目标是让一次研发任务从需求进入到主干合入形成可验证闭环。
 
-当前状态：**Board 已能只读审计 Task 的合法状态机与实际 Event 路径；隔离 Worktree、独立只读 Review、一次自动 Repair、验证、Git 合入、关闭与归档闭环已通过真实 Codex 验收**。
+当前状态：**真实 Coding Task 已能从统一 CLI 发起，并在 Board 全程审计 Context、Implementation、Self Review、Verification、独立 Review、Repair/Replan、Merge、Docs Gate、Closure 与成功/失败 Archive；完整多 Session 闭环已通过真实 Codex 验收**。
 
 ## 当前目标
 
@@ -64,7 +64,15 @@ npm run test:e2e
 
 `test:e2e` 会启动隔离的 Restate 1.7.4 容器、强杀 Service、重启并验证唯一归档，结束后自动清理容器。开发启动、服务注册、CLI 和看板操作见 [本地 PoC Runbook](./docs/knowledge/guidance/runbooks/local-restate-poc.md)。
 
-启动 Restate、注册 Moye 服务后，Board 是只读审计界面，不创建或推进 Task。通用 Task 可由 CLI 提交；真实 Coding Task 可由同源 API 或验收脚本提交。产品 API 只接受 `CODEX_EXEC` 或 `CLAUDE_PRINT`，不会回落 Fake。真实、隔离、可重复的产品验收命令是：
+启动 Restate、注册 Moye 服务后，Board 是只读审计界面，不创建或推进 Task。`create/status/wait` 会先通过 TaskAuthority 定位唯一 Workflow；输入含 `objective + repositoryRoot + runnerKind` 时 `create` 发起真实 Coding Task，否则保持兼容通用 Task。产品入口只接受 `CODEX_EXEC` 或 `CLAUDE_PRINT`，不会回落 Fake。
+
+```bash
+npm run cli -- create --file /absolute/path/to/live-task.json
+npm run cli -- status TASK-LIVE-EXAMPLE
+npm run cli -- wait TASK-LIVE-EXAMPLE --timeout-ms 900000
+```
+
+真实、隔离、可重复的产品验收命令是：
 
 ```bash
 npm run acceptance:live
@@ -82,8 +90,8 @@ Coding Task 出现在看板后，点击卡片默认先看到：
 1. 当前业务状态、独立 Archive 状态，以及 Projection 与 Event History 是否一致；
 2. 当前版本允许的 normal、Repair、failure、archive 边，与这次 Task 实际走过的边；
 3. 每条实际转换绑定的 Event sequence/type/time；
-4. StepAttempt Generation、Agent/Review Session、Verification、Evidence 和 Git 结果；
-5. `查看 Agent Events` 打开独立弹窗持续展示完整 Agent CLI JSONL，可筛选工具过程、展开原始 JSON，并通过游标读取全部事件；关闭后回到原任务详情。
+4. 所有 Context/Implementation/Self Review/Review/Docs Gate Session、Spec Revision、StepAttempt Generation、Verification、Evidence 和 Git 结果；
+5. 每个角色会话都可打开原始 JSONL；当前正在运行的 Context、Implementation、Self Review、Review、Replan 或 Docs Gate 都支持增量跟随、分类筛选和游标读取。
 
 Restate Journal、恢复建议、技术 Artifact 与原始事件收在“高级诊断”中。进入 Restate 的链接已经按 `CodingTaskWorkflow + task_id` 过滤；Restate 负责执行排障，Moye Board 才是任务业务视图。
 
@@ -137,4 +145,4 @@ Moye 使用自己定义的 Task、证据和知识治理原则建设自身：
 
 ## 当前边界
 
-本轮已经实现 Task/Archive Workflow、单 Agent 本地编码 Workflow、Fake/真实 Codex 与 Claude Print Adapter、独立 Review 与一次 Repair、增量 Agent JSONL、cursor 查询与只读状态机看板、幂等 Worktree/Verification/Merge、Board Projection、三层 Trace 查询、标准 OTLP 输出、可选 Phoenix、受控 Artifact 下载、CLI、项目 Skill 和故障注入测试。多 Daemon 调度、GitHub PR/Merge、鉴权、完整 Core Replan，以及 Metrics/Logs/告警/SLO 等生产可观测性仍属于后续阶段。
+本轮已经实现 Task/Archive Workflow、真实多角色本地 Coding Workflow、Fake/真实 Codex 与 Claude Print Adapter、Self Review、独立 Review、Repair、Spec Revision N+1 Replan、显式 WAITING_RECONCILE/Resume、成功与失败归档、全部 Session JSONL 下钻、只读状态机看板、幂等 Worktree/Verification/Merge、Board Projection、三层 Trace、OTLP、受控 Artifact 下载和统一 CLI。多 Daemon/Lease/Fencing、远程 Git Provider/PR、鉴权、多租户，以及 Metrics/Logs/告警/SLO 等生产运营能力仍属于后续阶段。

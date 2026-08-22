@@ -311,9 +311,14 @@ export async function createGitCheckpoint(
   request: WorkspaceEffectRequest,
   createdAt: string,
   runner: GitCommandRunner = nodeGitCommandRunner,
+  specRevision: number = request.specRevision,
 ): Promise<GitCheckpoint> {
   assertTrustedRequest(request);
   assertIsoInstant(createdAt);
+  assertPositiveInteger(specRevision, "specRevision");
+  if (specRevision < request.specRevision) {
+    throw validation("CHECKPOINT_SPEC_REVISION_STALE", "Checkpoint Spec Revision cannot precede the Workspace creation revision");
+  }
   const state = await reconcileWorkspaceEffect(request, runner);
   if (state.state !== "APPLIED" || !state.headSha) {
     throw new MoyeError({
@@ -338,7 +343,7 @@ export async function createGitCheckpoint(
   const canonical = {
     schemaVersion: 1 as const,
     taskId: request.taskId,
-    specRevision: request.specRevision,
+    specRevision,
     workspaceEffectId: request.effectId,
     baseSha: request.baseSha,
     branchName: request.branchName,
@@ -390,7 +395,6 @@ export async function validateGitCheckpoint(
   assertTrustedRequest(request);
   if (!trustedCheckpoints.has(checkpoint)
       || checkpoint.taskId !== request.taskId
-      || checkpoint.specRevision !== request.specRevision
       || checkpoint.workspaceEffectId !== request.effectId
       || checkpoint.baseSha !== request.baseSha
       || checkpoint.branchName !== request.branchName) {

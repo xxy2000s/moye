@@ -76,15 +76,16 @@ export const taskAuthority = restate.object({
     ): Promise<TaskAuthorityState> => {
       const current = await ctx.get("owner") as TaskAuthorityState["owner"] | null;
       const currentRevision = await ctx.get("specRevision") as number | null;
-      if (current !== null && (current !== input.owner || currentRevision !== input.specRevision)) {
+      if (current !== null && (current !== input.owner || currentRevision === null || input.specRevision < currentRevision)) {
         throw new restate.TerminalError(
           `Task ${ctx.key} is already owned by ${current} revision ${String(currentRevision)}`,
           { errorCode: 409 },
         );
       }
+      const revision = Math.max(currentRevision ?? input.specRevision, input.specRevision);
       ctx.set("owner", input.owner);
-      ctx.set("specRevision", input.specRevision);
-      return input;
+      ctx.set("specRevision", revision);
+      return { owner: input.owner, specRevision: revision };
     },
 
     get: restate.handlers.object.shared(

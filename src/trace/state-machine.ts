@@ -33,7 +33,7 @@ export interface StateTransitionFact {
 }
 
 export interface StateMachineExecution {
-  readonly kind: "STEP_ATTEMPT" | "AGENT_RUN" | "REVIEW_RUN" | "VERIFICATION" | "BOOTSTRAP_EVIDENCE";
+  readonly kind: "STEP_ATTEMPT" | "AGENT_RUN" | "ROLE_RUN" | "REVIEW_RUN" | "VERIFICATION" | "BOOTSTRAP_EVIDENCE";
   readonly id: string;
   readonly state: string;
   readonly step: string;
@@ -70,8 +70,11 @@ const CODING_NODES = [
   ["CONTEXT", "需求与上下文", "BUSINESS", false],
   ["WORKSPACE", "隔离工作区", "BUSINESS", false],
   ["IMPLEMENT", "实现 / Repair", "BUSINESS", false],
+  ["SELF_REVIEW", "实现者自审", "BUSINESS", false],
   ["VERIFY", "验证", "BUSINESS", false],
   ["REVIEW", "独立 Review", "BUSINESS", false],
+  ["REPLAN", "规格修订", "BUSINESS", false],
+  ["WAITING_RECONCILE", "等待副作用对账", "BUSINESS", false],
   ["MERGE", "合入", "BUSINESS", false],
   ["DOCS", "文档处置", "BUSINESS", false],
   ["CLOSED", "业务关闭", "BUSINESS", true],
@@ -85,15 +88,24 @@ const CODING_EDGES: readonly Omit<StateMachineEdge, "traversed">[] = [
   edge("START", "CONTEXT", "NORMAL", "接收冻结 Envelope"),
   edge("CONTEXT", "WORKSPACE", "NORMAL", "Context Evidence 通过"),
   edge("WORKSPACE", "IMPLEMENT", "NORMAL", "Worktree Effect 确认"),
-  edge("IMPLEMENT", "VERIFY", "NORMAL", "Result Commit / Checkpoint"),
+  edge("IMPLEMENT", "SELF_REVIEW", "NORMAL", "Result Commit / Checkpoint"),
+  edge("SELF_REVIEW", "VERIFY", "NORMAL", "Self Review PASSED"),
+  edge("IMPLEMENT", "VERIFY", "NORMAL", "兼容路径未启用 Self Review"),
   edge("VERIFY", "REVIEW", "NORMAL", "Verification 通过"),
   edge("VERIFY", "MERGE", "NORMAL", "Review 未启用的兼容路径"),
   edge("REVIEW", "IMPLEMENT", "REPAIR", "Blocking Finding → 新 Attempt"),
+  edge("REVIEW", "REPLAN", "REPAIR", "Spec Finding → Revision N+1"),
+  edge("REPLAN", "CONTEXT", "REPAIR", "重新验证修订规格"),
   edge("REVIEW", "MERGE", "NORMAL", "Review PASSED"),
   edge("MERGE", "DOCS", "NORMAL", "Merge Effect 确认"),
   edge("DOCS", "CLOSED", "NORMAL", "关闭 Gate 通过"),
-  ...["CONTEXT", "WORKSPACE", "IMPLEMENT", "VERIFY", "REVIEW", "MERGE", "DOCS"]
+  ...["CONTEXT", "WORKSPACE", "IMPLEMENT", "SELF_REVIEW", "VERIFY", "REVIEW", "REPLAN", "MERGE", "DOCS"]
     .map((from) => edge(from, "FAILED", "FAILURE", "不可恢复失败")),
+  ...["CONTEXT", "WORKSPACE", "IMPLEMENT", "SELF_REVIEW", "VERIFY", "REVIEW", "REPLAN", "MERGE", "DOCS"]
+    .map((from) => edge(from, "WAITING_RECONCILE", "FAILURE", "外部结果未知，等待对账")),
+  ...["CONTEXT", "WORKSPACE", "IMPLEMENT", "SELF_REVIEW", "VERIFY", "REVIEW", "REPLAN", "MERGE", "DOCS"]
+    .map((to) => edge("WAITING_RECONCILE", to, "REPAIR", "对账确认后恢复原步骤")),
+  edge("FAILED", "ARCHIVING", "ARCHIVE", "失败事实固化后归档"),
   edge("CLOSED", "ARCHIVING", "ARCHIVE", "启动独立 Archive"),
   edge("ARCHIVING", "ARCHIVED", "ARCHIVE", "Archive Receipt 确认"),
   edge("ARCHIVING", "ARCHIVE_FAILED", "ARCHIVE", "Archive Effect 失败"),
@@ -207,6 +219,8 @@ function codingEventTarget(event: CodingWorkflowEvent): string | undefined {
   if (event.type === "WORKFLOW_CLOSED") return "CLOSED";
   if (event.type === "WORKFLOW_ARCHIVED") return "ARCHIVED";
   if (event.type === "ARCHIVE_FAILED") return "ARCHIVE_FAILED";
+  if (event.type === "RECONCILE_REQUIRED") return "WAITING_RECONCILE";
+  if (event.type === "RECONCILE_RESUMED") return event.step;
   if (event.type !== "STEP_STARTED") return undefined;
   if (event.step === "CLOSED") return undefined;
   if (event.step === "ARCHIVE") return "ARCHIVING";
@@ -217,6 +231,7 @@ function codingOverall(projection: CodingWorkflowProjection): string {
   if (projection.archiveStatus === "ARCHIVED") return "ARCHIVED";
   if (projection.archiveStatus === "FAILED") return "ARCHIVE_FAILED";
   if (projection.state === "FAILED") return "FAILED";
+  if (projection.state === "WAITING_RECONCILE") return "WAITING_RECONCILE";
   if (projection.currentStep === "ARCHIVE") return "ARCHIVING";
   if (projection.state === "CLOSED") return "CLOSED";
   return projection.currentStep;
@@ -226,6 +241,18 @@ function codingExecutions(projection: CodingWorkflowProjection): StateMachineExe
   const executions: StateMachineExecution[] = projection.attempts.map(stepAttemptExecution);
   const agentRuns = projection.agentRuns ?? (projection.agent === undefined ? [] : [projection.agent]);
   executions.push(...agentRuns.map(agentRunExecution));
+  executions.push(...(projection.roleRuns ?? []).map((run) => ({
+    kind: "ROLE_RUN" as const,
+    id: run.runId,
+    state: run.outcome,
+    step: run.kind,
+    generation: run.attempt,
+    ...(run.sessionId === undefined ? {} : { sessionId: run.sessionId }),
+    producer: run.runnerKind,
+    startedAt: run.startedAt,
+    finishedAt: run.finishedAt,
+    evidenceDigests: [run.resultDigest, run.eventsContentDigest],
+  })));
   executions.push(...(projection.reviews ?? []).map((review) => ({
     kind: "REVIEW_RUN" as const,
     id: review.runId,

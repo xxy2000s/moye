@@ -23,7 +23,7 @@ tasks/
 
 | Task | 状态 | 目标 |
 |---|---|---|
-当前没有 Active Task。
+| [TASK-0021](./TASK-0021/spec.md) | Executing | 接通真实 Core 单任务全流程与 Web 全程审计 |
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 

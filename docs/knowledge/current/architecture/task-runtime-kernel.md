@@ -123,14 +123,17 @@ Daemon 调度、角色 Agent、Worktree、Git、Gate 和知识沉淀都建立在
 
 ### 5.0.3 当前 PoC 已实现单 Agent 编码 Workflow
 
-`CodingTaskWorkflow/<task_id>` 已串联 `CONTEXT → WORKSPACE → IMPLEMENT → VERIFY → MERGE → DOCS → CLOSED → ARCHIVE`。`TaskAuthority/<task_id>` 保证通用 TaskWorkflow 与 CodingTaskWorkflow 不会同时认领同一个 Task revision；Workflow 通过 Observer 独占 Projection 写入并同步 ProjectBoard 查询副本。六个领域 Step 都把 Step、Attempt、Evidence 与 Binding 写入 Projection；每个外部操作经 Restate `ctx.run`，Adapter 只能返回可验证结果。
+`CodingTaskWorkflow/<task_id>` 的产品路径已串联 `CONTEXT(role) → WORKSPACE → IMPLEMENT(agent) → SELF_REVIEW(role) → VERIFY → REVIEW(independent role) → MERGE → DOCS_GATE(role) → CLOSED → ARCHIVE`。`TaskAuthority/<task_id>` 保证通用 TaskWorkflow、CodingTaskWorkflow 与 CoreClosureWorkflow 不会同时认领同一个 Task；同一 Coding owner 只允许单调提升 Spec Revision。Workflow 通过 Observer 独占 Projection 写入并同步 ProjectBoard 查询副本。六个领域 Step、虚拟 Role Step、每个 Attempt/Session/Evidence/Binding 都进入 Projection；每个外部操作经 Restate `ctx.run`，Adapter 只能返回可验证结果。
 
 - Verification Gate 只执行 Envelope argv 并固定 `shell:false`；稳定 Operation Intent 让完成 Outcome 可复用，pending/未知结果停止而不重跑命令；Branch Commit 漂移或任一失败都不会产生 Binding；
 - Local Merge Request 只能从可信 Verification Binding 构造；确定性双亲 Commit 通过 `git update-ref` Expected-Base CAS 原子发布，未知结果由 marker、双亲和 target ancestry 对账；
 - Fake Coding Runner 用 Commit marker 对账中断点；真实 Codex 在进程启动前写稳定 Intent，缺少完整结果时标记 UNKNOWN 并禁止自动重启；
-- Docs Step 即使 `not_applicable` 也生成明确 Artifact；证据不齐不能 CLOSED，Restate 路径在 CLOSED 后调用独立 ArchiveWorkflow。
+- Context、Self Review 与 Docs Gate 使用 `src/agent/live-role.ts` 启动独立只读 Codex/Claude Session；Implementation 使用可写 Worktree Session；Review 使用另一独立只读 Session。每个 Run 固定 Intent、Session、原始 JSONL、stderr、Manifest 和 Digest；产品输入不允许 Fake；
+- Review 的 Blocking Finding 必须声明 `REPAIR | REPLAN`。Repair 创建 Implementation Generation N+1；Replan 创建 TaskEnvelope Spec Revision N+1，旧 Attempt/Evidence 保留但不绑定新 Gate，Workspace 可作为缓存沿用，后续 Checkpoint/Verification 显式绑定新 Revision；
+- 未知外部结果在产品 Runtime 进入 `WAITING_RECONCILE` 并等待 keyed Workflow Durable Promise。只有带当前 token 和外部 evidence 的 `reconcile-task` 能恢复原 operation；不会创建并行 Attempt。确定性失败形成 `FAILED_TERMINAL` 后也调用独立 ArchiveWorkflow 固化失败事实；
+- Docs Step 即使 `not_applicable` 也先经真实 Docs Gate，再生成明确 Artifact；证据不齐不能 CLOSED，成功和失败的 Archive 都与业务 Outcome 分离。
 
-ProjectBoard 接收 Coding 的状态和事件摘要；`src/trace/state-machine.ts` 与 `coding-trace.ts` 再从只读 Projection 派生状态机 Definition/History 和三层 Trace：业务 Event/Step/Attempt/Evidence 是任务事实，Restate Journal 是 durable execution/replay 事实，Agent/Verification/Git Artifact 是诊断证据。只有连续 Event History 能把合法边标为 traversed；Projection 与 History 终点不一致时显式报告 `MISMATCH`，不能由页面补齐。Workflow 把 Adapter 的 `code + category` 结构化保存到失败 Projection；任何 `UNKNOWN_SIDE_EFFECT`，无论发生在 Workspace、Agent、Verification 或 Merge，都只能派生等待/对账建议，不能建议并行新 Task。Trace 没有写入口，不能复活 Attempt 或形成第二套状态机。Coding 已实现一次 Finding-driven Repair；完整 Core Replan 仍属于后续切片。
+ProjectBoard 接收 Coding 的状态和事件摘要；`src/trace/state-machine.ts` 与 `coding-trace.ts` 再从只读 Projection 派生状态机 Definition/History 和三层 Trace：业务 Event/Step/Attempt/Evidence 是任务事实，Restate Journal 是 durable execution/replay 事实，Role/Agent/Verification/Git Artifact 是诊断证据。只有连续 Event History 能把合法边标为 traversed；Projection 与 History 终点不一致时显式报告 `MISMATCH`，不能由页面补齐。Board 展示全部 Role/Agent Session、Spec Revision、Attempt、Finding、Git、Docs 与 Archive 回执，并为每个真实 Session 提供摘要校验的原始 JSONL。Trace 没有写入口，不能复活 Attempt 或形成第二套状态机。
 
 `TaskAuthority.get` 为查询层返回冻结的 owner 与 Spec Revision，Board 据此访问唯一主 Workflow，不扫描目录猜测类型。Git ref 更新完成后 Worker 退出的路径由相同 Merge Effect 重放：先读取 marker、双亲和 target ancestry，确认已应用后返回 `ALREADY_APPLIED`，再由 Workflow 确认 Step。
 
@@ -148,7 +151,7 @@ ProjectBoard 接收 Coding 的状态和事件摘要；`src/trace/state-machine.t
 
 ### 5.0.5 当前已实现统一 Role Agent 协议切片
 
-`src/agent/role-runner.ts` 为 Core 三种执行角色提供同一执行外壳，当前由确定性 Fake Runner 验证，尚未接入真实模型进程或 Restate：
+`src/agent/role-runner.ts` 继续为确定性 Core 协议测试提供统一角色契约；产品 Coding Workflow 由 `src/agent/live-role.ts` 将 Context、Self Review、Replan 与 Docs Gate 接到真实 Codex/Claude 只读进程：
 
 - `RoleAttempt` 只能从 Core Projection 的唯一 Pending Role Dispatch 创建，固定 Role Step、Generation、Dispatch/Input Digest，并执行 `SCHEDULED → RUNNING → SUCCEEDED | FAILED | CANCELLED` 单向转换；Role Retry 必须使用 Core 新派发的 Generation N+1 和完整连续历史，普通入口不能绕过失败记录复活旧 Attempt；
 - `RoleRunRequest` 固定 Task、Spec Revision、Role、Attempt、Runner Kind、Scope、Prompt Digest 和内容寻址 Run ID；序列化恢复要求调用方提供 Expected Run ID；
@@ -157,7 +160,7 @@ ProjectBoard 接收 Coding 的状态和事件摘要；`src/trace/state-machine.t
 - Runner 调用前以稳定 Run ID 写 Execution Intent。完整 Manifest 直接恢复且不增加执行计数；只有 Intent 而没有确认结果时返回 `UNKNOWN_SIDE_EFFECT`，禁止盲目执行第二次昂贵 Run；
 - Artifact Root 与输入 Scope 分离，拒绝文件系统根、直接符号链接和 Run 目录逃逸。
 
-现有 `src/agent/runner.ts`、Codex/Claude Adapter 和固定 Coding Workflow 契约保持不变。把真实 Role Request 映射到只读 Review/Docs 或可写 Implementation 进程，属于 Core Workflow 接入时的后续实现。
+`src/agent/runner.ts` 仍只负责可写 Implementation；`src/review/live-review.ts` 负责独立 Review；`live-role.ts` 的 Run ID、Execution Intent、Manifest 和原始事件与二者保持相同的未知结果/对账边界。确定性 `CoreClosureWorkflow` Scenario 仍只用于验证纯控制协议，不作为产品成功证据。
 
 ### 5.0.6 当前已实现 Self Review、ReviewResult 与 Finding 切片
 
@@ -179,7 +182,7 @@ ProjectBoard 接收 Coding 的状态和事件摘要；`src/trace/state-machine.t
 - `REPLAN` 必须绑定同一 Task 的 Spec Revision N+1 TaskEnvelope 和精确 Blocking Finding，派发新 Spec 的 Docs Attempt Generation N+1，同时显式记录旧 Envelope、Role Result、Review Gate 与 Finding 引用失效，历史事实不删除；Attempt Generation 在整个 Task 内连续，不能因 Spec Revision 变化发生 ID 碰撞；
 - 每种 Decision 都有固定预算形状，Reducer 先完整校验再扣减，不能把 Operation Retry 夹带进 Role Retry/Repair/Replan。Required Gate 缺少所需预算时，确定性决策只产生一个内容寻址 `FAILED_TERMINAL` 候选并进入 `CLOSING`；最终 ClosureResult 仍由后续 Closure 切片生成。
 
-这些恢复事实仍是纯领域协议，尚未接入 keyed Restate Core Workflow；当前单 Agent `CodingTaskWorkflow` 的既有恢复语义不变。
+纯 Core Reducer 仍保留上述完整恢复协议；产品 `CodingTaskWorkflow` 已接入 Repair、Replan、Spec Revision、中央次数预算和 WAITING_RECONCILE Durable Signal 的可执行子集。尚未接入的部分是多 Daemon Lease/Fencing 与跨机器调度，不再把真实多角色闭环列为未实现。
 
 ### 5.0.8 当前已实现 Observer 与 Docs Impact Gate 切片
 

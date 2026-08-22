@@ -8,10 +8,14 @@ import { loadBacklogSyncBatch } from "../backlog/document-sync.js";
 import { loadConfig } from "../config.js";
 import type { ArchiveInput } from "../domain/archive.js";
 import type { TaskProjection } from "../domain/task.js";
+import type { CodingWorkflowProjection } from "../coding/workflow.js";
 import type { BacklogSyncResult } from "../domain/backlog.js";
 import { createTaskProjection } from "../domain/task.js";
 import { invoke, send } from "../restate/ingress.js";
 import type { TaskWorkflowInput } from "../restate/services.js";
+import type { TaskAuthorityState } from "../restate/services.js";
+import { buildLiveCodingTask } from "../product/live-task.js";
+import type { CodingReconcileInput } from "../restate/coding-services.js";
 
 const [command = "help", ...args] = process.argv.slice(2);
 const config = loadConfig();
@@ -48,10 +52,29 @@ try {
       print(await taskStatus(taskId));
       break;
     }
+    case "wait": {
+      const taskId = requiredArgument(args, "task id");
+      const timeoutMs = Number(optionalOption(args, "--timeout-ms") ?? "3600000");
+      if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1) throw new Error("--timeout-ms must be a positive integer");
+      print(await waitForTask(taskId, timeoutMs));
+      break;
+    }
     case "create": {
-      const input = await loadTaskInput(requiredOption(args, "--file"));
-      const receipt = await send(config.restateIngressUrl, "TaskWorkflow", input.taskId, "run", input);
-      print({ accepted: true, taskId: input.taskId, ...receipt });
+      const value = await loadJson<unknown>(requiredOption(args, "--file"));
+      if (isCodingSubmission(value)) {
+        const built = await buildLiveCodingTask(value, {
+          projectId: config.projectId,
+          runtimeRoot: config.liveRuntimeRoot,
+          allowedRepositoryRoots: config.repositoryRoots,
+        });
+        const receipt = await send(config.restateIngressUrl, "CodingTaskWorkflow", built.taskId, "run", built.input);
+        print({ accepted: true, taskId: built.taskId, workflow: "CodingTaskWorkflow", ...receipt });
+      } else {
+        const input = value as TaskWorkflowInput;
+        createTaskProjection(input, new Date().toISOString());
+        const receipt = await send(config.restateIngressUrl, "TaskWorkflow", input.taskId, "run", input);
+        print({ accepted: true, taskId: input.taskId, workflow: "TaskWorkflow", ...receipt });
+      }
       break;
     }
     case "close": {
@@ -59,6 +82,18 @@ try {
       const result = await invoke<TaskProjection>(config.restateIngressUrl, "TaskWorkflow", input.taskId, "run", input);
       if (result.state !== "CLOSED") throw new Error(`Task ended in ${result.state}`);
       print(result);
+      break;
+    }
+    case "reconcile-task": {
+      const taskId = requiredArgument(args, "task id");
+      const input: CodingReconcileInput = {
+        token: requiredOption(args, "--token"),
+        action: "RESUME_AFTER_RECONCILE",
+        evidence: requiredOption(args, "--evidence"),
+      };
+      print(await invoke<CodingWorkflowProjection>(
+        config.restateIngressUrl, "CodingTaskWorkflow", taskId, "reconcile", input,
+      ));
       break;
     }
     case "archive":
@@ -84,13 +119,35 @@ try {
   process.exitCode = 1;
 }
 
-async function taskStatus(taskId: string): Promise<TaskProjection | null> {
-  return invoke<TaskProjection | null>(
-    config.restateIngressUrl,
-    "TaskWorkflow",
-    taskId,
-    "status",
-  );
+async function taskStatus(taskId: string): Promise<TaskProjection | CodingWorkflowProjection | null> {
+  const authority = await invoke<TaskAuthorityState | null>(config.restateIngressUrl, "TaskAuthority", taskId, "get");
+  if (authority === null) return null;
+  if (authority.owner === "CODING_WORKFLOW") {
+    return invoke<CodingWorkflowProjection | null>(config.restateIngressUrl, "CodingTaskWorkflow", taskId, "status");
+  }
+  if (authority.owner === "TASK_WORKFLOW") {
+    return invoke<TaskProjection | null>(config.restateIngressUrl, "TaskWorkflow", taskId, "status");
+  }
+  throw new Error(`Task ${taskId} is owned by ${authority.owner}; no unified product projection is available`);
+}
+
+async function waitForTask(taskId: string, timeoutMs: number): Promise<TaskProjection | CodingWorkflowProjection> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const projection = await taskStatus(taskId);
+    if (projection !== null) {
+      if ("archiveStatus" in projection && projection.archiveStatus === "ARCHIVED") return projection;
+      if ("state" in projection && projection.state === "WAITING_RECONCILE") return projection;
+      if ("archiveStatus" in projection && projection.archiveStatus === "FAILED") return projection;
+    }
+    await new Promise((resolveWait) => setTimeout(resolveWait, 1000));
+  }
+  throw new Error(`Timed out waiting for ${taskId} after ${timeoutMs} ms`);
+}
+
+function isCodingSubmission(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    && "objective" in value && "repositoryRoot" in value && "runnerKind" in value;
 }
 
 async function loadTaskInput(path: string): Promise<TaskWorkflowInput> {
@@ -148,13 +205,17 @@ Usage:
   moye validate --file task.json
   moye route --intent NAME --path PATH
   moye status TASK-ID
+  moye wait TASK-ID [--timeout-ms N]
   moye create --file task.json
   moye close --file task.json
   moye archive --file archive.json
   moye reconcile --file archive.json
+  moye reconcile-task TASK-ID --token TOKEN --evidence TEXT
   moye graph [--mermaid]
 
-create submits a workflow asynchronously; close attaches to the same durable
+create accepts either a bootstrap TaskWorkflow JSON or a real coding-task
+submission and submits it asynchronously. status/wait resolve TaskAuthority
+before querying the owning workflow. close attaches to the same durable
 workflow and waits for its business terminal state. archive and reconcile use
 the same keyed ArchiveWorkflow, so they cannot create a second lifecycle.
 

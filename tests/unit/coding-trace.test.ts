@@ -78,6 +78,34 @@ describe("coding task trace", () => {
     });
   });
 
+  it("exposes an in-flight real role as a followable event stream", () => {
+    const { agent: _agent, verification: _verification, merge: _merge, docs: _docs, archive: _archive, ...base } = closedProjection();
+    const runId = `live-role-run:sha256:${"a".repeat(64)}`;
+    const trace = buildCodingTaskTrace({
+      ...base,
+      state: "RUNNING",
+      currentStep: "CONTEXT",
+      archiveStatus: "NOT_READY",
+      roleRun: {
+        runId,
+        kind: "CONTEXT",
+        runnerKind: "CODEX_EXEC",
+        taskId: base.taskId,
+        specRevision: 1,
+        attempt: 1,
+        eventsArtifactRef: `role-artifact://${runId}/events.jsonl`,
+      },
+    });
+
+    expect(trace.roles.at(-1)).toMatchObject({ runId, kind: "CONTEXT", outcome: "RUNNING" });
+    expect(trace.agentEvents).toEqual({
+      viewUrl: `/api/tasks/TASK-TRACE-UNIT/roles/${encodeURIComponent(runId)}/events`,
+      completed: false,
+      runnerKind: "CODEX_EXEC",
+      attemptId: "CONTEXT-1",
+    });
+  });
+
   it("keeps a deterministic Agent failure terminal instead of reviving its Attempt", () => {
     const {
       verification: _verification, merge: _merge, docs: _docs, archive: _archive, ...base

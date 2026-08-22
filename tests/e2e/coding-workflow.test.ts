@@ -172,7 +172,10 @@ describe("Restate coding workflow", () => {
     const result = await invoke<CodingWorkflowProjection>(
       `http://127.0.0.1:${ingressPort}`, "CodingTaskWorkflow", "TASK-CODING-GATE-FAIL", "run", fixture.input,
     );
-    expect(result).toMatchObject({ state: "FAILED", currentStep: "VERIFY", outcome: "FAILED_TERMINAL" });
+    expect(result).toMatchObject({
+      state: "FAILED", currentStep: "VERIFY", outcome: "FAILED_TERMINAL", archiveStatus: "ARCHIVED",
+    });
+    expect(result.archive?.archivePath).toBe(path.join(fixture.archiveRoot, "2026-08-20-TASK-CODING-GATE-FAIL"));
     expect(result.merge).toBeUndefined();
     expect(git(fixture.repositoryRoot, "rev-parse", "master").trim()).toBe(fixture.baseSha);
     await waitUntil(async () => otlpPayloads.some((payload) =>
@@ -235,7 +238,9 @@ describe("Restate coding workflow", () => {
     const result = await invoke<CodingWorkflowProjection>(
       `http://127.0.0.1:${ingressPort}`, "CodingTaskWorkflow", "TASK-CODING-AGENT-EXIT", "run", input,
     );
-    expect(result).toMatchObject({ state: "FAILED", currentStep: "IMPLEMENT", outcome: "FAILED_TERMINAL" });
+    expect(result).toMatchObject({
+      state: "FAILED", currentStep: "IMPLEMENT", outcome: "FAILED_TERMINAL", archiveStatus: "ARCHIVED",
+    });
     expect(result.agent).toMatchObject({ outcome: "FAILED", exitCode: 19 });
     expect(result.attempts.find((attempt) => attempt.stepId === "IMPLEMENT")).toMatchObject({ status: "FAILED" });
     expect(result.merge).toBeUndefined();
@@ -350,7 +355,7 @@ async function workflowFixture(taskId: string, fail: boolean, validationScript?:
       mutation: { fileName: "result.txt", content: "restated\n" },
     },
   };
-  return { repositoryRoot, baseSha, input };
+  return { repositoryRoot, baseSha, archiveRoot, input };
 }
 
 async function startService(): Promise<void> {

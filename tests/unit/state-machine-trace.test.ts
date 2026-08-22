@@ -90,7 +90,7 @@ describe("runtime state-machine trace", () => {
     expect(machine.definition.edges.find(({ from, to }) => from === "REVIEW" && to === "IMPLEMENT"))
       .toMatchObject({ kind: "REPAIR", traversed: false });
     expect(machine.definition.edges.find(({ from, to }) => from === "FAILED" && to === "ARCHIVING"))
-      .toBeUndefined();
+      .toMatchObject({ kind: "ARCHIVE", traversed: false });
   });
 
   it("rejects a non-contiguous Runtime Event history instead of inventing transitions", () => {

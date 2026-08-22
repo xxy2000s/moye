@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdir, readFile, realpath, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, readFile, realpath, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { MoyeError } from "../domain/errors.js";
@@ -19,8 +19,13 @@ export interface LiveReviewRequest {
   readonly instructions: string;
 }
 
+export interface PreparedLiveReviewRequest extends LiveReviewRequest {
+  readonly runId: string;
+}
+
 export interface LiveReviewFinding {
   readonly severity: "BLOCKING" | "NON_BLOCKING";
+  readonly recommendedAction?: "REPAIR" | "REPLAN";
   readonly title: string;
   readonly details: string;
 }
@@ -43,6 +48,7 @@ export interface LiveReviewResult {
   readonly startedAt: string;
   readonly finishedAt: string;
   readonly eventsArtifactRef: string;
+  readonly eventsContentDigest?: string;
   readonly manifestArtifactRef: string;
   readonly resultDigest: string;
 }
@@ -67,7 +73,7 @@ export class CliLiveReviewRunner implements LiveReviewRunner {
   }
 
   async run(input: LiveReviewRequest): Promise<LiveReviewResult> {
-    const request = await canonicalRequest(input);
+    const request = await prepareLiveReviewRequest(input);
     const runRoot = path.join(request.artifactRoot, `run-${request.runId.slice(-64)}`);
     await mkdir(runRoot, { recursive: true });
     const manifestPath = path.join(runRoot, "manifest.json");
@@ -90,6 +96,8 @@ export class CliLiveReviewRunner implements LiveReviewRunner {
     }
     const schemaPath = path.join(runRoot, "review-schema.json");
     await writeFile(schemaPath, `${JSON.stringify(reviewSchema(), null, 2)}\n`, { flag: "wx" });
+    const eventsPath = path.join(runRoot, "events.jsonl");
+    await writeFile(eventsPath, "", { flag: "wx" });
     const startedAt = new Date().toISOString();
     let processResult;
     try {
@@ -98,13 +106,13 @@ export class CliLiveReviewRunner implements LiveReviewRunner {
         schemaPath,
         this.#codexExecutable,
         this.#claudeExecutable,
-      ));
+      ), { onStdoutChunk: (chunk) => appendFile(eventsPath, chunk) });
     } catch (error) {
       processResult = { stdout: "", stderr: error instanceof Error ? error.message : String(error), exitCode: null, signal: null };
     }
     const finishedAt = new Date().toISOString();
     await Promise.all([
-      writeFile(path.join(runRoot, "events.jsonl"), processResult.stdout, { flag: "wx" }),
+      writeFile(eventsPath, processResult.stdout),
       writeFile(path.join(runRoot, "stderr.log"), processResult.stderr, { flag: "wx" }),
     ]);
     let outcome: LiveReviewResult["outcome"] = processResult.exitCode === 0 && processResult.signal === null ? "SUCCEEDED" : "FAILED";
@@ -143,6 +151,7 @@ export class CliLiveReviewRunner implements LiveReviewRunner {
       startedAt,
       finishedAt,
       eventsArtifactRef: `review-artifact://${request.runId}/events.jsonl`,
+      eventsContentDigest: `sha256:${createHash("sha256").update(processResult.stdout).digest("hex")}`,
       manifestArtifactRef: `review-artifact://${request.runId}/manifest.json`,
     };
     const result: LiveReviewResult = { ...core, resultDigest: digest("live-review-result", core) };
@@ -151,14 +160,15 @@ export class CliLiveReviewRunner implements LiveReviewRunner {
   }
 }
 
-async function canonicalRequest(input: LiveReviewRequest): Promise<LiveReviewRequest & { readonly runId: string }> {
-  if (input.runnerKind !== "CODEX_EXEC" && input.runnerKind !== "CLAUDE_PRINT") throw validation("REAL_REVIEW_RUNNER_REQUIRED", "Review requires a real runner");
-  if (!Number.isSafeInteger(input.attempt) || input.attempt < 1) throw validation("INVALID_REVIEW_ATTEMPT", "Review attempt must be positive");
-  if (!/^[0-9a-f]{40}([0-9a-f]{24})?$/.test(input.commitSha)) throw validation("INVALID_REVIEW_COMMIT", "Review commit must be a full Git object id");
-  const workspaceRoot = await realpath(path.resolve(input.workspaceRoot));
-  const artifactRoot = path.resolve(input.artifactRoot);
+export async function prepareLiveReviewRequest(input: LiveReviewRequest): Promise<PreparedLiveReviewRequest> {
+  const { runId: _preparedRunId, ...request } = input as LiveReviewRequest & { readonly runId?: string };
+  if (request.runnerKind !== "CODEX_EXEC" && request.runnerKind !== "CLAUDE_PRINT") throw validation("REAL_REVIEW_RUNNER_REQUIRED", "Review requires a real runner");
+  if (!Number.isSafeInteger(request.attempt) || request.attempt < 1) throw validation("INVALID_REVIEW_ATTEMPT", "Review attempt must be positive");
+  if (!/^[0-9a-f]{40}([0-9a-f]{24})?$/.test(request.commitSha)) throw validation("INVALID_REVIEW_COMMIT", "Review commit must be a full Git object id");
+  const workspaceRoot = await realpath(path.resolve(request.workspaceRoot));
+  const artifactRoot = path.resolve(request.artifactRoot);
   await mkdir(artifactRoot, { recursive: true });
-  const canonical = { ...input, workspaceRoot, artifactRoot };
+  const canonical = { ...request, workspaceRoot, artifactRoot };
   return { ...canonical, runId: digest("live-review-run", canonical) };
 }
 
@@ -226,8 +236,12 @@ function parseReviewPayload(value: string): { verdict: "PASSED" | "FINDINGS"; su
         || typeof item["title"] !== "string" || typeof item["details"] !== "string") {
       throw validation("INVALID_REVIEW_FINDING", "Review finding fields are invalid");
     }
+    const recommendedAction: "REPAIR" | "REPLAN" = item["recommendedAction"] === "REPLAN" ? "REPLAN" : "REPAIR";
+    if (recommendedAction !== "REPAIR" && recommendedAction !== "REPLAN") {
+      throw validation("INVALID_REVIEW_FINDING", "Review recommendedAction is invalid");
+    }
     const severity: LiveReviewFinding["severity"] = item["severity"] as LiveReviewFinding["severity"];
-    return { severity, title: item["title"], details: item["details"] };
+    return { severity, recommendedAction, title: item["title"], details: item["details"] };
   });
   const blocking = findings.some((finding) => finding.severity === "BLOCKING");
   if ((input["verdict"] === "PASSED") === blocking) throw validation("REVIEW_VERDICT_CONTRADICTION", "Review verdict contradicts blocking findings");
@@ -257,9 +271,10 @@ function reviewSchema() {
         items: {
           type: "object",
           additionalProperties: false,
-          required: ["severity", "title", "details"],
+          required: ["severity", "recommendedAction", "title", "details"],
           properties: {
             severity: { type: "string", enum: ["BLOCKING", "NON_BLOCKING"], description: "BLOCKING only for correctness, security, data loss, or unmet requirements" },
+            recommendedAction: { type: "string", enum: ["REPAIR", "REPLAN"], description: "REPLAN only when the accepted specification is incomplete or contradictory; otherwise REPAIR" },
             title: { type: "string", minLength: 1 },
             details: { type: "string", minLength: 1 },
           },

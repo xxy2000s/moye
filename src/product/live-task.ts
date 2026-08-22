@@ -124,7 +124,9 @@ export async function buildLiveCodingTask(
     prompt: implementationPrompt(submission),
     docsDisposition: submission.docsDisposition,
     reviewMode: "REAL",
+    roleMode: "REAL",
     maxRepairAttempts: 1,
+    maxReplanAttempts: 1,
   };
   await Promise.all([
     writeFile(path.join(taskRoot, "spec.md"), taskSpec(taskId, submission), { flag: "wx" }),

@@ -5,11 +5,14 @@ import path from "node:path";
 import type { AgentProcessRunner } from "../agent/codex-exec.js";
 import type { AgentRunner, AgentRunResult } from "../agent/runner.js";
 import { createAgentRunRequest, parseAgentRunResult } from "../agent/runner.js";
+import { prepareLiveRoleRequest, type LiveRoleResult, type LiveRoleRunner } from "../agent/live-role.js";
 import type { CodingPipelineStepId, CodingStep, EvidenceBinding, StepAttempt, TaskEnvelope } from "../domain/coding-task.js";
 import {
   bindEvidence,
   createInitialAttempt,
+  createReplannedAttempt,
   createRetryAttempt,
+  createTaskEnvelope,
   finishAttempt,
   parseTaskEnvelope,
   recordAttemptEvidence,
@@ -28,12 +31,12 @@ import type { LocalMergeResult } from "../git/merge-effect.js";
 import { applyLocalMerge, createLocalMergeRequest } from "../git/merge-effect.js";
 import type { VerificationBinding, VerificationFailure } from "../verification/gate.js";
 import { parseVerificationBinding, runVerificationGate } from "../verification/gate.js";
-import type { LiveReviewResult, LiveReviewRunner } from "../review/live-review.js";
+import { prepareLiveReviewRequest, type LiveReviewResult, type LiveReviewRunner } from "../review/live-review.js";
 
 export const CODING_WORKFLOW_STEPS = Object.freeze([
   "CONTEXT", "WORKSPACE", "IMPLEMENT", "VERIFY", "MERGE", "DOCS", "CLOSED", "ARCHIVE",
 ] as const);
-export type CodingWorkflowStep = (typeof CODING_WORKFLOW_STEPS)[number] | "REVIEW";
+export type CodingWorkflowStep = (typeof CODING_WORKFLOW_STEPS)[number] | "SELF_REVIEW" | "REVIEW" | "REPLAN";
 
 export interface CodingWorkflowInput {
   readonly envelope: TaskEnvelope;
@@ -48,11 +51,13 @@ export interface CodingWorkflowInput {
   readonly docsDisposition: "updated" | "unchanged" | "not_applicable";
   readonly reviewMode?: "DISABLED" | "REAL";
   readonly maxRepairAttempts?: number;
+  readonly maxReplanAttempts?: number;
+  readonly roleMode?: "DISABLED" | "REAL";
 }
 
 export interface CodingWorkflowEvent {
   readonly sequence: number;
-  readonly type: "STEP_STARTED" | "STEP_SUCCEEDED" | "REVIEW_FINDINGS" | "REPAIR_STARTED" | "REPAIR_SUCCEEDED" | "WORKFLOW_FAILED" | "WORKFLOW_CLOSED" | "WORKFLOW_ARCHIVED" | "ARCHIVE_FAILED";
+  readonly type: "STEP_STARTED" | "STEP_SUCCEEDED" | "REVIEW_FINDINGS" | "REPAIR_STARTED" | "REPAIR_SUCCEEDED" | "SPEC_REVISED" | "RECONCILE_REQUIRED" | "RECONCILE_RESUMED" | "WORKFLOW_FAILED" | "WORKFLOW_CLOSED" | "WORKFLOW_ARCHIVED" | "ARCHIVE_FAILED";
   readonly step: CodingWorkflowStep;
   readonly at: string;
   readonly detail?: string;
@@ -62,7 +67,7 @@ export interface CodingWorkflowProjection {
   readonly taskId: string;
   readonly specRevision: number;
   readonly envelopeDigest: string;
-  readonly state: "RUNNING" | "FAILED" | "CLOSED";
+  readonly state: "RUNNING" | "WAITING_RECONCILE" | "FAILED" | "CLOSED";
   readonly currentStep: CodingWorkflowStep;
   readonly outcome?: "SUCCEEDED" | "FAILED_TERMINAL";
   readonly archiveStatus: "NOT_READY" | "PENDING" | "ARCHIVED" | "FAILED";
@@ -86,8 +91,27 @@ export interface CodingWorkflowProjection {
   };
   readonly agent?: AgentRunResult;
   readonly agentRuns?: readonly AgentRunResult[];
+  readonly roleRun?: {
+    readonly runId: string;
+    readonly kind: LiveRoleResult["kind"];
+    readonly runnerKind: LiveRoleResult["runnerKind"];
+    readonly taskId: string;
+    readonly specRevision: number;
+    readonly attempt: number;
+    readonly eventsArtifactRef: string;
+  };
+  readonly reviewRun?: {
+    readonly runId: string;
+    readonly runnerKind: LiveReviewResult["runnerKind"];
+    readonly taskId: string;
+    readonly specRevision: number;
+    readonly attempt: number;
+    readonly eventsArtifactRef: string;
+  };
   readonly review?: LiveReviewResult;
   readonly reviews?: readonly LiveReviewResult[];
+  readonly roleRuns?: readonly LiveRoleResult[];
+  readonly specRevisions?: readonly { readonly specRevision: number; readonly envelopeDigest: string; readonly reason: string; readonly artifactRef?: string }[];
   readonly repairCount?: number;
   readonly checkpoint?: GitCheckpoint;
   readonly checkpoints?: readonly GitCheckpoint[];
@@ -96,6 +120,16 @@ export interface CodingWorkflowProjection {
   readonly merge?: LocalMergeResult;
   readonly docs?: { readonly artifactRef: string; readonly contentDigest: string; readonly disposition: string };
   readonly archive?: CodingArchiveReceipt;
+  readonly reconcile?: CodingReconcileFact;
+}
+
+export interface CodingReconcileFact {
+  readonly token: string;
+  readonly step: CodingWorkflowStep;
+  readonly code: string;
+  readonly message: string;
+  readonly requestedAt: string;
+  readonly round: number;
 }
 
 export interface CodingArchiveReceipt {
@@ -107,10 +141,13 @@ export interface CodingArchiveReceipt {
 export interface CodingWorkflowDependencies {
   readonly agentRunner: AgentRunner;
   readonly reviewRunner?: LiveReviewRunner;
+  readonly roleRunner?: LiveRoleRunner;
   readonly verificationProcessRunner?: AgentProcessRunner;
   readonly gitRunner?: GitCommandRunner;
   readonly activity?: <T>(name: string, operation: () => Promise<T>) => Promise<T>;
   readonly archive?: (projection: CodingWorkflowProjection) => Promise<CodingArchiveReceipt>;
+  readonly awaitReconcile?: (fact: CodingReconcileFact) => Promise<void>;
+  readonly onSpecRevision?: (specRevision: number) => Promise<void>;
   readonly observe?: (projection: CodingWorkflowProjection) => Promise<void> | void;
   readonly now?: () => Date;
 }
@@ -119,12 +156,17 @@ export async function runCodingWorkflow(
   input: CodingWorkflowInput,
   dependencies: CodingWorkflowDependencies,
 ): Promise<CodingWorkflowProjection> {
-  const envelope = parseTaskEnvelope(
+  let envelope = parseTaskEnvelope(
     JSON.parse(JSON.stringify(input.envelope)) as unknown,
     input.expectedEnvelopeDigest,
   );
   const now = dependencies.now ?? (() => new Date());
   const activity = dependencies.activity ?? (async <T>(_name: string, operation: () => Promise<T>) => operation());
+  const maxReplans = input.maxReplanAttempts ?? 1;
+  if (!Number.isSafeInteger(maxReplans) || maxReplans < 0 || maxReplans > 2) {
+    throw new MoyeError({ code: "INVALID_REPLAN_BUDGET", category: "VALIDATION", message: "maxReplanAttempts must be between 0 and 2" });
+  }
+  let replanCount = 0;
   let projection: CodingWorkflowProjection = deepFreeze({
     taskId: envelope.taskId,
     specRevision: envelope.specRevision,
@@ -136,6 +178,7 @@ export async function runCodingWorkflow(
     steps: envelope.pipeline,
     attempts: [],
     evidenceBindings: [],
+    specRevisions: [{ specRevision: envelope.specRevision, envelopeDigest: envelope.envelopeDigest, reason: "INITIAL" }],
     artifactRoot: path.resolve(input.artifactRoot),
   });
   const publish = async (next: CodingWorkflowProjection): Promise<void> => {
@@ -149,7 +192,9 @@ export async function runCodingWorkflow(
       const previousAttempts = projection.attempts.filter((attempt) => attempt.stepId === step);
       const scheduled = previousAttempts.length === 0
         ? createInitialAttempt(codingStep, canonicalNow(now))
-        : createRetryAttempt(codingStep, previousAttempts, canonicalNow(now));
+        : previousAttempts.at(-1)!.specRevision === codingStep.specRevision
+          ? createRetryAttempt(codingStep, previousAttempts, canonicalNow(now))
+          : createReplannedAttempt(codingStep, previousAttempts, canonicalNow(now));
       const running = startAttempt(scheduled, canonicalNow(now));
       await publish({ ...projection, attempts: [...projection.attempts, running] });
     }
@@ -194,20 +239,184 @@ export async function runCodingWorkflow(
       ...projection,
       state: "FAILED",
       outcome: "FAILED_TERMINAL",
+      archiveStatus: dependencies.archive === undefined ? projection.archiveStatus : "PENDING",
       error: message,
       ...(errorFact === undefined ? {} : { errorCode: errorFact.code, errorCategory: errorFact.category }),
     }, "WORKFLOW_FAILED", step, canonicalNow(now), message));
+    if (dependencies.archive !== undefined) {
+      try {
+        await publish(withEvent(projection,
+          "STEP_STARTED", "ARCHIVE", canonicalNow(now), "FAILED_TERMINAL"));
+        const archive = await dependencies.archive(projection);
+        await publish(withEvent({ ...projection, archiveStatus: "ARCHIVED", archive },
+          "WORKFLOW_ARCHIVED", "ARCHIVE", canonicalNow(now), archive.artifactRef));
+      } catch (archiveError) {
+        const archiveMessage = archiveError instanceof Error ? archiveError.message : String(archiveError);
+        await publish(withEvent({ ...projection, archiveStatus: "FAILED" },
+          "ARCHIVE_FAILED", "ARCHIVE", canonicalNow(now), archiveMessage));
+      }
+    }
     return projection;
+  };
+  const external = async <T>(
+    name: string,
+    step: CodingWorkflowStep,
+    operation: () => Promise<T>,
+  ): Promise<CapturedActivity<T>> => {
+    let round = 1;
+    while (true) {
+      const result = await activity(`${name}-reconcile-${round}`, () => captureUnknownSideEffect(operation));
+      if (result.ok || dependencies.awaitReconcile === undefined) return result;
+      const requestedAt = canonicalNow(now);
+      const token = digest("coding-reconcile", {
+        taskId: projection.taskId,
+        specRevision: projection.specRevision,
+        step,
+        code: result.error.code,
+        round,
+      });
+      const fact: CodingReconcileFact = {
+        token,
+        step,
+        code: result.error.code,
+        message: result.error.message,
+        requestedAt,
+        round,
+      };
+      await publish(withEvent({ ...projection, state: "WAITING_RECONCILE", reconcile: fact },
+        "RECONCILE_REQUIRED", step, requestedAt, token));
+      await dependencies.awaitReconcile(fact);
+      const { reconcile: _resolvedReconcile, ...resumed } = projection;
+      await publish(withEvent({ ...resumed, state: "RUNNING" },
+        "RECONCILE_RESUMED", step, canonicalNow(now), token));
+      round += 1;
+    }
+  };
+  const runRole = async (
+    kind: LiveRoleResult["kind"],
+    step: CodingWorkflowStep,
+    scopeRoot: string,
+    instructions: string,
+    commitSha?: string,
+    allowBlockingFindings = false,
+  ): Promise<LiveRoleResult | CodingWorkflowProjection> => {
+    if (input.runnerKind === "FAKE" || dependencies.roleRunner === undefined) {
+      return fail(step, "Real role execution requires a real runner", {
+        code: "REAL_ROLE_RUNNER_REQUIRED",
+        category: "VALIDATION",
+      });
+    }
+    const attempt = (projection.roleRuns ?? []).filter((run) => run.kind === kind).length + 1;
+    const request = await prepareLiveRoleRequest({
+      taskId: projection.taskId,
+      specRevision: projection.specRevision,
+      kind,
+      attempt,
+      runnerKind: input.runnerKind as "CODEX_EXEC" | "CLAUDE_PRINT",
+      scopeRoot,
+      artifactRoot: path.join(input.artifactRoot, "roles", kind.toLowerCase()),
+      instructions,
+      ...(commitSha === undefined ? {} : { commitSha }),
+    });
+    await publish({
+      ...projection,
+      roleRun: {
+        runId: request.runId,
+        kind: request.kind,
+        runnerKind: request.runnerKind,
+        taskId: request.taskId,
+        specRevision: request.specRevision,
+        attempt: request.attempt,
+        eventsArtifactRef: `role-artifact://${request.runId}/events.jsonl`,
+      },
+    });
+    const captured = await external(`role-${kind.toLowerCase()}-${attempt}`, step, () => dependencies.roleRunner!.run(request));
+    if (!captured.ok) return fail(step, captured.error.message, captured.error);
+    const result = captured.value;
+    const { roleRun: _completedRole, ...withoutActiveRole } = projection;
+    await publish({ ...withoutActiveRole, roleRuns: [...(projection.roleRuns ?? []), result] });
+    if (result.outcome !== "SUCCEEDED" || result.verdict === null) {
+      return fail(step, result.summary || `${kind} role outcome ${result.outcome}`, {
+        code: `ROLE_OUTCOME_${result.outcome}`,
+        category: result.outcome === "FAILED" ? "TERMINAL" : "VALIDATION",
+      });
+    }
+    if (!allowBlockingFindings && result.verdict === "FINDINGS" && result.findings.some((finding) => finding.severity === "BLOCKING")) {
+      return fail(step, result.summary, { code: `${kind}_BLOCKING_FINDINGS`, category: "TERMINAL" });
+    }
+    return result;
+  };
+  const finishForReplan = async (step: CodingWorkflowStep, message: string): Promise<void> => {
+    const running = projection.attempts.find((attempt) => attempt.stepId === step && attempt.status === "RUNNING");
+    if (running === undefined) return;
+    const completed = finishAttempt(running, "FAILED", canonicalNow(now), { error: message });
+    await publish({
+      ...projection,
+      attempts: projection.attempts.map((attempt) => attempt.attemptId === completed.attemptId ? completed : attempt),
+    });
+  };
+  const reviseEnvelope = async (criteria: readonly string[], reason: string, artifactRef: string): Promise<void> => {
+    envelope = createTaskEnvelope({
+      taskId: envelope.taskId,
+      specRevision: envelope.specRevision + 1,
+      baseSha: envelope.baseSha,
+      requirements: envelope.requirements.map((requirement, index) => ({
+        requirementId: requirement.requirementId,
+        title: requirement.title,
+        acceptanceCriteria: index === 0 ? criteria : requirement.acceptanceCriteria,
+      })),
+      validationCommands: envelope.validationCommands.map((command) => ({ commandId: command.commandId, argv: command.argv })),
+      contextPlan: envelope.contextPlan,
+    });
+    await dependencies.onSpecRevision?.(envelope.specRevision);
+    await publish(withEvent({
+      ...projection,
+      specRevision: envelope.specRevision,
+      envelopeDigest: envelope.envelopeDigest,
+      steps: envelope.pipeline,
+      specRevisions: [...(projection.specRevisions ?? []), {
+        specRevision: envelope.specRevision,
+        envelopeDigest: envelope.envelopeDigest,
+        reason,
+        artifactRef,
+      }],
+    }, "SPEC_REVISED", "REPLAN", canonicalNow(now), envelope.envelopeDigest));
   };
 
   try {
     await start("CONTEXT");
+    let contextEvidence = sha256(Buffer.from(JSON.stringify(envelope)));
+    if (input.roleMode === "REAL") {
+      while (true) {
+        const context = await runRole("CONTEXT", "CONTEXT", input.repositoryRoot, [
+          "Inspect the repository instructions, architecture, relevant code, and tests.",
+          "Validate that the frozen task envelope is actionable and that its acceptance criteria and validation commands are coherent.",
+          "If the specification itself is incomplete, return REPLAN findings and the complete revised acceptance criteria.",
+          `Task envelope: ${JSON.stringify(envelope)}`,
+        ].join("\n"), undefined, true);
+        if (!("kind" in context)) return context;
+        const blocking = context.findings.filter((finding) => finding.severity === "BLOCKING");
+        if (context.verdict !== "FINDINGS" || blocking.length === 0) {
+          contextEvidence = context.eventsContentDigest;
+          break;
+        }
+        if (blocking.some((finding) => finding.recommendedAction !== "REPLAN")
+            || context.revisedAcceptanceCriteria.length === 0 || replanCount >= maxReplans) {
+          return fail("CONTEXT", context.summary, { code: "CONTEXT_BLOCKING_FINDINGS", category: "TERMINAL" });
+        }
+        replanCount += 1;
+        await finishForReplan("CONTEXT", context.summary);
+        await reviseEnvelope(context.revisedAcceptanceCriteria, context.resultDigest, context.manifestArtifactRef);
+        await start("CONTEXT");
+      }
+    }
     await succeed("CONTEXT", envelope.envelopeDigest, {
-      artifactName: "task-envelope.json", contentDigest: sha256(Buffer.from(JSON.stringify(envelope))),
+      artifactName: input.roleMode === "REAL" ? "context-role.json" : "task-envelope.json",
+      contentDigest: contextEvidence,
     });
 
     await start("WORKSPACE");
-    const workspaceActivityResult = await activity("workspace-effect", () => captureUnknownSideEffect(async () => {
+    const workspaceActivityResult = await external("workspace-effect", "WORKSPACE", async () => {
       const request = await createWorkspaceEffectRequest({
         taskId: envelope.taskId,
         specRevision: envelope.specRevision,
@@ -218,7 +427,7 @@ export async function runCodingWorkflow(
       });
       const effect = await applyWorkspaceEffect(request, dependencies.gitRunner);
       return { request, effect };
-    }));
+    });
     if (!workspaceActivityResult.ok) {
       return fail("WORKSPACE", workspaceActivityResult.error.message, workspaceActivityResult.error);
     }
@@ -262,9 +471,7 @@ export async function runCodingWorkflow(
         eventsArtifactRef: `agent-artifact://${agentRequest.runId}/events.jsonl`,
       },
     });
-    const agentActivity = await activity("agent-run", () => captureUnknownSideEffect(
-      () => dependencies.agentRunner.run(agentRequest),
-    ));
+    const agentActivity = await external("agent-run", "IMPLEMENT", () => dependencies.agentRunner.run(agentRequest));
     if (!agentActivity.ok) return fail("IMPLEMENT", agentActivity.error.message, agentActivity.error);
     const agentRaw = agentActivity.value;
     let agent = await parseAgentRunResult(
@@ -280,6 +487,7 @@ export async function runCodingWorkflow(
       workspace,
       checkpointCreatedAt,
       dependencies.gitRunner,
+      envelope.specRevision,
     ));
     let checkpoint = parseGitCheckpoint(
       JSON.parse(JSON.stringify(checkpointRaw)) as unknown,
@@ -289,6 +497,16 @@ export async function runCodingWorkflow(
     await succeed("IMPLEMENT", checkpoint.commitSha, {
       artifactName: "agent-events.jsonl", contentDigest: agent.artifacts.events.contentDigest,
     });
+    if (input.roleMode === "REAL") {
+      await start("SELF_REVIEW");
+      const selfReview = await runRole("SELF_REVIEW", "SELF_REVIEW", workspace.worktreePath, [
+        "Review the implementation you own against every frozen requirement before independent review.",
+        "Inspect the committed diff and validation commands. Report implementation defects as REPAIR and specification defects as REPLAN.",
+        ...envelope.requirements.flatMap((requirement) => [requirement.title, ...requirement.acceptanceCriteria]),
+      ].join("\n"), checkpoint.commitSha);
+      if (!("kind" in selfReview)) return selfReview;
+      await succeed("SELF_REVIEW", selfReview.resultDigest);
+    }
     await start("VERIFY");
     let verificationEpoch = Date.parse(canonicalNow(now));
     let verificationRaw = await activity("verification-gate-1", () => {
@@ -333,7 +551,7 @@ export async function runCodingWorkflow(
       let repairCount = 0;
       while (true) {
         await start("REVIEW");
-        const review = await activity(`review-agent-${reviewAttempt}`, () => dependencies.reviewRunner!.run({
+        const reviewRequest = await prepareLiveReviewRequest({
           taskId: envelope.taskId,
           specRevision: envelope.specRevision,
           attempt: reviewAttempt,
@@ -346,8 +564,21 @@ export async function runCodingWorkflow(
             "Independently review the committed implementation against the task requirements and validation evidence.",
             ...envelope.requirements.flatMap((requirement) => [requirement.title, ...requirement.acceptanceCriteria]),
           ].join("\n"),
-        }));
-        await publish({ ...projection, review, reviews: [...(projection.reviews ?? []), review], repairCount });
+        });
+        await publish({
+          ...projection,
+          reviewRun: {
+            runId: reviewRequest.runId,
+            runnerKind: reviewRequest.runnerKind,
+            taskId: reviewRequest.taskId,
+            specRevision: reviewRequest.specRevision,
+            attempt: reviewRequest.attempt,
+            eventsArtifactRef: `review-artifact://${reviewRequest.runId}/events.jsonl`,
+          },
+        });
+        const review = await activity(`review-agent-${reviewAttempt}`, () => dependencies.reviewRunner!.run(reviewRequest));
+        const { reviewRun: _completedReview, ...withoutActiveReview } = projection;
+        await publish({ ...withoutActiveReview, review, reviews: [...(projection.reviews ?? []), review], repairCount });
         if (review.outcome !== "SUCCEEDED" || review.verdict === null) {
           return fail("REVIEW", review.summary || `Review outcome ${review.outcome}`, {
             code: `REVIEW_OUTCOME_${review.outcome}`,
@@ -359,13 +590,50 @@ export async function runCodingWorkflow(
           break;
         }
         await publish(withEvent(projection, "REVIEW_FINDINGS", "REVIEW", canonicalNow(now), review.resultDigest));
-        if (repairCount >= maxRepairs) {
+        const blocking = review.findings.filter((finding) => finding.severity === "BLOCKING");
+        const requiresReplan = blocking.some((finding) => finding.recommendedAction === "REPLAN");
+        if (requiresReplan && replanCount >= maxReplans) {
+          return fail("REVIEW", `Review requires another Spec Revision after ${replanCount} replan(s)`, {
+            code: "REPLAN_BUDGET_EXHAUSTED", category: "TERMINAL",
+          });
+        }
+        if (!requiresReplan && repairCount >= maxRepairs) {
           return fail("REVIEW", `Review has ${review.findings.filter((finding) => finding.severity === "BLOCKING").length} blocking finding(s) after ${repairCount} repair(s)`, {
             code: "REVIEW_FINDINGS_UNRESOLVED", category: "TERMINAL",
           });
         }
-        repairCount += 1;
-        const generation = repairCount + 1;
+        let recoveryInstructions: string;
+        if (requiresReplan) {
+          replanCount += 1;
+          await start("REPLAN");
+          const replanned = await runRole("REPLAN", "REPLAN", workspace.worktreePath, [
+            "Produce Spec Revision N+1 that resolves the independent review's specification findings.",
+            "Return the complete revised acceptance criteria in revisedAcceptanceCriteria.",
+            review.summary,
+            ...blocking.map((finding) => `- ${finding.title}: ${finding.details}`),
+          ].join("\n"), checkpoint.commitSha);
+          if (!("kind" in replanned)) return replanned;
+          const revisedCriteria = replanned.revisedAcceptanceCriteria.length > 0
+            ? replanned.revisedAcceptanceCriteria
+            : envelope.requirements.flatMap((requirement) => requirement.acceptanceCriteria);
+          await reviseEnvelope(revisedCriteria, review.resultDigest, replanned.manifestArtifactRef);
+          await succeed("REPLAN", replanned.resultDigest);
+          await start("CONTEXT");
+          const revisedContext = await runRole("CONTEXT", "CONTEXT", workspace.worktreePath, [
+            "Validate the revised task envelope against the repository and the blocking review findings.",
+            `Revised envelope: ${JSON.stringify(envelope)}`,
+          ].join("\n"), checkpoint.commitSha);
+          if (!("kind" in revisedContext)) return revisedContext;
+          await succeed("CONTEXT", envelope.envelopeDigest, {
+            artifactName: "context-role.json",
+            contentDigest: revisedContext.eventsContentDigest,
+          });
+          recoveryInstructions = "Implement the revised Spec Revision completely, rerun checks, and create a new commit.";
+        } else {
+          repairCount += 1;
+          recoveryInstructions = "Repair the blocking implementation findings, rerun relevant checks, and create a new commit.";
+        }
+        const generation = (projection.agentRuns?.length ?? 1) + 1;
         await start("IMPLEMENT");
         await publish(withEvent({ ...projection, repairCount }, "REPAIR_STARTED", "IMPLEMENT", canonicalNow(now), review.resultDigest));
         const repairAttempt = requireRunningAttempt(projection, "IMPLEMENT");
@@ -379,9 +647,9 @@ export async function runCodingWorkflow(
           artifactRoot: path.join(input.artifactRoot, "agent"),
           prompt: [
             input.prompt,
-            "An independent reviewer found the following blocking issues. Repair them, rerun relevant checks, and create a new commit.",
+            recoveryInstructions,
             review.summary,
-            ...review.findings.filter((finding) => finding.severity === "BLOCKING").map((finding) => `- ${finding.title}: ${finding.details}`),
+            ...blocking.map((finding) => `- ${finding.title}: ${finding.details}`),
           ].join("\n"),
         });
         await publish({
@@ -396,9 +664,7 @@ export async function runCodingWorkflow(
             eventsArtifactRef: `agent-artifact://${repairRequest.runId}/events.jsonl`,
           },
         });
-        const repairActivity = await activity(`agent-repair-${generation}`, () => captureUnknownSideEffect(
-          () => dependencies.agentRunner.run(repairRequest),
-        ));
+        const repairActivity = await external(`agent-repair-${generation}`, "IMPLEMENT", () => dependencies.agentRunner.run(repairRequest));
         if (!repairActivity.ok) return fail("IMPLEMENT", repairActivity.error.message, repairActivity.error);
         const repaired = await parseAgentRunResult(
           JSON.parse(JSON.stringify(repairActivity.value)) as unknown,
@@ -416,7 +682,7 @@ export async function runCodingWorkflow(
           code: `AGENT_OUTCOME_${repaired.outcome}`, category: "TERMINAL",
         });
         const repairedCheckpointRaw = await activity(`result-checkpoint-${generation}`, () => createGitCheckpoint(
-          workspace, canonicalNow(now), dependencies.gitRunner,
+          workspace, canonicalNow(now), dependencies.gitRunner, envelope.specRevision,
         ));
         checkpoint = parseGitCheckpoint(
           JSON.parse(JSON.stringify(repairedCheckpointRaw)) as unknown,
@@ -432,6 +698,16 @@ export async function runCodingWorkflow(
           artifactName: "agent-events.jsonl", contentDigest: agent.artifacts.events.contentDigest,
         });
         await publish(withEvent(projection, "REPAIR_SUCCEEDED", "IMPLEMENT", canonicalNow(now), checkpoint.commitSha));
+        if (input.roleMode === "REAL") {
+          await start("SELF_REVIEW");
+          const repairedSelfReview = await runRole("SELF_REVIEW", "SELF_REVIEW", workspace.worktreePath, [
+            "Review the latest repaired or replanned implementation against the active Spec Revision.",
+            "Inspect the committed diff and report any remaining defect before independent review.",
+            ...envelope.requirements.flatMap((requirement) => [requirement.title, ...requirement.acceptanceCriteria]),
+          ].join("\n"), checkpoint.commitSha);
+          if (!("kind" in repairedSelfReview)) return repairedSelfReview;
+          await succeed("SELF_REVIEW", repairedSelfReview.resultDigest);
+        }
         await start("VERIFY");
         verificationEpoch = Date.parse(canonicalNow(now));
         verificationRaw = await activity(`verification-gate-${generation}`, () => {
@@ -463,7 +739,7 @@ export async function runCodingWorkflow(
     }
 
     await start("MERGE");
-    const mergeActivity = await activity("local-merge-effect", () => captureUnknownSideEffect(async () => {
+    const mergeActivity = await external("local-merge-effect", "MERGE", async () => {
       const request = await createLocalMergeRequest({
         repositoryRoot: workspace.worktreePath,
         targetRef: input.targetRef,
@@ -471,7 +747,7 @@ export async function runCodingWorkflow(
         verification,
       });
       return applyLocalMerge(request, dependencies.gitRunner);
-    }));
+    });
     if (!mergeActivity.ok) return fail("MERGE", mergeActivity.error.message, mergeActivity.error);
     const merge = mergeActivity.value;
     await publish({ ...projection, merge });
@@ -483,6 +759,16 @@ export async function runCodingWorkflow(
     });
 
     await start("DOCS");
+    let docsRoleDigest: string | undefined;
+    if (input.roleMode === "REAL") {
+      const docsRole = await runRole("DOCS_GATE", "DOCS", workspace.worktreePath, [
+        "Inspect the merged result and repository documentation rules.",
+        `The declared documentation disposition is ${input.docsDisposition}.`,
+        "Confirm that required documentation, code map, task evidence, and operator guidance are consistent with the implementation.",
+      ].join("\n"), merge.mergeCommit);
+      if (!("kind" in docsRole)) return docsRole;
+      docsRoleDigest = docsRole.eventsContentDigest;
+    }
     const docs = await activity("docs-artifact", () => writeDocsArtifact(
       input.artifactRoot,
       envelope.taskId,
@@ -490,7 +776,10 @@ export async function runCodingWorkflow(
       input.docsDisposition,
     ));
     await publish({ ...projection, docs });
-    await succeed("DOCS", docs.contentDigest, { artifactName: "docs-result.json", contentDigest: docs.contentDigest });
+    await succeed("DOCS", docs.contentDigest, {
+      artifactName: input.roleMode === "REAL" ? "docs-role.json" : "docs-result.json",
+      contentDigest: docsRoleDigest ?? docs.contentDigest,
+    });
 
     await start("CLOSED");
     await publish(withEvent({ ...projection, state: "CLOSED", outcome: "SUCCEEDED", archiveStatus: "PENDING" },

@@ -2,7 +2,7 @@ schema_version: 1
 id: "BL-0019"
 title: "修复 CLI close 未附着既有 TaskWorkflow"
 kind: "bug"
-status: "triaged"
+status: "converted_to_task"
 priority: "high"
 
 source_refs:
@@ -21,6 +21,7 @@ acceptance_outline:
   - "CLI 帮助、Skill 和 Runbook 与实际 attach 行为一致"
 
 resolution:
-  task_refs: []
+  task_refs:
+    - TASK-0021
   duplicate_of:
-  reason: "TASK-0013 标准 Runtime Closure 中真实复现并去重后登记"
+  reason: "TASK-0013 标准 Runtime Closure 中真实复现；TASK-0021 作为统一产品 CLI/attach 的一部分消费"

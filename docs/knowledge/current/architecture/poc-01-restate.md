@@ -68,7 +68,7 @@ NOT_READY → PENDING → ARCHIVED | FAILED
 
 ProjectBoard 只保存查询投影。CLI、Skill、Board API 和目录位置都不能直接推进状态。`task_id` 同时是 Workflow key、事件关联和人类查询入口。
 
-`TaskAuthority/<task_id>` 在任一主 Workflow 开始前冻结 `owner + spec_revision`，冲突 owner 被拒绝。`CodingTaskWorkflow` 独占编码聚合 Projection，产品模式按 Context、Workspace、Implementation、Verification、Review、Merge、Docs、Closure、Archive 推进；`CoreClosureWorkflow` 独占多角色 Core Projection，并把确定性 Scenario Adapter 的完整结果固定为一个 Closure Digest。Workspace、Agent、Review、Verification、Merge、Docs 和 Scenario Adapter 只返回证据，不写 Projection。Observer 把兼容 Coding TaskProjection 同步到 ProjectBoard，但 Board 不是主状态源；当前 Core Workflow 只提供 Restate `status` 查询，尚未接入 Board UI。
+`TaskAuthority/<task_id>` 在任一主 Workflow 开始前冻结 `owner + spec_revision`，冲突 owner 被拒绝；相同 Coding owner 可随合法 Replan 单调提升 Revision。`CodingTaskWorkflow` 独占编码聚合 Projection，产品模式按 Context Role、Workspace、Implementation、Self Review、Verification、independent Review、Repair/Replan、Merge、Docs Gate、Closure、Archive 推进；`CoreClosureWorkflow` 独占确定性控制协议 Projection，并把 Scenario Adapter 的结果固定为一个 Closure Digest。Workspace、Role/Agent、Review、Verification、Merge、Docs 和 Scenario Adapter 只返回证据，不写 Projection。Observer 把兼容 Coding TaskProjection 同步到 ProjectBoard，但 Board 不是主状态源；当前 Scenario Core Workflow 只提供 Restate `status` 查询，不作为产品执行入口。
 
 Git Backlog 是导入条目字段的所有者。CLI 完整校验 `BL-*.yaml` 后，通过单次 `ProjectBoard.syncBacklog` 提交；Object 比较 Source Digest，内容未变时不重写状态。Projection 独有记录采用 `PRESERVE` 并显式报告，Web 查询仍然只读取 Projection。
 
@@ -100,7 +100,7 @@ Archive 使用 `archive/<task_id>/revision-<spec_revision>` 作为稳定操作�
 
 Core Scenario Effect 同样先写稳定 Intent，但把整个确定性场景结果保存为内容寻址 Artifact。结果 rename 后 Worker 退出时，Restate 可以重放 `ctx.run`，Adapter 会验证并复用结果；仅有 Intent 而无结果时停止为 UNKNOWN。Core Closure 的成功、预算终止和取消都从同一最终 Projection 推导，Observer、Board、Archive 或外层 Merge 失败不能回写已确认 Outcome。
 
-Core PoC 已用确定性 Adapter 验证 Repair/Replan、中央预算和 UNKNOWN Reconcile。Coding 产品路径已接入真实 Implementation + 只读 Review + 一次 Repair，但尚未把 Docs Role、Spec Replan 和完整 CoreClosureResult 接到真实模型，也未实现人工解除冲突、跨设备 Git Artifact 或 Core Board UI。
+Core PoC 已用确定性 Adapter 验证完整控制协议。Coding 产品路径已接入真实 Context、Implementation、Self Review、独立 Review、Docs Gate、Repair、Spec Revision N+1 Replan、成功/失败 Archive 与 Durable UNKNOWN Reconcile Signal；统一 CLI 与 Board 只读 Trace 形成当前可用产品入口。仍未实现多 Daemon Lease/Fencing、人工冲突编辑器、跨设备 Git Artifact、远程 Provider 或 Scenario Core Board UI。
 
 ## 6. 查询与 Trace
 
@@ -110,13 +110,13 @@ Board 固定展示需求池、进行中、待归档、已归档，并且只读�
 2. Durable Runtime：Workflow Ref 与 Restate Admin 入口，Journal 是执行、重放和中断恢复权威；
 3. Technical Evidence：Agent Session/Artifact、Branch、Checkpoint、Verification 和 Merge，是诊断证据。
 
-`GET /api/tasks/<task_id>/trace` 和看板详情只读。`definition` 展示当前代码允许的 normal、Repair、failure 与 archive 边，`history` 只从连续 Event sequence 派生实际转换；未走过的合法边不会冒充已发生，Projection 与 History 终点不一致会显示 `MISMATCH`。通用 Task 的 Bootstrap Evidence 和 Coding Task 的 StepAttempt、Agent/Review Run、Verification 都归一化为执行证据。Workflow 在 Agent Activity 前把稳定 Run locator 写入 Projection；Runner 把 CLI stdout 按完整 JSONL 行增量写入受管 Run 目录。`GET /api/tasks/<task_id>/agent-events` 只根据该 locator 提供有界 cursor 页面，运行中固定文件快照并验证 execution intent，完成后改用 manifest 大小与 SHA-256 校验。页面自动跟随并可按对话、工具调用、工具结果、系统和错误筛选，不再永久截断前 200 条；原始 Artifact 下载仍是显式次级入口。Journal、其他 Artifact 和恢复建议渐进披露在高级诊断区；Restate 链接携带 Workflow service 与 Task key 过滤条件，而不是打开无上下文首页。恢复分类从已有 Projection 派生为 `NONE | WAIT_OR_RECONCILE | FAILED_TERMINAL | ARCHIVE_RETRY`，只说明应等待、对账、创建后续 Task 或重新附着 Archive，不直接推进状态。因此状态机 Trace 和 Event Viewer 都不会成为第二套状态机，三层事实只通过 `task_id`、Attempt ID、Run ID、Effect ID 和 Content Digest 关联。
+`GET /api/tasks/<task_id>/trace` 和看板详情只读。`definition` 展示当前代码允许的 normal、Repair、Replan、reconcile、failure 与 archive 边，`history` 只从连续 Event sequence 派生实际转换；未走过的合法边不会冒充已发生。Coding Task 的 Spec Revision、StepAttempt、全部 Role/Agent/Review Run、Verification 都归一化为执行证据。每个当前 Run 在启动前发布稳定 Locator，并通过 cursor Viewer 增量读取；全部已完成 Session 通过 `/api/tasks/<task_id>/roles/<run_id>/events` 提供摘要校验的原始 JSONL。只有 `reconcile-task` 是显式控制入口，且只能解析当前 Workflow Durable Promise；普通 Trace/Event Viewer 不推进状态。
 
 TASK-0009 在这个只读派生层增加后端无关 `TraceSink`：默认 Noop，显式开启后由官方 OpenTelemetry exporter 发送 OTLP/HTTP protobuf。稳定 Task Trace ID 只用于查询关联；每个已持久化 Attempt 映射为短 Span，Agent Run 是 IMPLEMENT Attempt 的子 Span，另有零时长 Task Snapshot，不创建持续数天的在线 root span。导出在 Coding Workflow 已得到业务 Projection 后执行，失败最多形成诊断日志，不能反向改变成功、失败或归档终态。Phoenix 是 `compose.yaml` 的可选本地 Profile，并非运行时依赖；该边界由 [ADR-0004](../../decisions/adr/0004-use-otlp-contract-and-optional-phoenix.md) 冻结。
 
 Agent Events 和可选 Raw Model IO 完成后仍是内容寻址 Artifact。运行中的 Event Stream 是同一稳定 Run 下的 growing evidence，不写入 Restate Journal；Board 不接受路径参数，只接受 Task ID、cursor 和有界 limit。服务从主 Projection 取得 allowlisted 引用，再验证声明根属于 `MOYE_ARTIFACT_ROOTS`、execution intent 与 Run 绑定一致、候选路径与 realpath 未逃逸且目标是普通文件；完成下载再校验大小和 SHA-256。Raw Model IO 仅在文件真实存在时出现在 UI，并标记为敏感证据。
 
-Workflow Projection 保留 Adapter 的结构化 `errorCode/errorCategory`。`UNKNOWN_SIDE_EFFECT` 在 Workspace、Agent、Verification 和 Merge 四个边界统一进入 `WAIT_OR_RECONCILE`；只有确定性失败才允许建议创建后续 Task。Board 静态文件路径在读取前同时校验 lexical path 与 `realpath` 位于 `publicRoot`，拒绝指向根外的符号链接。强杀/丢回执开关仅在显式 `MOYE_TEST_FAULT_INJECTION=enabled` 的测试进程中可用，不属于正常任务能力。
+Workflow Projection 保留 Adapter 的结构化 `errorCode/errorCategory`。产品 Runtime 的 `UNKNOWN_SIDE_EFFECT` 在 Workspace、Role/Agent 与 Merge 边界进入 `WAITING_RECONCILE`，保存稳定 token 并等待带 Evidence 的 durable signal 后对账同一 operation；无 signal 的纯单元适配路径仍可返回 UNKNOWN 失败事实。确定性失败进入 `FAILED_TERMINAL` 后也归档，不再停留为未处置卡片。Board 静态/Artifact 路径在读取前同时校验 lexical path、`realpath`、受管根和摘要。强杀/丢回执开关仅在显式测试进程中可用。
 
 ## 7. 验证结论
 
@@ -132,7 +132,7 @@ Workflow Projection 保留 Adapter 的结构化 `errorCode/errorCategory`。`UNK
 - Merge 回执丢失会由 marker/双亲对账；Verification 命令执行后强杀 Worker，新 Worker 接管且命令只运行一次，结果安全停止为 UNKNOWN。
 - Git ref 原子更新完成但 Merge Step 尚未确认时强杀 Worker，新 Worker 通过 Git facts 复用唯一 Merge；重复 Workflow 命令被 Restate 409 拒绝，Agent 异常退出形成可追踪终态且不合并。
 - Trace API 从单个 task_id 返回 6 个 Attempt、Agent Session、任务 Branch、Result/Merge Commit、Verification Evidence、技术 Artifact 和恢复分类。
-- 真实 Codex 已在临时 Fixture 以及 Runtime Root 与 Git common dir 分离的普通本地仓库中完成提交、验证、独立 Review、唯一 Merge 与 Archive；普通仓库验收固定使用 `workspace-write + --add-dir <validated-git-common-dir>`，不使用 `danger-full-access`。TASK-0006 保留早期 Smoke Test，TASK-0020 记录产品状态机验收。
+- 真实 Codex 已在 Runtime Root 与 Git common dir 分离的普通本地仓库中完成 Context、Implementation、Self Review、Verification、独立 Review、唯一 Merge、Docs Gate 与 Archive；`npm run acceptance:live` 同时证明 CLI create/wait 和 Fake 拒绝。Implementation 固定使用 `workspace-write + --add-dir <validated-git-common-dir>`，只读角色使用 read-only sandbox，不使用 `danger-full-access`。TASK-0021 记录完整多角色产品验收。
 - 默认 Noop 不产生网络请求；本地 OTLP Receiver 能解码稳定 Trace/Span ID、父子关系和 Task/Attempt/Agent 属性，真实 Restate Coding E2E 同时证明 Trace 导出与 Artifact 下载不会改变唯一 Merge。
 - Core 六场景都通过真实 Restate 收敛：成功、Repair、Replan 与 UNKNOWN 对账得到 `SUCCEEDED`，预算耗尽得到 `FAILED_TERMINAL`，取消得到 `CANCELLED`；Docs Gate 首次失败可恢复且 Observer 失败不阻塞 Closure。
 - Core Scenario Artifact 落盘后 Worker `SIGKILL`，新 Worker 对账同一结果且执行计数为 1；异步提交未保留关闭响应时，重复只读 status 返回同一 Closure Digest。

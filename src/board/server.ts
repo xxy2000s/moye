@@ -83,10 +83,11 @@ async function route(
     }
     const traceRequest = segments.length === 2 && segments[1] === "trace";
     const agentEventsRequest = segments.length === 2 && segments[1] === "agent-events";
+    const roleEventsRequest = segments.length === 4 && segments[1] === "roles" && segments[3] === "events";
     const artifactKind = segments.length === 3 && segments[1] === "artifacts"
       ? readArtifactKind(segments[2])
       : undefined;
-    if (segments.length > 1 && !traceRequest && !agentEventsRequest && artifactKind === undefined) {
+    if (segments.length > 1 && !traceRequest && !agentEventsRequest && !roleEventsRequest && artifactKind === undefined) {
       writeJson(response, 404, { error: "Not found" });
       return;
     }
@@ -173,6 +174,97 @@ async function route(
       }
       return;
     }
+    if (roleEventsRequest) {
+      if (authority.owner !== "CODING_WORKFLOW") {
+        writeJson(response, 409, { error: "Role Events are not available for this Task workflow" });
+        return;
+      }
+      let runId: string;
+      try { runId = decodeURIComponent(segments[2] ?? ""); }
+      catch {
+        writeJson(response, 400, { error: "Malformed Role Run ID" });
+        return;
+      }
+      const projection = await invoke<CodingWorkflowProjection | null>(
+        options.ingressUrl, "CodingTaskWorkflow", taskId, "status",
+      );
+      const role = projection?.roleRuns?.find((candidate) => candidate.runId === runId);
+      const review = projection?.reviews?.find((candidate) => candidate.runId === runId);
+      const activeRole = projection?.roleRun?.runId === runId ? projection.roleRun : undefined;
+      const activeReview = projection?.reviewRun?.runId === runId ? projection.reviewRun : undefined;
+      const agent = projection?.agentRuns?.find((candidate) => candidate.runId === runId)
+        ?? (projection?.agent?.runId === runId ? projection.agent : undefined);
+      if (projection === null || (role === undefined && review === undefined && agent === undefined
+          && activeRole === undefined && activeReview === undefined)) {
+        writeJson(response, 404, { error: "Role Event stream not found" });
+        return;
+      }
+      try {
+        const filePath = agent !== undefined
+          ? await resolveRoleEventFile(options.artifactRoots ?? [], projection.artifactRoot, {
+            runId: agent.runId,
+            relativeDirectory: "agent",
+            artifactRef: agent.artifacts.events.artifactRef,
+            contentDigest: agent.artifacts.events.contentDigest,
+            scheme: "agent-artifact",
+          })
+          : activeRole !== undefined
+          ? await resolveLiveRoleEventFile(options.artifactRoots ?? [], projection.artifactRoot, {
+            runId: activeRole.runId,
+            taskId: activeRole.taskId,
+            specRevision: activeRole.specRevision,
+            attempt: activeRole.attempt,
+            runnerKind: activeRole.runnerKind,
+            relativeDirectory: pathForRole(activeRole.kind),
+          })
+          : activeReview !== undefined
+          ? await resolveLiveRoleEventFile(options.artifactRoots ?? [], projection.artifactRoot, {
+            runId: activeReview.runId,
+            taskId: activeReview.taskId,
+            specRevision: activeReview.specRevision,
+            attempt: activeReview.attempt,
+            runnerKind: activeReview.runnerKind,
+            relativeDirectory: "review",
+          })
+          : role !== undefined
+          ? await resolveRoleEventFile(options.artifactRoots ?? [], projection.artifactRoot, {
+            runId: role.runId,
+            relativeDirectory: pathForRole(role.kind),
+            artifactRef: role.eventsArtifactRef,
+            contentDigest: role.eventsContentDigest,
+            scheme: "role-artifact",
+          })
+          : await resolveRoleEventFile(options.artifactRoots ?? [], projection.artifactRoot, {
+            runId: review!.runId,
+            relativeDirectory: "review",
+            artifactRef: review!.eventsArtifactRef,
+            contentDigest: review!.eventsContentDigest,
+            scheme: "review-artifact",
+          });
+        if (url.searchParams.has("cursor") || url.searchParams.has("limit")) {
+          const cursor = readBoundedInteger(url.searchParams.get("cursor"), 0, 0, Number.MAX_SAFE_INTEGER);
+          const limit = readBoundedInteger(url.searchParams.get("limit"), 100, 1, 200);
+          if (cursor === undefined || limit === undefined) throw new Error("Invalid Role Event cursor");
+          writeJson(response, 200, await readEventPage({
+            filePath,
+            runId,
+            runnerKind: role?.runnerKind ?? review?.runnerKind ?? activeRole?.runnerKind ?? activeReview?.runnerKind ?? agent!.runnerKind,
+            taskId,
+            attemptId: activeRole !== undefined ? `${activeRole.kind}-${activeRole.attempt}`
+              : activeReview !== undefined ? `REVIEW-${activeReview.attempt}`
+                : agent?.attemptId ?? `REVIEW-${review?.attempt ?? 1}`,
+            cursor,
+            limit,
+            completed: activeRole === undefined && activeReview === undefined,
+          }));
+        } else {
+          await serveEventFile(filePath, `${agent === undefined ? role?.kind.toLowerCase() ?? activeRole?.kind.toLowerCase() ?? "review" : "implementation"}-events.jsonl`, response);
+        }
+      } catch {
+        writeJson(response, 404, { error: "Role Event stream not found" });
+      }
+      return;
+    }
     if (artifactKind !== undefined) {
       if (authority.owner !== "CODING_WORKFLOW") {
         writeJson(response, 409, { error: "Agent Artifact is not available for this Task workflow" });
@@ -247,6 +339,123 @@ async function route(
 }
 
 type DownloadableArtifactKind = "agent-events" | "raw-model-io";
+
+function pathForRole(kind: string): string {
+  if (!/^[A-Z_]+$/.test(kind)) throw new Error("Invalid Role kind");
+  return `roles/${kind.toLowerCase()}`;
+}
+
+async function resolveRoleEventFile(
+  artifactRoots: readonly string[],
+  declaredArtifactRoot: string | undefined,
+  input: { readonly runId: string; readonly relativeDirectory: string; readonly artifactRef: string; readonly contentDigest: string | undefined; readonly scheme: string },
+): Promise<string> {
+  const token = input.runId.slice(input.runId.lastIndexOf(":") + 1);
+  if (!/^[0-9a-f]{64}$/.test(token) || input.contentDigest === undefined
+      || input.artifactRef !== `${input.scheme}://${input.runId}/events.jsonl`) throw new Error("Invalid Role Artifact identity");
+  if (declaredArtifactRoot === undefined) throw new Error("Task did not declare an Artifact Root");
+  const taskRoot = await realpath(declaredArtifactRoot);
+  let allowed = false;
+  for (const configuredRoot of artifactRoots) {
+    try { if (isSameOrWithin(await realpath(configuredRoot), taskRoot)) allowed = true; } catch { continue; }
+  }
+  if (!allowed) throw new Error("Task Artifact Root is outside configured roots");
+  const candidate = resolve(taskRoot, input.relativeDirectory, `run-${token}`, "events.jsonl");
+  const actual = await realpath(candidate);
+  if (!isSameOrWithin(taskRoot, actual) || actual !== candidate) throw new Error("Role Artifact escaped Task Artifact Root");
+  const content = await readFile(actual);
+  if (`sha256:${createHash("sha256").update(content).digest("hex")}` !== input.contentDigest) throw new Error("Role Artifact digest mismatch");
+  return actual;
+}
+
+async function resolveLiveRoleEventFile(
+  artifactRoots: readonly string[],
+  declaredArtifactRoot: string | undefined,
+  input: {
+    readonly runId: string;
+    readonly taskId: string;
+    readonly specRevision: number;
+    readonly attempt: number;
+    readonly runnerKind: string;
+    readonly relativeDirectory: string;
+  },
+): Promise<string> {
+  const token = input.runId.slice(input.runId.lastIndexOf(":") + 1);
+  if (!/^[0-9a-f]{64}$/.test(token)) throw new Error("Invalid live Role Run identity");
+  if (declaredArtifactRoot === undefined) throw new Error("Task did not declare an Artifact Root");
+  const taskRoot = await realpath(declaredArtifactRoot);
+  let allowed = false;
+  for (const configuredRoot of artifactRoots) {
+    try { if (isSameOrWithin(await realpath(configuredRoot), taskRoot)) allowed = true; } catch { continue; }
+  }
+  if (!allowed) throw new Error("Task Artifact Root is outside configured roots");
+  const runRoot = resolve(taskRoot, input.relativeDirectory, `run-${token}`);
+  if (!isSameOrWithin(taskRoot, runRoot)) throw new Error("Role Run path escaped Task Artifact Root");
+  const intentCandidate = resolve(runRoot, "execution-intent.json");
+  const intentInfo = await lstat(intentCandidate);
+  if (!intentInfo.isFile() || intentInfo.isSymbolicLink()) throw new Error("Role intent is not a regular file");
+  const intentPath = await realpath(intentCandidate);
+  if (intentPath !== intentCandidate || !isSameOrWithin(taskRoot, intentPath)) throw new Error("Role intent escaped Task Artifact Root");
+  const intent = JSON.parse(await readFile(intentPath, "utf8")) as Record<string, unknown>;
+  if (intent["runId"] !== input.runId || intent["taskId"] !== input.taskId
+      || intent["specRevision"] !== input.specRevision || intent["attempt"] !== input.attempt
+      || intent["runnerKind"] !== input.runnerKind) throw new Error("Role intent does not match Task projection");
+  const eventsCandidate = resolve(runRoot, "events.jsonl");
+  const eventsInfo = await lstat(eventsCandidate);
+  if (!eventsInfo.isFile() || eventsInfo.isSymbolicLink()) throw new Error("Role Events are not a regular file");
+  const eventsPath = await realpath(eventsCandidate);
+  if (eventsPath !== eventsCandidate || !isSameOrWithin(taskRoot, eventsPath)) throw new Error("Role Events escaped Task Artifact Root");
+  return eventsPath;
+}
+
+async function readEventPage(input: {
+  readonly filePath: string;
+  readonly runId: string;
+  readonly runnerKind: string;
+  readonly taskId: string;
+  readonly attemptId: string;
+  readonly cursor: number;
+  readonly limit: number;
+  readonly completed: boolean;
+}): Promise<AgentEventPage> {
+  const content = await readUtf8Snapshot(input.filePath, 16 * 1024 * 1024);
+  const lines = content.split(/\r?\n/).filter((line) => line.trim().length > 0);
+  const selected = lines.slice(input.cursor, input.cursor + input.limit);
+  const events = selected.map((raw, offset) => {
+    const sequence = input.cursor + offset + 1;
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      return { sequence, type: agentEventType(parsed), category: classifyAgentEvent(parsed), raw, parsed };
+    } catch {
+      return { sequence, type: "malformed-json", category: "error" as const, raw };
+    }
+  });
+  const nextCursor = input.cursor + selected.length;
+  return {
+    runId: input.runId,
+    runnerKind: input.runnerKind,
+    taskId: input.taskId,
+    attemptId: input.attemptId,
+    cursor: input.cursor,
+    nextCursor,
+    total: lines.length,
+    hasMore: nextCursor < lines.length,
+    completed: input.completed,
+    events,
+  };
+}
+
+async function serveEventFile(filePath: string, fileName: string, response: ServerResponse): Promise<void> {
+  const info = await stat(filePath);
+  response.writeHead(200, {
+    "content-type": "application/x-ndjson; charset=utf-8",
+    "content-length": info.size,
+    "cache-control": "no-store",
+    "x-content-type-options": "nosniff",
+    "content-disposition": `inline; filename="${fileName}"`,
+  });
+  createReadStream(filePath).pipe(response);
+}
 
 function buildWorkflowInvocationsUrl(adminBaseUrl: string, service: string, taskId: string): string {
   const url = new URL("/ui/invocations", adminBaseUrl);

@@ -89,14 +89,17 @@ try {
     throw new Error("Product API did not reject FAKE runner");
   }
 
-  const submitResponse = await fetch(`${boardUrl}/api/tasks`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(submission(repositoryRoot, "CODEX_EXEC")),
-  });
-  const receipt = await submitResponse.json() as { taskId?: string; error?: string; invocationId?: string };
-  if (submitResponse.status !== 202 || receipt.taskId === undefined) {
-    throw new Error(`Live submission failed: ${submitResponse.status} ${JSON.stringify(receipt)}`);
+  const submissionPath = path.join(fixtureRoot, "live-task.json");
+  await writeFile(submissionPath, `${JSON.stringify(submission(repositoryRoot, "CODEX_EXEC"), null, 2)}\n`);
+  const receipt = JSON.parse(execFileSync(process.execPath, [
+    "--import", "tsx", "src/cli/index.ts", "create", "--file", submissionPath,
+  ], {
+    cwd: root,
+    env: { ...process.env, RESTATE_INGRESS_URL: ingressUrl, MOYE_PROJECT_ID: projectId, MOYE_LIVE_RUNTIME_ROOT: runtimeRoot, MOYE_REPOSITORY_ROOTS: repositoryRoot },
+    encoding: "utf8",
+  })) as { taskId?: string; invocationId?: string; workflow?: string };
+  if (receipt.taskId === undefined || receipt.workflow !== "CodingTaskWorkflow") {
+    throw new Error(`Live CLI submission failed: ${JSON.stringify(receipt)}`);
   }
   const taskId = receipt.taskId;
   const projection = await waitForProjection(taskId, 12 * 60_000);
@@ -105,9 +108,21 @@ try {
       || projection.verification?.passed !== true || projection.merge?.mergeCommit === undefined
       || projection.checkpoint?.commitSha === undefined || projection.archive?.archivePath === undefined
       || projection.review?.outcome !== "SUCCEEDED" || projection.review.verdict !== "PASSED"
-      || projection.reviews?.length !== 1) {
+      || projection.reviews?.length !== 1
+      || projection.roleRuns?.filter((run) => run.kind === "CONTEXT" && run.outcome === "SUCCEEDED").length !== 1
+      || projection.roleRuns?.filter((run) => run.kind === "SELF_REVIEW" && run.outcome === "SUCCEEDED").length !== 1
+      || projection.roleRuns?.filter((run) => run.kind === "DOCS_GATE" && run.outcome === "SUCCEEDED").length !== 1
+      || projection.roleRuns?.some((run) => run.runnerKind !== "CODEX_EXEC" || run.sessionId === undefined)) {
     throw new Error(`Real task did not close: ${JSON.stringify(projection, null, 2)}\n${logs}`);
   }
+  const cliWait = JSON.parse(execFileSync(process.execPath, [
+    "--import", "tsx", "src/cli/index.ts", "wait", taskId, "--timeout-ms", "10000",
+  ], {
+    cwd: root,
+    env: { ...process.env, RESTATE_INGRESS_URL: ingressUrl },
+    encoding: "utf8",
+  })) as CodingWorkflowProjection;
+  if (cliWait.taskId !== taskId || cliWait.archiveStatus !== "ARCHIVED") throw new Error("Unified CLI wait did not attach to the Coding Task");
   const resultContent = git(repositoryRoot, "show", "moye/results:result.txt");
   if (resultContent !== "real Moye task complete") throw new Error(`Unexpected merged content: ${JSON.stringify(resultContent)}`);
   const eventsPage = await fetchJson<{ completed: boolean; runnerKind: string; total: number }>(
@@ -123,6 +138,7 @@ try {
     schemaVersion: 1,
     executedAt: new Date().toISOString(),
     productEntry: `${boardUrl}/api/tasks`,
+    cliEntry: "npm run cli -- create --file live-task.json",
     fakeRejected: true,
     codexVersion,
     taskId,
@@ -135,6 +151,14 @@ try {
     reviewDigest: projection.review.resultDigest,
     reviewVerdict: projection.review.verdict,
     reviewFindingCount: projection.review.findings.length,
+    roleSessions: projection.roleRuns?.map((run) => ({
+      kind: run.kind,
+      specRevision: run.specRevision,
+      attempt: run.attempt,
+      sessionId: run.sessionId,
+      runId: run.runId,
+      verdict: run.verdict,
+    })),
     baseSha,
     resultCommit: projection.checkpoint.commitSha,
     verificationDigest: projection.verification.verificationDigest,
@@ -173,7 +197,7 @@ function submission(repository: string, runnerKind: string) {
     docsDisposition: "not_applicable",
     validationCommands: [{
       commandId: "CMD-LIVE-ACCEPTANCE",
-      argv: [process.execPath, "-e", "const fs=require('node:fs');const names=fs.readdirSync('.').filter(x=>x!=='.git'&&x!=='README.md');if(names.length!==1||names[0]!=='result.txt'||fs.readFileSync('result.txt','utf8')!=='real Moye task complete\\n')process.exit(2);console.log('real product task verified')"],
+      argv: [process.execPath, "-e", "const{execFileSync:e}=require('node:child_process');const g=(...a)=>e('git',a,{encoding:'utf8'});if(g('status','--porcelain').length||g('diff-tree','--no-commit-id','--name-status','-r','HEAD').trim()!=='A\\tresult.txt'||g('show','HEAD:result.txt')!=='real Moye task complete\\n')process.exit(2);console.log('real product task verified')"],
     }],
   };
 }

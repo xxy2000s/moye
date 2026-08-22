@@ -1,0 +1,119 @@
+schema_version: 1
+task_id: TASK-0021
+graph_revision: 47
+intents: [task-create, workflow-change, task-runtime-change, coding-task-poc, docs-change]
+changed_paths:
+  - .agents/skills/moye-task-control/SKILL.md
+  - README.md
+  - docs/delivery/backlog/BL-0019.yaml
+  - docs/delivery/backlog/BL-0022.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/tasks/README.md
+  - docs/delivery/tasks/TASK-0021/design.md
+  - docs/delivery/tasks/TASK-0021/docs-impact.yaml
+  - docs/delivery/tasks/TASK-0021/plan.md
+  - docs/delivery/tasks/TASK-0021/spec.md
+  - docs/delivery/tasks/TASK-0021/task.yaml
+  - docs/delivery/tasks/TASK-0021/verification.md
+  - docs/graph.yaml
+  - docs/knowledge/current/architecture/poc-01-restate.md
+  - docs/knowledge/current/architecture/task-runtime-kernel.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - output/playwright/task-live-archived.png
+  - output/playwright/task-live-received.png
+  - output/playwright/task-live-role-stream.png
+  - public/app.js
+  - scripts/live_product_acceptance.ts
+  - src/agent/live-role.ts
+  - src/board/server.ts
+  - src/cli/index.ts
+  - src/coding/workflow.ts
+  - src/domain/coding-task.ts
+  - src/git/workspace-effect.ts
+  - src/product/live-task.ts
+  - src/restate/coding-services.ts
+  - src/restate/services.ts
+  - src/review/live-review.ts
+  - src/trace/coding-trace.ts
+  - src/trace/state-machine.ts
+  - src/verification/gate.ts
+  - tests/e2e/coding-workflow.test.ts
+  - tests/e2e/demo.test.ts
+  - tests/unit/coding-trace.test.ts
+  - tests/unit/coding-workflow.test.ts
+  - tests/unit/live-role.test.ts
+  - tests/unit/state-machine-trace.test.ts
+docs:
+  read:
+    - agent-contract
+    - root-readme
+    - docs-index
+    - codemap
+    - document-control-plane
+    - backlog-index
+    - tasks-index
+    - task-runtime-kernel
+    - durable-runtime-pitfalls
+    - overnight-multi-task-goal
+    - finding-backlog-docs-not-projected
+    - bl-0008-backlog-projection-sync
+    - bl-0002-single-agent-coding-loop
+    - restate-poc-architecture
+    - meta-index
+    - adr-0002-doc-lifecycle-roles
+    - sources-index
+    - adr-0001-restate-poc
+    - architecture-index
+    - local-restate-poc-runbook
+    - runbooks-index
+    - moye-task-control-skill
+    - bl-0019-cli-close-attach
+    - bl-0022-real-core-product-flow
+    - task-0021-design
+    - task-0021-docs-impact
+    - task-0021-plan
+    - task-0021-spec
+    - task-0021-manifest
+    - task-0021-verification
+  reviewed:
+    architecture-overview: { outcome: unchanged, reason: "总体边界仍是 Task 聚合根、Workflow 主权和只读 Observer；本次细节写入 Kernel 与 PoC Architecture" }
+    moye-task-control-skill: { outcome: updated, reason: "统一真实 Coding create/status/wait/reconcile 命令和产品 Fake 禁止规则进入操作流程" }
+    durable-workflow-research: { outcome: unchanged, reason: "实现沿用既有 Restate 调研结论，没有形成新的外部选型" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "继续把 Worktree 作为缓存、Git/Artifact 作为可迁移事实，不重写历史讨论" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "本任务消费该 Draft 的角色与闭环需求，当前事实已写入 Architecture，不改写来源" }
+    task-spec-document-closure-brainstorm: { outcome: unchanged, reason: "继续使用冻结 Envelope、Docs Gate 和 Task Artifact，不重写来源" }
+    task-0013-manifest: { outcome: unchanged, reason: "Core Control Kernel 历史交付事实不变" }
+    task-0014-manifest: { outcome: unchanged, reason: "Role Runner 历史协议不变；产品另接真实 Live Role" }
+    task-0015-manifest: { outcome: unchanged, reason: "沿用 Review/Finding/Decision 语义，不改写历史交付" }
+    task-0016-manifest: { outcome: unchanged, reason: "Repair/Replan 预算模型被产品接线，不改变原 Task 历史" }
+    task-0017-manifest: { outcome: unchanged, reason: "Observer 仍是只读派生，不改变历史交付" }
+    task-0018-manifest: { outcome: unchanged, reason: "确定性场景继续作为控制协议测试，不作为本次真实成功证据" }
+    task-0019-manifest: { outcome: unchanged, reason: "本任务补齐其后续产品缺口，不改写已经归档的交付事实" }
+    task-0020-manifest: { outcome: unchanged, reason: "状态机可见性历史事实不变；本任务扩展真实角色与控制动作" }
+    task-0021-manifest: { outcome: updated, reason: "记录本轮 Base、执行方式、Result 与 Closure Evidence" }
+    task-0001-manifest: { outcome: unchanged, reason: "复用 Task/Archive Workflow，不改变历史事实" }
+    task-0002-manifest: { outcome: unchanged, reason: "Backlog 转 Task 规则不变" }
+    task-0003-manifest: { outcome: unchanged, reason: "Envelope 继续冻结并按 Revision/Digest 绑定" }
+    task-0004-manifest: { outcome: unchanged, reason: "Worktree Effect 所有权不变，仅允许跨 Revision 复用缓存" }
+    task-0005-manifest: { outcome: unchanged, reason: "真实 Agent Adapter 的历史边界不变" }
+    task-0006-manifest: { outcome: unchanged, reason: "Coding Workflow 仍是唯一推进者" }
+    task-0007-manifest: { outcome: unchanged, reason: "Trace 仍是只读派生，不形成第二状态机" }
+    task-0008-manifest: { outcome: unchanged, reason: "Fake 继续只用于隔离测试，产品入口明确拒绝" }
+    task-0009-manifest: { outcome: unchanged, reason: "OTLP/Phoenix 仍只用于诊断" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "继续使用 TypeScript 和现有依赖，没有引入新框架" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "业务 Event 与 Session JSONL 不改变 OTLP 的诊断定位" }
+    root-readme: { outcome: updated, reason: "给出当前真实产品能力、统一 CLI 用法和仍未实现的生产边界" }
+    codemap: { outcome: updated, reason: "登记 Live Role、Reconcile、统一 CLI、全 Session 流和 Trace/Board 位置" }
+    task-runtime-kernel: { outcome: updated, reason: "写明真实多角色产品路径、Repair/Replan、失败 Archive、WAITING_RECONCILE 与审计不变量" }
+    restate-poc-architecture: { outcome: updated, reason: "记录当前 Coding 产品闭环、事件流、失败/未知收敛和剩余边界" }
+    local-restate-poc-runbook: { outcome: updated, reason: "增加统一 CLI、wait、reconcile、完整 Web Trace 与全角色增量事件操作" }
+    document-control-plane: { outcome: unchanged, reason: "继续执行 Router、Graph、Impact Validator、Result Commit 与 Archive Gate" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "实现遵守未知副作用先对账与旧 Attempt 不复活规则，没有新增稳定陷阱" }
+    backlog-index: { outcome: updated, reason: "登记 BL-0022，并将 BL-0019 关联到本次继续交付" }
+    tasks-index: { outcome: updated, reason: "登记 TASK-0021 Active Task；Runtime Archive 后由 housekeeping 收敛" }
+    task-0021-spec: { outcome: updated, reason: "冻结统一入口、真实角色、Repair/Replan、失败/未知、Web 和真实验收要求" }
+    task-0021-design: { outcome: updated, reason: "记录单一产品状态机、稳定 Run Locator、全角色增量 JSONL 与详情实时刷新" }
+    task-0021-plan: { outcome: updated, reason: "记录实现、真实验收、文档与归档进展" }
+    task-0021-verification: { outcome: updated, reason: "固化真实成功闭环、真实 Replan 失败闭环、浏览器和自动化证据" }
+    task-0021-docs-impact: { outcome: updated, reason: "覆盖最终 Context Route 的 required_review 与全部实际变更路径" }

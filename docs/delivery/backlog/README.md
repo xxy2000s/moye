@@ -31,9 +31,10 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 | [BL-0016](./BL-0016.yaml) | Converted | 实现 Self Review、ReviewResult 与 Finding 生命周期 | TASK-0015 |
 | [BL-0017](./BL-0017.yaml) | Converted | 将最终 Docs Impact 与 Knowledge Sync 接入 Core Workflow | TASK-0017 |
 | [BL-0018](./BL-0018.yaml) | Converted | 实现统一 Core Closure Gate 与故障收敛矩阵 | TASK-0018 |
-| [BL-0019](./BL-0019.yaml) | Triaged | 修复 CLI close 未附着既有 TaskWorkflow | — |
+| [BL-0019](./BL-0019.yaml) | Converted | 修复 CLI close 未附着既有 TaskWorkflow | TASK-0021 |
 | [BL-0020](./BL-0020.yaml) | Converted | 把真实 Agent 编码闭环接入 Moye 页面 | TASK-0019 |
 | [BL-0021](./BL-0021.yaml) | Converted | 在 Board 展示可审计的 Task 状态机 | TASK-0020 |
+| [BL-0022](./BL-0022.yaml) | Converted | 把真实多角色 Core 接入可全程审计的单任务产品流 | TASK-0021 |
 
 ## 本轮调度结果
 

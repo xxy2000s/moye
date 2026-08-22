@@ -88,6 +88,9 @@ describe("npm run demo", () => {
     expect(html).toContain("data-agent-events-viewer");
     expect(html).toMatch(/<dialog id="task-detail">[\s\S]*?<\/dialog>\s*<dialog id="agent-events-dialog"/);
     expect(app).toContain("openAgentEventsDialog");
+    expect(app).toContain("await refreshOpenTask(board)");
+    expect(app).toContain("taskTraceSignature(trace)");
+    expect(app).toContain("elements.eventsDialog.open || taskDetailRefreshInFlight");
     expect(app).not.toContain('id="agent-events-viewer"');
     expect(app).toContain("data-agent-event-filter");
     expect(app).toContain("实时跟随中");

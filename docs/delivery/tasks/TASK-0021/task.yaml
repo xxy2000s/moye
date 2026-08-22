@@ -1,0 +1,27 @@
+schema_version: 1
+id: TASK-0021
+title: 接通真实 Core 单任务全流程与 Web 全程审计
+status: executing
+outcome:
+backlog_refs:
+  - BL-0022
+  - BL-0019
+spec_revision: 1
+workflow_id: task/TASK-0021
+execution_mode: goal-bootstrap
+base_commit: 86b7e23e1af1a8edea4b519472f9fcdf41b55d0b
+archive:
+  status: not_ready
+  archived_at:
+  archived_path:
+result:
+  pull_request:
+  merge_commit:
+  closure_report: task-artifact://TASK-0021/verification.md
+  implementation_commit:
+execution_evidence:
+  executor_id: codex:/root
+  result_commit:
+  verification_refs:
+    - task-artifact://TASK-0021/verification.md
+  docs_impact_ref: task-artifact://TASK-0021/docs-impact.yaml

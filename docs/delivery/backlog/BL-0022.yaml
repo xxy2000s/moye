@@ -1,0 +1,30 @@
+schema_version: 1
+id: "BL-0022"
+title: "把真实多角色 Core 接入可全程审计的单任务产品流"
+kind: "feature"
+status: "converted_to_task"
+priority: "high"
+
+source_refs:
+  - multi-agent-core-closure-requirements
+affected_areas:
+  - core-workflow
+  - real-role-runner
+  - task-cli
+  - project-board
+  - recovery
+  - git-closure
+
+acceptance_outline:
+  - "一个真实任务从提交开始由唯一 Workflow 推进，Web 可实时观察全部状态、Event、Attempt、Role Session、Evidence、Git 与 Archive"
+  - "Docs、Implementation、Self Review 和独立 Review 使用真实 Agent 结果，不以确定性 Scenario/Fake 作为产品成功证据"
+  - "Finding 能驱动新 Attempt 的 Repair；设计或规格 Finding 能驱动 Spec Revision N+1 的真实 Replan"
+  - "CLI 能提交、按 TaskAuthority 查询并等待 Coding/Core Task，不把命令固定到 TaskWorkflow"
+  - "确定性失败归档证据；未知副作用进入可操作的 Reconcile/Resume，而不是永久黑盒"
+  - "真实普通仓库任务通过完整自动化、浏览器和 Runtime Archive 验收"
+
+resolution:
+  task_refs:
+    - TASK-0021
+  duplicate_of:
+  reason: "用户要求下一次真实任务能在 Web 全程观察完整 Core 细节；TASK-0021 将控制协议产品化"

@@ -23,13 +23,15 @@ Use the repository CLI and document graph as gates. Never infer lifecycle state 
 ## Operate a durable task
 
 - Validate input: `npm run cli -- validate --file <task.json>`
-- Submit once: `npm run cli -- create --file <task.json>`
-- Inspect projection: `npm run cli -- status <TASK-ID>`
+- Submit once: `npm run cli -- create --file <task.json>` (bootstrap Task or real Coding Task submission)
+- Inspect the owning projection: `npm run cli -- status <TASK-ID>`
+- Wait for archived terminal state or reconcile wait: `npm run cli -- wait <TASK-ID> [--timeout-ms N]`
+- Resume an explicitly reconciled Coding effect: `npm run cli -- reconcile-task <TASK-ID> --token <TOKEN> --evidence <TEXT>`
 - Wait for business close: `npm run cli -- close --file <task.json>`
 - Run or reattach to archive: `npm run cli -- archive --file <archive.json>`
 - Reconcile an uncertain archive outcome: `npm run cli -- reconcile --file <archive.json>`
 
-`create` and `close` address the same keyed `TaskWorkflow`; `archive` and `reconcile` address the same keyed `ArchiveWorkflow`. Never implement retry loops or a second task state machine in this Skill.
+`create/status/wait` resolve `TaskAuthority` and address the same keyed owning Workflow; `close` remains the bootstrap TaskWorkflow attach command. `archive` and `reconcile` address the same keyed ArchiveWorkflow. `reconcile-task` only resolves the pending durable Workflow signal after external evidence exists; it cannot create a new Attempt. Never implement retry loops or a second task state machine in this Skill.
 
 ## Close the documentation gate
 

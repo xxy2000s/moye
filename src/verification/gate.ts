@@ -67,7 +67,7 @@ export async function runVerificationGate(
   options: VerificationGateOptions,
 ): Promise<VerificationOutcome> {
   const trustedEnvelope = parseTaskEnvelope(JSON.parse(JSON.stringify(envelope)) as unknown, envelope.envelopeDigest);
-  if (trustedEnvelope.taskId !== workspace.taskId || trustedEnvelope.specRevision !== workspace.specRevision
+  if (trustedEnvelope.taskId !== workspace.taskId || trustedEnvelope.specRevision !== checkpoint.specRevision
       || trustedEnvelope.baseSha !== workspace.baseSha || checkpoint.workspaceEffectId !== workspace.effectId) {
     throw conflict("VERIFICATION_INPUT_MISMATCH", "Envelope, Workspace and Checkpoint do not describe one Task revision");
   }

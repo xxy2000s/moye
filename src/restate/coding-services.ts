@@ -3,11 +3,12 @@ import { createHash } from "node:crypto";
 import { writeFile } from "node:fs/promises";
 
 import { CodexExecAgentRunner } from "../agent/codex-exec.js";
+import { CliLiveRoleRunner } from "../agent/live-role.js";
 import { ClaudePrintAgentRunner } from "../agent/claude-print.js";
 import { FixtureCodingAgentRunner, StreamingFixtureCodingAgentRunner } from "../agent/fixture-coding.js";
 import type { FixtureMutation } from "../agent/fixture-coding.js";
 import type { FakeAgentScript } from "../agent/runner.js";
-import type { CodingWorkflowInput, CodingWorkflowProjection } from "../coding/workflow.js";
+import type { CodingReconcileFact, CodingWorkflowInput, CodingWorkflowProjection } from "../coding/workflow.js";
 import { runCodingWorkflow } from "../coding/workflow.js";
 import { loadConfig } from "../config.js";
 import type { TaskProjection } from "../domain/task.js";
@@ -19,6 +20,12 @@ import { archiveWorkflow, projectBoard, taskAuthority } from "./services.js";
 
 interface CodingWorkflowState {
   projection: CodingWorkflowProjection;
+}
+
+export interface CodingReconcileInput {
+  readonly token: string;
+  readonly action: "RESUME_AFTER_RECONCILE";
+  readonly evidence: string;
 }
 
 export interface CodingTaskWorkflowInput extends CodingWorkflowInput {
@@ -62,6 +69,7 @@ export const codingTaskWorkflow = restate.workflow({
       const projection = await runCodingWorkflow(input, {
         agentRunner,
         ...(input.reviewMode === "REAL" ? { reviewRunner: new CliLiveReviewRunner() } : {}),
+        ...(input.roleMode === "REAL" ? { roleRunner: new CliLiveRoleRunner() } : {}),
         now: () => new Date(workflowEpoch + workflowTick++),
         gitRunner: createGitRunner(input),
         activity: <T>(name: string, operation: () => Promise<T>): Promise<T> => ctx.run(
@@ -77,7 +85,7 @@ export const codingTaskWorkflow = restate.workflow({
           const archived = await ctx.workflowClient(archiveWorkflow, input.envelope.taskId).run({
             taskId: input.envelope.taskId,
             projectId: input.projectId,
-            specRevision: input.envelope.specRevision,
+            specRevision: projection.specRevision,
             activeTasksRoot: input.activeTasksRoot,
             archiveRoot: input.archiveRoot,
             archivedAt: input.archivedAt,
@@ -95,6 +103,12 @@ export const codingTaskWorkflow = restate.workflow({
             contentDigest,
             ...(archived.archivePath === undefined ? {} : { archivePath: archived.archivePath }),
           };
+        },
+        awaitReconcile: async (fact: CodingReconcileFact) => {
+          await ctx.promise<string>(reconcilePromiseName(fact.token)).get();
+        },
+        onSpecRevision: async (specRevision) => {
+          await ctx.objectClient(taskAuthority, input.envelope.taskId).claim({ owner: "CODING_WORKFLOW", specRevision });
         },
       });
       if (config.observability.enabled) {
@@ -117,8 +131,28 @@ export const codingTaskWorkflow = restate.workflow({
       async (ctx: restate.WorkflowSharedContext<CodingWorkflowState>): Promise<CodingWorkflowProjection | null> =>
         ctx.get("projection"),
     ),
+
+    reconcile: restate.handlers.workflow.shared(async (
+      ctx: restate.WorkflowSharedContext<CodingWorkflowState>,
+      input: CodingReconcileInput,
+    ): Promise<CodingWorkflowProjection> => {
+      const projection = await ctx.get("projection");
+      if (projection === null || projection.state !== "WAITING_RECONCILE" || projection.reconcile === undefined) {
+        throw new restate.TerminalError("Task is not waiting for reconcile", { errorCode: 409 });
+      }
+      if (input.action !== "RESUME_AFTER_RECONCILE" || input.token !== projection.reconcile.token || !input.evidence.trim()) {
+        throw new restate.TerminalError("Reconcile token/action/evidence does not match the pending effect", { errorCode: 409 });
+      }
+      const promise = ctx.promise<string>(reconcilePromiseName(input.token));
+      if (await promise.peek() === undefined) await promise.resolve(input.evidence.trim());
+      return projection;
+    }),
   },
 });
+
+function reconcilePromiseName(token: string): string {
+  return `reconcile-${token.slice(token.lastIndexOf(":") + 1)}`;
+}
 
 function createAgentRunner(input: CodingTaskWorkflowInput, config: ReturnType<typeof loadConfig>) {
   if (input.runnerKind === "FAKE") return createFixtureRunner(input);
@@ -194,7 +228,9 @@ function toTaskProjection(input: CodingTaskWorkflowInput, projection: CodingWork
     taskId: projection.taskId,
     projectId: input.projectId,
     title: input.title,
-    state: projection.state === "RUNNING" ? (projection.currentStep === "CONTEXT" ? "RECEIVED" : "EXECUTING") : "CLOSED",
+    state: projection.state === "RUNNING" || projection.state === "WAITING_RECONCILE"
+      ? (projection.currentStep === "CONTEXT" ? "RECEIVED" : "EXECUTING")
+      : "CLOSED",
     currentStep: projection.currentStep,
     attempt: projection.agentRuns?.length ?? projection.attempts.filter((attempt) => attempt.stepId === "IMPLEMENT").length,
     specRevision: projection.specRevision,

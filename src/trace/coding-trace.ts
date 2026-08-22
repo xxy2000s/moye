@@ -31,7 +31,7 @@ export interface CodingTaskTrace {
     readonly authority: "CodingTaskWorkflow projection";
     readonly events: CodingWorkflowProjection["events"];
     readonly steps: readonly {
-      readonly stepId: CodingPipelineStepId | "REVIEW";
+      readonly stepId: CodingPipelineStepId | "SELF_REVIEW" | "REVIEW" | "REPLAN";
       readonly sequence: number;
       readonly status: StepAttempt["status"] | "NOT_STARTED";
       readonly attemptIds: readonly string[];
@@ -49,10 +49,22 @@ export interface CodingTaskTrace {
     readonly signal: NodeJS.Signals | null;
     readonly runDigest?: string;
   };
+  readonly agents: readonly {
+    readonly runId: string;
+    readonly specRevision: number;
+    readonly attemptId: string;
+    readonly runnerKind: string;
+    readonly sessionId?: string;
+    readonly outcome: string;
+    readonly eventsUrl: string;
+    readonly runDigest: string;
+  }[];
   readonly agentEvents?: {
     readonly viewUrl: string;
     readonly downloadUrl?: string;
     readonly completed: boolean;
+    readonly runnerKind: string;
+    readonly attemptId: string;
   };
   readonly reviews: readonly {
     readonly runId: string;
@@ -65,7 +77,23 @@ export interface CodingTaskTrace {
     readonly findingCount: number;
     readonly blockingFindingCount: number;
     readonly resultDigest: string;
+    readonly eventsUrl: string;
   }[];
+  readonly roles: readonly {
+    readonly runId: string;
+    readonly kind: string;
+    readonly attempt: number;
+    readonly specRevision: number;
+    readonly runnerKind: string;
+    readonly sessionId?: string;
+    readonly outcome: string;
+    readonly verdict: string | null;
+    readonly summary: string;
+    readonly findingCount: number;
+    readonly resultDigest: string;
+    readonly eventsUrl: string;
+  }[];
+  readonly specRevisions: NonNullable<CodingWorkflowProjection["specRevisions"]>;
   readonly git: {
     readonly workspaceEffectId?: string;
     readonly branch?: string;
@@ -163,9 +191,21 @@ export function buildCodingTaskTrace(
           status: (attempts.at(-1)?.status ?? "NOT_STARTED") as StepAttempt["status"] | "NOT_STARTED",
           attemptIds: attempts.map((attempt) => attempt.attemptId),
         };
+      }), ...(["SELF_REVIEW", "REPLAN"] as const).flatMap((stepId) => {
+        const runs = (projection.roleRuns ?? []).filter((run) => run.kind === stepId);
+        if (runs.length === 0 && projection.currentStep !== stepId) return [];
+        const latest = runs.at(-1);
+        return [{
+          stepId,
+          sequence: projection.steps.length + (stepId === "SELF_REVIEW" ? 1 : 3),
+          status: latest === undefined ? "RUNNING" as const
+            : latest.outcome === "SUCCEEDED" && latest.verdict === "PASSED" ? "SUCCEEDED" as const
+              : projection.state === "FAILED" ? "FAILED" as const : "RUNNING" as const,
+          attemptIds: runs.map((run) => run.runId),
+        }];
       }), ...((projection.reviews?.length ?? 0) > 0 || projection.currentStep === "REVIEW" ? [{
         stepId: "REVIEW" as const,
-        sequence: projection.steps.length + 1,
+        sequence: projection.steps.length + 2,
         status: projection.review === undefined
           ? "RUNNING" as const
           : projection.review.outcome === "SUCCEEDED" && projection.review.verdict === "PASSED"
@@ -191,7 +231,17 @@ export function buildCodingTaskTrace(
         ...(agent === undefined ? {} : { runDigest: agent.runDigest }),
       },
     }),
-    reviews: (projection.reviews ?? []).map((review) => ({
+    agents: (projection.agentRuns ?? (projection.agent === undefined ? [] : [projection.agent])).map((run) => ({
+      runId: run.runId,
+      specRevision: run.specRevision,
+      attemptId: run.attemptId,
+      runnerKind: run.runnerKind,
+      ...(run.sessionId === undefined ? {} : { sessionId: run.sessionId }),
+      outcome: run.outcome,
+      eventsUrl: `/api/tasks/${encodeURIComponent(projection.taskId)}/roles/${encodeURIComponent(run.runId)}/events`,
+      runDigest: run.runDigest,
+    })),
+    reviews: [...(projection.reviews ?? []).map((review) => ({
       runId: review.runId,
       attempt: review.attempt,
       runnerKind: review.runnerKind,
@@ -202,14 +252,69 @@ export function buildCodingTaskTrace(
       findingCount: review.findings.length,
       blockingFindingCount: review.findings.filter((finding) => finding.severity === "BLOCKING").length,
       resultDigest: review.resultDigest,
-    })),
-    ...(agent === undefined && agentRun === undefined ? {} : {
+      eventsUrl: `/api/tasks/${encodeURIComponent(projection.taskId)}/roles/${encodeURIComponent(review.runId)}/events`,
+    })), ...(projection.reviewRun === undefined ? [] : [{
+      runId: projection.reviewRun.runId,
+      attempt: projection.reviewRun.attempt,
+      runnerKind: projection.reviewRun.runnerKind,
+      outcome: "RUNNING",
+      verdict: null,
+      summary: "独立 Review 正在执行；原始事件可实时跟随。",
+      findingCount: 0,
+      blockingFindingCount: 0,
+      resultDigest: "pending",
+      eventsUrl: `/api/tasks/${encodeURIComponent(projection.taskId)}/roles/${encodeURIComponent(projection.reviewRun.runId)}/events`,
+    }])],
+    roles: [...(projection.roleRuns ?? []).map((run) => ({
+      runId: run.runId,
+      kind: run.kind,
+      attempt: run.attempt,
+      specRevision: run.specRevision,
+      runnerKind: run.runnerKind,
+      ...(run.sessionId === undefined ? {} : { sessionId: run.sessionId }),
+      outcome: run.outcome,
+      verdict: run.verdict,
+      summary: run.summary,
+      findingCount: run.findings.length,
+      resultDigest: run.resultDigest,
+      eventsUrl: `/api/tasks/${encodeURIComponent(projection.taskId)}/roles/${encodeURIComponent(run.runId)}/events`,
+    })), ...(projection.roleRun === undefined ? [] : [{
+      runId: projection.roleRun.runId,
+      kind: projection.roleRun.kind,
+      attempt: projection.roleRun.attempt,
+      specRevision: projection.roleRun.specRevision,
+      runnerKind: projection.roleRun.runnerKind,
+      outcome: "RUNNING",
+      verdict: null,
+      summary: `${projection.roleRun.kind} 正在执行；原始事件可实时跟随。`,
+      findingCount: 0,
+      resultDigest: "pending",
+      eventsUrl: `/api/tasks/${encodeURIComponent(projection.taskId)}/roles/${encodeURIComponent(projection.roleRun.runId)}/events`,
+    }])],
+    specRevisions: (projection.specRevisions ?? []).map((revision) => ({ ...revision })),
+    ...(projection.roleRun !== undefined ? {
+      agentEvents: {
+        viewUrl: `/api/tasks/${encodeURIComponent(projection.taskId)}/roles/${encodeURIComponent(projection.roleRun.runId)}/events`,
+        completed: false,
+        runnerKind: projection.roleRun.runnerKind,
+        attemptId: `${projection.roleRun.kind}-${projection.roleRun.attempt}`,
+      },
+    } : projection.reviewRun !== undefined ? {
+      agentEvents: {
+        viewUrl: `/api/tasks/${encodeURIComponent(projection.taskId)}/roles/${encodeURIComponent(projection.reviewRun.runId)}/events`,
+        completed: false,
+        runnerKind: projection.reviewRun.runnerKind,
+        attemptId: `REVIEW-${projection.reviewRun.attempt}`,
+      },
+    } : agent === undefined && agentRun === undefined ? {} : {
       agentEvents: {
         viewUrl: `/api/tasks/${encodeURIComponent(projection.taskId)}/agent-events`,
         ...(agent === undefined ? {} : {
           downloadUrl: `/api/tasks/${encodeURIComponent(projection.taskId)}/artifacts/agent-events`,
         }),
         completed: agent !== undefined,
+        runnerKind: agent?.runnerKind ?? agentRun!.runnerKind,
+        attemptId: agent?.attemptId ?? agentRun!.attemptId,
       },
     }),
     git: {
@@ -309,6 +414,16 @@ function deriveRecovery(projection: CodingWorkflowProjection): CodingTaskTrace["
       actions: [{ code: "REATTACH_ARCHIVE", label: "重新附着归档", reason: "复用同一 ArchiveWorkflow key 对账归档结果。", automatic: true }],
     };
   }
+  if (projection.state === "WAITING_RECONCILE") {
+    return {
+      classification: "WAIT_OR_RECONCILE",
+      summary: "外部副作用结果未知，Workflow 已暂停在同一个 Task/Attempt，禁止盲目重跑。完成对账后用当前 token 恢复。",
+      actions: [
+        { code: "INSPECT_JOURNAL", label: "检查 Restate Journal", reason: "核对当前 durable activity 与外部执行事实。", automatic: false },
+        { code: "RESUME_AFTER_RECONCILE", label: "提交对账证据并恢复", reason: projection.reconcile?.token ?? "等待 Reconcile token", automatic: false },
+      ],
+    };
+  }
   if (projection.state === "FAILED") {
     if (projection.errorCategory === "UNKNOWN_SIDE_EFFECT"
         || (projection.verification?.passed === false && projection.verification.code === "RESULT_UNKNOWN")) {
@@ -357,12 +472,14 @@ function collectArtifacts(projection: CodingWorkflowProjection): CodingTaskTrace
       }),
     });
   };
-  if (projection.agent !== undefined) {
-    addAgentArtifact("agent-events", projection.agent.artifacts.events, "agent-events");
-    addAgentArtifact("agent-stderr", projection.agent.artifacts.stderr);
-    addAgentArtifact("agent-final-message", projection.agent.artifacts.finalMessage);
-    if (projection.agent.artifacts.rawModelIo !== undefined) {
-      addAgentArtifact("raw-model-io", projection.agent.artifacts.rawModelIo, "raw-model-io");
+  const agentRuns = projection.agentRuns ?? (projection.agent === undefined ? [] : [projection.agent]);
+  for (const [index, agent] of agentRuns.entries()) {
+    const suffix = agentRuns.length === 1 ? "" : `-${index + 1}`;
+    addAgentArtifact(`agent-events${suffix}`, agent.artifacts.events, index === agentRuns.length - 1 ? "agent-events" : undefined);
+    addAgentArtifact(`agent-stderr${suffix}`, agent.artifacts.stderr);
+    addAgentArtifact(`agent-final-message${suffix}`, agent.artifacts.finalMessage);
+    if (agent.artifacts.rawModelIo !== undefined) {
+      addAgentArtifact(`raw-model-io${suffix}`, agent.artifacts.rawModelIo, index === agentRuns.length - 1 ? "raw-model-io" : undefined);
     }
   }
   if (projection.verification !== undefined) {
@@ -377,6 +494,18 @@ function collectArtifacts(projection: CodingWorkflowProjection): CodingTaskTrace
       kind: `review-${review.attempt}`,
       artifactRef: review.manifestArtifactRef,
       contentDigest: review.resultDigest,
+    });
+  }
+  for (const role of projection.roleRuns ?? []) {
+    artifacts.push({
+      kind: `role-${role.kind.toLowerCase()}-${role.attempt}`,
+      artifactRef: role.manifestArtifactRef,
+      contentDigest: role.resultDigest,
+    });
+    artifacts.push({
+      kind: `role-${role.kind.toLowerCase()}-${role.attempt}-events`,
+      artifactRef: role.eventsArtifactRef,
+      contentDigest: role.eventsContentDigest,
     });
   }
   if (projection.docs !== undefined) {

@@ -52,7 +52,7 @@ npm run test:e2e
 npm run acceptance:live
 ```
 
-`npm run acceptance:live` 是产品可用性门禁：它经页面使用的同一个 `POST /api/tasks` 入口先确认 Fake 被拒绝，再在隔离临时 Git 仓库中调用真实 Codex 完成 Implementation 和独立只读 Review，随后验证命令、唯一 Merge、Board Closure 与 Archive。它会消耗真实模型额度；常规单元/E2E 仍可使用确定性 Fixture 验证恢复语义。
+`npm run acceptance:live` 是产品可用性门禁：它先确认页面 API 拒绝 Fake，再通过统一 CLI 在隔离临时 Git 仓库提交真实 Coding Task，依次调用真实 Codex Context、Implementation、Self Review、独立 Review 与 Docs Gate Session，随后验证命令、唯一 Merge、CLI wait、Board Closure 与 Archive。它会消耗真实模型额度；常规单元/E2E 仍可使用确定性 Fixture 验证恢复语义。
 
 当前成功标准：全部单元测试与类型检查通过，真实 Restate E2E 覆盖归档恢复、Backlog 同步、唯一 Merge、事件流、Trace、Verification 失败、未知结果对账与 Worker 重启；Live Acceptance 另外证明页面产品路径没有用 Fake/Mock 冒充成功。
 
@@ -77,7 +77,7 @@ MOYE_LIVE_RUNTIME_ROOT=/absolute/path/outside/repo/moye-live \
 npm run dev
 ```
 
-Board 是只读审计面，不提供状态写入口。通用 Task 使用下节 CLI 提交；真实编码任务使用受控 `POST /api/tasks` 或 `npm run acceptance:live`。目标分支不存在时会从 Base 自动创建；目标分支已被任一 Worktree 检出、不是 Git ref、或 Runtime Root 位于目标仓库内时，请求会在进入 Runtime 前失败。服务端只接受 `CODEX_EXEC | CLAUDE_PRINT`，拒绝 Fake。
+Board 是只读审计面，不提供状态写入口。通用 Task 和真实编码任务都可使用下节统一 CLI 提交；页面 `POST /api/tasks` 与 CLI 复用同一 `buildLiveCodingTask`。目标分支不存在时会从 Base 自动创建；目标分支已被任一 Worktree 检出、不是 Git ref、或 Runtime Root 位于目标仓库内时，请求会在进入 Runtime 前失败。产品输入只接受 `CODEX_EXEC | CLAUDE_PRINT`，拒绝 Fake。
 
 注册 HTTP/2 Service Endpoint：
 
@@ -97,21 +97,23 @@ Linux Docker 中 `host.docker.internal` 不可用时，需要把 Restate 与 Moy
 npm run cli -- --help
 ```
 
-Task 输入是与 `TaskWorkflowInput` 对齐的 JSON。常用操作：
+`create` 自动识别两类 JSON：含 `objective`、`repositoryRoot`、`runnerKind` 的输入是产品 Coding Task Submission；否则按兼容的 `TaskWorkflowInput` 校验。常用操作：
 
 ```bash
 npm run cli -- validate --file /path/to/task.json
 npm run cli -- create --file /path/to/task.json
 npm run cli -- status TASK-EXAMPLE
+npm run cli -- wait TASK-EXAMPLE --timeout-ms 900000
 npm run cli -- close --file /path/to/task.json
 npm run cli -- backlog sync --dir docs/delivery/backlog --project moye
 ```
 
-- `create` 异步提交 keyed Workflow；
+- `create` 异步提交 keyed owning Workflow；`status/wait` 先解析 TaskAuthority，不会把 Coding Task 错查到 TaskWorkflow；
+- `wait` 在成功/失败 Archive 终态、Archive 失败或 `WAITING_RECONCILE` 返回；不会创建第二个 Invocation；
 - `close` 连接同一 Workflow 并等待业务终态，不创建第二条流程；
 - `archive` 和 `reconcile` 连接同一 keyed ArchiveWorkflow。
 - `backlog sync` 在提交前校验完整 YAML 批次；重复同步按 Source Digest 收敛；运行时独有记录默认保留并报告。
-- `CodingTaskWorkflow/<task_id>` 接受冻结 Envelope 和 Agent Runner 配置；受控 API 只提交真实 Codex/Claude，Workflow 在实现与验证后启动独立只读 Review，Blocking Finding 最多触发一次 Repair、重新验证和重新 Review；主状态与事件摘要同步到 Board。
+- `CodingTaskWorkflow/<task_id>` 接受冻结 Envelope 和真实 Runner 配置；产品链是 Context → Worktree → Implementation → Self Review → Verification → independent Review → Repair/Replan → Merge → Docs Gate → Closure → Archive。Blocking Finding 的 `REPAIR` 创建新 Generation，`REPLAN` 创建 Spec Revision N+1；主状态、全部 Session 与事件摘要同步到 Board。
 - `CoreClosureWorkflow/<task_id>` 接受冻结 Envelope、确定性场景和受管 Artifact Root；它当前是 Core 收敛 PoC/API，不会投影到 Board，也不替代 Coding Workflow。
 
 Core Workflow 的只读状态可直接从 Restate Ingress 查询：
@@ -134,9 +136,17 @@ npx vitest run tests/e2e/core-closure-workflow.test.ts
 curl http://127.0.0.1:3000/api/tasks/TASK-EXAMPLE/trace
 ```
 
-响应中的 `stateMachine.history` 是 Event 证明的实际路径，`stateMachine.definition.edges` 是代码允许的路径，两者不能混用；`current.consistency` 必须为 `VERIFIED`。`business` 是 Coding 业务事实；`durableRuntime.workflowRef` 用于定位 Journal，`durableRuntime.invocationsUrl` 是按 Workflow 服务和 Task key 过滤的 Restate 深链；`technical.artifacts` 只提供日志和证据引用。`recovery` 是从 Projection 派生的只读建议，不是新的控制命令。通用 Task 的同一路径也返回 `traceKind: TASK` 和状态机 History。
+响应中的 `stateMachine.history` 是 Event 证明的实际路径，`stateMachine.definition.edges` 是代码允许的路径，两者不能混用；`current.consistency` 必须为 `VERIFIED`。`roles/agents/reviews/specRevisions` 列出全部真实会话和规格版本；`durableRuntime.workflowRef` 用于定位 Journal；`technical.artifacts` 只提供日志和证据引用。除 `WAITING_RECONCILE` 外，`recovery` 都是只读建议；等待对账时按 Trace 中 token 执行：
 
-`observability.enabled` 只表示当前 Moye 进程已配置 OTLP，不代表 Task 状态成功，也不替代后端健康检查。`observability.traceId` 是稳定查询键；Agent Events 内联查看使用 `/agent-events?cursor=<n>&limit=<1..200>`，只从 Projection locator 解析 Run，运行中校验 execution intent 与路径，完成后原始下载再校验大小和摘要。Task 声明的 Artifact Root 必须位于 `MOYE_ARTIFACT_ROOTS` 内。
+```bash
+npm run cli -- reconcile-task TASK-EXAMPLE \
+  --token 'coding-reconcile:sha256:...' \
+  --evidence '已核对 execution intent、manifest 或 Git ref 的外部证据位置'
+```
+
+该命令只解析当前 durable promise，让原 operation 再对账；Evidence 未准备好时不得调用，也不能借此创建新 Attempt。通用 Task 的同一路径返回 `traceKind: TASK` 和状态机 History。
+
+`observability.enabled` 只表示当前 Moye 进程已配置 OTLP，不代表 Task 状态成功，也不替代后端健康检查。`observability.traceId` 是稳定查询键；当前 Implementation 使用 `/agent-events?cursor=<n>&limit=<1..200>`，当前 Context/Self Review/Replan/Review/Docs Gate 使用 `/roles/<run-id>/events?cursor=<n>&limit=<1..200>`。两者只从 Projection locator 解析 Run，运行中校验 execution intent 与路径，完成后原始下载再校验大小和摘要。Task 声明的 Artifact Root 必须位于 `MOYE_ARTIFACT_ROOTS` 内。
 
 打开 `http://127.0.0.1:3000` 查看 Moye Board。普通使用只需要 Moye；需要确认 Invocation、Journal 或 Replay 时，再从任务的“高级诊断”进入 `http://127.0.0.1:9070` Restate UI。二者通过 `task_id` 关联，但 Restate UI 不是项目任务看板。
 
@@ -173,8 +183,8 @@ curl http://127.0.0.1:3000/api/tasks/TASK-EXAMPLE/trace
 ## 6. 故障判读
 
 - Service 退出但 Restate 仍运行：重启 `npm run dev`，未确认步骤会恢复；
-- Coding Trace 显示 `WAIT_OR_RECONCILE`：先用 `workflowRef` 检查 Journal；涉及 Verification/Agent/Git 未知结果时先核对稳定 Intent、Artifact 或 Git Effect marker，不能盲目重跑；
-- Coding Trace 显示 `FAILED_TERMINAL`：保留失败 Attempt，修复需求后创建新 Task 或新 Spec Revision，不要复活旧 Attempt；
+- Coding Trace 的 Projection state 是 `WAITING_RECONCILE`：先用 `workflowRef` 检查 Journal并核对稳定 Intent、Artifact 或 Git Effect marker；只有外部证据已确认时才用当前 token 发送 `reconcile-task`，不能盲目重跑；
+- Coding Trace 显示 `FAILED_TERMINAL`：失败 Attempt 会继续进入 Archive 固化；修复需求后创建新 Task，不要复活旧 Attempt；Workflow 内的合法 Replan 只能在失败终态前由 Finding 触发；
 - Review 返回 Blocking Finding：Workflow 会在预算内启动新的 Agent Run Repair；Repair 后仍有 Blocking Finding 时任务失败且不会 Merge，不要手工改写 Verdict；
 - Agent 修改完成但 `git commit` 报 `index.lock: Operation not permitted`：确认运行版本的 Codex argv 包含 `--add-dir <validated workspaceGitCommonDir>`；不要改成 `danger-full-access`，也不要把整个父目录加入白名单；
 - Coding Trace 显示 `ARCHIVE_RETRY`：业务已关闭，只重新附着同一 ArchiveWorkflow，不重新编码；

@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { FixtureCodingAgentRunner, StreamingFixtureCodingAgentRunner } from "../../src/agent/fixture-coding.js";
 import type { AgentRunner } from "../../src/agent/runner.js";
+import type { LiveRoleRunner } from "../../src/agent/live-role.js";
 import { CODING_WORKFLOW_STEPS, runCodingWorkflow } from "../../src/coding/workflow.js";
 import { createTaskEnvelope } from "../../src/domain/coding-task.js";
 import { MoyeError } from "../../src/domain/errors.js";
@@ -154,6 +155,96 @@ describe("coding workflow", () => {
     }));
   });
 
+  it("creates Spec Revision N+1 for a real Replan and binds later Attempts to it", async () => {
+    const fixture = await createFixture();
+    const initial = streamingRunner("session-r1", "result.txt", "workflow done\n");
+    const revised = streamingRunner("session-r2", "replan.txt", "revision two\n");
+    const agentRunner: AgentRunner = {
+      run(request) { return (request.specRevision === 1 ? initial : revised).run(request); },
+    };
+    const roleRunner: LiveRoleRunner = {
+      async run(request) {
+        return {
+          schemaVersion: 1,
+          runId: `role:${request.kind}:${request.attempt}:${request.specRevision}`,
+          taskId: request.taskId,
+          specRevision: request.specRevision,
+          kind: request.kind,
+          attempt: request.attempt,
+          runnerKind: request.runnerKind,
+          sessionId: `session-${request.kind.toLowerCase()}-${request.specRevision}`,
+          ...(request.commitSha === undefined ? {} : { commitSha: request.commitSha }),
+          outcome: "SUCCEEDED",
+          verdict: "PASSED",
+          summary: `${request.kind} accepted`,
+          findings: [],
+          revisedAcceptanceCriteria: request.kind === "REPLAN" ? ["result.txt remains valid", "replan.txt is committed"] : [],
+          exitCode: 0,
+          signal: null,
+          startedAt: "2026-08-20T00:00:00.000Z",
+          finishedAt: "2026-08-20T00:00:00.001Z",
+          eventsArtifactRef: `role-artifact://role:${request.kind}:${request.attempt}:${request.specRevision}/events.jsonl`,
+          stderrArtifactRef: `role-artifact://role:${request.kind}:${request.attempt}:${request.specRevision}/stderr.log`,
+          manifestArtifactRef: `role-artifact://role:${request.kind}:${request.attempt}:${request.specRevision}/manifest.json`,
+          eventsContentDigest: `sha256:${"a".repeat(64)}`,
+          stderrContentDigest: `sha256:${"b".repeat(64)}`,
+          resultDigest: `role-result:${request.kind}:${request.specRevision}`,
+        };
+      },
+    };
+    let reviewCalls = 0;
+    const reviewRunner: LiveReviewRunner = {
+      async run(request) {
+        reviewCalls += 1;
+        const findings = reviewCalls === 1 ? [{
+          severity: "BLOCKING" as const,
+          recommendedAction: "REPLAN" as const,
+          title: "acceptance is incomplete",
+          details: "the accepted spec must require a revision marker",
+        }] : [];
+        return {
+          schemaVersion: 1,
+          runId: `review-replan-${reviewCalls}`,
+          taskId: request.taskId,
+          specRevision: request.specRevision,
+          attempt: request.attempt,
+          runnerKind: request.runnerKind,
+          sessionId: `session-review-replan-${reviewCalls}`,
+          commitSha: request.commitSha,
+          outcome: "SUCCEEDED",
+          verdict: findings.length ? "FINDINGS" : "PASSED",
+          summary: findings.length ? "specification defect" : "revision accepted",
+          findings,
+          exitCode: 0,
+          signal: null,
+          startedAt: "2026-08-20T00:00:00.000Z",
+          finishedAt: "2026-08-20T00:00:00.001Z",
+          eventsArtifactRef: `review-artifact://review-replan-${reviewCalls}/events.jsonl`,
+          manifestArtifactRef: `review-artifact://review-replan-${reviewCalls}/manifest.json`,
+          resultDigest: `review-replan-result:${reviewCalls}`,
+        };
+      },
+    };
+
+    const result = await runCodingWorkflow({
+      ...fixture.input,
+      runnerKind: "CODEX_EXEC",
+      reviewMode: "REAL",
+      maxRepairAttempts: 1,
+      maxReplanAttempts: 1,
+    }, { agentRunner, roleRunner, reviewRunner, now: clock() });
+
+    expect(result).toMatchObject({ state: "CLOSED", archiveStatus: "ARCHIVED", specRevision: 2 });
+    expect(result.specRevisions?.map(({ specRevision }) => specRevision)).toEqual([1, 2]);
+    expect(result.agentRuns?.map(({ specRevision }) => specRevision)).toEqual([1, 2]);
+    expect(result.attempts.filter(({ stepId }) => stepId === "IMPLEMENT").map(({ generation, specRevision }) => ({ generation, specRevision })))
+      .toEqual([{ generation: 1, specRevision: 1 }, { generation: 2, specRevision: 2 }]);
+    expect(result.events.map(({ type }) => type)).toContain("SPEC_REVISED");
+    expect(buildCodingStateMachine(result).definition.edges).toContainEqual(expect.objectContaining({
+      from: "REVIEW", to: "REPLAN", kind: "REPAIR", traversed: true,
+    }));
+  });
+
   it("keeps business closure when the independent Archive effect fails", async () => {
     const fixture = await createFixture();
     const result = await runCodingWorkflow(fixture.input, {
@@ -185,6 +276,33 @@ describe("coding workflow", () => {
     expect(result).toMatchObject({
       state: "FAILED", currentStep: "IMPLEMENT", errorCode: "AGENT_RESULT_UNKNOWN", errorCategory: "UNKNOWN_SIDE_EFFECT",
     });
+  });
+
+  it("waits for explicit reconcile evidence and resumes the same Agent Attempt", async () => {
+    const fixture = await createFixture();
+    let calls = 0;
+    const states: string[] = [];
+    const result = await runCodingWorkflow(fixture.input, {
+      agentRunner: {
+        async run(request) {
+          calls += 1;
+          if (calls === 1) throw unknown("AGENT_RESULT_UNKNOWN", "Agent result requires external reconciliation");
+          return fixture.runner.run(request);
+        },
+      },
+      async awaitReconcile(fact) {
+        expect(fact).toMatchObject({ step: "IMPLEMENT", code: "AGENT_RESULT_UNKNOWN", round: 1 });
+        expect(fact.token).toMatch(/^coding-reconcile:sha256:/);
+      },
+      observe(projection) { states.push(projection.state); },
+      now: clock(),
+    });
+
+    expect(result).toMatchObject({ state: "CLOSED", archiveStatus: "ARCHIVED" });
+    expect(calls).toBe(2);
+    expect(states).toContain("WAITING_RECONCILE");
+    expect(result.events.map(({ type }) => type)).toEqual(expect.arrayContaining(["RECONCILE_REQUIRED", "RECONCILE_RESUMED"]));
+    expect(result.attempts.filter(({ stepId }) => stepId === "IMPLEMENT")).toHaveLength(1);
   });
 
   it("preserves an unknown Workspace side effect for recovery", async () => {

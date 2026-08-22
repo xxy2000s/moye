@@ -281,6 +281,34 @@ export function createRetryAttempt(
   return newAttempt(step, generation, scheduledAt);
 }
 
+export function createReplannedAttempt(
+  step: CodingStep,
+  previousAttempts: readonly StepAttempt[],
+  scheduledAt: string,
+): StepAttempt {
+  assertCodingStep(step);
+  if (previousAttempts.length === 0) {
+    throw validation("ATTEMPT_HISTORY_REQUIRED", "replanned Attempt requires prior Attempt history");
+  }
+  for (const [index, attempt] of previousAttempts.entries()) {
+    assertTrustedAttempt(attempt);
+    if (attempt.taskId !== step.taskId || attempt.stepId !== step.stepId) {
+      throw conflict("ATTEMPT_STEP_MISMATCH", "replanned Attempt history belongs to another Task or Step");
+    }
+    if (attempt.generation !== index + 1 || !TERMINAL_ATTEMPT_STATUSES.includes(attempt.status)) {
+      throw conflict("ATTEMPT_HISTORY_INCOMPLETE", "replanned Attempt history must be continuous and terminal");
+    }
+  }
+  const previous = previousAttempts.at(-1)!;
+  if (step.specRevision <= previous.specRevision || step.envelopeDigest === previous.envelopeDigest) {
+    throw conflict("SPEC_REVISION_NOT_ADVANCED", "replanned Attempt requires a newer Spec Revision and Envelope");
+  }
+  if (previous.finishedAt === undefined) throw conflict("ATTEMPT_HISTORY_INCOMPLETE", "terminal Attempt is missing finishedAt");
+  assertIsoTime(scheduledAt, "scheduledAt");
+  assertTimeOrder(previous.finishedAt, scheduledAt, "scheduledAt");
+  return newAttempt(step, previousAttempts.length + 1, scheduledAt);
+}
+
 export function startAttempt(attempt: StepAttempt, startedAt: string): StepAttempt {
   assertTrustedAttempt(attempt);
   if (attempt.status !== "SCHEDULED") {
