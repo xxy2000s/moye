@@ -78,22 +78,31 @@ npm run cli -- wait TASK-LIVE-EXAMPLE --timeout-ms 900000
 npm run acceptance:live
 ```
 
-运行时包含两个本地入口：
+推荐先启动带持久化数据卷的本地 Runtime，再注册 Moye Service：
+
+```bash
+npm run runtime:up
+npm run runtime:status
+```
+
+脚本会自动兼容 `docker compose` 与 `docker-compose`；`runtime:down` 只停止 Restate，不删除 `moye_restate_data` 数据卷。运行时包含两个本地入口：
 
 - Restate Service Endpoint：默认 `9080`；
 - Moye Project Board：默认 [http://localhost:3000](http://localhost:3000)。
 
 CLI 统一使用 `npm run cli -- <command>`；项目 Agent 应使用 [moye-task-control Skill](./.agents/skills/moye-task-control/SKILL.md) 路由文档依赖和关闭门禁。
 
-Coding Task 出现在看板后，点击卡片会进入居中的 Task Audit Workspace。默认视图以状态摘要和 Graph 画布为中心，不预占详情侧栏：
+Coding Task 出现在看板后，点击卡片会路由到可直达和刷新的全屏 `/tasks/<task_id>` Task Audit Page；右上角“返回项目”回到 `/`，浏览器 Back/Forward 同样有效。默认视图以状态摘要和 Graph 画布为中心，不预占详情侧栏：
 
 1. 当前业务状态、独立 Archive 状态，以及 Projection 与 Event History 是否一致；
 2. 一张完整状态机 Graph 画布：normal、Repair、Replan、Reconcile、failure、archive 全部合法边常驻可查，实际 Event 走过的节点和边实时点亮；画布只在实际边显示清晰的 Event sequence 徽标，未发生边的完整说明按需查看，不再以小字铺满总览；可按本次路径、主流程、恢复/回滚、异常/失败和归档筛选；
 3. 点击节点才打开详情：桌面在画布右侧显示 Inspector，窄屏在底部显示 Bottom Sheet；有真实 Session 的节点先展示 Agent 活动、分类计数、最近事件预览和“查看全部 Agent Events”主入口，再展示“状态流转记录”与系统控制事实。这里的 Domain Event 是 Workflow 写入、证明状态如何进入和离开的业务事实，不是 Agent 对话或工具日志；“合法转换”按进入/离开列出完整 `来源 → 目标`，并明确标记“本次经过 · #sequence”或“合法但未发生”。长 Run/Attempt/Evidence ID 默认收进技术详情。没有 Session 的节点只显示真实状态与系统事实，不补造 Agent；`Esc` 先关闭节点详情并把焦点还给节点，不会直接退出 Task；
-4. “实际路径”、执行实例、完整合法边、角色会话和高级诊断默认折叠，需要时再展开；每条实际转换仍绑定 Event sequence/type/time；
+4. 完整 Domain Event 使用纵向时间线逐条展示 sequence、`来源 → 目标`、event type、time 和原始 detail；没有状态转换的业务事实会明确标记，不伪造 `from/to`。“实际路径”、执行实例、完整合法边、角色会话和高级诊断默认折叠，需要时再展开；
 5. 每条 Context、Implementation、Self Review、Review、Replan 与 Docs Gate Session 都在同一个 Chatbot 弹窗中展示；可按对话、工具调用、工具结果、系统和错误筛选，运行中增量跟随，原始 JSON/JSONL 只作为下钻与导出证据。
 
 Restate Journal、恢复建议、技术 Artifact 与原始事件收在“高级诊断”中。进入 Restate 的链接已经按 `CodingTaskWorkflow + task_id` 过滤；Restate 负责执行排障，Moye Board 才是任务业务视图。
+
+历史材料有两个不同权威，不能混为一谈：`docs/delivery/tasks/archive/` 中的 Task Package 和关闭证据由 Git 长期保存；Board 卡片、Workflow Journal 和 Domain Event 属于 Restate Runtime。旧的临时容器没有挂载 `/restate-data`，容器被重建后那批 Runtime Projection/Journal 已不可恢复，但 Git 中的历史归档没有丢失。当前标准 Compose 已持久化 `/restate-data`；页面仍只展示真实 Runtime Projection，不扫描 Git 目录伪造运行历史。
 
 也可以直接查询 JSON：
 

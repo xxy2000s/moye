@@ -6,7 +6,10 @@ const elements = {
   pending: document.querySelector("#pending-count"),
   generated: document.querySelector("#generated-at"),
   empty: document.querySelector("#empty-state"),
-  dialog: document.querySelector("#task-detail"),
+  projectMasthead: document.querySelector("#project-masthead"),
+  projectView: document.querySelector("#project-view"),
+  detailPage: document.querySelector("#task-detail-page"),
+  detailBack: document.querySelector("#task-detail-back"),
   detail: document.querySelector("#detail-content"),
   detailKicker: document.querySelector("#task-detail-kicker"),
   detailTitle: document.querySelector("#task-detail-title"),
@@ -39,35 +42,33 @@ let lastProjectionSignature = "";
 let openedTaskSummary;
 let openedTaskTraceSignature = "";
 let taskDetailRefreshInFlight = false;
+let boardScrollPosition = 0;
 let stopAgentEventsFollower = () => {};
 let agentEventsReturnFocus;
 let shouldRestoreAgentEventsFocus = true;
 let machineGraphUiState = { filter: "ALL", zoom: undefined, selectedId: undefined, inspectorOpen: false, scrollLeft: 0, scrollTop: 0 };
 let closeMachineGraphInspector = () => false;
-elements.dialog.addEventListener("close", () => {
-  openedTaskSummary = undefined;
-  openedTaskTraceSignature = "";
-  closeMachineGraphInspector = () => false;
-  closeAgentEventsDialog(false);
-});
-elements.dialog.addEventListener("cancel", event => {
-  if (!machineGraphUiState.inspectorOpen) return;
-  event.preventDefault();
-  closeMachineGraphInspector(true);
-});
 elements.eventsDialog.addEventListener("close", () => {
   const returnFocus = agentEventsReturnFocus;
   stopAgentEventsFollower();
   stopAgentEventsFollower = () => {};
   if (returnFocus instanceof HTMLButtonElement) updateAgentEventsTrigger(returnFocus, false);
   agentEventsReturnFocus = undefined;
-  if (shouldRestoreAgentEventsFocus && elements.dialog.open && returnFocus?.isConnected) {
+  if (shouldRestoreAgentEventsFocus && !elements.detailPage.hidden && returnFocus?.isConnected) {
     window.requestAnimationFrame(() => returnFocus.focus());
   }
   shouldRestoreAgentEventsFocus = true;
 });
+elements.detailBack.addEventListener("click", returnToProject);
+window.addEventListener("popstate", () => { void applyRoute(); });
+window.addEventListener("keydown", event => {
+  if (event.key !== "Escape" || !machineGraphUiState.inspectorOpen || elements.eventsDialog.open) return;
+  event.preventDefault();
+  closeMachineGraphInspector(true);
+});
 document.querySelector("#refresh").addEventListener("click", loadBoard);
-await loadBoard();
+initializeHistoryState();
+void loadBoard();
 setInterval(loadBoard, 5000);
 
 async function loadBoard() {
@@ -76,7 +77,7 @@ async function loadBoard() {
     if (!response.ok) throw new Error(await response.text());
     const board = await response.json();
     renderBoard(board);
-    await refreshOpenTask(board);
+    await applyRoute(board);
     elements.dot.className = "connection-dot online";
     elements.connection.textContent = "运行时已连接";
   } catch (error) {
@@ -134,7 +135,7 @@ function taskCard(task, index) {
       <span class="tag ${stateColor(visibleState)}">${escapeHtml(taskStateLabel(visibleState))}</span>
       <span class="tag ${archiveColor(task.archiveStatus)}">${escapeHtml(archiveStatusLabel(task.archiveStatus))}</span>
     </div>`;
-  card.addEventListener("click", () => openTask(task));
+  card.addEventListener("click", () => navigateToTask(task));
   return card;
 }
 
@@ -143,6 +144,102 @@ function cardShell(index, tagName) {
   card.className = "card";
   card.style.setProperty("--index", String(index));
   return card;
+}
+
+function initializeHistoryState() {
+  const route = readRoute();
+  const current = history.state && typeof history.state === "object" ? history.state : {};
+  history.replaceState({ ...current, moyeRoute: route.kind, fromProject: false }, "", window.location.href);
+}
+
+function readRoute() {
+  if (window.location.pathname === "/" || window.location.pathname === "") return { kind: "project" };
+  const match = window.location.pathname.match(/^\/tasks\/([^/]+)\/?$/);
+  if (!match) return { kind: "not-found" };
+  try {
+    const taskId = decodeURIComponent(match[1]);
+    return /^TASK-[A-Z0-9][A-Z0-9-]{0,63}$/.test(taskId) ? { kind: "task", taskId } : { kind: "not-found" };
+  } catch {
+    return { kind: "not-found" };
+  }
+}
+
+function navigateToTask(summary) {
+  boardScrollPosition = window.scrollY;
+  history.pushState({ moyeRoute: "task", fromProject: true }, "", `/tasks/${encodeURIComponent(summary.taskId)}`);
+  void openTask(summary);
+}
+
+function returnToProject() {
+  if (history.state?.fromProject) {
+    history.back();
+    return;
+  }
+  history.pushState({ moyeRoute: "project", fromProject: false }, "", "/");
+  void applyRoute();
+}
+
+async function applyRoute(board) {
+  const route = readRoute();
+  if (route.kind === "project") {
+    if (!elements.detailPage.hidden) showProjectPage();
+    return;
+  }
+  if (route.kind === "not-found") {
+    showTaskPage();
+    renderTaskRouteError("这个页面地址不是有效的 Moye Task 路由。");
+    return;
+  }
+  const snapshot = board || await fetch("/api/board", { cache: "no-store" }).then(response => {
+    if (!response.ok) throw new Error(`项目投影查询失败（${response.status}）`);
+    return response.json();
+  });
+  const summaries = [...snapshot.active, ...snapshot.archivePending, ...snapshot.archived];
+  const summary = summaries.find(item => item.taskId === route.taskId) || {
+    taskId: route.taskId,
+    title: route.taskId,
+    specRevision: 1,
+    state: "RECEIVED",
+    archiveStatus: "NOT_READY",
+  };
+  if (openedTaskSummary?.taskId === summary.taskId) {
+    openedTaskSummary = summary;
+    showTaskPage(false);
+    await refreshOpenTask(snapshot);
+    return;
+  }
+  await openTask(summary);
+}
+
+function showProjectPage() {
+  closeAgentEventsDialog(false);
+  closeMachineGraphInspector = () => false;
+  openedTaskSummary = undefined;
+  openedTaskTraceSignature = "";
+  document.body.classList.remove("task-route");
+  elements.projectMasthead.hidden = false;
+  elements.projectView.hidden = false;
+  elements.detailPage.hidden = true;
+  document.title = "Moye · Task Control Plane";
+  window.requestAnimationFrame(() => window.scrollTo({ top: boardScrollPosition, behavior: "instant" }));
+}
+
+function showTaskPage(resetScroll = true) {
+  document.body.classList.add("task-route");
+  elements.projectMasthead.hidden = true;
+  elements.projectView.hidden = true;
+  elements.detailPage.hidden = false;
+  if (resetScroll) window.scrollTo({ top: 0, behavior: "instant" });
+}
+
+function renderTaskRouteError(message) {
+  openedTaskSummary = undefined;
+  openedTaskTraceSignature = "";
+  elements.detailKicker.textContent = "Task route";
+  elements.detailTitle.textContent = "无法打开任务";
+  elements.detailMeta.innerHTML = "";
+  elements.detail.innerHTML = `<p class="error-box">${escapeHtml(message)}</p><p class="trace-note">请返回项目总览后重新选择 Task。</p>`;
+  document.title = "无法打开任务 · Moye";
 }
 
 async function openTask(summary) {
@@ -154,34 +251,34 @@ async function openTask(summary) {
     ["归档", archiveStatusLabel(summary.archiveStatus)],
   ]);
   elements.detail.innerHTML = '<div class="task-detail-loading" role="status">正在读取 Runtime Definition、Event History 与执行证据…</div>';
-  if (!elements.dialog.open) elements.dialog.showModal();
+  showTaskPage();
+  document.title = `${summary.taskId} · Moye`;
   await loadTaskDetail(summary, true);
 }
 
 async function refreshOpenTask(board) {
-  if (!elements.dialog.open || !openedTaskSummary || elements.eventsDialog.open || taskDetailRefreshInFlight) return;
+  if (elements.detailPage.hidden || !openedTaskSummary || elements.eventsDialog.open || taskDetailRefreshInFlight) return;
   const summaries = [...board.active, ...board.archivePending, ...board.archived];
   const latest = summaries.find(item => item.taskId === openedTaskSummary.taskId) || openedTaskSummary;
   openedTaskSummary = latest;
   await loadTaskDetail(latest, false);
 }
 
-async function loadTaskDetail(summary, openDialog) {
+async function loadTaskDetail(summary, resetScroll) {
   taskDetailRefreshInFlight = true;
   try {
-    if (openDialog && !elements.dialog.open) elements.dialog.showModal();
     const taskId = summary.taskId;
     const traceResponse = await fetch(`/api/tasks/${encodeURIComponent(taskId)}/trace`, { cache: "no-store" });
     if (!traceResponse.ok) throw new Error(`轨迹查询失败（${traceResponse.status}）`);
     const trace = await traceResponse.json();
     const signature = taskTraceSignature(trace);
     if (signature !== openedTaskTraceSignature) {
-      const scrollTop = elements.detail.scrollTop;
+      const scrollTop = window.scrollY;
       if (trace.traceKind === "CODING") renderCodingTrace(trace, summary);
       else if (trace.traceKind === "TASK") renderTaskTrace(trace);
       else throw new Error(`未知 Trace 类型：${String(trace.traceKind)}`);
       openedTaskTraceSignature = signature;
-      if (!openDialog) elements.detail.scrollTop = scrollTop;
+      if (!resetScroll) window.requestAnimationFrame(() => window.scrollTo({ top: scrollTop, behavior: "instant" }));
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -228,8 +325,6 @@ function renderTaskDetailHeader(task, title, facts = []) {
 
 function renderTaskTrace(trace) {
   const task = trace.task;
-  const events = task.events.map(event => `
-    <li><span class="sequence">${String(event.sequence).padStart(2, "0")}</span><strong>${escapeHtml(event.type)}</strong><span>${escapeHtml(event.detail || "—")}</span><time>${formatTime(event.at)}</time></li>`).join("");
   renderTaskDetailHeader(task, task.title, [
     ["状态", taskStateLabel(task.state), task.state === "CLOSED" ? "success" : "progress"],
     ["归档", archiveStatusLabel(task.archiveStatus), task.archiveStatus === "ARCHIVED" ? "success" : "neutral"],
@@ -244,9 +339,10 @@ function renderTaskTrace(trace) {
     ${renderStateMachine(trace.stateMachine, trace)}
     ${task.archivePath ? `<p class="result-ref"><span>归档结果</span><code>${escapeHtml(task.archivePath)}</code></p>` : ""}
     ${task.error ? `<p class="error-box">${escapeHtml(task.error)}</p>` : ""}
-    <details class="advanced-panel"><summary><span>原始 Domain Event</span><small>状态机 History 的逐条来源</small></summary><ol class="timeline">${events}</ol>
+    ${renderDomainEventPanel(task.events, trace.stateMachine)}
+    <div class="domain-event-runtime-link">
       ${trace.durableRuntime.invocationsUrl ? `<a class="runtime-link" href="${escapeAttribute(trace.durableRuntime.invocationsUrl)}" target="_blank" rel="noreferrer">在 Restate 中核对 Journal ↗</a>` : ""}
-    </details>`;
+    </div>`;
   bindStateMachineGraph(trace.stateMachine, trace);
 }
 
@@ -264,8 +360,6 @@ function renderCodingTrace(trace, summary) {
   const sessionRef = trace.agent?.sessionId || "等待 Agent Session";
   const mergeRef = trace.git.mergeCommit ? shortSha(trace.git.mergeCommit) : "等待合入";
   const journey = PIPELINE_STAGES.map((definition, index) => renderJourneyStage(trace, definition, index)).join("");
-  const events = trace.business.events.map(event => `
-    <li><span class="sequence">${String(event.sequence).padStart(2, "0")}</span><strong>${escapeHtml(event.type)}</strong><span>${escapeHtml(stepLabel(event.step))}</span><time>${formatTime(event.at)}</time></li>`).join("");
   const artifacts = trace.technical.artifacts.map(artifact => `
     <li><span>${escapeHtml(artifact.kind)}</span><code>${escapeHtml(artifact.artifactRef)}</code><small>${escapeHtml(shortDigest(artifact.contentDigest))}${artifact.bytes === undefined ? "" : ` · ${artifact.bytes} B`}</small>${artifact.downloadUrl ? `<a href="${escapeAttribute(artifact.downloadUrl)}" target="_blank" rel="noreferrer">${artifact.kind === "agent-events" ? "下载原始 JSONL" : "打开 ↗"}</a>` : ""}</li>`).join("");
   const agentEvents = trace.agentEvents;
@@ -341,6 +435,8 @@ function renderCodingTrace(trace, summary) {
       </div>
     </details>
 
+    ${renderDomainEventPanel(trace.business.events, trace.stateMachine)}
+
     <details class="advanced-panel">
       <summary><span>高级诊断</span><small>Restate Journal、恢复建议、Artifact 与原始事件</small></summary>
       <div class="advanced-content">
@@ -358,14 +454,36 @@ function renderCodingTrace(trace, summary) {
         <section>
           <p class="subheading">技术 Artifact</p>
           <ul class="artifact-list">${artifacts || "<li>尚无技术 Artifact</li>"}</ul>
-          <p class="subheading">业务事件</p>
-          <ol class="timeline coding-timeline">${events}</ol>
         </section>
       </div>
     </details>`;
 
   bindStateMachineGraph(trace.stateMachine, trace);
   bindAgentEventsDialog(trace);
+}
+
+function renderDomainEventPanel(events, machine) {
+  const historyBySequence = new Map(machine.history.map(item => [item.sequence, item]));
+  const rows = events.map(event => {
+    const transition = historyBySequence.get(event.sequence);
+    const transitionLabel = transition
+      ? `${transition.from} → ${transition.to}`
+      : event.step ? stepLabel(event.step) : "业务事实已记录";
+    const detail = event.detail || transition?.detail;
+    return `<li class="domain-event-row">
+      <span class="domain-event-sequence">#${String(event.sequence).padStart(2, "0")}</span>
+      <div class="domain-event-body">
+        <div class="domain-event-heading"><strong>${escapeHtml(transitionLabel)}</strong><time datetime="${escapeAttribute(event.at)}">${formatTime(event.at)}</time></div>
+        <div class="domain-event-meta"><span>${escapeHtml(event.type)}</span>${transition?.kind ? `<em>${escapeHtml(transition.kind)}</em>` : ""}</div>
+        ${detail ? `<code class="domain-event-detail">${escapeHtml(detail)}</code>` : ""}
+      </div>
+    </li>`;
+  }).join("");
+  return `<details class="domain-events-panel">
+    <summary><span><strong>完整 Domain Event 记录</strong><small>Workflow 写入的 ${events.length} 条业务事实</small></span><em>按 sequence 展开</em></summary>
+    <div class="domain-events-intro"><strong>这是状态事实，不是 Agent 对话。</strong><p>每一行来自 Runtime Event；状态转换只在 History 有同 sequence 证据时显示。Agent 的聊天、工具调用和工具结果仍在 Agent Events 中查看。</p></div>
+    <ol class="domain-event-timeline">${rows || "<li class=\"domain-event-empty\">尚无 Domain Event。</li>"}</ol>
+  </details>`;
 }
 
 function renderStateMachine(machine, trace) {

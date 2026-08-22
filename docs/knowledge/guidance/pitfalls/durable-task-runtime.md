@@ -1,7 +1,7 @@
 # Durable Task Runtime Pitfalls
 
-> 状态：Active  
-> 更新日期：2026-08-19  
+> 状态：Active
+> 更新日期：2026-08-22
 > 关联设计：[Task Runtime Kernel](../../current/architecture/task-runtime-kernel.md)
 
 ## 1. 使用 Trace 作为业务状态
@@ -87,3 +87,10 @@
 - 后果：重放 Step 时再次修改外部状态。
 - 检测：副作用函数只有计数/写入，没有稳定 idempotency key 或 ledger。
 - 规避：外部系统支持时传稳定幂等键；本地样例以 operation ledger 为事实并从 ledger 重建计数投影。
+
+## 13. 把容器可写层当作 Runtime 持久化
+
+- 触发：用 `docker run --rm` 或无 `/restate-data` 挂载的容器承载 Restate，随后停止、删除或重建容器。
+- 后果：ProjectBoard Projection、Workflow Journal 和 Domain Event 随容器消失；Git Task Archive 仍在，但不能原样重建运行时执行历史。
+- 检测：`docker inspect` 中 `/restate-data` 没有 Mount，或 Compose 配置中 Restate 没有命名卷/绑定卷。
+- 规避：标准本地入口使用 `npm run runtime:up`，把 `/restate-data` 挂载到 `moye_restate_data`；日常停止只用 `runtime:down`，不执行 `down -v`。Git Archive 与 Runtime Projection 分别审计，禁止页面扫描目录伪造 History。

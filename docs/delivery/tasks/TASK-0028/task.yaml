@@ -9,7 +9,7 @@ backlog_refs:
 spec_revision: 1
 workflow_id: task/TASK-0028
 execution_mode: goal-bootstrap
-base_commit: ed2b92145c059dc94a7292d97e3825ee3d110a16
+base_commit: ed2b9211d44bc024fbf1b3aecd82533ccbfa00a1
 archive:
   status: not_ready
   archived_at:

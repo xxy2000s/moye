@@ -3,19 +3,29 @@ task_id: TASK-0028
 graph_revision: 61
 intents: [finding-intake, incident-response, task-create, coding-task-poc, docs-change]
 changed_paths:
+  - README.md
+  - compose.yaml
+  - package.json
+  - scripts/runtime-compose.ts
   - public/index.html
   - public/app.js
   - public/styles.css
   - src/board/server.ts
-  - compose.yaml
-  - package.json
   - tests/e2e/demo.test.ts
-  - README.md
   - docs/sources/findings/task-detail-dialog-and-domain-events-hard-to-audit.md
+  - docs/sources/findings/README.md
   - docs/sources/incidents/2026-08-22-restate-board-projection-lost-after-container-recreate.md
+  - docs/sources/incidents/README.md
   - docs/delivery/backlog/BL-0029.yaml
   - docs/delivery/backlog/BL-0030.yaml
+  - docs/delivery/backlog/README.md
   - docs/delivery/tasks/TASK-0028/task.yaml
+  - docs/delivery/tasks/TASK-0028/spec.md
+  - docs/delivery/tasks/TASK-0028/design.md
+  - docs/delivery/tasks/TASK-0028/plan.md
+  - docs/delivery/tasks/TASK-0028/verification.md
+  - docs/delivery/tasks/TASK-0028/docs-impact.yaml
+  - docs/delivery/tasks/README.md
   - docs/knowledge/current/codemap/README.md
   - docs/knowledge/current/architecture/poc-01-restate.md
   - docs/knowledge/guidance/pitfalls/durable-task-runtime.md
@@ -30,6 +40,8 @@ docs:
     - findings-index
     - incidents-index
     - backlog-index
+    - runbooks-index
+    - pitfalls-index
     - tasks-index
     - task-runtime-kernel
     - overnight-multi-task-goal
@@ -41,8 +53,49 @@ docs:
     - meta-index
     - adr-0002-doc-lifecycle-roles
     - root-readme
+    - finding-task-detail-dialog-domain-events
+    - incident-restate-board-projection-loss
+    - bl-0029-task-detail-route-domain-events
+    - bl-0030-local-runtime-persistence
     - sources-index
     - architecture-index
     - local-restate-poc-runbook
-    - runbooks-index
-  reviewed: {}
+    - task-0028-manifest
+    - task-0028-spec
+    - task-0028-design
+    - task-0028-plan
+    - task-0028-verification
+    - task-0028-docs-impact
+  reviewed:
+    architecture-overview: { outcome: unchanged, reason: "只读 Board 的路由与本地持久化运维入口变化，不改变总体系统边界和 Task 状态所有权" }
+    moye-task-control-skill: { outcome: unchanged, reason: "继续只通过 CLI、Runtime API 和文档图谱操作 Task，Skill 门禁不变" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "继续使用 Restate 1.7.4 验证 PoC；增加本地数据卷不改变技术选型" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "不改变 Worktree、Git 或 Task Closure 收敛需求" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "只改善既有 Runtime 事实的页面审计与保存，不改变 Core 协议" }
+    task-spec-document-closure-brainstorm: { outcome: unchanged, reason: "明确 Git Artifact 与 Runtime 权威边界，但不改变 Task Spec 或文档关闭协议" }
+    task-0013-manifest: { outcome: unchanged, reason: "不改变 Core ControlDecision 历史事实" }
+    task-0014-manifest: { outcome: unchanged, reason: "不改变 Role Attempt 协议或历史事实" }
+    task-0015-manifest: { outcome: unchanged, reason: "不改变 Review/Finding 语义或历史事实" }
+    task-0016-manifest: { outcome: unchanged, reason: "不改变 Repair/Replan 预算与历史事实" }
+    task-0017-manifest: { outcome: unchanged, reason: "不改变 Observer、Docs Impact 或 Knowledge Candidate 历史事实" }
+    task-0018-manifest: { outcome: unchanged, reason: "不改变 Core Closure 历史事实" }
+    task-0019-manifest: { outcome: unchanged, reason: "只读展示使用既有 Coding Projection，不改写历史证据" }
+    task-0020-manifest: { outcome: unchanged, reason: "全屏呈现既有状态机，不改变状态机历史事实" }
+    task-0021-manifest: { outcome: unchanged, reason: "不改变真实 Core 单任务流程" }
+    task-0027-manifest: { outcome: unchanged, reason: "在其 Graph 与 Inspector 可读性成果上增加页面路由和 Event 时间线，不改写历史" }
+    task-0002-manifest: { outcome: unchanged, reason: "复用 Backlog Sync 验证持久化，不改变同步协议" }
+    task-0003-manifest: { outcome: unchanged, reason: "不改变 TaskEnvelope、Step 或 Attempt 协议" }
+    task-0004-manifest: { outcome: unchanged, reason: "不改变 Git Effect 或副作用协议" }
+    task-0005-manifest: { outcome: unchanged, reason: "不改变 Agent Adapter 或 Fake 夹具边界" }
+    task-0006-manifest: { outcome: unchanged, reason: "不改变 Coding Workflow 或 Gate" }
+    task-0007-manifest: { outcome: unchanged, reason: "继续使用既有只读 Trace 与 Recovery 事实" }
+    task-0008-manifest: { outcome: unchanged, reason: "不改变 Demo 历史事实" }
+    task-0009-manifest: { outcome: unchanged, reason: "不改变 OTLP/Phoenix 历史实现" }
+    task-0001-manifest: { outcome: unchanged, reason: "不改变 Task/Archive 生命周期" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "继续使用 TypeScript 和原生浏览器 JavaScript，无新增产品依赖" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "Phoenix 仍是可选 profile；新增 Restate 服务不改变 Trace 与业务状态边界" }
+    root-readme: { outcome: updated, reason: "登记全屏 Task 路由、Domain Event 时间线、持久化启动命令和历史权威边界" }
+    codemap: { outcome: updated, reason: "登记 Server 路由回退、页面导航、Event 时间线和 Runtime Compose 入口" }
+    restate-poc-architecture: { outcome: updated, reason: "登记 Task Page 路由、Event 映射规则和 Git/Runtime 双权威持久化边界" }
+    durable-runtime-pitfalls: { outcome: updated, reason: "增加容器可写层导致 Runtime 历史丢失的触发、检测与规避规则" }
+    local-restate-poc-runbook: { outcome: updated, reason: "替换临时容器启动法，增加持久化操作、页面验收与旧数据限制" }

@@ -18,7 +18,8 @@
 | `src/review/live-review.ts` | 调用独立 Codex/Claude 只读 Review，生成结构化 Verdict、Finding 和 Artifact | 不推进状态；Workflow 消费已验证结果 |
 | `src/trace/state-machine.ts`、`coding-trace.ts`、`telemetry.ts` | Coding/通用 Task Projection 到状态机 Definition/History、三层 Trace、稳定 OTel Span 与恢复建议的纯映射 | 无，只读派生；`TraceSink` 默认 Noop |
 | `src/demo/coding-fixture.ts`、`scripts/demo.ts`、`scripts/trace-compose.ts` | 隔离 Git Fixture、Fake/真实 CLI 可选 Demo 与可选 Phoenix 编排 | 不拥有生产状态；演示状态由 CodingTaskWorkflow 持有 |
-| `public/index.html`、`public/app.js` | 四列只读项目看板、居中且画布优先的 Task Audit Workspace、Definition/History/Executions 驱动且边说明渐进披露的完整 SVG 状态机 Graph、Agent Activity 优先并含扁平合法转换列表的桌面 Inspector/移动 Bottom Sheet，以及全 Session 共用的 Chatbot Event Dialog | 只读 Projection；Events 预览、视觉布局、筛选、折叠和 Dialog 都不创建或推进状态 |
+| `src/board/server.ts`、`public/index.html`、`public/app.js` | `/` 四列只读项目看板、可直达/刷新的 `/tasks/<task_id>` 全屏 Task Audit Page、Definition/History/Executions 驱动的完整 SVG 状态机 Graph、Domain Event 时间线、节点 Inspector/移动 Bottom Sheet，以及全 Session 共用的 Chatbot Event Dialog | 只读 Projection；路由、Events 预览、视觉布局、筛选、折叠和 Dialog 都不创建或推进状态 |
+| `compose.yaml`、`scripts/runtime-compose.ts` | 自动兼容两种 Compose CLI，启动/停止带 `restate_data` 命名卷的 Restate 1.7.4 | Restate Journal/Projection 持久化；停止命令不删除数据卷 |
 
 ## 模块图
 
@@ -44,7 +45,7 @@ src/
 └── index.ts           进程入口
 
 public/                无框架 Board UI
-compose.yaml           可选 Phoenix trace Profile，不是核心运行依赖
+compose.yaml           持久化 Restate Runtime 与可选 Phoenix trace Profile
 tests/
 ├── unit/              领域、归档、投影和幂等副作用
 └── e2e/               真实 Restate 容器 + SIGKILL 恢复
@@ -88,9 +89,9 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 - `coding/workflow.ts` 编排产品主路径并记录 Spec Revision/Step/Attempt/Role Session/Evidence/Binding；Blocking Finding 按 Recommended Action 创建 Repair Generation N+1 或 Replan Envelope Revision N+1，后续 Checkpoint/Verification 绑定新 Revision；未知外部结果等待 Durable Reconcile Signal；确定性成功/失败都进入 Archive；
 - `TaskAuthority` 保证同一 Task 只能由一个主 Workflow 推进，并允许相同 Coding owner 单调提升 Spec Revision；ProjectBoard 是二级查询投影；
 - `CoreClosureWorkflow/<task_id>` 通过 `ctx.run` 调用 Scenario Artifact Adapter，持久化 `EXECUTING → CLOSED` 查询投影；它不把 Board、Archive、Observer 或外层 Merge 状态写进 Core Outcome；
-- Board 通过 `TaskAuthority.get` 解析主 Workflow，不扫描目录推断 Runtime 状态；`state-machine.ts` 只从连续 Event History 标记实际 traversed 边，并列出 Repair/Replan/Reconcile/Failure/Archive 合法边、Projection/Event 一致性和全部执行实例；`public/app.js` 把同一事实投影为居中的 SVG Graph Workspace，默认不打开节点详情。画布绘制全部合法路径，但只给实际经过边显示可读的 Event sequence 徽标；完整边说明保留在 accessible name、完整合法边文本和节点按需详情。节点 Inspector 以稳定 Step 映射聚合 Event、Step Attempt、Role/Agent/Review Run、Session、Evidence、Verification、Git、Recovery 和 Archive 事实，并把合法入边/出边投影为显式标注“本次经过”或“合法但未发生”的扁平列表。有 Session 时先显示 Agent Activity、真实分类计数、末尾事件预览和完整 Events 主入口，再显示 Workflow 状态流转与系统控制；无 Session/未进入节点保持零 Agent/执行记录。桌面 Inspector/移动 Bottom Sheet、实际路径抽屉、筛选、缩放和焦点返回均为只读浏览状态；`/agent-events` 与 `/roles/<run-id>/events` 可增量读取当前 Implementation/Role/Review，完成后按摘要读取任一 Session，均校验 Projection allowlist、Execution Intent、受管根和 realpath；所有 Session 入口复用同一个 Chatbot Event Dialog，原始 JSON/JSONL 是次要证据动作；Board 无状态写入口；
+- Board 通过 `TaskAuthority.get` 解析主 Workflow，不扫描目录推断 Runtime 状态；`state-machine.ts` 只从连续 Event History 标记实际 traversed 边，并列出 Repair/Replan/Reconcile/Failure/Archive 合法边、Projection/Event 一致性和全部执行实例。Server 只对合法 `/tasks/<task_id>` 页面路由回退 SPA 入口，API/静态 404 保持不变；`public/app.js` 用 History API 在 `/` 与全屏 Task Page 间导航，直接刷新和浏览器 Back/Forward 均重查同一只读 Projection。Domain Event 以 sequence、历史绑定的 `来源 → 目标`、type/time/detail 时间线呈现，没有转换的 Event 不补造边。节点 Inspector 以稳定 Step 映射聚合 Event、Step Attempt、Role/Agent/Review Run、Session、Evidence、Verification、Git、Recovery 和 Archive 事实，并把合法入边/出边投影为显式标注“本次经过”或“合法但未发生”的扁平列表。有 Session 时先显示 Agent Activity、真实分类计数、末尾事件预览和完整 Events 主入口，再显示 Workflow 状态流转与系统控制；无 Session/未进入节点保持零 Agent/执行记录。桌面 Inspector/移动 Bottom Sheet、实际路径抽屉、筛选、缩放和焦点返回均为只读浏览状态；`/agent-events` 与 `/roles/<run-id>/events` 可增量读取当前 Implementation/Role/Review，完成后按摘要读取任一 Session，均校验 Projection allowlist、Execution Intent、受管根和 realpath；所有 Session 入口复用同一个 Chatbot Event Dialog，原始 JSON/JSONL 是次要证据动作；Board 无状态写入口；
 - `telemetry.ts` 从持久化 Attempt 生成短 Span 并输出标准 OTLP/HTTP protobuf；导出失败只影响诊断，不回写 Task 业务终态；
-- Restate Journal 是运行时恢复事实，`docs/delivery/tasks` 是研发材料事实。
+- Restate Journal/ProjectBoard Projection 是运行时恢复与页面查询事实，`docs/delivery/tasks` 是 Git 中的研发材料事实；Compose 命名卷持久化前者，二者没有显式导入协议时不能互相重建或冒充。
 
 ## 高风险路径与测试
 

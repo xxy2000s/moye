@@ -1,7 +1,7 @@
 # 单任务弹窗与原始 Domain Event 难以持续审计
 
 > 文档类型：Finding
-> 状态：Confirmed
+> 状态：Resolved by TASK-0028
 > 发现日期：2026-08-22
 > 影响范围：Task Audit、浏览器导航、Domain Event
 
@@ -23,3 +23,7 @@
 修复只改变只读 Board 的路由与展示，不改变 Workflow、Projection、Definition、History 或任何 Task 状态。Domain Event 继续来自 Runtime Trace，不补造或扫描 Task Artifact 推断事件。
 
 后续工作进入 [BL-0029](../../delivery/backlog/BL-0029.yaml)。
+
+## Resolution
+
+TASK-0028 将任务详情改为可直达、可刷新的全屏路由，并把完整 Domain Event 改为按 sequence 阅读的纵向时间线；真实桌面与移动浏览器验收通过。

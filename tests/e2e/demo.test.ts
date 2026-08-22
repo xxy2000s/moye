@@ -1,5 +1,5 @@
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
-import { mkdtemp, rm, stat } from "node:fs/promises";
+import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -75,8 +75,15 @@ describe("npm run demo", () => {
     expect(events).toContain(`agent-session-${taskId}`);
 
     const html = await (await fetch(boardUrl)).text();
+    const directTaskPage = await fetch(`${boardUrl}/tasks/${taskId}`);
+    expect(directTaskPage.status).toBe(200);
+    expect(await directTaskPage.text()).toContain('id="task-detail-page"');
+    expect((await fetch(`${boardUrl}/tasks/not-a-task`)).status).toBe(404);
     const app = await (await fetch(`${boardUrl}/app.js`)).text();
     const styles = await (await fetch(`${boardUrl}/styles.css`)).text();
+    const compose = await readFile(path.join(process.cwd(), "compose.yaml"), "utf8");
+    const runtimeCompose = await readFile(path.join(process.cwd(), "scripts/runtime-compose.ts"), "utf8");
+    const packageJson = await readFile(path.join(process.cwd(), "package.json"), "utf8");
     expect(html).toContain("不是进度条");
     expect(html).toContain("本页面只读，不创建或推进 Task");
     expect(html).toContain("等待归档，或失败终止后等待后续动作");
@@ -95,8 +102,21 @@ describe("npm run demo", () => {
     expect(app).toContain("查看 Agent Events");
     expect(html).toContain('id="agent-events-dialog"');
     expect(html).toContain("data-agent-events-viewer");
-    expect(html).toMatch(/<dialog id="task-detail"[\s\S]*?<\/dialog>\s*<dialog id="agent-events-dialog"/);
+    expect(html).not.toContain('<dialog id="task-detail"');
+    expect(html).toMatch(/<main id="task-detail-page"[\s\S]*?<\/main>\s*<dialog id="agent-events-dialog"/);
     expect(html).toContain('class="task-detail-frame"');
+    expect(html).toContain('id="task-detail-back"');
+    expect(app).toContain('history.pushState({ moyeRoute: "task"');
+    expect(app).toContain('window.addEventListener("popstate"');
+    expect(app).toContain("returnToProject");
+    expect(app).toContain("renderDomainEventPanel");
+    expect(app).toContain("这是状态事实，不是 Agent 对话");
+    expect(styles).toContain(".domain-event-timeline");
+    expect(styles).toContain(".task-detail-page");
+    expect(compose).toContain("restate_data:/restate-data");
+    expect(runtimeCompose).toContain('spawnSync("docker", ["compose", "version"]');
+    expect(runtimeCompose).toContain('spawnSync("docker-compose", ["version"]');
+    expect(packageJson).toContain('"runtime:down": "tsx scripts/runtime-compose.ts down"');
     expect(app).toContain("data-machine-graph-stage");
     expect(app).toContain("data-machine-inspector-close");
     expect(app).toContain("machineGraphUiState.inspectorOpen");
@@ -125,9 +145,9 @@ describe("npm run demo", () => {
     expect(styles).toContain(".machine-agent-activity");
     expect(styles).toContain(".machine-agent-preview-list");
     expect(styles).toContain("position: fixed");
-    expect(styles).toContain("width: 100vw");
+    expect(styles).toContain("min-height: 100dvh");
     expect(app).toContain("openAgentEventsDialog");
-    expect(app).toContain("await refreshOpenTask(board)");
+    expect(app).toContain("await applyRoute(board)");
     expect(app).toContain("taskTraceSignature(trace)");
     expect(app).toContain("elements.eventsDialog.open || taskDetailRefreshInFlight");
     expect(app).not.toContain('id="agent-events-viewer"');

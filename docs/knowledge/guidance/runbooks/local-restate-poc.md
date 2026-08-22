@@ -17,10 +17,10 @@ npm run demo
 
 1. “需求池”显示需求来源及其派发状态；
 2. “已归档”显示闭环完成的 Coding Task；
-3. 点击 Task 卡片进入居中的 Task Audit Workspace；默认不显示详情侧栏，先在完整画布中核对当前业务/Archive 状态和 `Projection = Event History` 一致性；
+3. 点击 Task 卡片进入全屏 `/tasks/<task_id>` Task Audit Page；该地址可复制、刷新，浏览器 Back/Forward 可导航，右上角“返回项目”回到 `/`。默认不显示详情侧栏，先在完整画布中核对当前业务/Archive 状态和 `Projection = Event History` 一致性；
 4. 在状态机 Graph 中先选择“本次点亮”，核对粗实线实际路径、当前节点和实际边上的 `#sequence` 徽标；再切换“恢复/回滚”“异常/失败”“归档”，确认 Repair、Replan、Reconcile、失败和 Archive 合法边完整存在，且未发生边不会在总览铺出不可读的小字；
 5. 点击有真实 Session 的 `IMPLEMENT`、`SELF_REVIEW` 或 `REVIEW` 节点，先核对 Inspector 首屏的“Agent 活动”：角色、Runner、状态、Session、耗时、Verdict/Finding、真实分类计数和最近事件预览必须来自该节点绑定的 Run；点击“查看全部 Agent Events”，核对 Chatbot Dialog 中的对话、工具调用、工具结果、系统和错误筛选，并确认关闭后焦点回到原按钮；
-6. 再核对“状态流转记录”和“系统控制与结果”。Domain Event 必须带 sequence/type/time，且只证明 Workflow 状态如何进入和离开，不能混入 Agent 对话；VERIFY 应显示命令与退出码，WORKSPACE/MERGE 应显示 Git Effect，失败或 Reconcile 节点应显示恢复判断和动作。长 Run/Attempt/Evidence ID 应默认收进技术详情；
+6. 再核对“完整 Domain Event”和“系统控制与结果”。时间线中的每条 Event 必须带 sequence/type/time；有状态转换时显示 `来源 → 目标`，没有转换时明确显示业务事实，原始 detail 只在该条目下方展开。Domain Event 不能混入 Agent 对话；VERIFY 应显示命令与退出码，WORKSPACE/MERGE 应显示 Git Effect，失败或 Reconcile 节点应显示恢复判断和动作。长 Run/Attempt/Evidence ID 应默认收进技术详情；
 7. 对无 Session 的 VERIFY 和本次未经过的节点，确认页面分别显示 `0 Agent` 或零 Event/执行实例，且不出现虚构 Agent、Session/Evidence。展开节点“合法转换”，逐条核对进入/离开的 `来源 → 目标`、转换类型与说明；History 中存在的边必须显示 `本次经过 · #sequence`，其他边必须显示 `合法但未发生`。桌面详情出现在画布右侧，窄屏详情从底部展开且不横向溢出；关闭按钮或 `Esc` 只收起节点详情并把焦点还给节点。展开“实际路径”可再次核对转换文本事实；使用放大、缩小或“适配”查看画布；
 7. 只有排障时再展开“高级诊断”。其中的链接会在 Restate 中按当前 `task_id` 精确过滤；
 8. 按 `Ctrl-C` 停止本地服务。
@@ -63,13 +63,14 @@ TASK-0011 已通过 `npm run demo:codex` 再次执行真实 Codex 隔离 Fixture
 
 ## 3. 手工启动
 
-启动 Restate：
+启动持久化 Restate：
 
 ```bash
-docker run --rm --name moye-restate \
-  -p 8080:8080 -p 9070:9070 \
-  docker.restate.dev/restatedev/restate:1.7.4
+npm run runtime:up
+npm run runtime:status
 ```
+
+脚本自动探测 `docker compose` 或 `docker-compose`，并把 Restate `/restate-data` 挂载到 `moye_restate_data` 命名卷。日常停止使用 `npm run runtime:down`；它只执行 `stop`，不会删除容器或数据卷。不要用 `docker run --rm` 启动需要保留 Board/Journal 历史的 Runtime。
 
 另一个终端启动 Moye：
 
@@ -153,6 +154,13 @@ npm run cli -- reconcile-task TASK-EXAMPLE \
 
 打开 `http://127.0.0.1:3000` 查看 Moye Board。普通使用只需要 Moye；需要确认 Invocation、Journal 或 Replay 时，再从任务的“高级诊断”进入 `http://127.0.0.1:9070` Restate UI。二者通过 `task_id` 关联，但 Restate UI 不是项目任务看板。
 
+### 历史材料与 Runtime 历史
+
+- `docs/delivery/tasks/archive/` 是 Git 版本控制的 Task Artifact：Spec、Plan、Verification、Docs Impact 和关闭 Manifest 随仓库保留，关闭容器不会删除它们；
+- ProjectBoard 卡片、Workflow Journal 和 Domain Event 是 Restate Runtime 事实，必须依赖 `/restate-data` 持久化；
+- 页面只查询 Runtime Projection，不扫描 Git Archive 伪造 Workflow History；
+- 2026-08-22 之前由未挂载数据目录的临时 Restate 容器产生、且后来随容器被重建的 Projection/Journal 无法从 Git Archive 原样恢复。若未来需要恢复，必须另行设计显式导入和对账协议。
+
 ## 5. 配置
 
 | 变量 | 默认值 | 作用 |
@@ -200,10 +208,10 @@ npm run cli -- reconcile-task TASK-EXAMPLE \
 
 ## 7. 清理
 
-前台容器使用 `Ctrl-C` 退出。后台启动时只删除明确命名的本地 PoC 容器：
+标准 Runtime 使用保留数据卷的停止命令：
 
 ```bash
-docker stop moye-restate
+npm run runtime:down
 ```
 
-不要删除未知容器、Docker volume 或整个工作区。
+Demo 前台进程仍使用 `Ctrl-C` 退出。不要执行 `compose down -v`，也不要删除未知容器、Docker volume 或整个工作区。

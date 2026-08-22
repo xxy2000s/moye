@@ -733,7 +733,18 @@ async function serveStatic(
     writeJson(response, 400, { error: "Malformed path encoding" });
     return;
   }
-  const requested = decodedPath === "/" ? "index.html" : decodedPath.slice(1);
+  let requested: string;
+  const taskRoute = decodedPath.match(/^\/tasks\/([^/]+)\/?$/);
+  if (taskRoute !== null) {
+    try { assertTaskId(taskRoute[1] ?? ""); }
+    catch {
+      writeJson(response, 404, { error: "Not found" });
+      return;
+    }
+    requested = "index.html";
+  } else {
+    requested = decodedPath === "/" ? "index.html" : decodedPath.slice(1);
+  }
   const root = await realpath(publicRoot);
   const candidate = resolve(root, requested);
   if (!isSameOrWithin(root, candidate)) {

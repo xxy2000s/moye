@@ -10,7 +10,7 @@
   </head>
   <body>
     <div class="grain" aria-hidden="true"></div>
-    <header class="masthead">
+    <header id="project-masthead" class="masthead">
       <a class="brand" href="/" aria-label="Moye 首页">
         <svg viewBox="0 0 32 32" role="img" aria-label="Moye 标志">
           <path d="M6 24V8l10 10L26 8v16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter"/>
@@ -23,7 +23,7 @@
       </div>
     </header>
 
-    <main>
+    <main id="project-view">
       <section class="intro reveal">
         <div>
           <p class="eyebrow">Task Runtime · Read-only Audit</p>
@@ -80,7 +80,7 @@
       </section>
     </main>
 
-    <dialog id="task-detail" class="task-detail-dialog" aria-labelledby="task-detail-title">
+    <main id="task-detail-page" class="task-detail-page" hidden>
       <section class="task-detail-frame">
         <header class="task-detail-header">
           <div class="task-detail-heading">
@@ -88,11 +88,14 @@
             <h2 id="task-detail-title">正在加载任务</h2>
             <div id="task-detail-meta" class="task-detail-meta" aria-label="任务摘要"></div>
           </div>
-          <form method="dialog"><button class="close" aria-label="关闭详情">关闭</button></form>
+          <button id="task-detail-back" class="task-detail-back" type="button" aria-label="返回项目总览">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M12.5 4.5 7 10l5.5 5.5M7.5 10H17"/></svg>
+            <span>返回项目</span>
+          </button>
         </header>
         <div id="detail-content" class="task-detail-content"></div>
       </section>
-    </dialog>
+    </main>
 
     <dialog id="agent-events-dialog" class="agent-events-dialog" aria-labelledby="agent-events-title">
       <section class="agent-events-viewer" data-agent-events-viewer aria-live="polite">

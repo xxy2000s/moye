@@ -1,6 +1,15 @@
 name: moye
 
 services:
+  restate:
+    image: docker.restate.dev/restatedev/restate:1.7.4
+    ports:
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:9070:9070"
+    volumes:
+      - restate_data:/restate-data
+    restart: unless-stopped
+
   phoenix:
     profiles: ["trace"]
     image: arizephoenix/phoenix:version-19.10.0
@@ -16,4 +25,5 @@ services:
     restart: unless-stopped
 
 volumes:
+  restate_data:
   phoenix_data:

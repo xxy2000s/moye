@@ -65,7 +65,7 @@ Restate 的持久状态只存在于未挂载宿主或命名卷的容器可写层
 | 行动 | 类型 | 负责人 | 截止时间 | 状态 |
 |---|---|---|---|---|
 | 当前 live 容器挂载 `/restate-data` 并重启核对 | Mitigate | Moye | 2026-08-22 | Done |
-| 增加可重复的持久化 Compose 入口与 Runbook | Prevent | TASK-0028 | 2026-08-22 | In progress |
+| 增加可重复的持久化 Compose 入口与 Runbook | Prevent | TASK-0028 | 2026-08-22 | Done |
 
 ## Knowledge Promotion
 
