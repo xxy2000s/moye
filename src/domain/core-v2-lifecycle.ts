@@ -35,7 +35,8 @@ export type CoreV2LifecycleState =
   | "WAITING_RECONCILE"
   | "FINAL_REVIEW_REQUIRED"
   | "VERIFICATION_GATE_REQUIRED"
-  | "MERGE_REQUIRED";
+  | "MERGE_REQUIRED"
+  | "CLOSED";
 
 export interface CoreV2LifecycleEvent {
   readonly sequence: number;
@@ -78,6 +79,8 @@ export interface CoreV2LifecycleProjection {
   readonly trustedTestRun: { readonly runId: string; readonly manifestRef: string; readonly manifestDigest: string } | null;
   readonly verificationGateDigest: string | null;
   readonly knowledgeDispositionDigest: string | null;
+  readonly mergeCommit: string | null;
+  readonly outcome: "SUCCEEDED" | null;
   readonly invalidatedRevisions: readonly InvalidatedRevisionV2[];
   readonly events: readonly CoreV2LifecycleEvent[];
   readonly projectionDigest: string;
@@ -112,6 +115,8 @@ export function createCoreV2Lifecycle(input: {
     trustedTestRun: null,
     verificationGateDigest: null,
     knowledgeDispositionDigest: null,
+    mergeCommit: null,
+    outcome: null,
     invalidatedRevisions: [],
     events: [{ sequence: 1, type: "ArchitectRequired", at, detail: `r${input.specRevision}` }],
   });
@@ -195,14 +200,20 @@ export function workflowAcceptImplementationV2(
   if (projection.state !== "IMPLEMENTATION_REQUIRED") {
     throw conflict("CORE_V2_IMPLEMENTATION_NOT_REQUIRED", "Implementation result is not currently required");
   }
-  const attempt = successfulAttempt(attemptInput, projection, "IMPLEMENTATION", "IMPLEMENTATION");
-  if (attempt.generation !== projection.implementationGeneration) {
+  if (attemptInput.generation !== projection.implementationGeneration) {
     throw conflict("CORE_V2_IMPLEMENTATION_GENERATION_INVALID", "Implementation Attempt does not match the authorized Generation");
   }
+  const attempt = successfulAttempt(
+    attemptInput,
+    projection,
+    "IMPLEMENTATION",
+    "IMPLEMENTATION",
+    projection.candidateCommit ?? projection.subjectCommit,
+  );
   const checkpointCore = {
     attemptId: attempt.attemptId,
     generation: attempt.generation,
-    baseCommit: projection.subjectCommit,
+    baseCommit: attempt.subjectCommit,
     candidateCommit: commit(input.candidateCommit, "candidateCommit"),
     treeDigest: gitObject(input.treeDigest, "treeDigest"),
     checkpointRef: required(input.checkpointRef, "checkpointRef"),
@@ -212,7 +223,7 @@ export function workflowAcceptImplementationV2(
       findingRefs: stableRefs(input.selfReview.findingRefs, "selfReview.findingRefs"),
     },
   };
-  if (checkpointCore.candidateCommit === projection.subjectCommit) {
+  if (checkpointCore.candidateCommit === checkpointCore.baseCommit) {
     throw conflict("CORE_V2_CANDIDATE_UNCHANGED", "Implementation must produce a distinct Candidate Commit");
   }
   if (checkpointCore.selfReview.verdict === "FINDINGS" && checkpointCore.selfReview.findingRefs.length === 0) {
@@ -244,8 +255,44 @@ export function workflowAuthorizeRepairV2(
     ...withoutDigest(projection),
     state: "IMPLEMENTATION_REQUIRED",
     implementationGeneration: projection.implementationGeneration + 1,
+    artifacts: projection.artifacts.filter((artifact) => ["SPEC", "DESIGN", "PLAN", "DESIGN_REVIEW"].includes(artifact.kind)),
+    trustedTestRun: null,
+    verificationGateDigest: null,
+    knowledgeDispositionDigest: null,
+    mergeCommit: null,
+    outcome: null,
     events: append(projection.events, "ImplementationRepairAuthorized", instant(input.at), `g${projection.implementationGeneration + 1}:${reason}`),
   });
+}
+
+export function workflowRequestRepairV2(
+  projectionInput: CoreV2LifecycleProjection,
+  input: { readonly reason: string; readonly at: string },
+): CoreV2LifecycleProjection {
+  const projection = parseProjection(projectionInput);
+  if (projection.state !== "DOCUMENTATION_REQUIRED") throw conflict("CORE_V2_REPAIR_REQUEST_INVALID", "Only a blocking Documentation result can request Repair directly");
+  return seal({ ...withoutDigest(projection), state: "REPAIR_REQUIRED",
+    events: append(projection.events, "DocumentationRequestedRepair", instant(input.at), required(input.reason, "reason")) });
+}
+
+export function workflowWaitForTestReconcileV2(
+  projectionInput: CoreV2LifecycleProjection,
+  input: { readonly token: string; readonly reason: string; readonly at: string },
+): CoreV2LifecycleProjection {
+  const projection = parseProjection(projectionInput);
+  if (projection.state !== "TEST_EXECUTION_REQUIRED") throw conflict("CORE_V2_TEST_RECONCILE_NOT_REQUIRED", "Only an unknown Trusted Test effect can wait for reconcile");
+  return seal({ ...withoutDigest(projection), state: "WAITING_RECONCILE",
+    events: append(projection.events, "TrustedTestReconcileRequired", instant(input.at), `${required(input.token, "token")}:${required(input.reason, "reason")}`) });
+}
+
+export function workflowResumeTestReconcileV2(
+  projectionInput: CoreV2LifecycleProjection,
+  input: { readonly token: string; readonly evidence: string; readonly at: string },
+): CoreV2LifecycleProjection {
+  const projection = parseProjection(projectionInput);
+  if (projection.state !== "WAITING_RECONCILE") throw conflict("CORE_V2_TEST_RECONCILE_NOT_WAITING", "Trusted Test is not waiting for reconcile");
+  return seal({ ...withoutDigest(projection), state: "TEST_EXECUTION_REQUIRED",
+    events: append(projection.events, "TrustedTestReconcileResumed", instant(input.at), `${required(input.token, "token")}:${required(input.evidence, "evidence")}`) });
 }
 
 export function workflowAcceptDocumentationV2(
@@ -372,6 +419,20 @@ export function workflowRecordKnowledgeDispositionV2(
     events: append(projection.events, "KnowledgeDispositionRecorded", instant(atInput), `${payload.disposition}:${artifact.artifactDigest}`) });
 }
 
+export function workflowCloseCoreV2(
+  projectionInput: CoreV2LifecycleProjection,
+  input: { readonly mergeCommit: string; readonly at: string },
+): CoreV2LifecycleProjection {
+  const projection = parseProjection(projectionInput);
+  if (projection.state !== "MERGE_REQUIRED" || projection.verificationGateDigest === null || projection.knowledgeDispositionDigest === null || projection.candidateCommit === null) {
+    throw conflict("CORE_V2_CLOSURE_GATE_FAILED", "Closure requires Merge state, Verification Gate and Knowledge Disposition");
+  }
+  if (commit(input.mergeCommit, "mergeCommit") !== projection.candidateCommit) throw conflict("CORE_V2_MERGE_COMMIT_MISMATCH", "Merge commit must equal verified Candidate Commit");
+  const at = instant(input.at);
+  const events = append(append(append(projection.events, "MergeConfirmed", at, input.mergeCommit), "TaskClosed", at, "SUCCEEDED"), "ArchiveArchived", at, projection.taskId);
+  return seal({ ...withoutDigest(projection), state: "CLOSED", mergeCommit: input.mergeCommit, outcome: "SUCCEEDED", events });
+}
+
 export function workflowReplanV2(
   projectionInput: CoreV2LifecycleProjection,
   input: { readonly nextSubjectCommit: string; readonly reason: string; readonly at: string },
@@ -397,6 +458,8 @@ export function workflowReplanV2(
     trustedTestRun: null,
     verificationGateDigest: null,
     knowledgeDispositionDigest: null,
+    mergeCommit: null,
+    outcome: null,
     invalidatedRevisions: [...projection.invalidatedRevisions, invalidated],
     events: append(projection.events, "SpecRevisionReplanned", instant(input.at), `r${projection.specRevision + 1}:${reason}`),
   });

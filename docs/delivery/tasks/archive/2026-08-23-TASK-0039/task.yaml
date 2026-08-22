@@ -1,0 +1,24 @@
+schema_version: 1
+id: TASK-0039
+title: 统一 Core v2 Workflow、CLI 与真实验收
+status: seal_prepared
+outcome: null
+backlog_refs:
+  - BL-0040
+spec_revision: 1
+workflow_id: sealed-task/TASK-0039
+execution_mode: sealed-result-commit
+base_commit: 4af0c5569fb4e9ffb857414a29d957d16c2c7a64
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-23-TASK-0039
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:096034706ac87ee82ef1090c40019dec03abe30024fb1d67a0cb6ebab569fe51
+  base_commit: 4af0c5569fb4e9ffb857414a29d957d16c2c7a64
+  archive_path: docs/delivery/tasks/archive/2026-08-23-TASK-0039

@@ -17,12 +17,12 @@ describe("Core v2 Implementation → Repair serialized handoff", () => {
       plan: { type: "PLAN", items: [{ id: "P", description: "implement", dependsOn: [], status: "PENDING" }] },
     }, at(3));
     projection = workflowAcceptDesignReviewV2(projection, success("REVIEW", "DESIGN_REVIEW", 0), { verdict: "PASSED", findingRefs: [] }, at(4));
-    projection = workflowAcceptImplementationV2(projection, success("IMPLEMENTATION", "IMPLEMENTATION", 0), {
+    projection = workflowAcceptImplementationV2(projection, success("IMPLEMENTATION", "IMPLEMENTATION", 0, base), {
       candidateCommit: "b".repeat(40), treeDigest: "c".repeat(40), checkpointRef: "artifact://g0",
       testEvidenceRefs: ["artifact://g0-test"], selfReview: { verdict: "FINDINGS", findingRefs: ["finding://g0"] },
     }, at(5));
     projection = workflowAuthorizeRepairV2(JSON.parse(JSON.stringify(projection)), { reason: "repair finding", at: at(6) });
-    projection = workflowAcceptImplementationV2(projection, success("IMPLEMENTATION", "IMPLEMENTATION", 1), {
+    projection = workflowAcceptImplementationV2(projection, success("IMPLEMENTATION", "IMPLEMENTATION", 1, "b".repeat(40)), {
       candidateCommit: "d".repeat(40), treeDigest: "e".repeat(40), checkpointRef: "artifact://g1",
       testEvidenceRefs: ["artifact://g1-test"], selfReview: { verdict: "PASSED", findingRefs: [] },
     }, at(9));
@@ -32,9 +32,9 @@ describe("Core v2 Implementation → Repair serialized handoff", () => {
   });
 });
 
-function success(role: AgentRoleV2, phase: RolePhaseV2, generation: number) {
+function success(role: AgentRoleV2, phase: RolePhaseV2, generation: number, subjectCommit = base) {
   const running = startRoleAttemptV2(createRoleAttemptV2({ taskId: "TASK-E2E-IMPL", specRevision: 1, role, phase, generation,
-    runnerKind: "CODEX_EXEC", inputDigest: sha("1"), subjectCommit: base, inputArtifactRefs: [], scheduledAt: at(generation * 3) }), at(generation * 3 + 1));
+    runnerKind: "CODEX_EXEC", inputDigest: sha("1"), subjectCommit, inputArtifactRefs: [], scheduledAt: at(generation * 3) }), at(generation * 3 + 1));
   return completeRoleAttemptV2(running, createRoleRunEvidenceV2({ runId: sha(String(generation + 2)), taskId: running.taskId,
     specRevision: 1, role, phase, attemptId: running.attemptId, generation, runnerKind: "CODEX_EXEC", sessionId: `real-${phase}-g${generation}`,
     outcome: "SUCCEEDED", startedAt: at(generation * 3 + 1), finishedAt: at(generation * 3 + 2), eventsRef: "a://e", eventsDigest: sha("4"),

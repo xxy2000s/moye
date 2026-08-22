@@ -146,6 +146,18 @@ Recovery 对旧 Result Commit 的 Docs Impact 必须在该 Commit 的 detached w
 - `CodingTaskWorkflow/<task_id>` 接受冻结 Envelope 和真实 Runner 配置；产品链是 Context → Worktree → Implementation → Self Review → Verification → independent Review → Repair/Replan → Merge → Docs Gate → Closure → Archive。Blocking Finding 的 `REPAIR` 创建新 Generation，`REPLAN` 创建 Spec Revision N+1；主状态、全部 Session 与事件摘要同步到 Board。
 - `CoreClosureWorkflow/<task_id>` 接受冻结 Envelope、确定性场景和受管 Artifact Root；它当前是 Core 收敛 PoC/API，不会投影到 Board，也不替代 Coding Workflow。
 
+Core v2 产品任务从 CLI 提交，不要求 Web 写接口。输入必须引用 allowlist 内真实 Git 仓库、真实 Artifact Root、完整 Base Commit、真实 Runner 和受信任测试 argv：
+
+```bash
+npm run cli -- core-v2-start --file /absolute/path/to/core-v2-task.json
+npm run cli -- core-v2-status TASK-CORE-V2-EXAMPLE
+npm run cli -- core-v2-reconcile TASK-CORE-V2-EXAMPLE --token 'sha256:...' --action NOT_APPLIED --evidence 'trusted ledger reference'
+```
+
+`core-v2-start` 异步提交唯一 `CoreV2Workflow/<task_id>`；`core-v2-status` 只查询该 keyed Projection。Implementation Agent 负责 Workspace 变更，Workflow 负责创建或对账 Candidate Commit；不要要求 Agent 绕过 sandbox 写 `.git`。Test Agent 的覆盖意图会被约束到输入中预授权的 argv，再由 Trusted Runner 执行。状态为 `WAITING_RECONCILE` 时不得提交第二个相同任务或直接重跑测试。
+
+Board 访问 `/tasks/<task_id>` 可查看完整状态定义、实际点亮路径、Artifact、确定性 Observer 和每个 Role Session。点击节点后使用页面内 Agent Events 弹窗筛选对话、工具调用、工具结果、系统与错误；Events 不通过下载跳转查看。
+
 Core Workflow 的只读状态可直接从 Restate Ingress 查询：
 
 ```bash

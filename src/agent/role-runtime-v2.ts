@@ -47,6 +47,7 @@ export interface RoleStructuredOutputV2 {
   readonly recommendation: "PASS" | "FINDINGS" | "INCONCLUSIVE";
   readonly artifactRefs: readonly string[];
   readonly findingRefs: readonly string[];
+  readonly deliverable?: unknown;
 }
 
 export interface RoleAgentEventV2 {
@@ -470,8 +471,11 @@ function structuredOutput(value: unknown): RoleStructuredOutputV2 {
     recommendation,
     artifactRefs,
     findingRefs,
+    ...(input["deliverable"] === undefined ? {} : { deliverable: typeof input["deliverable"] === "string" ? parsedJson(input["deliverable"], "deliverable") : jsonValue(input["deliverable"], "deliverable") }),
   };
-  if (canonicalJson(value) !== canonicalJson(output)) throw validation("REAL_ROLE_OUTPUT_FIELDS_INVALID", "Role output has unknown fields");
+  if (Object.keys(input).some((key) => !["summary", "recommendation", "artifactRefs", "findingRefs", "deliverable"].includes(key))) {
+    throw validation("REAL_ROLE_OUTPUT_FIELDS_INVALID", "Role output has unknown fields");
+  }
   return output;
 }
 
@@ -545,12 +549,13 @@ function roleOutputSchema() {
   return {
     type: "object",
     additionalProperties: false,
-    required: ["summary", "recommendation", "artifactRefs", "findingRefs"],
+    required: ["summary", "recommendation", "artifactRefs", "findingRefs", "deliverable"],
     properties: {
       summary: { type: "string", minLength: 1 },
       recommendation: { type: "string", enum: ["PASS", "FINDINGS", "INCONCLUSIVE"] },
-      artifactRefs: { type: "array", uniqueItems: true, items: { type: "string", minLength: 1 } },
-      findingRefs: { type: "array", uniqueItems: true, items: { type: "string", minLength: 1 } },
+      artifactRefs: { type: "array", items: { type: "string", minLength: 1 } },
+      findingRefs: { type: "array", items: { type: "string", minLength: 1 } },
+      deliverable: { type: "string", minLength: 2 },
     },
   };
 }
@@ -596,6 +601,9 @@ function requiredString(value: unknown, field: string): string {
   if (typeof value !== "string" || !value.trim() || value.includes("\0")) throw validation("REAL_ROLE_STRING_INVALID", `${field} is required`);
   return value;
 }
+
+function jsonValue(value: unknown, field: string): unknown { try { const encoded = JSON.stringify(value); if (encoded === undefined) throw new Error(); return JSON.parse(encoded) as unknown; } catch { throw validation("REAL_ROLE_JSON_INVALID", `${field} must be JSON serializable`); } }
+function parsedJson(value: string, field: string): unknown { try { return JSON.parse(value) as unknown; } catch { throw validation("REAL_ROLE_JSON_INVALID", `${field} must contain JSON`); } }
 
 function number(value: unknown, field: string, allowZero = false): number {
   if (!Number.isSafeInteger(value) || (value as number) < (allowZero ? 0 : 1)) throw validation("REAL_ROLE_NUMBER_INVALID", `${field} is invalid`);

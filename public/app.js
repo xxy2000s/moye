@@ -275,6 +275,7 @@ async function loadTaskDetail(summary, resetScroll) {
     if (signature !== openedTaskTraceSignature) {
       const scrollTop = window.scrollY;
       if (trace.traceKind === "CODING") renderCodingTrace(trace, summary);
+      else if (trace.traceKind === "CORE_V2") renderCoreV2Trace(trace);
       else if (trace.traceKind === "TASK") renderTaskTrace(trace);
       else throw new Error(`未知 Trace 类型：${String(trace.traceKind)}`);
       openedTaskTraceSignature = signature;
@@ -293,6 +294,17 @@ async function loadTaskDetail(summary, resetScroll) {
 }
 
 function taskTraceSignature(trace) {
+  if (trace.traceKind === "CORE_V2") {
+    return JSON.stringify([
+      trace.task.state,
+      trace.task.currentStep,
+      trace.task.archiveStatus,
+      trace.task.outcome,
+      trace.lifecycle.projectionDigest,
+      trace.stateMachine.current.overall,
+      trace.roles.map(item => [item.runId, item.outcome, item.verdict]),
+    ]);
+  }
   if (trace.traceKind === "CODING") {
     return JSON.stringify([
       trace.task.state,
@@ -346,6 +358,49 @@ function renderTaskTrace(trace) {
   bindStateMachineGraph(trace.stateMachine, trace);
 }
 
+function renderCoreV2Trace(trace) {
+  closeAgentEventsDialog(false);
+  const task = trace.task;
+  const lifecycle = trace.lifecycle;
+  const succeeded = task.outcome === "SUCCEEDED" && task.archiveStatus === "ARCHIVED";
+  const failed = task.outcome === "FAILED_TERMINAL";
+  const roleSessions = trace.roles.map(role => `
+    <li><strong>${escapeHtml(roleLabel(role.kind))}</strong><code>${escapeHtml(role.sessionId || "无 Session ID")}</code><span>R${role.specRevision} · G${role.generation} · ${escapeHtml(role.verdict || role.outcome)}</span><p>${escapeHtml(role.summary)}</p>${sessionEventsButton({
+      eventsUrl: role.eventsUrl,
+      kind: role.kind,
+      binding: `${role.attemptId} · ${role.sessionId || "等待 Session"}`,
+      runnerKind: role.runnerKind,
+      label: "查看 Agent 对话与工具输出",
+    })}</li>`).join("");
+  const artifacts = lifecycle.artifacts.map(artifact => `<li><div><strong>${escapeHtml(artifact.kind)}</strong><span>R${artifact.specRevision} · ${escapeHtml(shortSha(artifact.subjectCommit))}</span></div><code>${escapeHtml(artifact.artifactId)}</code><small>${escapeHtml(shortDigest(artifact.artifactDigest))} · ${escapeHtml(artifact.producer.role)} / ${escapeHtml(artifact.producer.phase)}</small></li>`).join("");
+  renderTaskDetailHeader(task, task.title, [
+    ["状态", failed ? "失败终态" : succeeded ? "完整闭环" : stepLabel(task.currentStep), failed ? "danger" : succeeded ? "success" : "progress"],
+    ["规格", `R${task.specRevision}`],
+    ["Agent", `${trace.roles.length} 个真实 Session`],
+    ["Candidate", lifecycle.candidateCommit ? shortSha(lifecycle.candidateCommit) : "等待生成"],
+    ["Archive", archiveStatusLabel(task.archiveStatus), task.archiveStatus === "ARCHIVED" ? "success" : "neutral"],
+  ]);
+  elements.detail.innerHTML = `
+    <section class="task-workspace-summary tone-${failed ? "danger" : succeeded ? "success" : "progress"}" aria-label="Core v2 任务结论">
+      <div><span class="workspace-summary-mark" aria-hidden="true">${failed ? "!" : succeeded ? "✓" : "●"}</span><p><strong>${failed ? "真实执行已失败并保留证据" : succeeded ? "Task 已完整闭环" : "Task 正由 Core v2 Workflow 推进"}</strong><small>${failed ? escapeHtml(task.error || "Workflow failed") : "五类主流程 Agent、受信任 Runner、确定性 Gate 与旁路 Knowledge Disposition 均由 Runtime 事实驱动。"}</small></p></div>
+      <dl><div><dt>当前阶段</dt><dd>${escapeHtml(task.currentStep)}</dd></div><div><dt>Workflow</dt><dd>CoreV2Workflow</dd></div></dl>
+    </section>
+    ${task.error ? `<p class="error-box"><strong>失败原因：</strong>${escapeHtml(task.error)}</p>` : ""}
+    ${renderStateMachine(trace.stateMachine, trace)}
+    <details class="task-evidence-panel" open>
+      <summary><span>角色会话与交付物</span><small>${trace.roles.length} 个 Session · ${lifecycle.artifacts.length} 个不可变 Artifact</small></summary>
+      <div class="task-evidence-content">
+        <section class="journey-section" aria-label="真实角色会话"><div class="trace-heading"><div><p class="eyebrow">Role / Agent Sessions</p><h3>每个 Agent 的对话与工具事件</h3></div><span>支持按事件类别筛选</span></div><ul class="action-list">${roleSessions || "<li>等待首个 Agent Session</li>"}</ul></section>
+        <section class="journey-section" aria-label="生命周期交付物"><div class="trace-heading"><div><p class="eyebrow">Immutable Artifacts</p><h3>Spec、Design、Documentation、Test 与 Review 证据</h3></div><span>绑定 Revision 与 Commit</span></div><ul class="artifact-list">${artifacts || "<li>等待 Artifact</li>"}</ul></section>
+        <div class="correlation-strip" aria-label="任务关联链">${correlationNode("Task", task.taskId)}<span aria-hidden="true">→</span>${correlationNode("Workflow", trace.durableRuntime.workflowRef)}<span aria-hidden="true">→</span>${correlationNode("Candidate", lifecycle.candidateCommit || "等待生成")}<span aria-hidden="true">→</span>${correlationNode("Gate", lifecycle.verificationGateDigest || "等待验证")}</div>
+      </div>
+    </details>
+    ${renderDomainEventPanel(trace.business.events, trace.stateMachine)}
+    <details class="advanced-panel"><summary><span>高级诊断</span><small>确定性 Observer、Restate Journal 与完整 Lifecycle Projection</small></summary><div class="advanced-content"><section><p class="subheading">确定性 Observer</p><dl class="machine-node-facts"><div><dt>Event</dt><dd>${trace.observer.facts.events}</dd></div><div><dt>Attempt</dt><dd>${trace.observer.facts.attempts}</dd></div><div><dt>Failure / UNKNOWN</dt><dd>${trace.observer.facts.failures} / ${trace.observer.facts.unknown}</dd></div><div><dt>Repair / Replan</dt><dd>${trace.observer.facts.repairs} / ${trace.observer.facts.replans}</dd></div></dl><code class="wide-code">${escapeHtml(trace.observer.reportDigest)}</code></section><section><code class="wide-code">${escapeHtml(trace.durableRuntime.workflowRef)}</code><a class="runtime-link" href="${escapeAttribute(trace.durableRuntime.invocationsUrl)}" target="_blank" rel="noreferrer">在 Restate 中核对 Journal ↗</a></section><section><p class="subheading">Projection Digest</p><code class="wide-code">${escapeHtml(lifecycle.projectionDigest)}</code></section></div></details>`;
+  bindStateMachineGraph(trace.stateMachine, trace);
+  bindAgentEventsDialog(trace);
+}
+
 function renderCodingTrace(trace, summary) {
   closeAgentEventsDialog(false);
   const task = trace.task;
@@ -361,7 +416,7 @@ function renderCodingTrace(trace, summary) {
   const mergeRef = trace.git.mergeCommit ? shortSha(trace.git.mergeCommit) : "等待合入";
   const journey = PIPELINE_STAGES.map((definition, index) => renderJourneyStage(trace, definition, index)).join("");
   const artifacts = trace.technical.artifacts.map(artifact => `
-    <li><span>${escapeHtml(artifact.kind)}</span><code>${escapeHtml(artifact.artifactRef)}</code><small>${escapeHtml(shortDigest(artifact.contentDigest))}${artifact.bytes === undefined ? "" : ` · ${artifact.bytes} B`}</small>${artifact.downloadUrl ? `<a href="${escapeAttribute(artifact.downloadUrl)}" target="_blank" rel="noreferrer">${artifact.kind === "agent-events" ? "下载原始 JSONL" : "打开 ↗"}</a>` : ""}</li>`).join("");
+    <li><span>${escapeHtml(artifact.kind)}</span><code>${escapeHtml(artifact.artifactRef)}</code><small>${escapeHtml(shortDigest(artifact.contentDigest))}${artifact.bytes === undefined ? "" : ` · ${artifact.bytes} B`}</small>${artifact.downloadUrl && artifact.kind !== "agent-events" ? `<a href="${escapeAttribute(artifact.downloadUrl)}" target="_blank" rel="noreferrer">打开 ↗</a>` : ""}</li>`).join("");
   const agentEvents = trace.agentEvents;
   const rawModelIo = trace.technical.artifacts.find(artifact => artifact.kind === "raw-model-io" && artifact.downloadUrl);
   const actions = trace.recovery.actions.map(action => `
@@ -399,7 +454,7 @@ function renderCodingTrace(trace, summary) {
     <section class="task-workspace-summary tone-${conclusion.tone}" aria-label="任务结论">
       <div><span class="workspace-summary-mark" aria-hidden="true">${conclusion.icon}</span><p><strong>${escapeHtml(conclusion.title)}</strong><small>${escapeHtml(conclusion.text)}</small></p></div>
       <dl><div><dt>当前阶段</dt><dd>${escapeHtml(stepLabel(task.currentStep))}</dd></div><div><dt>执行者</dt><dd>${escapeHtml(runnerLabel(trace.agent?.runnerKind))}</dd></div></dl>
-      ${agentEvents ? `<button type="button" class="workspace-events-trigger" data-agent-events-trigger data-agent-events-url="${escapeAttribute(agentEvents.viewUrl)}" data-agent-events-download-url="${escapeAttribute(agentEvents.downloadUrl || agentEvents.viewUrl)}" data-agent-events-kind="IMPLEMENTATION" data-agent-events-binding="${escapeHtml(`${agentEvents.attemptId || "等待 Attempt"} · ${runnerLabel(agentEvents.runnerKind)}`)}" data-agent-events-runner="${escapeHtml(agentEvents.runnerKind)}" aria-controls="agent-events-dialog" aria-haspopup="dialog" aria-expanded="false">查看完整对话</button>` : ""}
+      ${agentEvents ? `<button type="button" class="workspace-events-trigger" data-agent-events-trigger data-agent-events-url="${escapeAttribute(agentEvents.viewUrl)}" data-agent-events-kind="IMPLEMENTATION" data-agent-events-binding="${escapeHtml(`${agentEvents.attemptId || "等待 Attempt"} · ${runnerLabel(agentEvents.runnerKind)}`)}" data-agent-events-runner="${escapeHtml(agentEvents.runnerKind)}" aria-controls="agent-events-dialog" aria-haspopup="dialog" aria-expanded="false">查看完整对话</button>` : ""}
     </section>
     ${task.error ? `<p class="error-box"><strong>失败原因：</strong>${escapeHtml(task.error)}<br><span>下一步：${escapeHtml(trace.recovery.summary)}</span></p>` : ""}
 
@@ -531,6 +586,13 @@ const TASK_GRAPH_POSITIONS = {
   START: [55, 195], RECEIVED: [260, 195], EXECUTING: [465, 195], VERIFYING: [670, 195], CLOSED: [875, 195],
   ARCHIVE_PENDING: [1090, 405], ARCHIVED: [1350, 405], ARCHIVE_FAILED: [1350, 605],
 };
+const CORE_V2_GRAPH_POSITIONS = {
+  START: [20, 195], ARCHITECT_REQUIRED: [165, 195], DESIGN_REVIEW_REQUIRED: [310, 195], IMPLEMENTATION_REQUIRED: [455, 195],
+  DOCUMENTATION_REQUIRED: [600, 195], TEST_PLAN_REQUIRED: [745, 195], TEST_EXECUTION_REQUIRED: [890, 195],
+  TEST_ASSESSMENT_REQUIRED: [1035, 195], FINAL_REVIEW_REQUIRED: [1180, 195], VERIFICATION_GATE_REQUIRED: [1325, 195],
+  MERGE_REQUIRED: [1470, 195], CLOSED: [1470, 350], ARCHIVED: [1470, 535], REPLAN_REQUIRED: [310, 35],
+  REPAIR_REQUIRED: [600, 460], WAITING_RECONCILE: [965, 460], FAILED_TERMINAL: [1180, 635],
+};
 
 function renderMachineGraphCanvas(machine, transitions) {
   const positions = machineGraphPositions(machine);
@@ -583,7 +645,7 @@ function renderMachineGraphCanvas(machine, transitions) {
 }
 
 function machineGraphPositions(machine) {
-  const source = machine.workflow === "CodingTaskWorkflow" ? CODING_GRAPH_POSITIONS : TASK_GRAPH_POSITIONS;
+  const source = machine.workflow === "CoreV2Workflow" ? CORE_V2_GRAPH_POSITIONS : machine.workflow === "CodingTaskWorkflow" ? CODING_GRAPH_POSITIONS : TASK_GRAPH_POSITIONS;
   const positions = new Map();
   let fallback = 0;
   machine.definition.nodes.forEach(node => {
@@ -828,7 +890,7 @@ function bindStateMachineGraph(machine, trace) {
     inspector.setAttribute("aria-hidden", String(!open));
     if (open) {
       inspector.innerHTML = renderMachineNodeInspector(machine, machineGraphUiState.selectedId, trace);
-      if (trace?.traceKind === "CODING") {
+      if (trace?.traceKind === "CODING" || trace?.traceKind === "CORE_V2") {
         bindAgentEventsDialog(trace, inspector);
         bindMachineAgentEventPreviews(inspector);
       }
@@ -918,7 +980,7 @@ function executionColor(state) {
 
 function sessionEventsButton({ eventsUrl, kind, binding, runnerKind, label = "在弹窗查看对话" }) {
   if (!eventsUrl) return '<span class="session-events-unavailable">Events 尚未就绪</span>';
-  return `<button type="button" class="session-events-trigger" data-agent-events-trigger data-agent-events-url="${escapeAttribute(eventsUrl)}" data-agent-events-download-url="${escapeAttribute(eventsUrl)}" data-agent-events-kind="${escapeHtml(kind)}" data-agent-events-binding="${escapeHtml(`${binding} · ${runnerLabel(runnerKind)}`)}" data-agent-events-runner="${escapeHtml(runnerKind)}" aria-controls="agent-events-dialog" aria-haspopup="dialog" aria-expanded="false">${escapeHtml(label)}</button>`;
+  return `<button type="button" class="session-events-trigger" data-agent-events-trigger data-agent-events-url="${escapeAttribute(eventsUrl)}" data-agent-events-kind="${escapeHtml(kind)}" data-agent-events-binding="${escapeHtml(`${binding} · ${runnerLabel(runnerKind)}`)}" data-agent-events-runner="${escapeHtml(runnerKind)}" aria-controls="agent-events-dialog" aria-haspopup="dialog" aria-expanded="false">${escapeHtml(label)}</button>`;
 }
 
 function bindMachineAgentEventPreviews(root) {
@@ -969,7 +1031,6 @@ function bindAgentEventsDialog(trace, root = elements.detail) {
     trigger.addEventListener("click", () => openAgentEventsDialog(trigger, {
       taskId: trace.task.taskId,
       sourceUrl: trigger.dataset.agentEventsUrl,
-      downloadUrl: trigger.dataset.agentEventsDownloadUrl,
       kind: trigger.dataset.agentEventsKind || "AGENT",
       binding: trigger.dataset.agentEventsBinding || "等待 Session",
       runnerKind: trigger.dataset.agentEventsRunner || "",
@@ -983,7 +1044,6 @@ function openAgentEventsDialog(trigger, source) {
   const viewer = elements.eventsViewer;
   const dialog = elements.eventsDialog;
   viewer.dataset.sourceUrl = source.sourceUrl;
-  viewer.dataset.downloadUrl = source.downloadUrl || source.sourceUrl;
   viewer.dataset.state = "loading";
   viewer.querySelector("[data-agent-events-title]").textContent = `${roleLabel(source.kind)} · 交互记录`;
   viewer.querySelector("[data-agent-events-task]").textContent = source.taskId;
@@ -991,9 +1051,6 @@ function openAgentEventsDialog(trigger, source) {
   viewer.querySelector("[data-agent-events-toolbar]").replaceChildren();
   viewer.querySelector("[data-agent-events-content]").innerHTML = '<div class="agent-events-loading" role="status">正在加载会话消息与工具事件…</div>';
   viewer.querySelector("[data-agent-events-footer]").replaceChildren();
-  const download = viewer.querySelector("[data-agent-events-download]");
-  download.href = "#";
-  download.hidden = true;
   setAgentEventsStatus(viewer, "正在加载");
   agentEventsReturnFocus = trigger;
   updateAgentEventsTrigger(trigger, true, true);
@@ -1063,11 +1120,6 @@ function renderAgentEventsState(viewer, state, loadPage) {
   const target = viewer.querySelector("[data-agent-events-content]");
   const visible = state.filter === "all" ? state.events : state.events.filter(event => event.category === state.filter);
   setAgentEventsStatus(viewer, `已加载 ${state.events.length} / ${state.total} 条 · ${state.completed ? "已完成" : "实时跟随中"}`);
-  const download = viewer.querySelector("[data-agent-events-download]");
-  if (download instanceof HTMLAnchorElement && state.completed) {
-    download.href = viewer.dataset.downloadUrl;
-    download.hidden = false;
-  }
   const categories = [["all", "全部"], ["conversation", "对话"], ["tool", "工具调用"], ["tool_result", "工具结果"], ["system", "系统"], ["error", "错误"]];
   const toolbar = viewer.querySelector("[data-agent-events-toolbar]");
   toolbar.innerHTML = categories.map(([id, label]) => {

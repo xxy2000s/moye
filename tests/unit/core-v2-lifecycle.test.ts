@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createCoreV2Lifecycle, workflowAcceptArchitectV2, workflowAcceptDesignReviewV2, workflowAcceptDocumentationV2, workflowAcceptFinalReviewV2, workflowAcceptImplementationV2, workflowAcceptTestAssessmentV2, workflowAcceptTestPlanV2, workflowAuthorizeRepairV2, workflowPassVerificationGateV2, workflowRecordTrustedTestRunV2, workflowReplanV2 } from "../../src/domain/core-v2-lifecycle.js";
+import { createCoreV2Lifecycle, workflowAcceptArchitectV2, workflowAcceptDesignReviewV2, workflowAcceptDocumentationV2, workflowAcceptFinalReviewV2, workflowAcceptImplementationV2, workflowAcceptTestAssessmentV2, workflowAcceptTestPlanV2, workflowAuthorizeRepairV2, workflowPassVerificationGateV2, workflowRecordTrustedTestRunV2, workflowReplanV2, workflowResumeTestReconcileV2, workflowWaitForTestReconcileV2 } from "../../src/domain/core-v2-lifecycle.js";
 import { completeRoleAttemptV2, createRoleAttemptV2, createRoleRunEvidenceV2, startRoleAttemptV2 } from "../../src/domain/role-runtime-v2.js";
 import type { AgentRoleV2, RolePhaseV2 } from "../../src/domain/role-runtime-v2.js";
 
@@ -83,6 +83,24 @@ describe("Core v2 Architect and Design Review lifecycle", () => {
     planned = workflowRecordTrustedTestRunV2(planned, { runId: "run-1", manifestRef: "artifact://test-manifest", manifestDigest: sha("9"), at: time(8) });
     const assessed = workflowAcceptTestAssessmentV2(planned, success("TEST_VERIFICATION", "TEST_ASSESSMENT", "c".repeat(40)), report("PASS"), time(9));
     expect(assessed.state).toBe("FINAL_REVIEW_REQUIRED");
+  });
+
+  it("models Trusted Test UNKNOWN and explicit reconcile without a second hidden state machine", () => {
+    const planned = workflowAcceptTestPlanV2(documentedReady(), success("TEST_VERIFICATION", "TEST_PLAN", "c".repeat(40)), testPlan(), time(7));
+    const waiting = workflowWaitForTestReconcileV2(planned, { token: sha("a"), reason: "intent without manifest", at: time(8) });
+    expect(waiting.state).toBe("WAITING_RECONCILE");
+    const resumed = workflowResumeTestReconcileV2(waiting, { token: sha("a"), evidence: "trusted ledger", at: time(9) });
+    expect(resumed.state).toBe("TEST_EXECUTION_REQUIRED");
+    expect(resumed.events.slice(-2).map((event) => event.type)).toEqual(["TrustedTestReconcileRequired", "TrustedTestReconcileResumed"]);
+  });
+
+  it("invalidates downstream artifacts when a Test Finding authorizes Repair", () => {
+    let projection = workflowAcceptTestPlanV2(documentedReady(), success("TEST_VERIFICATION", "TEST_PLAN", "c".repeat(40)), testPlan(), time(7));
+    projection = workflowRecordTrustedTestRunV2(projection, { runId: "run-1", manifestRef: "artifact://test-manifest", manifestDigest: sha("9"), at: time(8) });
+    projection = workflowAcceptTestAssessmentV2(projection, success("TEST_VERIFICATION", "TEST_ASSESSMENT", "c".repeat(40)), report("FINDINGS"), time(9));
+    const repaired = workflowAuthorizeRepairV2(projection, { reason: "test failed", at: time(10) });
+    expect(repaired).toMatchObject({ state: "IMPLEMENTATION_REQUIRED", implementationGeneration: 1, trustedTestRun: null });
+    expect(repaired.artifacts.map((artifact) => artifact.kind)).toEqual(["SPEC", "DESIGN", "PLAN", "DESIGN_REVIEW"]);
   });
 
   it("lets only isolated Final Review plus deterministic Artifact Gate reach Merge", () => {

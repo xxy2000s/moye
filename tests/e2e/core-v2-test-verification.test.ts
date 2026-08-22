@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { createLifecycleArtifact, lifecycleArtifactRef } from "../../src/domain/lifecycle-artifact.js";
-import { runTrustedTestPlan } from "../../src/testing/trusted-test-runner.js";
+import { reconcileTrustedTestPlan, runTrustedTestPlan } from "../../src/testing/trusted-test-runner.js";
 
 describe("Core v2 real Trusted Test Runner", () => {
   it("executes argv without a shell, persists evidence, and will not repeat an intent-only run", async () => {
@@ -26,5 +26,11 @@ describe("Core v2 real Trusted Test Runner", () => {
     const recovered = await runTrustedTestPlan({ plan, candidateCommit: candidate, repositoryRoot: root, allowedRepositoryRoots: [root], artifactRoot });
     expect(recovered.state).toBe("UNKNOWN");
     expect(await readFile(marker, "utf8")).toBe("x");
+    if (recovered.state !== "UNKNOWN") return;
+    const runInput = { plan, candidateCommit: candidate, repositoryRoot: root, allowedRepositoryRoots: [root], artifactRoot };
+    await expect(reconcileTrustedTestPlan(runInput, { token: "sha256:invalid", action: "NOT_APPLIED", evidence: "trusted ledger" })).rejects.toThrow(/token/);
+    const reconciled = await reconcileTrustedTestPlan(runInput, { token: recovered.reconcileToken, action: "NOT_APPLIED", evidence: "trusted process ledger proves retry is authorized" });
+    expect(reconciled.outcome).toBe("PASSED");
+    expect(await readFile(marker, "utf8")).toBe("xx");
   });
 });

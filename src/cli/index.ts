@@ -26,6 +26,7 @@ import type {
   SealedTaskInput,
 } from "../archive/sealed-result-commit.js";
 import type { SealedTaskStatus } from "../restate/services.js";
+import type { CoreV2ReconcileInput, CoreV2WorkflowInput, CoreV2WorkflowProjection } from "../restate/core-v2-services.js";
 
 const [command = "help", ...args] = process.argv.slice(2);
 const config = loadConfig();
@@ -87,6 +88,24 @@ try {
         const receipt = await send(config.restateIngressUrl, "TaskWorkflow", input.taskId, "run", input);
         print({ accepted: true, taskId: input.taskId, workflow: "TaskWorkflow", ...receipt });
       }
+      break;
+    }
+    case "core-v2-start": {
+      const input = await loadJson<CoreV2WorkflowInput>(requiredOption(args, "--file"));
+      print({ accepted: true, taskId: input.taskId, workflow: "CoreV2Workflow", ...await send(config.restateIngressUrl, "CoreV2Workflow", input.taskId, "run", input) });
+      break;
+    }
+    case "core-v2-status": {
+      const taskId = requiredArgument(args, "task id");
+      print(await invoke<CoreV2WorkflowProjection | null>(config.restateIngressUrl, "CoreV2Workflow", taskId, "status"));
+      break;
+    }
+    case "core-v2-reconcile": {
+      const taskId = requiredArgument(args, "task id");
+      const action = requiredOption(args, "--action");
+      if (action !== "CONFIRMED" && action !== "NOT_APPLIED") throw new Error("--action must be CONFIRMED or NOT_APPLIED");
+      const input: CoreV2ReconcileInput = { token: requiredOption(args, "--token"), action, evidence: requiredOption(args, "--evidence") };
+      print(await invoke<CoreV2WorkflowProjection>(config.restateIngressUrl, "CoreV2Workflow", taskId, "reconcile", input));
       break;
     }
     case "close": {
@@ -203,6 +222,7 @@ async function taskStatus(taskId: string): Promise<TaskProjection | CodingWorkfl
   if (authority.owner === "CODING_WORKFLOW") {
     return invoke<CodingWorkflowProjection | null>(config.restateIngressUrl, "CodingTaskWorkflow", taskId, "status");
   }
+  if (authority.owner === "CORE_V2_WORKFLOW") return invoke(config.restateIngressUrl, "CoreV2Workflow", taskId, "status");
   if (authority.owner === "TASK_WORKFLOW") {
     if (authority.recoveryWorkflowRef !== undefined) {
       return invoke<TaskProjection | null>(
@@ -328,6 +348,9 @@ Usage:
   moye status TASK-ID
   moye wait TASK-ID [--timeout-ms N]
   moye create --file task.json
+  moye core-v2-start --file core-v2-task.json
+  moye core-v2-status TASK-ID
+  moye core-v2-reconcile TASK-ID --token TOKEN --action CONFIRMED|NOT_APPLIED --evidence TEXT
   moye close --file task.json
   moye recover-bootstrap-failure --file recovery.json
   moye seal-start --file sealed-task.json

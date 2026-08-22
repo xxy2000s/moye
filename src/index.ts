@@ -17,6 +17,7 @@ import {
 } from "./restate/services.js";
 import { codingTaskWorkflow } from "./restate/coding-services.js";
 import { coreClosureWorkflow } from "./restate/core-services.js";
+import { coreV2Workflow } from "./restate/core-v2-services.js";
 
 const config = loadConfig();
 const endpoint = createServer(
@@ -32,6 +33,7 @@ const endpoint = createServer(
       archiveWorkflow,
       codingTaskWorkflow,
       coreClosureWorkflow,
+      coreV2Workflow,
     ],
   }),
 );

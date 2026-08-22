@@ -153,7 +153,7 @@ describe("npm run demo", () => {
     expect(app).not.toContain('id="agent-events-viewer"');
     expect(app).toContain("data-agent-event-filter");
     expect(app).toContain("实时跟随中");
-    expect(app).toContain("下载原始 JSONL");
+    expect(app).not.toContain("下载原始 JSONL");
     expect(app).toContain("sessionEventsButton");
     expect(app).toContain("在弹窗查看对话");
     expect(app).toContain("eventSpeaker");

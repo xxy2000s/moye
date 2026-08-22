@@ -1,0 +1,81 @@
+schema_version: 1
+task_id: TASK-0039
+graph_revision: 74
+intents: [workflow-change, cli-change, board-change, runbook-change, task-archive]
+changed_paths:
+  - README.md
+  - docs/delivery/backlog/BL-0040.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/core-v2-roadmap.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0039/design.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0039/docs-impact.yaml
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0039/plan.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0039/spec.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0039/task.yaml
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0039/verification.md
+  - docs/delivery/tasks/archive/README.md
+  - docs/graph.yaml
+  - docs/knowledge/current/architecture/core-v2-agent-lifecycle.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - public/app.js
+  - public/index.html
+  - src/agent/role-runtime-v2.ts
+  - src/board/server.ts
+  - src/cli/index.ts
+  - src/domain/core-v2-lifecycle.ts
+  - src/index.ts
+  - src/restate/core-v2-services.ts
+  - src/restate/services.ts
+  - src/testing/trusted-test-runner.ts
+  - src/trace/state-machine.ts
+  - tests/e2e/core-v2-test-verification.test.ts
+  - tests/e2e/core-v2-implementation-repair.test.ts
+  - tests/e2e/demo.test.ts
+  - tests/unit/core-v2-lifecycle.test.ts
+  - tests/unit/core-v2-workflow.test.ts
+docs:
+  read: [root-readme, agent-contract, docs-index, codemap, document-control-plane, tasks-index, archived-tasks-index, backlog-index, sources-index, bl-0040-core-v2-unified-acceptance, core-v2-roadmap, task-runtime-kernel, restate-poc-architecture, adr-0001-restate-poc, durable-runtime-pitfalls, core-v2-agent-lifecycle, architecture-index, local-restate-poc-runbook, runbooks-index, task-0039-manifest, task-0039-spec, task-0039-design, task-0039-plan, task-0039-verification, task-0039-docs-impact]
+  reviewed:
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "既有 Intent/Reconcile 风险由显式 token、Evidence 与不可盲重试约束落实" }
+    architecture-overview: { outcome: unchanged, reason: "顶层 Task/Workflow/Runner 边界未变，详细当前事实已更新 Core v2 Architecture" }
+    moye-task-control-skill: { outcome: unchanged, reason: "仓库 Task 自举仍使用既有 Seal 门禁" }
+    durable-workflow-research: { outcome: unchanged, reason: "历史调研不改写，产品实现继续采用已接受 Restate PoC" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "文档权限和生命周期角色未改变" }
+    adr-0005-core-v2-agent-model: { outcome: unchanged, reason: "落实已接受的 5+1 Agent 模型，不产生新取舍" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "TASK-0039 继续使用单 Result Commit Seal" }
+    core-v2-five-plus-one-agent-requirements: { outcome: unchanged, reason: "Brainstorm 已被 Architecture、Roadmap 和 TASK-0039 消费，不改写来源" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "历史方案输入不构成当前事实" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "历史需求输入不改写" }
+    task-0013-manifest: { outcome: unchanged, reason: "历史 Core Task" }
+    task-0014-manifest: { outcome: unchanged, reason: "历史角色协议" }
+    task-0015-manifest: { outcome: unchanged, reason: "历史 Review/Finding" }
+    task-0016-manifest: { outcome: unchanged, reason: "历史 Retry/Repair/Replan" }
+    task-0017-manifest: { outcome: unchanged, reason: "历史 Observer/Docs" }
+    task-0018-manifest: { outcome: unchanged, reason: "历史 Closure" }
+    task-0019-manifest: { outcome: unchanged, reason: "历史真实 Agent 产品路径" }
+    task-0020-manifest: { outcome: unchanged, reason: "历史状态机展示" }
+    task-0021-manifest: { outcome: unchanged, reason: "历史多角色闭环" }
+    task-0028-manifest: { outcome: unchanged, reason: "保留失败终态历史" }
+    task-0029-manifest: { outcome: unchanged, reason: "前置 Bootstrap 已封存" }
+    task-0030-manifest: { outcome: unchanged, reason: "前置架构与 Seal 已封存" }
+    task-0031-manifest: { outcome: unchanged, reason: "前置 Artifact 模型已封存" }
+    task-0032-manifest: { outcome: unchanged, reason: "前置真实 Role Runtime 已封存" }
+    task-0033-manifest: { outcome: unchanged, reason: "前置 Architect/Replan 已封存" }
+    task-0034-manifest: { outcome: unchanged, reason: "前置 Implementation/Repair 已封存" }
+    task-0035-manifest: { outcome: unchanged, reason: "前置 Documentation 已封存" }
+    task-0036-manifest: { outcome: unchanged, reason: "前置 Test/Runner 已封存" }
+    task-0037-manifest: { outcome: unchanged, reason: "前置 Final Review/Gate 已封存" }
+    task-0038-manifest: { outcome: unchanged, reason: "前置 Observer/Knowledge 已封存" }
+    task-0039-manifest: { outcome: updated, reason: "本任务包完成验证并由 Seal 移入 Archive" }
+    task-0002-manifest: { outcome: unchanged, reason: "历史任务" }
+    task-0003-manifest: { outcome: unchanged, reason: "历史任务" }
+    task-0004-manifest: { outcome: unchanged, reason: "历史任务" }
+    task-0005-manifest: { outcome: unchanged, reason: "历史任务" }
+    task-0006-manifest: { outcome: unchanged, reason: "历史任务" }
+    task-0007-manifest: { outcome: unchanged, reason: "历史任务" }
+    task-0008-manifest: { outcome: unchanged, reason: "历史任务" }
+    task-0009-manifest: { outcome: unchanged, reason: "历史任务" }
+    task-0001-manifest: { outcome: unchanged, reason: "历史 PoC 基线" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "语言与工具链未改变" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "Trace 技术选型未改变" }

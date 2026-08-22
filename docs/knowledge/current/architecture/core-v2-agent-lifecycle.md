@@ -1,6 +1,6 @@
 # Core v2 Agent Lifecycle
 
-> 状态：Current / Agent lifecycle implementation in progress
+> 状态：Current / unified product Workflow implemented
 > 更新日期：2026-08-23
 > 决策：[ADR-0005](../../decisions/adr/0005-adopt-core-v2-five-plus-one-agent-model.md)、[ADR-0006](../../decisions/adr/0006-use-two-phase-sealed-result-commit.md)
 
@@ -42,7 +42,7 @@ INTAKE → CONTEXT_PLAN
 
 `src/agent/role-runtime-v2.ts` 是真实进程 Adapter：先把稳定 `execution-intent.json` 写到 Scope 外的受管 Artifact Root，再用 `shell:false` 的 argv 启动 Codex/Claude。Session、原始 JSONL Event、stderr、结构化 Output、Manifest 和各文件摘要都持久化。完整 Manifest 会逐字段绑定 Attempt/Run/Evidence 并重算文件摘要后复用；仅有 Intent 时返回 `UNKNOWN_SIDE_EFFECT` 与领域统一 Reconcile Token，绝不自动启动第二个进程。`CONFIRMED` 必须提供同一 Run 的 Evidence，`NOT_APPLIED` 必须提供外部对账说明。
 
-该 Runtime 是角色执行与恢复底座，不拥有 Task 主状态，也不自行调度下一阶段。各角色接入 keyed Workflow 的阶段、Gate 与修复路径仍由 TASK-0033 至 TASK-0038 逐步完成。
+该 Runtime 是角色执行与恢复底座，不拥有 Task 主状态，也不自行调度下一阶段。`CoreV2Workflow/<task_id>` 是统一产品编排者：它逐阶段创建 Attempt，在 Restate durable journal 中调用真实 Runtime，把结果交给纯 Lifecycle Reducer，并向 ProjectBoard 发布同一 Projection。
 
 `src/domain/core-v2-lifecycle.ts` 已接入第一段 Workflow Reducer：成功 ARCHITECT Attempt 原子生成同 Revision 的 Spec/Design/Plan，随后只接受独立 `REVIEW/DESIGN_REVIEW` Attempt。Review `PASSED` 才进入 Implementation；`FINDINGS` 进入 `REPLAN_REQUIRED`，提升到 R+1 并把旧 Revision 的四个 Artifact ref 显式记录为 invalidated。Role Attempt ID 使用可嵌入 Artifact Producer 的稳定 segment；单个 Architect Attempt 的三项产物使用 `ARCHITECT` phase。
 
@@ -68,4 +68,10 @@ Dependency policy 是角色交接协议而非自由引用：Design 依赖 Spec�
 
 Git 中的 Task package 使用两阶段 Seal：Workflow 先发布 Seal Intent并等待；最终 Result Commit 同时包含代码、文档和位于 Archive 路径的 sealed package；Workflow 再验证 Commit 并发布 `CLOSED/ARCHIVED`。目录位置只是 Seal Evidence，不是业务状态，避免在 Commit 后由 Runtime 改写文件造成 SHA 循环。
 
-Seal 协议已经由 `SealedTaskWorkflow`、统一 CLI、Board/Trace 查询和真实 Git + Restate 强杀恢复 E2E 实现。统一 Role Runtime 已可执行五类主角色和旁路 Observer，但完整产品 Workflow 仍按 [Core v2 Roadmap](../../../delivery/core-v2-roadmap.md) 逐 Task 接入；本文件不把“Runtime 可执行”误写成“阶段已接线”。
+Seal 协议已经由 `SealedTaskWorkflow`、统一 CLI、Board/Trace 查询和真实 Git + Restate 强杀恢复 E2E 实现。Core v2 产品路径由 `core-v2-start` 发起、`core-v2-status` 查询；它串联 Architect、Design Review、Implementation、Documentation、Test Plan、Trusted Runner、Test Assessment、Final Review、确定性 Gate、Knowledge Disposition、Merge、Closure 与 Archive。
+
+Implementation Agent 只修改受管 Workspace 并运行检查；Codex sandbox 不拥有 Git 元数据写权限。Workflow 随后执行带 `Moye-Task` 和 `Moye-Generation` 标记的幂等 Git checkpoint：首次创建 Candidate Commit，重放时校验 parent、message、clean tree 后复用同一 Commit。Documentation 首版审计已提交 Candidate，不在 Gate 后再产生隐藏 Commit。
+
+Test Agent 提出 Requirement 覆盖和 Case 意图；Workflow 为每条预授权 argv 生成稳定 Case ID、约束合法类别并覆盖无效自然语言形状，Trusted Runner 只执行冻结输入中的 argv。Agent Verdict 仍不能代替 Runner Manifest 或 Verification Gate。
+
+Board 的 `CORE_V2` Trace 从 Lifecycle Event、Attempt、Session、Artifact 和确定性 Observer 重建 17 个状态、Happy Path 与 Repair/Replan/Reconcile/Failure/Archive 合法边。节点 Inspector 直接关联真实 Role Event；Event 在 Chatbot 弹窗中按对话、工具调用、工具结果、系统和错误筛选，不提供跳转下载入口。

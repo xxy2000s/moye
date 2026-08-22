@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { isAbsolute, relative, resolve } from "node:path";
 
 import { MoyeError } from "../domain/errors.js";
@@ -34,6 +34,12 @@ export interface TrustedTestRunManifest {
 export type TrustedTestRunResult =
   | { readonly state: "COMPLETE"; readonly manifest: TrustedTestRunManifest }
   | { readonly state: "UNKNOWN"; readonly runId: string; readonly reconcileToken: string; readonly reason: string };
+
+export interface TrustedTestReconcileInput {
+  readonly token: string;
+  readonly action: "CONFIRMED" | "NOT_APPLIED";
+  readonly evidence: string;
+}
 
 export async function runTrustedTestPlan(input: {
   readonly plan: LifecycleArtifact;
@@ -77,6 +83,36 @@ export async function runTrustedTestPlan(input: {
   const manifest = Object.freeze({ ...core, manifestDigest: digest("trusted-test-manifest", core) });
   await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
   return { state: "COMPLETE", manifest };
+}
+
+export async function reconcileTrustedTestPlan(
+  input: Parameters<typeof runTrustedTestPlan>[0],
+  reconciliation: TrustedTestReconcileInput,
+): Promise<TrustedTestRunManifest> {
+  if (!reconciliation.evidence.trim()) throw validation("TRUSTED_TEST_RECONCILE_EVIDENCE_REQUIRED", "Reconcile requires external evidence");
+  const plan = parseLifecycleArtifact(JSON.parse(JSON.stringify(input.plan)), input.plan.artifactDigest);
+  if (plan.payload.type !== "TEST_PLAN") throw validation("TRUSTED_TEST_PLAN_REQUIRED", "Trusted Runner requires a TEST_PLAN Artifact");
+  const repositoryRoot = trustedRoot(input.repositoryRoot, input.allowedRepositoryRoots);
+  const runId = digest("trusted-test-run", { taskId: plan.taskId, revision: plan.specRevision, candidateCommit: input.candidateCommit, planDigest: plan.artifactDigest });
+  const intent = { schemaVersion: 1, runId, taskId: plan.taskId, specRevision: plan.specRevision, candidateCommit: input.candidateCommit, planDigest: plan.artifactDigest, repositoryRoot };
+  const expectedToken = digest("trusted-test-reconcile", intent);
+  if (reconciliation.token !== expectedToken) throw conflict("TRUSTED_TEST_RECONCILE_TOKEN_INVALID", "Reconcile token does not match Trusted Test intent");
+  const runRoot = resolve(input.artifactRoot, runId.replace(":", "-"));
+  const intentPath = resolve(runRoot, "execution-intent.json");
+  const manifestPath = resolve(runRoot, "manifest.json");
+  const storedIntent = await optionalJson<Record<string, unknown>>(intentPath);
+  if (storedIntent === undefined || JSON.stringify(storedIntent) !== JSON.stringify(intent)) throw conflict("TRUSTED_TEST_RECONCILE_INTENT_INVALID", "Stored Trusted Test intent does not match");
+  if (reconciliation.action === "CONFIRMED") {
+    const manifest = await optionalJson<TrustedTestRunManifest>(manifestPath);
+    if (manifest === undefined) throw conflict("TRUSTED_TEST_RECONCILE_MANIFEST_REQUIRED", "CONFIRMED requires the complete Trusted Runner Manifest");
+    await writeFile(resolve(runRoot, "reconciliation.json"), `${JSON.stringify({ ...reconciliation, at: new Date().toISOString() }, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
+    return verifyManifest(manifest, runId);
+  }
+  await writeFile(resolve(runRoot, "reconciliation.json"), `${JSON.stringify({ ...reconciliation, at: new Date().toISOString() }, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
+  await rename(intentPath, resolve(runRoot, "execution-intent.not-applied.json"));
+  const retried = await runTrustedTestPlan(input);
+  if (retried.state !== "COMPLETE") throw conflict("TRUSTED_TEST_RECONCILE_RETRY_UNKNOWN", "Authorized Trusted Test retry did not complete");
+  return retried.manifest;
 }
 
 async function execute(argv: readonly string[], cwd: string): Promise<{ exitCode: number; stdout: string; stderr: string }> {

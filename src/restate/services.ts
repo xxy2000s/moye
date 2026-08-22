@@ -91,7 +91,7 @@ export interface SealedTaskStatus {
 }
 
 export interface TaskAuthorityState {
-  owner: "TASK_WORKFLOW" | "CODING_WORKFLOW" | "CORE_WORKFLOW" | "SEALED_TASK_WORKFLOW";
+  owner: "TASK_WORKFLOW" | "CODING_WORKFLOW" | "CORE_WORKFLOW" | "CORE_V2_WORKFLOW" | "SEALED_TASK_WORKFLOW";
   specRevision: number;
   recoveryWorkflowRef?: string;
   sourceWorkflowRef?: string;

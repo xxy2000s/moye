@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 73
+graph_revision: 74
 updated_at: "2026-08-23"
 
 entrypoints:
@@ -2656,6 +2656,54 @@ documents:
     authority: task-evidence
     read_when: [task-close, task-archive]
 
+  - id: task-0039-manifest
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0039/task.yaml
+    type: task-manifest
+    status: archived
+    scope: core-v2-unified-workflow
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0039-spec
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0039/spec.md
+    type: task-spec
+    status: archived
+    scope: core-v2-unified-workflow
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0039-design
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0039/design.md
+    type: task-design
+    status: archived
+    scope: core-v2-unified-workflow
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0039-plan
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0039/plan.md
+    type: task-plan
+    status: archived
+    scope: core-v2-unified-workflow
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0039-verification
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0039/verification.md
+    type: verification
+    status: archived
+    scope: core-v2-unified-workflow
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0039-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0039/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: core-v2-unified-workflow
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
 relations:
   - from: root-readme
     to: docs-index
@@ -4302,6 +4350,38 @@ relations:
     type: reports_on
 
   - from: task-0038-manifest
+    to: core-v2-agent-lifecycle
+    type: implements_slice_of
+
+  - from: bl-0040-core-v2-unified-acceptance
+    to: task-0039-manifest
+    type: schedules_into
+
+  - from: archived-tasks-index
+    to: task-0039-manifest
+    type: indexes
+
+  - from: task-0039-spec
+    to: task-0039-manifest
+    type: belongs_to
+
+  - from: task-0039-design
+    to: task-0039-spec
+    type: refines
+
+  - from: task-0039-plan
+    to: task-0039-manifest
+    type: belongs_to
+
+  - from: task-0039-verification
+    to: task-0039-manifest
+    type: verifies
+
+  - from: task-0039-docs-impact
+    to: task-0039-manifest
+    type: reports_on
+
+  - from: task-0039-manifest
     to: core-v2-agent-lifecycle
     type: implements_slice_of
 

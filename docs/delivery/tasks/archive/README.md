@@ -53,5 +53,6 @@ YYYY-MM-DD-TASK-NNNN
 | [TASK-0036](./2026-08-23-TASK-0036/spec.md) | Sealed；业务终态见 Runtime | 2026-08-23 | Test Verification 与真实 Trusted Runner |
 | [TASK-0037](./2026-08-23-TASK-0037/spec.md) | Sealed；业务终态见 Runtime | 2026-08-23 | Final Review 与确定性 Verification Gate |
 | [TASK-0038](./2026-08-23-TASK-0038/spec.md) | Sealed；业务终态见 Runtime | 2026-08-23 | 确定性 Observer 与旁路 Knowledge |
+| [TASK-0039](./2026-08-23-TASK-0039/spec.md) | Sealed；业务终态见 Runtime | 2026-08-23 | Core v2 统一 Workflow、CLI、Board 与真实 Agent/Runner/Git 验收 |
 
 Bootstrap Task 的 `task.yaml` 冻结在 Archive 开始前，因此其中 `archive.status: pending` 描述的是冻结点；最终 `ARCHIVED` 事实由目录位置、`archive-manifest.json` 和 ProjectBoard Projection 共同证明。TASK-0002 归档后文档图门禁曾发现 Spec 的 Active 相对链接因目录层级变化而失效，控制面只修正了该链接；修正前内容仍由 Result Commit `ff1954f4e4360e85276cf22aa30d6f5e8e396f84` 保存。后续 Task 使用不随 Active/Archive 深度变化的稳定引用。

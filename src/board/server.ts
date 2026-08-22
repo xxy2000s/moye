@@ -11,11 +11,13 @@ import { invoke, send } from "../restate/ingress.js";
 import type { TaskAuthorityState } from "../restate/services.js";
 import type { CodingWorkflowProjection } from "../coding/workflow.js";
 import { buildCodingTaskTrace } from "../trace/coding-trace.js";
-import { buildTaskStateMachine } from "../trace/state-machine.js";
+import { buildCoreV2StateMachine, buildTaskStateMachine } from "../trace/state-machine.js";
 import type { MoyeConfig } from "../config.js";
 import type { AgentArtifactFile } from "../agent/runner.js";
 import { buildLiveCodingTask, listLiveCapabilities } from "../product/live-task.js";
 import { MoyeError } from "../domain/errors.js";
+import type { CoreV2WorkflowProjection } from "../restate/core-v2-services.js";
+import { createCoreV2ObserverReport } from "../domain/core-v2-observer.js";
 
 export interface BoardServerOptions {
   readonly port: number;
@@ -99,6 +101,11 @@ async function route(
       return;
     }
     if (traceRequest) {
+      if (authority.owner === "CORE_V2_WORKFLOW") {
+        const projection = await invoke<CoreV2WorkflowProjection | null>(options.ingressUrl, "CoreV2Workflow", taskId, "status");
+        writeJson(response, projection === null ? 404 : 200, projection === null ? { error: "Task trace not found" } : buildCoreV2Trace(projection, options.restateAdminUrl));
+        return;
+      }
       if (authority.owner === "CORE_WORKFLOW") {
         writeJson(response, 409, { error: "Core state machine is available from CoreClosureWorkflow status only" });
         return;
@@ -199,6 +206,23 @@ async function route(
       return;
     }
     if (roleEventsRequest) {
+      if (authority.owner === "CORE_V2_WORKFLOW") {
+        let runId: string;
+        try { runId = decodeURIComponent(segments[2] ?? ""); } catch { writeJson(response, 400, { error: "Malformed Role Run ID" }); return; }
+        const projection = await invoke<CoreV2WorkflowProjection | null>(options.ingressUrl, "CoreV2Workflow", taskId, "status");
+        const run = projection?.roleRuns.find((item) => item.runId === runId);
+        if (projection === null || run === undefined) { writeJson(response, 404, { error: "Role Event stream not found" }); return; }
+        const cursor = readBoundedInteger(url.searchParams.get("cursor"), 0, 0, Number.MAX_SAFE_INTEGER);
+        const limit = readBoundedInteger(url.searchParams.get("limit"), 100, 1, 200);
+        if (cursor === undefined || limit === undefined) { writeJson(response, 400, { error: "Invalid cursor" }); return; }
+        try {
+          const filePath = await resolveCoreV2RoleEventFile(options.artifactRoots ?? [], projection.artifactRoot, run);
+          writeJson(response, 200, await readEventPage({ filePath, runId, runnerKind: run.runnerKind, taskId, attemptId: run.attemptId, cursor, limit, completed: true }));
+        } catch {
+          writeJson(response, 404, { error: "Role Event stream not found" });
+        }
+        return;
+      }
       if (authority.owner !== "CODING_WORKFLOW") {
         writeJson(response, 409, { error: "Role Events are not available for this Task workflow" });
         return;
@@ -321,7 +345,9 @@ async function route(
     const recoveryTarget = authority.owner !== "SEALED_TASK_WORKFLOW" || authority.recoveryWorkflowRef === undefined
       ? undefined
       : parseRuntimeWorkflowRef(authority.recoveryWorkflowRef);
-    const projection = authority.owner === "CODING_WORKFLOW"
+    const projection = authority.owner === "CORE_V2_WORKFLOW"
+      ? await invoke<CoreV2WorkflowProjection | null>(options.ingressUrl, "CoreV2Workflow", taskId, "status")
+      : authority.owner === "CODING_WORKFLOW"
       ? await invoke<CodingWorkflowProjection | null>(options.ingressUrl, "CodingTaskWorkflow", taskId, "status")
       : await invoke<TaskProjection | null>(
         options.ingressUrl,
@@ -372,6 +398,56 @@ async function route(
   await serveStatic(url.pathname, method === "HEAD", response, options.publicRoot);
 }
 
+export function buildCoreV2Trace(projection: CoreV2WorkflowProjection, restateAdminUrl: string) {
+  const task: TaskProjection = {
+    taskId: projection.taskId,
+    projectId: projection.projectId,
+    title: projection.title,
+    state: projection.state === "CLOSED" || projection.state === "FAILED_TERMINAL" ? "CLOSED" : "EXECUTING",
+    currentStep: projection.currentStep,
+    attempt: projection.attempts.length,
+    specRevision: projection.lifecycle.specRevision,
+    backlogRefs: [],
+    archiveStatus: projection.state === "CLOSED" ? "ARCHIVED" : "NOT_READY",
+    ...(projection.outcome === null ? {} : { outcome: projection.outcome }),
+    ...(projection.error === null ? {} : { error: projection.error }),
+    lastEventAt: projection.lifecycle.events.at(-1)?.at ?? projection.startedAt,
+    events: projection.lifecycle.events.map((event) => ({ ...event })),
+  };
+  return {
+    schemaVersion: 2 as const,
+    traceKind: "CORE_V2" as const,
+    task,
+    lifecycle: projection.lifecycle,
+    business: { events: task.events, attempts: projection.attempts },
+    observer: createCoreV2ObserverReport(projection.lifecycle, projection.attempts),
+    roles: projection.roleRuns.map((run) => ({
+      kind: run.phase,
+      runId: run.runId,
+      runnerKind: run.runnerKind,
+      sessionId: run.sessionId,
+      specRevision: run.specRevision,
+      attempt: run.generation + 1,
+      attemptId: run.attemptId,
+      generation: run.generation,
+      outcome: run.outcome,
+      verdict: run.output?.recommendation,
+      summary: run.output?.summary ?? "No structured summary",
+      findingCount: run.output?.findingRefs.length ?? 0,
+      eventsUrl: `/api/tasks/${encodeURIComponent(projection.taskId)}/roles/${encodeURIComponent(run.runId)}/events`,
+    })),
+    stateMachine: buildCoreV2StateMachine(projection),
+    durableRuntime: {
+      authority: "Restate Journal" as const,
+      workflowRef: `restate://CoreV2Workflow/${projection.taskId}`,
+      workflowService: "CoreV2Workflow" as const,
+      workflowKey: projection.taskId,
+      adminBaseUrl: restateAdminUrl,
+      invocationsUrl: buildWorkflowInvocationsUrl(restateAdminUrl, "CoreV2Workflow", projection.taskId),
+    },
+  };
+}
+
 function parseRuntimeWorkflowRef(value: string): { service: "SealedTaskRecoveryWorkflow" | "SealRecoveryAttemptWorkflow"; key: string } {
   const match = /^restate:\/\/(SealedTaskRecoveryWorkflow|SealRecoveryAttemptWorkflow)\/([A-Z0-9-]+)$/.exec(value);
   if (match === null) throw new Error(`Invalid sealed recovery Workflow ref: ${value}`);
@@ -383,6 +459,31 @@ type DownloadableArtifactKind = "agent-events" | "raw-model-io";
 function pathForRole(kind: string): string {
   if (!/^[A-Z_]+$/.test(kind)) throw new Error("Invalid Role kind");
   return `roles/${kind.toLowerCase()}`;
+}
+
+async function resolveCoreV2RoleEventFile(
+  artifactRoots: readonly string[],
+  declaredArtifactRoot: string,
+  run: CoreV2WorkflowProjection["roleRuns"][number],
+): Promise<string> {
+  const token = run.runId.slice("sha256:".length);
+  if (!/^[0-9a-f]{64}$/.test(token)
+      || run.eventsRef !== `role-v2-artifact://${token}/events.jsonl`
+      || !/^sha256:[0-9a-f]{64}$/.test(run.eventsDigest)) throw new Error("Invalid Core v2 Role Artifact identity");
+  const taskRoot = await realpath(declaredArtifactRoot);
+  let allowed = false;
+  for (const configuredRoot of artifactRoots) {
+    try { if (isSameOrWithin(await realpath(configuredRoot), taskRoot)) allowed = true; } catch { continue; }
+  }
+  if (!allowed) throw new Error("Task Artifact Root is outside configured roots");
+  const candidate = resolve(taskRoot, "roles", `run-${token}`, "events.jsonl");
+  const info = await lstat(candidate);
+  if (!info.isFile() || info.isSymbolicLink()) throw new Error("Role Events are not a regular file");
+  const actual = await realpath(candidate);
+  if (actual !== candidate || !isSameOrWithin(taskRoot, actual)) throw new Error("Role Artifact escaped Task Artifact Root");
+  const content = await readFile(actual);
+  if (`sha256:${createHash("sha256").update(content).digest("hex")}` !== run.eventsDigest) throw new Error("Role Artifact digest mismatch");
+  return actual;
 }
 
 async function resolveRoleEventFile(

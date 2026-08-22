@@ -1,7 +1,7 @@
 # Core v2 Delivery Roadmap
 
 > 文档类型：Delivery Plan  
-> 状态：Active  
+> 状态：Completed
 > 基线日期：2026-08-23  
 > 需求来源：[Core v2：5+1 Agent 研发闭环需求基线](../sources/brainstorm/core-v2-five-plus-one-agent-requirements.md)  
 > 当前实现事实仍以 Architecture、代码、测试和已归档 Task 为准。
@@ -29,7 +29,7 @@
 | TASK-0036 | BL-0038 | Sealed / Runtime authoritative | 接入 TEST_PLAN、Trusted Runner、TEST_ASSESSMENT 和综合测试报告；UNKNOWN 进入 Reconcile 而非重复测试 | `SealedTaskWorkflow` Receipt |
 | TASK-0037 | BL-0039 | Sealed / Runtime authoritative | 接入隔离 FINAL_REVIEW 与确定性 Verification Gate，绑定 Spec Revision、Candidate Commit、报告和 Evidence Digest | `SealedTaskWorkflow` Receipt |
 | TASK-0038 | BL-0006、BL-0007 | Sealed / Runtime authoritative | 建成确定性 Observer 投影和非阻塞 OBSERVER_KNOWLEDGE；旁路崩溃不阻塞 Closure，Knowledge Disposition 必填 | `SealedTaskWorkflow` Receipt |
-| TASK-0039 | BL-0040 | Planned | 统一 Workflow 串起 Intake→Archive、Repair/Replan/Reconcile/Merge/Closure；CLI 与真实故障矩阵完成最终验收 | — |
+| TASK-0039 | BL-0040 | Sealed / Runtime authoritative | 统一 Workflow 串起 Intake→Archive、Repair/Replan/Reconcile/Merge/Closure；CLI、Board 与真实 Agent/Runner/Git 完成最终验收 | `SealedTaskWorkflow` Receipt |
 
 ## 3. 依赖图
 
@@ -66,4 +66,4 @@ TASK-0039 至少运行并保存以下真实证据：
 
 ## 5. 明确延后
 
-Board 画布排版与视觉优化在 Core v2 真实闭环完成后另行进入 Backlog。本路线不实现多 Daemon/Lease/Fencing、远程 PR、权限、多租户、生产级观测或长期知识效果反馈。
+Core v2 真实闭环与可运行画布已完成。后续仍不在本路线实现多 Daemon/Lease/Fencing、远程 PR、权限、多租户、生产级观测或长期知识效果反馈；这些能力继续由现有 Backlog 调度。

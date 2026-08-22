@@ -2,6 +2,7 @@ import type { AgentRunResult } from "../agent/runner.js";
 import type { CodingWorkflowEvent, CodingWorkflowProjection, CodingWorkflowStep } from "../coding/workflow.js";
 import type { StepAttempt } from "../domain/coding-task.js";
 import type { TaskEventSummary, TaskProjection } from "../domain/task.js";
+import type { CoreV2WorkflowProjection } from "../restate/core-v2-services.js";
 
 export type StateMachineDomain = "BUSINESS" | "ARCHIVE";
 export type StateMachineEdgeKind = "NORMAL" | "REPAIR" | "FAILURE" | "ARCHIVE";
@@ -49,7 +50,7 @@ export interface StateMachineExecution {
 export interface TaskStateMachineTrace {
   readonly schemaVersion: 1;
   readonly authority: "derived-from-runtime-projection";
-  readonly workflow: "CodingTaskWorkflow" | "TaskWorkflow" | "BootstrapFailureRecoveryWorkflow" | "SealedTaskWorkflow" | "SealedTaskRecoveryWorkflow" | "SealRecoveryAttemptWorkflow";
+  readonly workflow: "CoreV2Workflow" | "CodingTaskWorkflow" | "TaskWorkflow" | "BootstrapFailureRecoveryWorkflow" | "SealedTaskWorkflow" | "SealedTaskRecoveryWorkflow" | "SealRecoveryAttemptWorkflow";
   readonly definition: {
     readonly nodes: readonly StateMachineNode[];
     readonly edges: readonly StateMachineEdge[];
@@ -134,6 +135,53 @@ const TASK_EDGES: readonly Omit<StateMachineEdge, "traversed">[] = [
   edge("ARCHIVE_PENDING", "ARCHIVE_FAILED", "ARCHIVE", "ArchiveFailed"),
 ];
 
+const CORE_V2_NODES = [
+  ["START", "Task Intake", "BUSINESS", false],
+  ["ARCHITECT_REQUIRED", "Spec / Design / Plan", "BUSINESS", false],
+  ["DESIGN_REVIEW_REQUIRED", "Design Review", "BUSINESS", false],
+  ["IMPLEMENTATION_REQUIRED", "Implementation", "BUSINESS", false],
+  ["DOCUMENTATION_REQUIRED", "Documentation", "BUSINESS", false],
+  ["TEST_PLAN_REQUIRED", "Test Plan", "BUSINESS", false],
+  ["TEST_EXECUTION_REQUIRED", "Trusted Runner", "BUSINESS", false],
+  ["TEST_ASSESSMENT_REQUIRED", "Test Assessment", "BUSINESS", false],
+  ["FINAL_REVIEW_REQUIRED", "Final Review", "BUSINESS", false],
+  ["VERIFICATION_GATE_REQUIRED", "Verification Gate", "BUSINESS", false],
+  ["MERGE_REQUIRED", "Merge", "BUSINESS", false],
+  ["CLOSED", "Closure", "BUSINESS", true],
+  ["REPAIR_REQUIRED", "Repair", "BUSINESS", false],
+  ["REPLAN_REQUIRED", "Replan", "BUSINESS", false],
+  ["WAITING_RECONCILE", "Reconcile", "BUSINESS", false],
+  ["FAILED_TERMINAL", "Failed", "BUSINESS", true],
+  ["ARCHIVED", "Archived", "ARCHIVE", true],
+] as const;
+
+const CORE_V2_EDGES: readonly Omit<StateMachineEdge, "traversed">[] = [
+  edge("START", "ARCHITECT_REQUIRED", "NORMAL", "Task Intake 与 Context Plan"),
+  edge("ARCHITECT_REQUIRED", "DESIGN_REVIEW_REQUIRED", "NORMAL", "Spec、Design、Plan Artifact 完整"),
+  edge("DESIGN_REVIEW_REQUIRED", "IMPLEMENTATION_REQUIRED", "NORMAL", "Design Review PASSED"),
+  edge("DESIGN_REVIEW_REQUIRED", "REPLAN_REQUIRED", "REPAIR", "需求或设计 Finding"),
+  edge("REPLAN_REQUIRED", "ARCHITECT_REQUIRED", "REPAIR", "Spec Revision N+1"),
+  edge("IMPLEMENTATION_REQUIRED", "DOCUMENTATION_REQUIRED", "NORMAL", "Candidate Commit 与 Self Review 通过"),
+  edge("IMPLEMENTATION_REQUIRED", "REPAIR_REQUIRED", "REPAIR", "Implementation Finding"),
+  edge("DOCUMENTATION_REQUIRED", "TEST_PLAN_REQUIRED", "NORMAL", "Docs Impact 已绑定 Candidate"),
+  edge("DOCUMENTATION_REQUIRED", "REPAIR_REQUIRED", "REPAIR", "Documentation Finding"),
+  edge("TEST_PLAN_REQUIRED", "TEST_EXECUTION_REQUIRED", "NORMAL", "Requirement → Test Case 计划通过"),
+  edge("TEST_EXECUTION_REQUIRED", "TEST_ASSESSMENT_REQUIRED", "NORMAL", "Trusted Runner Evidence 已记录"),
+  edge("TEST_EXECUTION_REQUIRED", "WAITING_RECONCILE", "FAILURE", "测试外部结果未知"),
+  edge("TEST_ASSESSMENT_REQUIRED", "FINAL_REVIEW_REQUIRED", "NORMAL", "综合测试建议 PASS"),
+  edge("TEST_ASSESSMENT_REQUIRED", "REPAIR_REQUIRED", "REPAIR", "测试发现实现缺陷"),
+  edge("TEST_ASSESSMENT_REQUIRED", "WAITING_RECONCILE", "FAILURE", "测试结论 INCONCLUSIVE"),
+  edge("FINAL_REVIEW_REQUIRED", "VERIFICATION_GATE_REQUIRED", "NORMAL", "最终隔离 Review PASSED"),
+  edge("FINAL_REVIEW_REQUIRED", "REPAIR_REQUIRED", "REPAIR", "最终 Review Finding"),
+  edge("REPAIR_REQUIRED", "IMPLEMENTATION_REQUIRED", "REPAIR", "授权新 Implementation Generation"),
+  edge("WAITING_RECONCILE", "TEST_EXECUTION_REQUIRED", "REPAIR", "对账后恢复原测试"),
+  edge("VERIFICATION_GATE_REQUIRED", "MERGE_REQUIRED", "NORMAL", "确定性 Artifact Gate 通过"),
+  edge("MERGE_REQUIRED", "CLOSED", "NORMAL", "Merge 与 Knowledge Disposition 完整"),
+  edge("CLOSED", "ARCHIVED", "ARCHIVE", "Archive Receipt 确认"),
+  ...["ARCHITECT_REQUIRED", "DESIGN_REVIEW_REQUIRED", "IMPLEMENTATION_REQUIRED", "DOCUMENTATION_REQUIRED", "TEST_PLAN_REQUIRED", "TEST_EXECUTION_REQUIRED", "TEST_ASSESSMENT_REQUIRED", "FINAL_REVIEW_REQUIRED", "VERIFICATION_GATE_REQUIRED", "MERGE_REQUIRED", "REPAIR_REQUIRED", "REPLAN_REQUIRED"]
+    .map((from) => edge(from, "FAILED_TERMINAL", "FAILURE", "不可恢复或预算耗尽")),
+];
+
 export function buildCodingStateMachine(projection: CodingWorkflowProjection): TaskStateMachineTrace {
   const history = codingHistory(projection.events);
   const overall = codingOverall(projection);
@@ -193,6 +241,69 @@ export function buildTaskStateMachine(
     history,
     executions,
   });
+}
+
+export function buildCoreV2StateMachine(projection: CoreV2WorkflowProjection): TaskStateMachineTrace {
+  assertEventOrder(projection.lifecycle.events);
+  let current = "START";
+  const history: StateTransitionFact[] = [];
+  const targets: Readonly<Record<string, string>> = {
+    ArchitectRequired: "ARCHITECT_REQUIRED",
+    ArchitectArtifactsAccepted: "DESIGN_REVIEW_REQUIRED",
+    DesignReviewPassed: "IMPLEMENTATION_REQUIRED",
+    DesignReviewRequestedReplan: "REPLAN_REQUIRED",
+    SpecRevisionReplanned: "ARCHITECT_REQUIRED",
+    ImplementationAccepted: "DOCUMENTATION_REQUIRED",
+    ImplementationRepairRequired: "REPAIR_REQUIRED",
+    ImplementationRepairAuthorized: "IMPLEMENTATION_REQUIRED",
+    DocumentationRequestedRepair: "REPAIR_REQUIRED",
+    DocumentationGateAccepted: "TEST_PLAN_REQUIRED",
+    TestPlanAccepted: "TEST_EXECUTION_REQUIRED",
+    TrustedTestReconcileRequired: "WAITING_RECONCILE",
+    TrustedTestReconcileResumed: "TEST_EXECUTION_REQUIRED",
+    TrustedTestRunRecorded: "TEST_ASSESSMENT_REQUIRED",
+    TestVerificationPassed: "FINAL_REVIEW_REQUIRED",
+    TestVerificationRequestedRepair: "REPAIR_REQUIRED",
+    TestVerificationUnknown: "WAITING_RECONCILE",
+    FinalReviewPassed: "VERIFICATION_GATE_REQUIRED",
+    FinalReviewRequestedRepair: "REPAIR_REQUIRED",
+    VerificationGatePassed: "MERGE_REQUIRED",
+    TaskClosed: "CLOSED",
+    ArchiveArchived: "ARCHIVED",
+  };
+  for (const event of projection.lifecycle.events) {
+    const target = targets[event.type];
+    if (target === undefined || target === current) continue;
+    history.push(transition(event, current, target, target === "ARCHIVED" ? "ARCHIVE" : "BUSINESS"));
+    current = target;
+  }
+  if (projection.state === "FAILED_TERMINAL" && current !== "FAILED_TERMINAL") {
+    history.push({ sequence: projection.lifecycle.events.length + 1, eventType: "WorkflowFailedTerminal", from: current, to: "FAILED_TERMINAL", domain: "BUSINESS", at: projection.completedAt ?? projection.startedAt, ...(projection.error === null ? {} : { detail: projection.error }) });
+  }
+  const executions: StateMachineExecution[] = projection.attempts.map((attempt) => ({
+    kind: attempt.role === "REVIEW" ? "REVIEW_RUN" as const : "ROLE_RUN" as const,
+    id: attempt.run?.runId ?? attempt.attemptId,
+    state: attempt.state,
+    step: attempt.phase === "IMPLEMENTATION" ? "IMPLEMENTATION_REQUIRED"
+      : attempt.phase === "ARCHITECT" ? "ARCHITECT_REQUIRED"
+      : attempt.phase === "DESIGN_REVIEW" ? "DESIGN_REVIEW_REQUIRED"
+      : attempt.phase === "DOCUMENTATION" ? "DOCUMENTATION_REQUIRED"
+      : attempt.phase === "TEST_PLAN" ? "TEST_PLAN_REQUIRED"
+      : attempt.phase === "TEST_ASSESSMENT" ? "TEST_ASSESSMENT_REQUIRED"
+      : "FINAL_REVIEW_REQUIRED",
+    generation: attempt.generation,
+    attemptId: attempt.attemptId,
+    ...(attempt.run?.sessionId === undefined ? {} : { sessionId: attempt.run.sessionId }),
+    producer: attempt.runnerKind,
+    ...(attempt.startedAt === undefined ? {} : { startedAt: attempt.startedAt }),
+    ...(attempt.finishedAt === undefined ? {} : { finishedAt: attempt.finishedAt }),
+    evidenceDigests: attempt.run === undefined ? [attempt.attemptDigest] : [attempt.attemptDigest, attempt.run.evidenceDigest, attempt.run.eventsDigest],
+  }));
+  if (projection.lifecycle.trustedTestRun !== null) executions.push({ kind: "VERIFICATION", id: projection.lifecycle.trustedTestRun.runId, state: "RECORDED", step: "TEST_EXECUTION_REQUIRED", evidenceDigests: [projection.lifecycle.trustedTestRun.manifestDigest] });
+  if (projection.lifecycle.verificationGateDigest !== null) executions.push({ kind: "VERIFICATION", id: projection.lifecycle.verificationGateDigest, state: "PASSED", step: "VERIFICATION_GATE_REQUIRED", evidenceDigests: [projection.lifecycle.verificationGateDigest] });
+  const overall = projection.state === "FAILED_TERMINAL" ? "FAILED_TERMINAL" : projection.state === "CLOSED" ? "ARCHIVED" : projection.lifecycle.state;
+  return finalizeMachine({ workflow: "CoreV2Workflow", nodes: CORE_V2_NODES, edges: CORE_V2_EDGES,
+    business: projection.lifecycle.state, archive: projection.state === "CLOSED" ? "ARCHIVED" : "NOT_READY", overall, history, executions });
 }
 
 function codingHistory(events: readonly CodingWorkflowEvent[]): StateTransitionFact[] {
