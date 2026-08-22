@@ -497,7 +497,7 @@ documents:
     read_when: [task-create, coding-task-poc, workflow-change]
 
   - id: task-0020-manifest
-    path: docs/delivery/tasks/TASK-0020/task.yaml
+    path: docs/delivery/tasks/archive/2026-08-22-TASK-0020/task.yaml
     type: task-manifest
     status: active
     scope: task-state-machine-visibility
@@ -505,7 +505,7 @@ documents:
     read_when: [task-runtime-change, workflow-change, task-execution, task-close]
 
   - id: task-0020-spec
-    path: docs/delivery/tasks/TASK-0020/spec.md
+    path: docs/delivery/tasks/archive/2026-08-22-TASK-0020/spec.md
     type: task-spec
     status: active
     scope: task-state-machine-visibility
@@ -513,7 +513,7 @@ documents:
     read_when: [coding-task-poc, workflow-change, task-execution, task-close]
 
   - id: task-0020-design
-    path: docs/delivery/tasks/TASK-0020/design.md
+    path: docs/delivery/tasks/archive/2026-08-22-TASK-0020/design.md
     type: task-design
     status: active
     scope: task-state-machine-visibility
@@ -521,7 +521,7 @@ documents:
     read_when: [coding-task-poc, workflow-change, task-execution]
 
   - id: task-0020-plan
-    path: docs/delivery/tasks/TASK-0020/plan.md
+    path: docs/delivery/tasks/archive/2026-08-22-TASK-0020/plan.md
     type: task-plan
     status: active
     scope: task-state-machine-visibility
@@ -529,7 +529,7 @@ documents:
     read_when: [task-execution]
 
   - id: task-0020-verification
-    path: docs/delivery/tasks/TASK-0020/verification.md
+    path: docs/delivery/tasks/archive/2026-08-22-TASK-0020/verification.md
     type: verification
     status: active
     scope: task-state-machine-visibility
@@ -537,7 +537,7 @@ documents:
     read_when: [task-close, task-archive]
 
   - id: task-0020-docs-impact
-    path: docs/delivery/tasks/TASK-0020/docs-impact.yaml
+    path: docs/delivery/tasks/archive/2026-08-22-TASK-0020/docs-impact.yaml
     type: docs-impact
     status: active
     scope: task-state-machine-visibility
