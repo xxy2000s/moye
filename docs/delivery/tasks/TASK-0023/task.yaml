@@ -1,0 +1,26 @@
+schema_version: 1
+id: TASK-0023
+title: 将完整状态机呈现为实际路径点亮的 Graph 画布
+status: executing
+outcome:
+backlog_refs:
+  - BL-0024
+spec_revision: 1
+workflow_id: task/TASK-0023
+execution_mode: goal-bootstrap
+base_commit: 85b9e2a3b1f1b161c4cbda7a85d845fc92f12179
+archive:
+  status: not_ready
+  archived_at:
+  archived_path:
+result:
+  pull_request:
+  merge_commit:
+  closure_report: task-artifact://TASK-0023/verification.md
+  implementation_commit:
+execution_evidence:
+  executor_id: codex:/root
+  result_commit:
+  verification_refs:
+    - task-artifact://TASK-0023/verification.md
+  docs_impact_ref: task-artifact://TASK-0023/docs-impact.yaml

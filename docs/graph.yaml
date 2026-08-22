@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 50
+graph_revision: 51
 updated_at: "2026-08-22"
 
 entrypoints:
@@ -567,6 +567,62 @@ documents:
     scope: agent-events-viewer
     authority: backlog
     read_when: [task-create, coding-task-poc, trace-change]
+
+  - id: bl-0024-state-machine-graph
+    path: docs/delivery/backlog/BL-0024.yaml
+    type: backlog
+    status: converted_to_task
+    scope: task-state-machine-graph
+    authority: backlog
+    read_when: [task-create, coding-task-poc, trace-change]
+
+  - id: task-0023-manifest
+    path: docs/delivery/tasks/TASK-0023/task.yaml
+    type: task-manifest
+    status: active
+    scope: task-state-machine-graph
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution, task-close]
+
+  - id: task-0023-spec
+    path: docs/delivery/tasks/TASK-0023/spec.md
+    type: task-spec
+    status: active
+    scope: task-state-machine-graph
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution, task-close]
+
+  - id: task-0023-design
+    path: docs/delivery/tasks/TASK-0023/design.md
+    type: task-design
+    status: active
+    scope: task-state-machine-graph
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution]
+
+  - id: task-0023-plan
+    path: docs/delivery/tasks/TASK-0023/plan.md
+    type: task-plan
+    status: active
+    scope: task-state-machine-graph
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0023-verification
+    path: docs/delivery/tasks/TASK-0023/verification.md
+    type: verification
+    status: active
+    scope: task-state-machine-graph
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0023-docs-impact
+    path: docs/delivery/tasks/TASK-0023/docs-impact.yaml
+    type: docs-impact
+    status: active
+    scope: task-state-machine-graph
+    authority: task-evidence
+    read_when: [task-close, task-archive]
 
   - id: task-0022-manifest
     path: docs/delivery/tasks/archive/2026-08-22-TASK-0022/task.yaml
@@ -2399,6 +2455,42 @@ relations:
 
   - from: task-0022-manifest
     to: task-0021-manifest
+    type: refines
+
+  - from: backlog-index
+    to: bl-0024-state-machine-graph
+    type: indexes
+
+  - from: bl-0024-state-machine-graph
+    to: task-0023-manifest
+    type: schedules_into
+
+  - from: tasks-index
+    to: task-0023-manifest
+    type: indexes
+
+  - from: task-0023-spec
+    to: task-0023-manifest
+    type: belongs_to
+
+  - from: task-0023-design
+    to: task-0023-spec
+    type: refines
+
+  - from: task-0023-plan
+    to: task-0023-manifest
+    type: belongs_to
+
+  - from: task-0023-verification
+    to: task-0023-manifest
+    type: verifies
+
+  - from: task-0023-docs-impact
+    to: task-0023-manifest
+    type: reports_on
+
+  - from: task-0023-manifest
+    to: task-0020-manifest
     type: refines
 
   - from: bl-0013-agent-events-dialog

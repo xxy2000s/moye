@@ -36,6 +36,7 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 | [BL-0021](./BL-0021.yaml) | Converted | 在 Board 展示可审计的 Task 状态机 | TASK-0020 |
 | [BL-0022](./BL-0022.yaml) | Converted | 把真实多角色 Core 接入可全程审计的单任务产品流 | TASK-0021 |
 | [BL-0023](./BL-0023.yaml) | Converted | 把全部 Session Events 统一为 Chatbot 弹窗 | TASK-0022 |
+| [BL-0024](./BL-0024.yaml) | Converted | 将完整 Task 状态机呈现为实际路径点亮的 Graph 画布 | TASK-0023 |
 
 ## 本轮调度结果
 

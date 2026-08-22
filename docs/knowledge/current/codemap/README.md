@@ -18,7 +18,7 @@
 | `src/review/live-review.ts` | 调用独立 Codex/Claude 只读 Review，生成结构化 Verdict、Finding 和 Artifact | 不推进状态；Workflow 消费已验证结果 |
 | `src/trace/state-machine.ts`、`coding-trace.ts`、`telemetry.ts` | Coding/通用 Task Projection 到状态机 Definition/History、三层 Trace、稳定 OTel Span 与恢复建议的纯映射 | 无，只读派生；`TraceSink` 默认 Noop |
 | `src/demo/coding-fixture.ts`、`scripts/demo.ts`、`scripts/trace-compose.ts` | 隔离 Git Fixture、Fake/真实 CLI 可选 Demo 与可选 Phoenix 编排 | 不拥有生产状态；演示状态由 CodingTaskWorkflow 持有 |
-| `public/index.html`、`public/app.js` | 四列只读项目看板、Task 状态机 Definition/History、执行证据与全 Session 共用的 Chatbot Event Dialog；按对话/工具调用/工具结果/系统/错误筛选并可实时跟随 | 只读 Projection；不创建或推进状态 |
+| `public/index.html`、`public/app.js` | 四列只读项目看板、Definition/History/Executions 驱动的完整 SVG 状态机 Graph、路径筛选/缩放/节点证据下钻，以及全 Session 共用的 Chatbot Event Dialog | 只读 Projection；视觉布局、筛选和 Dialog 都不创建或推进状态 |
 
 ## 模块图
 
@@ -88,7 +88,7 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 - `coding/workflow.ts` 编排产品主路径并记录 Spec Revision/Step/Attempt/Role Session/Evidence/Binding；Blocking Finding 按 Recommended Action 创建 Repair Generation N+1 或 Replan Envelope Revision N+1，后续 Checkpoint/Verification 绑定新 Revision；未知外部结果等待 Durable Reconcile Signal；确定性成功/失败都进入 Archive；
 - `TaskAuthority` 保证同一 Task 只能由一个主 Workflow 推进，并允许相同 Coding owner 单调提升 Spec Revision；ProjectBoard 是二级查询投影；
 - `CoreClosureWorkflow/<task_id>` 通过 `ctx.run` 调用 Scenario Artifact Adapter，持久化 `EXECUTING → CLOSED` 查询投影；它不把 Board、Archive、Observer 或外层 Merge 状态写进 Core Outcome；
-- Board 通过 `TaskAuthority.get` 解析主 Workflow，不扫描目录推断 Runtime 状态；`state-machine.ts` 只从连续 Event History 标记实际 traversed 边，并列出 Repair/Replan/Reconcile/Failure/Archive 合法边、Projection/Event 一致性和全部执行实例；`/agent-events` 与 `/roles/<run-id>/events` 可增量读取当前 Implementation/Role/Review，完成后按摘要读取任一 Session，均校验 Projection allowlist、Execution Intent、受管根和 realpath；所有 Session 入口复用同一个 Chatbot Event Dialog，原始 JSON/JSONL 是次要证据动作；Board 无状态写入口；
+- Board 通过 `TaskAuthority.get` 解析主 Workflow，不扫描目录推断 Runtime 状态；`state-machine.ts` 只从连续 Event History 标记实际 traversed 边，并列出 Repair/Replan/Reconcile/Failure/Archive 合法边、Projection/Event 一致性和全部执行实例；`public/app.js` 把同一事实投影为 SVG Graph，实际边、当前节点、筛选、缩放和节点 Inspector 均为只读派生；`/agent-events` 与 `/roles/<run-id>/events` 可增量读取当前 Implementation/Role/Review，完成后按摘要读取任一 Session，均校验 Projection allowlist、Execution Intent、受管根和 realpath；所有 Session 入口复用同一个 Chatbot Event Dialog，原始 JSON/JSONL 是次要证据动作；Board 无状态写入口；
 - `telemetry.ts` 从持久化 Attempt 生成短 Span 并输出标准 OTLP/HTTP protobuf；导出失败只影响诊断，不回写 Task 业务终态；
 - Restate Journal 是运行时恢复事实，`docs/delivery/tasks` 是研发材料事实。
 

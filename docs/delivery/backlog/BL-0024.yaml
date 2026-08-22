@@ -1,0 +1,26 @@
+schema_version: 1
+id: "BL-0024"
+title: "将完整 Task 状态机呈现为实际路径点亮的 Graph 画布"
+kind: "feature"
+status: "converted_to_task"
+priority: "high"
+
+source_refs: []
+affected_areas:
+  - project-board
+  - state-machine-trace
+  - user-experience
+  - accessibility
+
+acceptance_outline:
+  - "Graph 画布同时呈现正常、Repair、Replan、Reconcile、失败和 Archive 的全部合法状态与转换"
+  - "实际 Event History 经过的节点和边实时点亮，当前状态与未经过路径有明确区别"
+  - "画布支持路径类型筛选、缩放复位、节点选择和 Event/Attempt/Session 证据下钻"
+  - "图形之外保留可访问的实际转换 History 与完整合法边列表，不以颜色作为唯一状态提示"
+  - "桌面与窄屏真实浏览器验收通过，不引入新的前端运行时依赖"
+
+resolution:
+  task_refs:
+    - TASK-0023
+  duplicate_of:
+  reason: "用户要求从全程审计页面直观看到全面状态机画布，并让真实运行路径点亮；TASK-0023 直接消费现有 Trace Definition/History 实现"

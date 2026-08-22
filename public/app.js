@@ -39,6 +39,7 @@ let taskDetailRefreshInFlight = false;
 let stopAgentEventsFollower = () => {};
 let agentEventsReturnFocus;
 let shouldRestoreAgentEventsFocus = true;
+let machineGraphUiState = { filter: "ALL", zoom: 1, selectedId: undefined };
 elements.dialog.addEventListener("close", () => {
   openedTaskSummary = undefined;
   openedTaskTraceSignature = "";
@@ -137,6 +138,7 @@ function cardShell(index, tagName) {
 async function openTask(summary) {
   openedTaskSummary = summary;
   openedTaskTraceSignature = "";
+  machineGraphUiState = { filter: "ALL", zoom: 1, selectedId: undefined };
   await loadTaskDetail(summary, true);
 }
 
@@ -224,6 +226,7 @@ function renderTaskTrace(trace) {
     <details class="advanced-panel"><summary><span>原始 Domain Event</span><small>状态机 History 的逐条来源</small></summary><ol class="timeline">${events}</ol>
       ${trace.durableRuntime.invocationsUrl ? `<a class="runtime-link" href="${escapeAttribute(trace.durableRuntime.invocationsUrl)}" target="_blank" rel="noreferrer">在 Restate 中核对 Journal ↗</a>` : ""}
     </details>`;
+  bindStateMachineGraph(trace.stateMachine);
 }
 
 function renderCodingTrace(trace, summary) {
@@ -336,15 +339,11 @@ function renderCodingTrace(trace, summary) {
       </div>
     </details>`;
 
+  bindStateMachineGraph(trace.stateMachine);
   bindAgentEventsDialog(trace);
 }
 
 function renderStateMachine(machine) {
-  const nodeLane = domain => machine.definition.nodes.filter(node => node.domain === domain).map(node => `
-    <li class="machine-node status-${node.status.toLowerCase()}">
-      <small>${escapeHtml(node.id)}</small><strong>${escapeHtml(node.label)}</strong>
-      <span>${node.status === "CURRENT" ? "当前" : node.status === "VISITED" ? "已进入" : "未进入"}</span>
-    </li>`).join("");
   const transitions = machine.history.map(item => `
     <li class="machine-transition domain-${item.domain.toLowerCase()}">
       <span class="sequence">${String(item.sequence).padStart(2, "0")}</span>
@@ -363,21 +362,226 @@ function renderStateMachine(machine) {
       ${item.producer ? `<small>Producer ${escapeHtml(item.producer)}</small>` : ""}
       ${item.evidenceDigests.length ? `<small>Evidence ${item.evidenceDigests.map(value => escapeHtml(shortDigest(value))).join(" · ")}</small>` : ""}
     </li>`).join("");
-  return `<section class="state-machine-section" aria-labelledby="state-machine-title">
+  return `<section class="state-machine-section" data-machine-graph aria-labelledby="state-machine-title">
     <div class="trace-heading"><div><p class="eyebrow">Runtime State Machine</p><h3 id="state-machine-title">合法转换与本次实际路径</h3></div><span class="machine-integrity ${machine.current.consistency.toLowerCase()}">${machine.current.consistency === "VERIFIED" ? "Event / Projection 一致" : "Event / Projection 不一致"}</span></div>
-    <p class="trace-note">定义说明代码允许哪些边；History 只列这次 Task 的 Domain Event 实际证明的转换。页面不能写状态。</p>
+    <p class="trace-note">Graph 直接消费 Runtime Definition、Event History 与 Execution Evidence。粗实线是本次实际路径；虚线是合法但未发生的 Repair、Replan、Reconcile、失败与 Archive 分支。页面不能写状态。</p>
     <div class="machine-current">
       <div><span>业务状态</span><strong>${escapeHtml(machine.current.business)}</strong></div>
       <div><span>Archive 状态</span><strong>${escapeHtml(machine.current.archive)}</strong></div>
       <div><span>整体落点</span><strong>${escapeHtml(machine.current.overall)}</strong></div>
       <div><span>Event 重建</span><strong>${escapeHtml(machine.current.historyCurrent)}</strong></div>
     </div>
-    <div class="machine-lane"><header><span>主状态机</span><small>Business Projection</small></header><ol>${nodeLane("BUSINESS")}</ol></div>
-    <div class="machine-lane archive-lane"><header><span>归档状态机</span><small>与业务 CLOSED 正交</small></header><ol>${nodeLane("ARCHIVE")}</ol></div>
+    ${renderMachineGraphCanvas(machine)}
     <div class="machine-history"><h4>实际转换 History · ${machine.history.length} 条</h4><ol>${transitions || "<li>尚无可还原的状态转换</li>"}</ol></div>
     <div class="machine-executions"><h4>执行实例 · ${machine.executions.length} 个</h4><ul>${executions || "<li>这个 Workflow 没有 Agent/Attempt 执行实例。</li>"}</ul></div>
     <details class="machine-definition"><summary><span>查看完整合法边</span><small>实线标记本次已走过；Repair/Failure/Archive 分支不会隐藏</small></summary><ul>${edges}</ul></details>
   </section>`;
+}
+
+const MACHINE_GRAPH_SIZE = { width: 1640, height: 760 };
+const CODING_GRAPH_POSITIONS = {
+  START: [30, 195], CONTEXT: [185, 195], WORKSPACE: [340, 195], IMPLEMENT: [495, 195],
+  SELF_REVIEW: [650, 195], VERIFY: [805, 195], REVIEW: [960, 195], MERGE: [1115, 195],
+  DOCS: [1270, 195], CLOSED: [1425, 195], REPLAN: [805, 35], WAITING_RECONCILE: [690, 440],
+  FAILED: [1080, 605], ARCHIVING: [1430, 405], ARCHIVED: [1430, 535], ARCHIVE_FAILED: [1260, 665],
+};
+const TASK_GRAPH_POSITIONS = {
+  START: [55, 195], RECEIVED: [260, 195], EXECUTING: [465, 195], VERIFYING: [670, 195], CLOSED: [875, 195],
+  ARCHIVE_PENDING: [1090, 405], ARCHIVED: [1350, 405], ARCHIVE_FAILED: [1350, 605],
+};
+
+function renderMachineGraphCanvas(machine) {
+  const positions = machineGraphPositions(machine);
+  const traversedCount = machine.definition.edges.filter(edge => edge.traversed).length;
+  const filter = (id, label, count) => `<button type="button" data-machine-filter="${id}" aria-pressed="${machineGraphUiState.filter === id}">${label}<span>${count}</span></button>`;
+  const edges = machine.definition.edges.map((edge, index) => renderMachineGraphEdge(edge, index, positions, machine)).join("");
+  const nodes = machine.definition.nodes.map(node => renderMachineGraphNode(node, positions.get(node.id))).join("");
+  const initialNode = machine.definition.nodes.find(node => node.id === machineGraphUiState.selectedId)
+    || machine.definition.nodes.find(node => node.status === "CURRENT")
+    || machine.definition.nodes[0];
+  return `<div class="machine-graph-shell">
+    <div class="machine-graph-toolbar">
+      <div class="machine-graph-filters" role="group" aria-label="状态机路径筛选">
+        ${filter("ALL", "全部流程", machine.definition.edges.length)}
+        ${filter("ACTUAL", "本次点亮", traversedCount)}
+        ${filter("NORMAL", "主流程", machine.definition.edges.filter(edge => edge.kind === "NORMAL").length)}
+        ${filter("REPAIR", "恢复 / 回滚", machine.definition.edges.filter(edge => edge.kind === "REPAIR").length)}
+        ${filter("FAILURE", "异常 / 失败", machine.definition.edges.filter(edge => edge.kind === "FAILURE").length)}
+        ${filter("ARCHIVE", "归档", machine.definition.edges.filter(edge => edge.kind === "ARCHIVE").length)}
+      </div>
+      <div class="machine-graph-zoom" role="group" aria-label="画布缩放">
+        <button type="button" data-machine-zoom="out" aria-label="缩小状态机画布">−</button>
+        <output data-machine-zoom-label>${Math.round(machineGraphUiState.zoom * 100)}%</output>
+        <button type="button" data-machine-zoom="in" aria-label="放大状态机画布">＋</button>
+        <button type="button" data-machine-zoom="fit">适配</button>
+      </div>
+    </div>
+    <div class="machine-graph-legend" aria-label="状态机图例">
+      <span class="legend-actual">实际经过</span><span class="legend-normal">合法主路径</span><span class="legend-repair">Repair / Replan / 恢复</span><span class="legend-failure">异常 / Reconcile / 失败</span><span class="legend-archive">Archive</span>
+    </div>
+    <div class="machine-graph-scroll" data-machine-graph-scroll tabindex="0" aria-label="完整状态机 Graph 画布，可横向滚动">
+      <svg class="machine-graph-svg" data-machine-svg viewBox="0 0 ${MACHINE_GRAPH_SIZE.width} ${MACHINE_GRAPH_SIZE.height}" width="${MACHINE_GRAPH_SIZE.width}" height="${MACHINE_GRAPH_SIZE.height}" role="img" aria-labelledby="machine-graph-svg-title machine-graph-svg-desc">
+        <title id="machine-graph-svg-title">${escapeHtml(machine.workflow)} 完整状态机</title>
+        <desc id="machine-graph-svg-desc">包含 ${machine.definition.nodes.length} 个状态和 ${machine.definition.edges.length} 条合法转换；本次实际经过 ${traversedCount} 条。</desc>
+        <defs>
+          <marker id="machine-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" /></marker>
+          <filter id="machine-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        <g class="machine-graph-lanes" aria-hidden="true">
+          <rect x="18" y="130" width="1535" height="155" rx="18" class="lane-business"/><text x="40" y="158">BUSINESS / HAPPY PATH</text>
+          <rect x="18" y="330" width="1215" height="410" rx="18" class="lane-recovery"/><text x="40" y="360">RECOVERY / EXCEPTION</text>
+          <rect x="1250" y="330" width="303" height="410" rx="18" class="lane-archive"/><text x="1275" y="360">ARCHIVE</text>
+        </g>
+        <g class="machine-graph-edges">${edges}</g>
+        <g class="machine-graph-nodes">${nodes}</g>
+      </svg>
+    </div>
+    <div class="machine-graph-inspector" data-machine-inspector aria-live="polite">${renderMachineNodeInspector(machine, initialNode?.id)}</div>
+  </div>`;
+}
+
+function machineGraphPositions(machine) {
+  const source = machine.workflow === "CodingTaskWorkflow" ? CODING_GRAPH_POSITIONS : TASK_GRAPH_POSITIONS;
+  const positions = new Map();
+  let fallback = 0;
+  machine.definition.nodes.forEach(node => {
+    const position = source[node.id] || [80 + (fallback % 8) * 180, 500 + Math.floor(fallback / 8) * 105];
+    positions.set(node.id, position);
+    if (!source[node.id]) fallback += 1;
+  });
+  return positions;
+}
+
+function renderMachineGraphNode(node, position = [40, 600]) {
+  const [x, y] = position;
+  const state = node.status === "CURRENT" ? "当前状态" : node.status === "VISITED" ? "实际经过" : "尚未经过";
+  return `<foreignObject x="${x}" y="${y}" width="136" height="84">
+    <button xmlns="http://www.w3.org/1999/xhtml" type="button" class="machine-graph-node status-${node.status.toLowerCase()} domain-${node.domain.toLowerCase()} ${node.terminal ? "terminal" : ""}" data-machine-node="${escapeHtml(node.id)}" aria-label="${escapeHtml(`${node.label}，${state}`)}" aria-pressed="false">
+      <small>${escapeHtml(node.id)}</small><strong>${escapeHtml(node.label)}</strong><span>${state}</span>
+    </button>
+  </foreignObject>`;
+}
+
+function renderMachineGraphEdge(edge, index, positions, machine) {
+  const from = positions.get(edge.from);
+  const to = positions.get(edge.to);
+  if (!from || !to) return "";
+  const path = machineGraphEdgePath(edge, from, to, index);
+  const transition = machine.history.find(item => item.from === edge.from && item.to === edge.to);
+  const marker = edge.traversed ? "machine-arrow" : "machine-arrow";
+  const labelPosition = machineGraphEdgeLabelPosition(from, to, edge);
+  return `<g class="machine-graph-edge-group kind-${edge.kind.toLowerCase()} ${edge.traversed ? "traversed" : ""}" data-machine-edge-kind="${edge.kind}" data-machine-edge-traversed="${edge.traversed}">
+    <path d="${path}" class="machine-graph-edge" marker-end="url(#${marker})"><title>${escapeHtml(`${edge.from} → ${edge.to} · ${edge.label}${edge.traversed ? " · 本次实际经过" : ""}`)}</title></path>
+    ${edge.traversed ? `<g class="machine-edge-proof" transform="translate(${labelPosition[0]} ${labelPosition[1]})"><rect x="-25" y="-10" width="50" height="20" rx="10"/><text text-anchor="middle" dominant-baseline="central">#${transition?.sequence ?? "✓"} 实际</text></g>` : ""}
+  </g>`;
+}
+
+function machineGraphEdgePath(edge, fromPosition, toPosition, index) {
+  const from = graphNodeCenter(fromPosition);
+  const to = graphNodeCenter(toPosition);
+  const endpoints = graphEdgeEndpoints(from, to);
+  const [sx, sy, tx, ty] = endpoints;
+  if (edge.to === "FAILED") {
+    const bend = 510 + (index % 5) * 12;
+    return `M ${sx} ${sy} C ${sx} ${bend}, ${tx - 150} ${ty}, ${tx} ${ty}`;
+  }
+  if (edge.to === "WAITING_RECONCILE") {
+    return `M ${sx} ${sy} C ${sx} ${sy + 115}, ${tx} ${ty - 115}, ${tx} ${ty}`;
+  }
+  if (edge.from === "WAITING_RECONCILE") {
+    return `M ${sx} ${sy} C ${sx} ${sy - 105}, ${tx} ${ty + 150}, ${tx} ${ty}`;
+  }
+  if (edge.kind === "REPAIR" || tx < sx || Math.abs(tx - sx) > 220) {
+    const lift = Math.min(sy, ty) - (edge.kind === "REPAIR" ? 75 : 55) - (index % 3) * 12;
+    return `M ${sx} ${sy} C ${sx} ${lift}, ${tx} ${lift}, ${tx} ${ty}`;
+  }
+  return `M ${sx} ${sy} C ${(sx + tx) / 2} ${sy}, ${(sx + tx) / 2} ${ty}, ${tx} ${ty}`;
+}
+
+function graphNodeCenter([x, y]) {
+  return [x + 68, y + 42];
+}
+
+function graphEdgeEndpoints([fx, fy], [tx, ty]) {
+  const dx = tx - fx;
+  const dy = ty - fy;
+  const length = Math.max(1, Math.hypot(dx, dy));
+  const xInset = Math.min(64, Math.abs(dx) / length * 68);
+  const yInset = Math.min(38, Math.abs(dy) / length * 42);
+  return [fx + Math.sign(dx) * xInset, fy + Math.sign(dy) * yInset, tx - Math.sign(dx) * xInset, ty - Math.sign(dy) * yInset];
+}
+
+function machineGraphEdgeLabelPosition(fromPosition, toPosition, edge) {
+  const [fx, fy] = graphNodeCenter(fromPosition);
+  const [tx, ty] = graphNodeCenter(toPosition);
+  if (edge.to === "FAILED") return [(fx + tx) / 2, Math.max(fy, ty) - 24];
+  if (edge.to === "WAITING_RECONCILE" || edge.from === "WAITING_RECONCILE") return [(fx + tx) / 2, (fy + ty) / 2];
+  return [(fx + tx) / 2, (fy + ty) / 2 - 15];
+}
+
+function renderMachineNodeInspector(machine, nodeId) {
+  const node = machine.definition.nodes.find(item => item.id === nodeId) || machine.definition.nodes[0];
+  if (!node) return "";
+  const incoming = machine.definition.edges.filter(edge => edge.to === node.id);
+  const outgoing = machine.definition.edges.filter(edge => edge.from === node.id);
+  const history = machine.history.filter(item => item.from === node.id || item.to === node.id);
+  const executions = machine.executions.filter(item => item.step === node.id || (node.id === "ARCHIVING" && item.step === "ARCHIVE"));
+  const edgeItems = (items, direction) => items.map(edge => `<li class="kind-${edge.kind.toLowerCase()} ${edge.traversed ? "traversed" : ""}"><code>${escapeHtml(direction === "in" ? edge.from : edge.to)}</code><span>${escapeHtml(machineEdgeLabel(edge.kind))}${edge.traversed ? " · 实际" : ""}</span><small>${escapeHtml(edge.label)}</small></li>`).join("");
+  return `<header><div><span>${escapeHtml(node.domain)} · ${node.terminal ? "终态" : "可转换状态"}</span><h4>${escapeHtml(node.label)}</h4><code>${escapeHtml(node.id)}</code></div><strong class="status-${node.status.toLowerCase()}">${node.status === "CURRENT" ? "当前" : node.status === "VISITED" ? "已进入" : "未进入"}</strong></header>
+    <div class="machine-inspector-counts"><span>入边 <strong>${incoming.length}</strong></span><span>出边 <strong>${outgoing.length}</strong></span><span>实际 Event <strong>${history.length}</strong></span><span>执行实例 <strong>${executions.length}</strong></span></div>
+    <div class="machine-inspector-grid">
+      <section><h5>进入这个状态</h5><ul>${edgeItems(incoming, "in") || "<li>没有入边</li>"}</ul></section>
+      <section><h5>从这里继续</h5><ul>${edgeItems(outgoing, "out") || "<li>没有出边</li>"}</ul></section>
+    </div>
+    ${history.length ? `<p class="machine-inspector-note">实际关联：${history.map(item => `#${item.sequence} ${escapeHtml(item.eventType)}`).join(" · ")}</p>` : `<p class="machine-inspector-note">本次运行没有进入该状态；这里只展示代码允许的合法转换。</p>`}
+    ${executions.length ? `<p class="machine-inspector-note">Evidence：${executions.map(item => `${escapeHtml(executionKindLabel(item.kind))} ${escapeHtml(item.state)}${item.sessionId ? ` · Session ${escapeHtml(item.sessionId)}` : ""}`).join("；")}</p>` : ""}`;
+}
+
+function bindStateMachineGraph(machine) {
+  const section = elements.detail.querySelector("[data-machine-graph]");
+  if (!(section instanceof HTMLElement)) return;
+  const svg = section.querySelector("[data-machine-svg]");
+  const scroll = section.querySelector("[data-machine-graph-scroll]");
+  const inspector = section.querySelector("[data-machine-inspector]");
+  if (!(svg instanceof SVGElement) || !(scroll instanceof HTMLElement) || !(inspector instanceof HTMLElement)) return;
+  const nodeExists = machine.definition.nodes.some(node => node.id === machineGraphUiState.selectedId);
+  if (!nodeExists) machineGraphUiState.selectedId = machine.definition.nodes.find(node => node.status === "CURRENT")?.id || machine.definition.nodes[0]?.id;
+
+  const selectNode = nodeId => {
+    machineGraphUiState.selectedId = nodeId;
+    section.querySelectorAll("[data-machine-node]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.machineNode === nodeId)));
+    inspector.innerHTML = renderMachineNodeInspector(machine, nodeId);
+  };
+  section.querySelectorAll("[data-machine-node]").forEach(button => button.addEventListener("click", () => selectNode(button.dataset.machineNode)));
+
+  const applyFilter = filter => {
+    machineGraphUiState.filter = filter;
+    section.querySelectorAll("[data-machine-filter]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.machineFilter === filter)));
+    section.querySelectorAll("[data-machine-edge-kind]").forEach(group => {
+      const visible = filter === "ALL" || (filter === "ACTUAL" ? group.dataset.machineEdgeTraversed === "true" : group.dataset.machineEdgeKind === filter);
+      group.toggleAttribute("hidden", !visible);
+    });
+  };
+  section.querySelectorAll("[data-machine-filter]").forEach(button => button.addEventListener("click", () => applyFilter(button.dataset.machineFilter)));
+
+  const applyZoom = value => {
+    machineGraphUiState.zoom = Math.min(1.6, Math.max(.55, value));
+    svg.style.width = `${MACHINE_GRAPH_SIZE.width * machineGraphUiState.zoom}px`;
+    svg.style.height = `${MACHINE_GRAPH_SIZE.height * machineGraphUiState.zoom}px`;
+    section.querySelector("[data-machine-zoom-label]").textContent = `${Math.round(machineGraphUiState.zoom * 100)}%`;
+  };
+  section.querySelectorAll("[data-machine-zoom]").forEach(button => button.addEventListener("click", () => {
+    const action = button.dataset.machineZoom;
+    if (action === "in") applyZoom(machineGraphUiState.zoom + .15);
+    else if (action === "out") applyZoom(machineGraphUiState.zoom - .15);
+    else applyZoom(Math.min(1, scroll.clientWidth / MACHINE_GRAPH_SIZE.width));
+  }));
+
+  selectNode(machineGraphUiState.selectedId);
+  applyFilter(machineGraphUiState.filter);
+  applyZoom(machineGraphUiState.zoom);
+  const current = section.querySelector(`[data-machine-node="${CSS.escape(machine.current.overall)}"]`);
+  if (current instanceof HTMLElement) current.scrollIntoView({ block: "nearest", inline: "center" });
 }
 
 function machineEdgeLabel(kind) {

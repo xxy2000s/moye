@@ -80,6 +80,14 @@ describe("npm run demo", () => {
     expect(html).toContain("本页面只读，不创建或推进 Task");
     expect(html).toContain("等待归档，或失败终止后等待后续动作");
     expect(app).toContain("Runtime State Machine");
+    expect(app).toContain("renderMachineGraphCanvas");
+    expect(app).toContain("data-machine-graph");
+    expect(app).toContain("data-machine-filter");
+    expect(app).toContain("本次点亮");
+    expect(app).toContain("恢复 / 回滚");
+    expect(app).toContain("WAITING_RECONCILE");
+    expect(app).toContain("renderMachineNodeInspector");
+    expect(app).toContain("machine.definition.edges");
     expect(app).toContain('task.outcome === "FAILED_TERMINAL" ? "FAILED" : task.state');
     expect(app).toContain("实际转换 History");
     expect(app).toContain("查看完整合法边");

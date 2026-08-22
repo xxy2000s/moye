@@ -88,7 +88,7 @@ CLI 统一使用 `npm run cli -- <command>`；项目 Agent 应使用 [moye-task-
 Coding Task 出现在看板后，点击卡片默认先看到：
 
 1. 当前业务状态、独立 Archive 状态，以及 Projection 与 Event History 是否一致；
-2. 当前版本允许的 normal、Repair、failure、archive 边，与这次 Task 实际走过的边；
+2. 一张完整状态机 Graph 画布：normal、Repair、Replan、Reconcile、failure、archive 全部合法边常驻可查，实际 Event 走过的节点和边实时点亮；可按本次路径、主流程、恢复/回滚、异常/失败和归档筛选，并点击节点下钻 Event、Attempt、Session 与 Evidence；
 3. 每条实际转换绑定的 Event sequence/type/time；
 4. 所有 Context/Implementation/Self Review/Review/Docs Gate Session、Spec Revision、StepAttempt Generation、Verification、Evidence 和 Git 结果；
 5. 每条 Context、Implementation、Self Review、Review、Replan 与 Docs Gate Session 都在同一个 Chatbot 弹窗中展示；可按对话、工具调用、工具结果、系统和错误筛选，运行中增量跟随，原始 JSON/JSONL 只作为下钻与导出证据。
@@ -145,4 +145,4 @@ Moye 使用自己定义的 Task、证据和知识治理原则建设自身：
 
 ## 当前边界
 
-本轮已经实现 Task/Archive Workflow、真实多角色本地 Coding Workflow、Fake/真实 Codex 与 Claude Print Adapter、Self Review、独立 Review、Repair、Spec Revision N+1 Replan、显式 WAITING_RECONCILE/Resume、成功与失败归档、全部 Session JSONL 下钻、只读状态机看板、幂等 Worktree/Verification/Merge、Board Projection、三层 Trace、OTLP、受控 Artifact 下载和统一 CLI。多 Daemon/Lease/Fencing、远程 Git Provider/PR、鉴权、多租户，以及 Metrics/Logs/告警/SLO 等生产运营能力仍属于后续阶段。
+本轮已经实现 Task/Archive Workflow、真实多角色本地 Coding Workflow、Fake/真实 Codex 与 Claude Print Adapter、Self Review、独立 Review、Repair、Spec Revision N+1 Replan、显式 WAITING_RECONCILE/Resume、成功与失败归档、全部 Session JSONL 下钻、实际路径点亮的完整只读状态机 Graph、幂等 Worktree/Verification/Merge、Board Projection、三层 Trace、OTLP、受控 Artifact 下载和统一 CLI。多 Daemon/Lease/Fencing、远程 Git Provider/PR、鉴权、多租户，以及 Metrics/Logs/告警/SLO 等生产运营能力仍属于后续阶段。

@@ -1,0 +1,84 @@
+schema_version: 1
+task_id: TASK-0023
+graph_revision: 51
+intents: [task-create, coding-task-poc, docs-change]
+changed_paths:
+  - README.md
+  - docs/delivery/backlog/BL-0024.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/tasks/TASK-0023/task.yaml
+  - docs/delivery/tasks/TASK-0023/spec.md
+  - docs/delivery/tasks/TASK-0023/design.md
+  - docs/delivery/tasks/TASK-0023/plan.md
+  - docs/delivery/tasks/TASK-0023/verification.md
+  - docs/delivery/tasks/TASK-0023/docs-impact.yaml
+  - docs/delivery/tasks/README.md
+  - docs/graph.yaml
+  - docs/knowledge/current/architecture/poc-01-restate.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - public/app.js
+  - public/styles.css
+  - tests/e2e/demo.test.ts
+docs:
+  read:
+    - agent-contract
+    - root-readme
+    - docs-index
+    - codemap
+    - document-control-plane
+    - backlog-index
+    - tasks-index
+    - task-runtime-kernel
+    - overnight-multi-task-goal
+    - finding-backlog-docs-not-projected
+    - bl-0008-backlog-projection-sync
+    - bl-0002-single-agent-coding-loop
+    - restate-poc-architecture
+    - durable-runtime-pitfalls
+    - sources-index
+    - local-restate-poc-runbook
+    - runbooks-index
+    - architecture-index
+    - meta-index
+    - adr-0002-doc-lifecycle-roles
+    - bl-0024-state-machine-graph
+    - task-0023-manifest
+    - task-0023-spec
+    - task-0023-design
+    - task-0023-plan
+    - task-0023-verification
+    - task-0023-docs-impact
+  reviewed:
+    moye-task-control-skill: { outcome: unchanged, reason: "Task 与文档门禁操作方式不变" }
+    architecture-overview: { outcome: unchanged, reason: "只增强只读审计呈现，不改变系统边界或状态所有权" }
+    restate-poc-architecture: { outcome: updated, reason: "登记 Definition/History 驱动的状态机 Graph 画布" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "不改变 Restate 选型或 durable execution" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "遵循既有 Source/Backlog/Task/Archive 文档生命周期" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "不改变 Worktree、Git 或 Artifact 边界" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "仅将既有 Core 状态机事实可视化，不扩展控制语义" }
+    task-spec-document-closure-brainstorm: { outcome: unchanged, reason: "不改变 Task Spec 或文档关闭协议" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "画布仍以 Event/Projection 为权威，未引入第二状态机" }
+    local-restate-poc-runbook: { outcome: updated, reason: "增加 Graph 画布的操作和实际路径核对方式" }
+    codemap: { outcome: updated, reason: "登记状态机 SVG 画布与交互控制器" }
+    task-0013-manifest: { outcome: unchanged, reason: "不改变 Core ControlDecision 历史事实" }
+    task-0014-manifest: { outcome: unchanged, reason: "不改变 Role Attempt 协议" }
+    task-0015-manifest: { outcome: unchanged, reason: "不改变 Review/Finding 语义" }
+    task-0016-manifest: { outcome: unchanged, reason: "只呈现既有 Retry/Repair/Replan 语义" }
+    task-0017-manifest: { outcome: unchanged, reason: "不改变 Observer 或 Docs Gate" }
+    task-0018-manifest: { outcome: unchanged, reason: "不改变 Core Closure 历史事实" }
+    task-0019-manifest: { outcome: unchanged, reason: "不改写真实页面编码闭环证据" }
+    task-0020-manifest: { outcome: unchanged, reason: "增强其状态机审计呈现，不改写历史证据" }
+    task-0021-manifest: { outcome: unchanged, reason: "不改变真实多角色产品流" }
+    task-0022-manifest: { outcome: unchanged, reason: "不改变 Chatbot Events 历史事实" }
+    task-0002-manifest: { outcome: unchanged, reason: "不改变 Backlog Sync" }
+    task-0003-manifest: { outcome: unchanged, reason: "不改变 TaskEnvelope 协议" }
+    task-0004-manifest: { outcome: unchanged, reason: "不改变 Git Effect" }
+    task-0005-manifest: { outcome: unchanged, reason: "不改变 Agent Adapter" }
+    task-0006-manifest: { outcome: unchanged, reason: "不改变 Coding Workflow" }
+    task-0007-manifest: { outcome: unchanged, reason: "Graph 仍属于既有 Trace Viewer" }
+    task-0008-manifest: { outcome: unchanged, reason: "不改变 Demo 历史事实" }
+    task-0009-manifest: { outcome: unchanged, reason: "不改变 OTLP/Phoenix 边界" }
+    task-0001-manifest: { outcome: unchanged, reason: "不改变 Task/Archive 生命周期" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "继续使用原生浏览器 JavaScript 与 SVG，无新增依赖" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "不改变 Trace 后端与业务状态边界" }
