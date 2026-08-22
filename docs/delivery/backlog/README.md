@@ -40,6 +40,7 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 | [BL-0025](./BL-0025.yaml) | Converted | 将 Task 详情重构为居中画布优先的审计工作区 | TASK-0024 |
 | [BL-0026](./BL-0026.yaml) | Converted | 补齐状态机节点的执行与系统管控下钻 | TASK-0025 |
 | [BL-0027](./BL-0027.yaml) | Converted | 重构节点 Inspector 并内联 Agent Events 预览 | TASK-0026 |
+| [BL-0028](./BL-0028.yaml) | Converted | 优化状态机边标签与合法路径详情 | TASK-0027 |
 
 ## 本轮调度结果
 

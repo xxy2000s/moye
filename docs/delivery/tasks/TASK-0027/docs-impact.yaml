@@ -1,0 +1,32 @@
+schema_version: 1
+task_id: TASK-0027
+graph_revision: 59
+intents: [finding-intake, task-create, coding-task-poc, docs-change]
+changed_paths:
+  - public/app.js
+  - public/styles.css
+  - tests/e2e/demo.test.ts
+  - docs/sources/findings/state-machine-edge-labels-and-legal-path-detail-dense.md
+  - docs/delivery/backlog/BL-0028.yaml
+  - docs/delivery/tasks/TASK-0027/task.yaml
+  - docs/graph.yaml
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - findings-index
+    - backlog-index
+    - tasks-index
+    - task-runtime-kernel
+    - restate-poc-architecture
+    - durable-runtime-pitfalls
+    - meta-index
+    - adr-0002-doc-lifecycle-roles
+    - root-readme
+    - sources-index
+    - architecture-index
+    - local-restate-poc-runbook
+    - runbooks-index
+  reviewed: {}

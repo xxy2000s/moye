@@ -1,0 +1,26 @@
+schema_version: 1
+id: "BL-0028"
+title: "优化状态机边标签与合法路径详情"
+kind: "bug"
+status: "converted_to_task"
+priority: "high"
+
+source_refs:
+  - finding-state-machine-edge-labels-legal-path-detail-dense
+affected_areas:
+  - project-board
+  - state-machine-graph
+  - node-inspector
+  - task-audit
+
+acceptance_outline:
+  - "画布默认不铺陈未经过合法边的长说明，实际路径标签仍清楚可见"
+  - "合法进入与离开路径使用扁平可扫描列表，并明确本次经过或合法但未发生"
+  - "完整状态转换语义仍可从节点详情读取，不丢失 Definition 事实"
+  - "桌面和移动端长状态名、说明与状态标记不溢出"
+
+resolution:
+  task_refs:
+    - TASK-0027
+  duplicate_of:
+  reason: "用户在真实页面验收中确认画布边说明小字和合法路径旧式卡片影响理解；TASK-0027 直接修复"

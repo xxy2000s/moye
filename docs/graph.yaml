@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 58
+graph_revision: 59
 updated_at: "2026-08-22"
 
 entrypoints:
@@ -661,6 +661,70 @@ documents:
     type: docs-impact
     status: archived
     scope: node-agent-event-inspector
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: finding-state-machine-edge-labels-legal-path-detail-dense
+    path: docs/sources/findings/state-machine-edge-labels-and-legal-path-detail-dense.md
+    type: finding
+    status: confirmed
+    scope: state-machine-edge-legibility
+    authority: finding
+    read_when: [coding-task-poc, task-execution, trace-change]
+
+  - id: bl-0028-state-machine-edge-legibility
+    path: docs/delivery/backlog/BL-0028.yaml
+    type: backlog
+    status: converted_to_task
+    scope: state-machine-edge-legibility
+    authority: backlog
+    read_when: [task-create, coding-task-poc, trace-change]
+
+  - id: task-0027-manifest
+    path: docs/delivery/tasks/TASK-0027/task.yaml
+    type: task-manifest
+    status: active
+    scope: state-machine-edge-legibility
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution, task-close]
+
+  - id: task-0027-spec
+    path: docs/delivery/tasks/TASK-0027/spec.md
+    type: task-spec
+    status: active
+    scope: state-machine-edge-legibility
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution, task-close]
+
+  - id: task-0027-design
+    path: docs/delivery/tasks/TASK-0027/design.md
+    type: task-design
+    status: active
+    scope: state-machine-edge-legibility
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution]
+
+  - id: task-0027-plan
+    path: docs/delivery/tasks/TASK-0027/plan.md
+    type: task-plan
+    status: active
+    scope: state-machine-edge-legibility
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0027-verification
+    path: docs/delivery/tasks/TASK-0027/verification.md
+    type: verification
+    status: active
+    scope: state-machine-edge-legibility
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0027-docs-impact
+    path: docs/delivery/tasks/TASK-0027/docs-impact.yaml
+    type: docs-impact
+    status: active
+    scope: state-machine-edge-legibility
     authority: task-evidence
     read_when: [task-close, task-archive]
 
@@ -2799,6 +2863,50 @@ relations:
 
   - from: task-0026-manifest
     to: task-0025-manifest
+    type: refines
+
+  - from: findings-index
+    to: finding-state-machine-edge-labels-legal-path-detail-dense
+    type: indexes
+
+  - from: finding-state-machine-edge-labels-legal-path-detail-dense
+    to: bl-0028-state-machine-edge-legibility
+    type: creates_backlog
+
+  - from: backlog-index
+    to: bl-0028-state-machine-edge-legibility
+    type: indexes
+
+  - from: bl-0028-state-machine-edge-legibility
+    to: task-0027-manifest
+    type: schedules_into
+
+  - from: tasks-index
+    to: task-0027-manifest
+    type: indexes
+
+  - from: task-0027-spec
+    to: task-0027-manifest
+    type: belongs_to
+
+  - from: task-0027-design
+    to: task-0027-spec
+    type: refines
+
+  - from: task-0027-plan
+    to: task-0027-manifest
+    type: belongs_to
+
+  - from: task-0027-verification
+    to: task-0027-manifest
+    type: verifies
+
+  - from: task-0027-docs-impact
+    to: task-0027-manifest
+    type: reports_on
+
+  - from: task-0027-manifest
+    to: task-0026-manifest
     type: refines
 
   - from: bl-0013-agent-events-dialog
