@@ -92,6 +92,8 @@ npm run runtime:status
 
 CLI 统一使用 `npm run cli -- <command>`；项目 Agent 应使用 [moye-task-control Skill](./.agents/skills/moye-task-control/SKILL.md) 路由文档依赖和关闭门禁。
 
+Bootstrap Task 的 `validate/create/close` 会在进入 Runtime 前校验冻结 `base_commit`；升级前遗留的已失败 Invocation 只能使用受限的 `recover-bootstrap-failure` successor 收敛，禁止删除 Invocation、直接编辑 Projection 或扫描 Git 伪造 Board 状态。
+
 Coding Task 出现在看板后，点击卡片会路由到可直达和刷新的全屏 `/tasks/<task_id>` Task Audit Page；右上角“返回项目”回到 `/`，浏览器 Back/Forward 同样有效。默认视图以状态摘要和 Graph 画布为中心，不预占详情侧栏：
 
 1. 当前业务状态、独立 Archive 状态，以及 Projection 与 Event History 是否一致；

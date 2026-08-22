@@ -211,6 +211,41 @@ export function failTask(
   };
 }
 
+export function recoverFailedBootstrapTask(
+  projection: TaskProjection,
+  sourceWorkflowRef: string,
+  error: string,
+  now: string,
+): TaskProjection {
+  if (projection.state !== "EXECUTING" || projection.archiveStatus !== "NOT_READY" ||
+      projection.outcome !== undefined || projection.execution !== undefined) {
+    throw new MoyeError({
+      code: "BOOTSTRAP_RECOVERY_STATE_INVALID",
+      category: "CONFLICT",
+      message: `Task ${projection.taskId} is not an unevidenced EXECUTING bootstrap failure`,
+    });
+  }
+  if (!sourceWorkflowRef.trim()) {
+    throw new MoyeError({
+      code: "BOOTSTRAP_RECOVERY_SOURCE_REQUIRED",
+      category: "VALIDATION",
+      message: "Bootstrap recovery requires the failed source Workflow reference",
+    });
+  }
+  const recovering: TaskProjection = {
+    ...projection,
+    currentStep: "bootstrap-failure-recovery",
+    lastEventAt: now,
+    events: [...projection.events, {
+      sequence: projection.events.length + 1,
+      type: "TaskRecoveryStarted",
+      at: now,
+      detail: sourceWorkflowRef,
+    }],
+  };
+  return failTask(recovering, error, now);
+}
+
 export function recordBootstrapEvidence(
   projection: TaskProjection,
   evidence: TaskExecutionEvidence,

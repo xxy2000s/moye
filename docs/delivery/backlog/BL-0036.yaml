@@ -1,0 +1,13 @@
+schema_version: 1
+id: "BL-0036"
+title: "接入 Implementation、Self Review 与 Repair Checkpoint"
+kind: "feature"
+status: "ready"
+priority: "high"
+source_refs: [core-v2-five-plus-one-agent-requirements]
+affected_areas: [implementation-agent, workspace, checkpoint, repair]
+acceptance_outline:
+  - "Implementation 真实修改代码和测试并冻结 Candidate Checkpoint"
+  - "每个 Attempt 生成结构化 Self Review"
+  - "实现 Finding 驱动 N+1 Repair Attempt，旧 Attempt 不复活"
+resolution: { task_refs: [], duplicate_of: null, reason: "补齐可返工的实现阶段" }

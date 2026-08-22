@@ -2,7 +2,7 @@ schema_version: 1
 id: "BL-0031"
 title: "让 Bootstrap 基线错误在派发前失败并收敛 Runtime 终态"
 kind: "bug"
-status: "captured"
+status: "converted_to_task"
 priority: "high"
 
 source_refs:
@@ -20,6 +20,6 @@ acceptance_outline:
   - "真实 Restate E2E 覆盖错误基线、Invocation Failure 与最终 Board 一致性"
 
 resolution:
-  task_refs: []
+  task_refs: ["TASK-0029"]
   duplicate_of:
-  reason: "TASK-0028 的真实关闭失败证明当前只保护了证据完整性，尚未完成业务失败收敛"
+  reason: "TASK-0029 负责派发前预检、派发后失败收敛和 TASK-0028 的合法恢复"

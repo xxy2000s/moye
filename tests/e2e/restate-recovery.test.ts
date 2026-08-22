@@ -1,4 +1,4 @@
-import { spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { execFileSync, spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdtemp, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import net from "node:net";
@@ -10,7 +10,10 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { ProjectBoardSnapshot } from "../../src/domain/board.js";
 import type { TaskProjection } from "../../src/domain/task.js";
 import { invoke, send } from "../../src/restate/ingress.js";
-import type { TaskWorkflowInput } from "../../src/restate/services.js";
+import type {
+  BootstrapFailureRecoveryInput,
+  TaskWorkflowInput,
+} from "../../src/restate/services.js";
 
 const root = process.cwd();
 const containerName = `moye-restate-e2e-${process.pid}`;
@@ -18,13 +21,17 @@ let restateIngressPort = 0;
 let restateAdminPort = 0;
 let servicePort = 0;
 let boardPort = 0;
+let legacyServicePort = 0;
 let service: ChildProcess | undefined;
+let legacyService: ChildProcess | undefined;
 let serviceLogs = "";
+let bootstrapRepositoryRoot = "";
+let legacyRecoveryInput: BootstrapFailureRecoveryInput;
 
 describe("Restate process-loss recovery", () => {
   beforeAll(async () => {
-    [restateIngressPort, restateAdminPort, servicePort, boardPort] = await Promise.all([
-      freePort(), freePort(), freePort(), freePort(),
+    [restateIngressPort, restateAdminPort, servicePort, boardPort, legacyServicePort] = await Promise.all([
+      freePort(), freePort(), freePort(), freePort(), freePort(),
     ]);
     docker([
       "run", "--rm", "-d", "--name", containerName,
@@ -33,17 +40,33 @@ describe("Restate process-loss recovery", () => {
       "docker.restate.dev/restatedev/restate:1.7.4",
     ]);
     await waitUntil(async () => (await fetch(adminUrl("/health"))).ok, 20_000);
+    const bootstrapFixture = await bootstrapEvidenceRepository();
+    bootstrapRepositoryRoot = bootstrapFixture.root;
+    legacyRecoveryInput = bootstrapFixture.recoveryInput;
+    legacyService = await startLegacyService();
+    await registerDeployment(legacyServicePort);
+    const legacyReceipt = await send(
+      ingressUrl(),
+      "TaskWorkflow",
+      legacyRecoveryInput.taskId,
+      "run",
+      legacyRecoveryInput.sourceInput,
+    );
+    legacyRecoveryInput = { ...legacyRecoveryInput, sourceInvocationRef: legacyReceipt.invocationId };
+    await waitForTask(legacyRecoveryInput.taskId, (task) => task.state === "EXECUTING", 10_000);
+    await waitUntil(
+      async () => serviceLogs.includes("BOOTSTRAP_BASE_COMMIT_NOT_FROZEN"),
+      10_000,
+    );
+    legacyService.kill("SIGKILL");
+    await waitForExit(legacyService, 10_000);
     service = await startService();
-    const registration = await fetch(adminUrl("/deployments"), {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ uri: `http://host.docker.internal:${servicePort}` }),
-    });
-    if (!registration.ok) throw new Error(`Discovery failed: ${await registration.text()}`);
+    await registerDeployment(servicePort);
   }, 40_000);
 
   afterAll(async () => {
     service?.kill("SIGTERM");
+    legacyService?.kill("SIGTERM");
     spawnSync("docker", ["rm", "-f", containerName], { stdio: "ignore" });
   });
 
@@ -91,8 +114,8 @@ describe("Restate process-loss recovery", () => {
       `2026-08-19-${taskId}`,
     ]);
     expect(board.archived.map((task) => task.taskId)).toContain(taskId);
-    expect(board.active).toHaveLength(0);
-    expect(board.archivePending).toHaveLength(0);
+    expect(board.active.filter((task) => task.taskId === taskId)).toHaveLength(0);
+    expect(board.archivePending.filter((task) => task.taskId === taskId)).toHaveLength(0);
     const detailResponse = await fetch(`http://127.0.0.1:${boardPort}/api/tasks/${taskId}`);
     expect(detailResponse.status).toBe(200);
     expect(await detailResponse.json()).toEqual(finalTask);
@@ -141,7 +164,71 @@ describe("Restate process-loss recovery", () => {
     expect(finalTask.events.filter((event) => event.type === "TaskClosed")).toHaveLength(1);
     expect(existsSync(path.join(archiveRoot, `2026-08-19-${taskId}`))).toBe(true);
   }, 45_000);
+
+  it("rejects an invalid bootstrap baseline before creating authority or projection", async () => {
+    const taskId = "TASK-E2E-PREFLIGHT";
+    const input = bootstrapTaskInput(taskId, "moye-e2e", bootstrapRepositoryRoot);
+    await expect(invoke(ingressUrl(), "TaskWorkflow", taskId, "run", input))
+      .rejects.toThrow(/base_commit was not frozen/);
+    expect(await invoke(ingressUrl(), "TaskAuthority", taskId, "get")).toBeNull();
+    expect(await invoke(ingressUrl(), "TaskWorkflow", taskId, "status")).toBeNull();
+    const board = await invoke<ProjectBoardSnapshot>(ingressUrl(), "ProjectBoard", "moye-e2e", "get");
+    expect([...board.active, ...board.archivePending, ...board.archived].map((task) => task.taskId))
+      .not.toContain(taskId);
+  }, 20_000);
+
+  it("terminalizes and archives a deterministic bootstrap failure after dispatch", async () => {
+    const taskId = "TASK-E2E-BOOTSTRAP-FAILURE";
+    const input = bootstrapTaskInput(taskId, "moye-e2e", bootstrapRepositoryRoot);
+    const finalTask = await invoke<TaskProjection>(ingressUrl(), "TaskWorkflow", taskId, "run", input);
+    expect(finalTask).toMatchObject({
+      state: "CLOSED",
+      outcome: "FAILED_TERMINAL",
+      archiveStatus: "ARCHIVED",
+    });
+    expect(finalTask.events.filter((event) => event.type === "TaskClosed")).toHaveLength(1);
+    const repeated = await invoke<TaskProjection>(ingressUrl(), "TaskWorkflow", taskId, "status");
+    expect(repeated).toEqual(finalTask);
+    const board = await invoke<ProjectBoardSnapshot>(ingressUrl(), "ProjectBoard", "moye-e2e", "get");
+    expect(board.archived.find((task) => task.taskId === taskId)).toEqual(finalTask);
+  }, 30_000);
+
+  it("hands a legacy failed Workflow to one append-only recovery successor", async () => {
+    const original = await invoke<TaskProjection | null>(
+      ingressUrl(), "TaskWorkflow", legacyRecoveryInput.taskId, "status",
+    );
+    expect(original).toMatchObject({ state: "EXECUTING", archiveStatus: "NOT_READY" });
+    const recovered = await invoke<TaskProjection>(
+      ingressUrl(),
+      "BootstrapFailureRecoveryWorkflow",
+      legacyRecoveryInput.taskId,
+      "run",
+      legacyRecoveryInput,
+    );
+    expect(recovered).toMatchObject({
+      state: "CLOSED",
+      outcome: "FAILED_TERMINAL",
+      archiveStatus: "ARCHIVED",
+    });
+    expect(recovered.events.filter((event) => event.type === "TaskRecoveryStarted")).toHaveLength(1);
+    expect(recovered.events.filter((event) => event.type === "TaskClosed")).toHaveLength(1);
+    expect(await invoke(ingressUrl(), "TaskWorkflow", legacyRecoveryInput.taskId, "status"))
+      .toEqual(original);
+    expect(await invoke(ingressUrl(), "TaskAuthority", legacyRecoveryInput.taskId, "get"))
+      .toMatchObject({ recoveryWorkflowRef: expect.stringContaining("BootstrapFailureRecoveryWorkflow") });
+    const detailResponse = await fetch(`http://127.0.0.1:${boardPort}/api/tasks/${legacyRecoveryInput.taskId}`);
+    expect(await detailResponse.json()).toEqual(recovered);
+  }, 30_000);
 });
+
+async function registerDeployment(port: number): Promise<void> {
+  const registration = await fetch(adminUrl("/deployments"), {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ uri: `http://host.docker.internal:${port}` }),
+  });
+  if (!registration.ok) throw new Error(`Discovery failed: ${await registration.text()}`);
+}
 
 async function startService(): Promise<ChildProcess> {
   const child = spawn(process.execPath, ["--import", "tsx", "src/index.ts"], {
@@ -152,6 +239,7 @@ async function startService(): Promise<ChildProcess> {
       MOYE_BOARD_PORT: String(boardPort),
       RESTATE_INGRESS_URL: ingressUrl(),
       MOYE_PROJECT_ID: "moye-e2e",
+      MOYE_REPOSITORY_ROOT: bootstrapRepositoryRoot,
     },
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -159,6 +247,123 @@ async function startService(): Promise<ChildProcess> {
   child.stderr?.on("data", (chunk: Buffer) => { serviceLogs += chunk.toString(); });
   await waitUntil(async () => canConnect(servicePort), 10_000);
   return child;
+}
+
+async function startLegacyService(): Promise<ChildProcess> {
+  const child = spawn(process.execPath, ["--import", "tsx", "tests/fixtures/legacy-bootstrap-service.ts"], {
+    cwd: root,
+    env: { ...process.env, RESTATE_SERVICE_PORT: String(legacyServicePort) },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  child.stdout?.on("data", (chunk: Buffer) => { serviceLogs += chunk.toString(); });
+  child.stderr?.on("data", (chunk: Buffer) => { serviceLogs += chunk.toString(); });
+  await waitUntil(async () => canConnect(legacyServicePort), 10_000);
+  return child;
+}
+
+async function bootstrapEvidenceRepository(): Promise<{
+  root: string;
+  recoveryInput: BootstrapFailureRecoveryInput;
+}> {
+  const fixtureRoot = await mkdtemp(path.join(os.tmpdir(), "moye-bootstrap-e2e-"));
+  git(fixtureRoot, ["init", "-b", "master"]);
+  git(fixtureRoot, ["config", "user.email", "moye@example.invalid"]);
+  git(fixtureRoot, ["config", "user.name", "Moye E2E"]);
+  await writeFile(path.join(fixtureRoot, "README.md"), "bootstrap e2e\n");
+  const oldBase = commit(fixtureRoot, "base");
+  await writeFile(path.join(fixtureRoot, "intermediate.txt"), "parent of invalid introductions\n");
+  commit(fixtureRoot, "intermediate");
+  for (const taskId of ["TASK-E2E-PREFLIGHT", "TASK-E2E-LEGACY-RECOVERY"]) {
+    const taskRoot = path.join(fixtureRoot, "docs", "delivery", "tasks", taskId);
+    await mkdir(taskRoot, { recursive: true });
+    await writeFile(path.join(taskRoot, "task.yaml"), bootstrapManifest(taskId, oldBase));
+  }
+  commit(fixtureRoot, "introduce invalid bootstrap tasks");
+
+  const validTaskId = "TASK-E2E-BOOTSTRAP-FAILURE";
+  const validBase = git(fixtureRoot, ["rev-parse", "HEAD"]).trim();
+  const validRoot = path.join(fixtureRoot, "docs", "delivery", "tasks", validTaskId);
+  await mkdir(validRoot, { recursive: true });
+  await mkdir(path.join(fixtureRoot, "scripts"), { recursive: true });
+  await writeFile(path.join(validRoot, "task.yaml"), bootstrapManifest(validTaskId, validBase));
+  await writeFile(path.join(validRoot, "verification.md"), "> 状态：Pending\n");
+  await writeFile(path.join(validRoot, "docs-impact.yaml"), [
+    "schema_version: 1",
+    `task_id: ${validTaskId}`,
+    "changed_paths:",
+    `  - docs/delivery/tasks/${validTaskId}/task.yaml`,
+    `  - docs/delivery/tasks/${validTaskId}/verification.md`,
+    `  - docs/delivery/tasks/${validTaskId}/docs-impact.yaml`,
+    "  - scripts/docs_graph.rb",
+    "docs:",
+    "  read: []",
+    "  reviewed: {}",
+    "",
+  ].join("\n"));
+  await writeFile(path.join(fixtureRoot, "scripts", "docs_graph.rb"), "exit 0\n");
+  commit(fixtureRoot, "introduce valid bootstrap failure task");
+
+  const sourceInput = bootstrapTaskInput("TASK-E2E-LEGACY-RECOVERY", "moye-e2e", fixtureRoot);
+  return {
+    root: fixtureRoot,
+    recoveryInput: {
+      taskId: sourceInput.taskId,
+      projectId: sourceInput.projectId,
+      specRevision: sourceInput.specRevision,
+      sourceWorkflowRef: `restate://TaskWorkflow/${sourceInput.taskId}`,
+      sourceInvocationRef: "legacy-bootstrap-e2e-invocation",
+      expectedFailureCode: "BOOTSTRAP_BASE_COMMIT_NOT_FROZEN",
+      sourceInput,
+    },
+  };
+}
+
+function bootstrapManifest(taskId: string, baseCommit: string): string {
+  return [
+    "schema_version: 1",
+    `id: ${taskId}`,
+    "status: received",
+    "spec_revision: 1",
+    "execution_mode: goal-bootstrap",
+    `base_commit: ${baseCommit}`,
+    "archive:",
+    "  status: not_ready",
+    "result: {}",
+    "",
+  ].join("\n");
+}
+
+function bootstrapTaskInput(taskId: string, projectId: string, repositoryRoot: string): TaskWorkflowInput {
+  const resultCommit = git(repositoryRoot, ["rev-parse", "HEAD"]).trim();
+  const activeTasksRoot = path.join(repositoryRoot, "docs", "delivery", "tasks");
+  return {
+    taskId,
+    projectId,
+    title: `Bootstrap ${taskId}`,
+    specRevision: 1,
+    backlogRefs: [],
+    activeTasksRoot,
+    archiveRoot: path.join(activeTasksRoot, "archive"),
+    effectCounterPath: path.join(repositoryRoot, ".runtime", `${taskId}.txt`),
+    archivedAt: "2026-08-23T00:00:00.000Z",
+    bootstrapEvidence: {
+      kind: "GOAL_BOOTSTRAP",
+      executorId: "e2e/root",
+      resultCommit,
+      verificationRefs: [`task-artifact://${taskId}/verification.md`],
+      docsImpactRef: `task-artifact://${taskId}/docs-impact.yaml`,
+    },
+  };
+}
+
+function commit(repositoryRoot: string, message: string): string {
+  git(repositoryRoot, ["add", "."]);
+  git(repositoryRoot, ["commit", "-m", message]);
+  return git(repositoryRoot, ["rev-parse", "HEAD"]).trim();
+}
+
+function git(repositoryRoot: string, args: readonly string[]): string {
+  return execFileSync("git", ["-C", repositoryRoot, ...args], { encoding: "utf8" });
 }
 
 async function waitForTask(

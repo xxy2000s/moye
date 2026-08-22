@@ -1,0 +1,13 @@
+schema_version: 1
+id: "BL-0037"
+title: "接入真实 Documentation Agent 与文档门禁"
+kind: "feature"
+status: "ready"
+priority: "high"
+source_refs: [core-v2-five-plus-one-agent-requirements]
+affected_areas: [documentation-agent, docs-graph, docs-impact]
+acceptance_outline:
+  - "Documentation Agent 修改当前项目事实而非只写 disposition receipt"
+  - "实际 changed paths 触发 Context Re-route、Graph 与 Docs Impact 校验"
+  - "Documentation 与 Knowledge 候选权限明确分离"
+resolution: { task_refs: [], duplicate_of: null, reason: "让文档成为主流程可验证阶段" }

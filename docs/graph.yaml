@@ -1,6 +1,6 @@
 schema_version: 1
-graph_revision: 62
-updated_at: "2026-08-22"
+graph_revision: 63
+updated_at: "2026-08-23"
 
 entrypoints:
   human: root-readme
@@ -761,49 +761,49 @@ documents:
     read_when: [task-create, operations-change, incident-response]
 
   - id: task-0028-manifest
-    path: docs/delivery/tasks/TASK-0028/task.yaml
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0028/task.yaml
     type: task-manifest
-    status: active
+    status: archived
     scope: task-detail-routing-runtime-persistence
     authority: task-artifact
     read_when: [coding-task-poc, task-execution, task-close]
 
   - id: task-0028-spec
-    path: docs/delivery/tasks/TASK-0028/spec.md
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0028/spec.md
     type: task-spec
-    status: active
+    status: archived
     scope: task-detail-routing-runtime-persistence
     authority: task-artifact
     read_when: [coding-task-poc, task-execution, task-close]
 
   - id: task-0028-design
-    path: docs/delivery/tasks/TASK-0028/design.md
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0028/design.md
     type: task-design
-    status: active
+    status: archived
     scope: task-detail-routing-runtime-persistence
     authority: task-artifact
     read_when: [coding-task-poc, task-execution]
 
   - id: task-0028-plan
-    path: docs/delivery/tasks/TASK-0028/plan.md
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0028/plan.md
     type: task-plan
-    status: active
+    status: archived
     scope: task-detail-routing-runtime-persistence
     authority: task-artifact
     read_when: [task-execution]
 
   - id: task-0028-verification
-    path: docs/delivery/tasks/TASK-0028/verification.md
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0028/verification.md
     type: verification
-    status: active
+    status: archived
     scope: task-detail-routing-runtime-persistence
     authority: task-evidence
     read_when: [task-close, task-archive]
 
   - id: task-0028-docs-impact
-    path: docs/delivery/tasks/TASK-0028/docs-impact.yaml
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0028/docs-impact.yaml
     type: docs-impact
-    status: active
+    status: archived
     scope: task-detail-routing-runtime-persistence
     authority: task-evidence
     read_when: [task-close, task-archive]
@@ -811,7 +811,7 @@ documents:
   - id: incident-bootstrap-base-gate-projection-executing
     path: docs/sources/incidents/2026-08-22-bootstrap-base-commit-gate-left-projection-executing.md
     type: incident
-    status: open-mitigated
+    status: resolved
     scope: bootstrap-closure-failure-convergence
     authority: incident-record
     read_when: [incident-response, task-runtime-change, task-close]
@@ -819,10 +819,146 @@ documents:
   - id: bl-0031-bootstrap-base-failure-convergence
     path: docs/delivery/backlog/BL-0031.yaml
     type: backlog
-    status: captured
+    status: converted_to_task
     scope: bootstrap-closure-failure-convergence
     authority: backlog
     read_when: [task-create, task-runtime-change, incident-response]
+
+  - id: core-v2-five-plus-one-agent-requirements
+    path: docs/sources/brainstorm/core-v2-five-plus-one-agent-requirements.md
+    type: brainstorm
+    status: draft
+    scope: core-v2-productization
+    authority: idea-input
+    read_when: [requirement-discovery, task-create, workflow-change]
+
+  - id: core-v2-roadmap
+    path: docs/delivery/core-v2-roadmap.md
+    type: delivery-plan
+    status: active
+    scope: core-v2-productization
+    authority: delivery-plan
+    read_when: [task-create, task-execution, task-close]
+
+  - id: bl-0032-core-v2-architecture
+    path: docs/delivery/backlog/BL-0032.yaml
+    type: backlog
+    status: ready
+    scope: core-v2-architecture
+    authority: backlog
+    read_when: [task-create, architecture-change]
+
+  - id: bl-0033-core-v2-artifacts
+    path: docs/delivery/backlog/BL-0033.yaml
+    type: backlog
+    status: ready
+    scope: core-v2-artifacts
+    authority: backlog
+    read_when: [task-create, task-lifecycle-design]
+
+  - id: bl-0034-core-v2-role-runtime
+    path: docs/delivery/backlog/BL-0034.yaml
+    type: backlog
+    status: ready
+    scope: core-v2-role-runtime
+    authority: backlog
+    read_when: [task-create, workflow-change]
+
+  - id: bl-0035-core-v2-architect-review
+    path: docs/delivery/backlog/BL-0035.yaml
+    type: backlog
+    status: ready
+    scope: core-v2-architect-design-review
+    authority: backlog
+    read_when: [task-create, workflow-change]
+
+  - id: bl-0036-core-v2-implementation
+    path: docs/delivery/backlog/BL-0036.yaml
+    type: backlog
+    status: ready
+    scope: core-v2-implementation
+    authority: backlog
+    read_when: [task-create, workflow-change]
+
+  - id: bl-0037-core-v2-documentation
+    path: docs/delivery/backlog/BL-0037.yaml
+    type: backlog
+    status: ready
+    scope: core-v2-documentation
+    authority: backlog
+    read_when: [task-create, docs-change]
+
+  - id: bl-0038-core-v2-test-verification
+    path: docs/delivery/backlog/BL-0038.yaml
+    type: backlog
+    status: ready
+    scope: core-v2-test-verification
+    authority: backlog
+    read_when: [task-create, workflow-change]
+
+  - id: bl-0039-core-v2-final-review
+    path: docs/delivery/backlog/BL-0039.yaml
+    type: backlog
+    status: ready
+    scope: core-v2-final-review
+    authority: backlog
+    read_when: [task-create, workflow-change]
+
+  - id: bl-0040-core-v2-unified-acceptance
+    path: docs/delivery/backlog/BL-0040.yaml
+    type: backlog
+    status: ready
+    scope: core-v2-unified-acceptance
+    authority: backlog
+    read_when: [task-create, workflow-change]
+
+  - id: task-0029-manifest
+    path: docs/delivery/tasks/TASK-0029/task.yaml
+    type: task-manifest
+    status: active
+    scope: bootstrap-failure-convergence
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0029-spec
+    path: docs/delivery/tasks/TASK-0029/spec.md
+    type: task-spec
+    status: active
+    scope: bootstrap-failure-convergence
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0029-design
+    path: docs/delivery/tasks/TASK-0029/design.md
+    type: task-design
+    status: active
+    scope: bootstrap-failure-convergence
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0029-plan
+    path: docs/delivery/tasks/TASK-0029/plan.md
+    type: task-plan
+    status: active
+    scope: bootstrap-failure-convergence
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0029-verification
+    path: docs/delivery/tasks/TASK-0029/verification.md
+    type: verification
+    status: active
+    scope: bootstrap-failure-convergence
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0029-docs-impact
+    path: docs/delivery/tasks/TASK-0029/docs-impact.yaml
+    type: docs-impact
+    status: active
+    scope: bootstrap-failure-convergence
+    authority: task-evidence
+    read_when: [task-close, task-archive]
 
   - id: task-0025-manifest
     path: docs/delivery/tasks/archive/2026-08-22-TASK-0025/task.yaml
@@ -3041,7 +3177,7 @@ relations:
     to: task-0028-manifest
     type: schedules_into
 
-  - from: tasks-index
+  - from: archived-tasks-index
     to: task-0028-manifest
     type: indexes
 
@@ -3088,6 +3224,182 @@ relations:
   - from: backlog-index
     to: bl-0031-bootstrap-base-failure-convergence
     type: indexes
+
+  - from: brainstorm-index
+    to: core-v2-five-plus-one-agent-requirements
+    type: indexes
+
+  - from: core-v2-five-plus-one-agent-requirements
+    to: multi-agent-core-closure-requirements
+    type: supersedes
+
+  - from: core-v2-roadmap
+    to: core-v2-five-plus-one-agent-requirements
+    type: derived_from
+
+  - from: delivery-index
+    to: core-v2-roadmap
+    type: indexes
+
+  - from: core-v2-roadmap
+    to: bl-0031-bootstrap-base-failure-convergence
+    type: coordinates
+
+  - from: core-v2-roadmap
+    to: bl-0006-production-observability
+    type: coordinates
+
+  - from: core-v2-roadmap
+    to: bl-0007-knowledge-feedback-loop
+    type: coordinates
+
+  - from: backlog-index
+    to: bl-0032-core-v2-architecture
+    type: indexes
+
+  - from: backlog-index
+    to: bl-0033-core-v2-artifacts
+    type: indexes
+
+  - from: backlog-index
+    to: bl-0034-core-v2-role-runtime
+    type: indexes
+
+  - from: backlog-index
+    to: bl-0035-core-v2-architect-review
+    type: indexes
+
+  - from: backlog-index
+    to: bl-0036-core-v2-implementation
+    type: indexes
+
+  - from: backlog-index
+    to: bl-0037-core-v2-documentation
+    type: indexes
+
+  - from: backlog-index
+    to: bl-0038-core-v2-test-verification
+    type: indexes
+
+  - from: backlog-index
+    to: bl-0039-core-v2-final-review
+    type: indexes
+
+  - from: backlog-index
+    to: bl-0040-core-v2-unified-acceptance
+    type: indexes
+
+  - from: core-v2-five-plus-one-agent-requirements
+    to: bl-0032-core-v2-architecture
+    type: creates_backlog
+
+  - from: core-v2-five-plus-one-agent-requirements
+    to: bl-0033-core-v2-artifacts
+    type: creates_backlog
+
+  - from: core-v2-five-plus-one-agent-requirements
+    to: bl-0034-core-v2-role-runtime
+    type: creates_backlog
+
+  - from: core-v2-five-plus-one-agent-requirements
+    to: bl-0035-core-v2-architect-review
+    type: creates_backlog
+
+  - from: core-v2-five-plus-one-agent-requirements
+    to: bl-0036-core-v2-implementation
+    type: creates_backlog
+
+  - from: core-v2-five-plus-one-agent-requirements
+    to: bl-0037-core-v2-documentation
+    type: creates_backlog
+
+  - from: core-v2-five-plus-one-agent-requirements
+    to: bl-0038-core-v2-test-verification
+    type: creates_backlog
+
+  - from: core-v2-five-plus-one-agent-requirements
+    to: bl-0039-core-v2-final-review
+    type: creates_backlog
+
+  - from: core-v2-five-plus-one-agent-requirements
+    to: bl-0040-core-v2-unified-acceptance
+    type: creates_backlog
+
+  - from: core-v2-roadmap
+    to: bl-0032-core-v2-architecture
+    type: coordinates
+
+  - from: core-v2-roadmap
+    to: bl-0033-core-v2-artifacts
+    type: coordinates
+
+  - from: core-v2-roadmap
+    to: bl-0034-core-v2-role-runtime
+    type: coordinates
+
+  - from: core-v2-roadmap
+    to: bl-0035-core-v2-architect-review
+    type: coordinates
+
+  - from: core-v2-roadmap
+    to: bl-0036-core-v2-implementation
+    type: coordinates
+
+  - from: core-v2-roadmap
+    to: bl-0037-core-v2-documentation
+    type: coordinates
+
+  - from: core-v2-roadmap
+    to: bl-0038-core-v2-test-verification
+    type: coordinates
+
+  - from: core-v2-roadmap
+    to: bl-0039-core-v2-final-review
+    type: coordinates
+
+  - from: core-v2-roadmap
+    to: bl-0040-core-v2-unified-acceptance
+    type: coordinates
+
+  - from: bl-0031-bootstrap-base-failure-convergence
+    to: task-0029-manifest
+    type: schedules_into
+
+  - from: tasks-index
+    to: task-0029-manifest
+    type: indexes
+
+  - from: task-0029-spec
+    to: task-0029-manifest
+    type: belongs_to
+
+  - from: task-0029-design
+    to: task-0029-spec
+    type: refines
+
+  - from: task-0029-plan
+    to: task-0029-manifest
+    type: belongs_to
+
+  - from: task-0029-verification
+    to: task-0029-manifest
+    type: verifies
+
+  - from: task-0029-docs-impact
+    to: task-0029-manifest
+    type: reports_on
+
+  - from: task-0029-manifest
+    to: incident-bootstrap-base-gate-projection-executing
+    type: implements_resolution_for
+
+  - from: task-0029-manifest
+    to: core-v2-roadmap
+    type: implements_slice_of
+
+  - from: task-0029-manifest
+    to: task-runtime-kernel
+    type: implements_slice_of
 
   - from: bl-0013-agent-events-dialog
     to: task-0012-manifest

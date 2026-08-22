@@ -1,5 +1,7 @@
 # Delivery：从 Backlog 到归档 Task
 
+当前长期执行序列见 [Core v2 Delivery Roadmap](./core-v2-roadmap.md)。它只记录交付编排和进度；当前架构事实仍由 Architecture、ADR、代码和测试证明。
+
 Delivery 管理已经进入研发交付链路的工作对象：
 
 ```text

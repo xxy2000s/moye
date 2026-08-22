@@ -27,6 +27,7 @@ Brainstorm 不要求每次讨论都立即收敛，但不能被 Agent 当作当�
 
 ## 当前草稿
 
+- [Core v2：5+1 Agent 研发闭环需求基线](./core-v2-five-plus-one-agent-requirements.md)：修订后的 Core 母需求，固定五类主流程 Agent、非阻塞 Observer/Knowledge、独立 Test/Verification 与确定性 Gate。
 - [多 Agent 研发 Core 闭环需求基线](./multi-agent-core-closure-requirements.md)：当前 Core First 的母需求入口，固定 Orchestrator、Docs、Implementation、Review、Observer 多角色边界，并拆出 ControlDecision、Repair/Replan、Docs Impact 和统一 Closure 验收。
 - [Task 全生命周期与 Worktree 收束](./task-lifecycle-and-worktree-convergence.md)：历史 Brainstorm；保留完整 Harness、Worktree 收束和 Restate 边界讨论，当前 Core 路线和 REQ-LC 拆分已被需求基线取代。
 - [编码任务 Spec、文档与外围闭环](./task-spec-and-document-closure.md)：拆分 Task Control Plane、编码 Spec 协议和长期知识文档，并探索如何通过文档义务形成关闭 Gate。

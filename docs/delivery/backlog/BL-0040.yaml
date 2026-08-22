@@ -1,0 +1,13 @@
+schema_version: 1
+id: "BL-0040"
+title: "统一 Core v2 Workflow 并完成真实故障矩阵验收"
+kind: "feature"
+status: "ready"
+priority: "high"
+source_refs: [core-v2-five-plus-one-agent-requirements]
+affected_areas: [core-workflow, cli, merge, closure, archive, e2e]
+acceptance_outline:
+  - "Intake 到 Archive 的五类主流程 Agent 全部由单一 Workflow 推进"
+  - "Repair、Replan、Reconcile、Merge、Closure 和 Archive 唯一收敛"
+  - "CLI 发起并全程查询真实任务，故障矩阵不以 Fake/Mock 证明产品能力"
+resolution: { task_refs: [], duplicate_of: null, reason: "Core v2 最终集成与验收" }

@@ -7,14 +7,17 @@ import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 
 import {
+  persistBootstrapFailure,
   persistBootstrapClosure,
   verifyAndPersistBootstrapClosure,
   verifyBootstrapEvidence,
+  verifyBootstrapPreflight,
 } from "../../src/archive/bootstrap-closure.js";
 import { resolveExistingTaskArtifact } from "../../src/archive/task-artifacts.js";
 import {
   closeTask,
   createTaskProjection,
+  failTask,
   recordBootstrapEvidence,
   transitionTask,
   updateArchiveStatus,
@@ -22,6 +25,29 @@ import {
 import type { TaskExecutionEvidence, TaskProjection } from "../../src/domain/task.js";
 
 describe("bootstrap closure artifact", () => {
+  it("preflights the frozen manifest before Runtime state exists", async () => {
+    const fixture = await evidenceRepository();
+    await expect(verifyBootstrapPreflight({
+      repositoryRoot: fixture.root,
+      taskId: fixture.taskId,
+    })).resolves.toMatchObject({
+      taskId: fixture.taskId,
+      baseCommit: fixture.baseCommit,
+      introductionParent: fixture.baseCommit,
+    });
+  });
+
+  it("rejects preflight when a later commit tries to repair an unfrozen base", async () => {
+    const fixture = await evidenceRepository();
+    const current = await readFile(fixture.manifestPath, "utf8");
+    await writeFile(fixture.manifestPath, current.replace(fixture.baseCommit, fixture.resultCommit));
+    commit(fixture.root, "change frozen base");
+    await expect(verifyBootstrapPreflight({
+      repositoryRoot: fixture.root,
+      taskId: fixture.taskId,
+    })).rejects.toMatchObject({ code: "BOOTSTRAP_BASE_COMMIT_NOT_FROZEN" });
+  });
+
   it("persists truthful closure state idempotently before archive", async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), "moye-bootstrap-"));
     const taskRoot = path.join(root, "TASK-BOOTSTRAP");
@@ -56,6 +82,48 @@ describe("bootstrap closure artifact", () => {
     expect(second).toBe(first);
     expect(manifest).toMatchObject({ status: "closed", outcome: "succeeded", archive: { status: "pending" } });
     expect(await readFile(path.join(taskRoot, "bootstrap-runtime-evidence.json"), "utf8")).toContain(evidence.resultCommit);
+  });
+
+  it("persists a terminal bootstrap failure without claiming success", async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), "moye-bootstrap-failure-"));
+    const taskId = "TASK-BOOTSTRAP-FAILURE";
+    const taskRoot = path.join(root, taskId);
+    await mkdir(taskRoot);
+    await writeFile(path.join(taskRoot, "task.yaml"), `schema_version: 1\nid: ${taskId}\nstatus: received\nspec_revision: 1\nexecution_mode: goal-bootstrap\narchive:\n  status: not_ready\nresult: {}\n`);
+    const created = createTaskProjection({
+      taskId, projectId: "moye", title: "failure", specRevision: 1, backlogRefs: [],
+    }, "2026-08-20T00:00:00.000Z");
+    const executing = transitionTask(created, "EXECUTING", "bootstrap", "2026-08-20T00:00:01.000Z");
+    const failed = failTask(executing, "base not frozen", "2026-08-20T00:00:02.000Z");
+    const evidence = {
+      kind: "GOAL_BOOTSTRAP" as const,
+      executorId: "goal/root",
+      resultCommit: "d".repeat(40),
+      verificationRefs: [`task-artifact://${taskId}/verification.md`],
+      docsImpactRef: `task-artifact://${taskId}/docs-impact.yaml`,
+    };
+    const input = {
+      activeTasksRoot: root,
+      task: failed,
+      evidence,
+      workflowId: `task/${taskId}`,
+      errorCode: "BOOTSTRAP_BASE_COMMIT_NOT_FROZEN",
+      errorCategory: "CONFLICT",
+      errorMessage: "base not frozen",
+      failedStep: "verify-bootstrap-evidence",
+    };
+
+    await persistBootstrapFailure(input);
+    await persistBootstrapFailure(input);
+    const manifest = parse(await readFile(path.join(taskRoot, "task.yaml"), "utf8")) as Record<string, unknown>;
+    expect(manifest).toMatchObject({
+      status: "closed",
+      outcome: "failed_terminal",
+      failure: { code: "BOOTSTRAP_BASE_COMMIT_NOT_FROZEN" },
+      archive: { status: "pending" },
+    });
+    expect(await readFile(path.join(taskRoot, "bootstrap-runtime-failure.json"), "utf8"))
+      .toContain("FAILED_TERMINAL");
   });
 
   it("resolves the same stable artifact ref after the Task package moves to Archive", async () => {

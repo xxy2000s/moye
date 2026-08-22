@@ -114,21 +114,37 @@ async function route(
           }));
         return;
       }
+      const recovered = authority.recoveryWorkflowRef !== undefined;
       const projection = await invoke<TaskProjection | null>(
-        options.ingressUrl, "TaskWorkflow", taskId, "status",
+        options.ingressUrl,
+        recovered ? "BootstrapFailureRecoveryWorkflow" : "TaskWorkflow",
+        taskId,
+        "status",
       );
       writeJson(response, projection === null ? 404 : 200, projection === null ? { error: "Task trace not found" } : {
         schemaVersion: 1,
         traceKind: "TASK",
         task: projection,
-        stateMachine: buildTaskStateMachine(projection),
+        stateMachine: buildTaskStateMachine(
+          projection,
+          recovered ? "BootstrapFailureRecoveryWorkflow" : "TaskWorkflow",
+        ),
         durableRuntime: {
           authority: "Restate Journal",
-          workflowRef: `restate://TaskWorkflow/${projection.taskId}`,
-          workflowService: "TaskWorkflow",
+          workflowRef: recovered
+            ? authority.recoveryWorkflowRef
+            : `restate://TaskWorkflow/${projection.taskId}`,
+          workflowService: recovered ? "BootstrapFailureRecoveryWorkflow" : "TaskWorkflow",
           workflowKey: projection.taskId,
+          ...(authority.sourceWorkflowRef === undefined ? {} : {
+            sourceWorkflowRef: authority.sourceWorkflowRef,
+          }),
           adminBaseUrl: options.restateAdminUrl,
-          invocationsUrl: buildWorkflowInvocationsUrl(options.restateAdminUrl, "TaskWorkflow", projection.taskId),
+          invocationsUrl: buildWorkflowInvocationsUrl(
+            options.restateAdminUrl,
+            recovered ? "BootstrapFailureRecoveryWorkflow" : "TaskWorkflow",
+            projection.taskId,
+          ),
         },
       });
       return;
@@ -296,7 +312,12 @@ async function route(
     }
     const projection = authority.owner === "CODING_WORKFLOW"
       ? await invoke<CodingWorkflowProjection | null>(options.ingressUrl, "CodingTaskWorkflow", taskId, "status")
-      : await invoke<TaskProjection | null>(options.ingressUrl, "TaskWorkflow", taskId, "status");
+      : await invoke<TaskProjection | null>(
+        options.ingressUrl,
+        authority.recoveryWorkflowRef === undefined ? "TaskWorkflow" : "BootstrapFailureRecoveryWorkflow",
+        taskId,
+        "status",
+      );
     writeJson(response, projection === null ? 404 : 200, projection ?? { error: "Task not found" });
     return;
   }

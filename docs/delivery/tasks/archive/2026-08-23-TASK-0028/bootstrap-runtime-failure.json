@@ -1,0 +1,13 @@
+{
+  "taskId": "TASK-0028",
+  "workflowId": "bootstrap-recovery/TASK-0028",
+  "state": "CLOSED",
+  "outcome": "FAILED_TERMINAL",
+  "failure": {
+    "code": "BOOTSTRAP_BASE_COMMIT_NOT_FROZEN",
+    "category": "CONFLICT",
+    "message": "Task TASK-0028 base_commit was not frozen when its manifest was introduced",
+    "failed_step": "bootstrap-preflight",
+    "source_workflow_ref": "restate://TaskWorkflow/TASK-0028#inv_11E8Qgaf5P8C7sJatlpDb7inf2nwlhoknv"
+  }
+}

@@ -35,11 +35,14 @@ flowchart LR
     UI[Project Board] -->|Read API| BA[Board API]
     BA -->|Ingress Query| RS
     RS --> TW[TaskWorkflow]
+    RS --> BRW[BootstrapFailureRecoveryWorkflow]
     RS --> CW[CodingTaskWorkflow]
     RS --> CCW[CoreClosureWorkflow]
     RS --> TA[TaskAuthority]
     TW --> PW[ProjectBoard Projection]
     TW --> AW[ArchiveWorkflow]
+    BRW --> AW
+    BRW --> TA
     CW --> PW
     CW --> AW
     AW --> FS[Task Artifact Filesystem]
@@ -68,11 +71,13 @@ NOT_READY → PENDING → ARCHIVED | FAILED
 
 ProjectBoard 只保存查询投影。CLI、Skill、Board API 和目录位置都不能直接推进状态。`task_id` 同时是 Workflow key、事件关联和人类查询入口。
 
-`TaskAuthority/<task_id>` 在任一主 Workflow 开始前冻结 `owner + spec_revision`，冲突 owner 被拒绝；相同 Coding owner 可随合法 Replan 单调提升 Revision。`CodingTaskWorkflow` 独占编码聚合 Projection，产品模式按 Context Role、Workspace、Implementation、Self Review、Verification、independent Review、Repair/Replan、Merge、Docs Gate、Closure、Archive 推进；`CoreClosureWorkflow` 独占确定性控制协议 Projection，并把 Scenario Adapter 的结果固定为一个 Closure Digest。Workspace、Role/Agent、Review、Verification、Merge、Docs 和 Scenario Adapter 只返回证据，不写 Projection。Observer 把兼容 Coding TaskProjection 同步到 ProjectBoard，但 Board 不是主状态源；当前 Scenario Core Workflow 只提供 Restate `status` 查询，不作为产品执行入口。
+`TaskAuthority/<task_id>` 在任一主 Workflow 开始前冻结 `owner + spec_revision`，冲突 owner 被拒绝；相同 Coding owner 可随合法 Replan 单调提升 Revision。升级前遗留的确定性 Bootstrap Invocation Failure 可以追加一次 `recoveryWorkflowRef`，但不覆盖 owner 或原 Workflow 历史；CLI/Board 查询该 successor 的当前 Projection 并同时保留 source ref。`CodingTaskWorkflow` 独占编码聚合 Projection，产品模式按 Context Role、Workspace、Implementation、Self Review、Verification、independent Review、Repair/Replan、Merge、Docs Gate、Closure、Archive 推进；`CoreClosureWorkflow` 独占确定性控制协议 Projection，并把 Scenario Adapter 的结果固定为一个 Closure Digest。Workspace、Role/Agent、Review、Verification、Merge、Docs 和 Scenario Adapter 只返回证据，不写 Projection。Observer 把兼容 Coding TaskProjection 同步到 ProjectBoard，但 Board 不是主状态源；当前 Scenario Core Workflow 只提供 Restate `status` 查询，不作为产品执行入口。
 
 Git Backlog 是导入条目字段的所有者。CLI 完整校验 `BL-*.yaml` 后，通过单次 `ProjectBoard.syncBacklog` 提交；Object 比较 Source Digest，内容未变时不重写状态。Projection 独有记录采用 `PRESERVE` 并显式报告，Web 查询仍然只读取 Projection。
 
 Goal Bootstrap 是自举期的实际执行者。它只能提交干净 HEAD 上的真实 Result Commit、首次引入 Manifest 时冻结的 Base、Verification 和 Docs Impact 引用；TaskWorkflow 在发布 `CLOSED` 前重新验证并持久化关闭材料，不产生 Agent 执行事实。稳定 Task Artifact 引用由 Active/Archive Resolver 根据 Projection 解析。`CLOSED` 后仍调用独立 ArchiveWorkflow。
+
+Bootstrap 在 CLI 派发前、TaskWorkflow 首次状态写入前和 Closure Gate 三处复用同一冻结基线校验。前两处拒绝无效输入且不产生 Task Projection；进入 Projection 后才发现的确定性 Evidence/Closure 错误由原 Workflow 形成 `FAILED_TERMINAL` 和失败 Artifact，再进入 Archive。升级前已卡死实例只能通过核验原 Invocation 的 append-only `BootstrapFailureRecoveryWorkflow` successor 收敛，不能删除原历史。
 
 ## 4. 可恢复副作用
 
@@ -94,7 +99,7 @@ Archive 使用 `archive/<task_id>/revision-<spec_revision>` 作为稳定操作�
 - Archive 错误只把 `archive_status` 标为 `FAILED`，不会重开已经 `CLOSED` 的 Task；
 - Pipeline Step 在 5 次预算耗尽后关闭为 `FAILED_TERMINAL`，保留错误并继续归档失败证据，不会在 Board 中永久停留为 `EXECUTING`；
 - 进程退出不属于业务失败，Journal 保持未确认步骤并在新进程恢复；
-- 同一 Workflow key 保证重复 `create/close` 命令不会创建第二条生命周期。
+- 同一 Workflow key 拒绝重复 `run` 提交；CLI `status/wait` 只读查询既有结果。遗留 Bootstrap Recovery 使用单独 successor key 和 append-only Authority handoff，不能作为常规重复执行入口。
 - Workflow 事件时间从 Restate durable time 派生；Activity 是否在重放时执行不会改变后续 Journal 命令。
 - Verification/Codex 先落稳定 Intent；未确认结果停止为 UNKNOWN。Merge 用 `update-ref` CAS 原子校验 Expected Base，避免检查与写入之间的 TOCTOU。
 

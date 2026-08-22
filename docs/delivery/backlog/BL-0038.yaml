@@ -1,0 +1,13 @@
+schema_version: 1
+id: "BL-0038"
+title: "实现独立 Test Verification Agent 与 Trusted Runner"
+kind: "feature"
+status: "ready"
+priority: "high"
+source_refs: [core-v2-five-plus-one-agent-requirements]
+affected_areas: [test-agent, trusted-runner, verification, evidence]
+acceptance_outline:
+  - "TEST_PLAN 与 TEST_ASSESSMENT 使用隔离 Attempt"
+  - "Trusted Runner 保存 argv、退出码、环境、Commit、输出和 Digest"
+  - "综合报告包含 Requirement 到 Evidence 覆盖矩阵，UNKNOWN 进入 Reconcile"
+resolution: { task_refs: [], duplicate_of: null, reason: "把执行测试与形成质量结论分离" }

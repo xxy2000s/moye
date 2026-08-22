@@ -14,8 +14,10 @@ import { createTaskProjection } from "../domain/task.js";
 import { invoke, send } from "../restate/ingress.js";
 import type { TaskWorkflowInput } from "../restate/services.js";
 import type { TaskAuthorityState } from "../restate/services.js";
+import type { BootstrapFailureRecoveryInput } from "../restate/services.js";
 import { buildLiveCodingTask } from "../product/live-task.js";
 import type { CodingReconcileInput } from "../restate/coding-services.js";
+import { verifyBootstrapPreflight } from "../archive/bootstrap-closure.js";
 
 const [command = "help", ...args] = process.argv.slice(2);
 const config = loadConfig();
@@ -25,6 +27,7 @@ try {
     case "validate": {
       const input = await loadTaskInput(requiredOption(args, "--file"));
       createTaskProjection(input, new Date().toISOString());
+      await preflightBootstrap(input);
       print({ valid: true, taskId: input.taskId, specRevision: input.specRevision });
       break;
     }
@@ -72,6 +75,7 @@ try {
       } else {
         const input = value as TaskWorkflowInput;
         createTaskProjection(input, new Date().toISOString());
+        await preflightBootstrap(input);
         const receipt = await send(config.restateIngressUrl, "TaskWorkflow", input.taskId, "run", input);
         print({ accepted: true, taskId: input.taskId, workflow: "TaskWorkflow", ...receipt });
       }
@@ -79,8 +83,21 @@ try {
     }
     case "close": {
       const input = await loadTaskInput(requiredOption(args, "--file"));
+      await preflightBootstrap(input);
       const result = await invoke<TaskProjection>(config.restateIngressUrl, "TaskWorkflow", input.taskId, "run", input);
       if (result.state !== "CLOSED") throw new Error(`Task ended in ${result.state}`);
+      print(result);
+      break;
+    }
+    case "recover-bootstrap-failure": {
+      const input = await loadJson<BootstrapFailureRecoveryInput>(requiredOption(args, "--file"));
+      const result = await invoke<TaskProjection>(
+        config.restateIngressUrl,
+        "BootstrapFailureRecoveryWorkflow",
+        input.taskId,
+        "run",
+        input,
+      );
       print(result);
       break;
     }
@@ -126,6 +143,11 @@ async function taskStatus(taskId: string): Promise<TaskProjection | CodingWorkfl
     return invoke<CodingWorkflowProjection | null>(config.restateIngressUrl, "CodingTaskWorkflow", taskId, "status");
   }
   if (authority.owner === "TASK_WORKFLOW") {
+    if (authority.recoveryWorkflowRef !== undefined) {
+      return invoke<TaskProjection | null>(
+        config.restateIngressUrl, "BootstrapFailureRecoveryWorkflow", taskId, "status",
+      );
+    }
     return invoke<TaskProjection | null>(config.restateIngressUrl, "TaskWorkflow", taskId, "status");
   }
   throw new Error(`Task ${taskId} is owned by ${authority.owner}; no unified product projection is available`);
@@ -152,6 +174,14 @@ function isCodingSubmission(value: unknown): value is Record<string, unknown> {
 
 async function loadTaskInput(path: string): Promise<TaskWorkflowInput> {
   return loadJson<TaskWorkflowInput>(path);
+}
+
+async function preflightBootstrap(input: TaskWorkflowInput): Promise<void> {
+  if (input.bootstrapEvidence === undefined) return;
+  await verifyBootstrapPreflight({
+    repositoryRoot: resolve(process.env["MOYE_REPOSITORY_ROOT"] ?? process.cwd()),
+    taskId: input.taskId,
+  });
 }
 
 async function loadJson<T>(path: string): Promise<T> {
@@ -208,6 +238,7 @@ Usage:
   moye wait TASK-ID [--timeout-ms N]
   moye create --file task.json
   moye close --file task.json
+  moye recover-bootstrap-failure --file recovery.json
   moye archive --file archive.json
   moye reconcile --file archive.json
   moye reconcile-task TASK-ID --token TOKEN --evidence TEXT

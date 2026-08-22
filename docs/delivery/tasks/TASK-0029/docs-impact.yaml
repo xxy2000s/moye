@@ -1,0 +1,176 @@
+schema_version: 1
+task_id: TASK-0029
+graph_revision: 63
+intents:
+  - task-runtime-change
+  - task-create
+  - incident-response
+changed_paths:
+  - README.md
+  - docs/delivery/README.md
+  - docs/delivery/backlog/BL-0031.yaml
+  - docs/delivery/backlog/BL-0032.yaml
+  - docs/delivery/backlog/BL-0033.yaml
+  - docs/delivery/backlog/BL-0034.yaml
+  - docs/delivery/backlog/BL-0035.yaml
+  - docs/delivery/backlog/BL-0036.yaml
+  - docs/delivery/backlog/BL-0037.yaml
+  - docs/delivery/backlog/BL-0038.yaml
+  - docs/delivery/backlog/BL-0039.yaml
+  - docs/delivery/backlog/BL-0040.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/core-v2-roadmap.md
+  - docs/delivery/tasks/README.md
+  - docs/delivery/tasks/TASK-0028/design.md
+  - docs/delivery/tasks/TASK-0028/docs-impact.yaml
+  - docs/delivery/tasks/TASK-0028/plan.md
+  - docs/delivery/tasks/TASK-0028/spec.md
+  - docs/delivery/tasks/TASK-0028/task.yaml
+  - docs/delivery/tasks/TASK-0028/verification.md
+  - docs/delivery/tasks/TASK-0029/design.md
+  - docs/delivery/tasks/TASK-0029/docs-impact.yaml
+  - docs/delivery/tasks/TASK-0029/plan.md
+  - docs/delivery/tasks/TASK-0029/spec.md
+  - docs/delivery/tasks/TASK-0029/task.yaml
+  - docs/delivery/tasks/TASK-0029/verification.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0028/archive-manifest.json
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0028/bootstrap-runtime-failure.json
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0028/design.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0028/docs-impact.yaml
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0028/plan.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0028/spec.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0028/task.yaml
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0028/verification.md
+  - docs/delivery/tasks/archive/README.md
+  - docs/graph.yaml
+  - docs/knowledge/current/architecture/poc-01-restate.md
+  - docs/knowledge/current/architecture/task-runtime-kernel.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/pitfalls/durable-task-runtime.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - docs/sources/brainstorm/README.md
+  - docs/sources/brainstorm/core-v2-five-plus-one-agent-requirements.md
+  - docs/sources/incidents/2026-08-22-bootstrap-base-commit-gate-left-projection-executing.md
+  - src/archive/bootstrap-closure.ts
+  - src/board/server.ts
+  - src/cli/index.ts
+  - src/domain/task.ts
+  - src/index.ts
+  - src/restate/services.ts
+  - src/trace/state-machine.ts
+  - tests/e2e/restate-recovery.test.ts
+  - tests/fixtures/legacy-bootstrap-service.ts
+  - tests/unit/bootstrap-closure.test.ts
+  - tests/unit/task.test.ts
+docs:
+  read:
+    - root-readme
+    - agent-contract
+    - docs-index
+    - delivery-index
+    - sources-index
+    - backlog-index
+    - runbooks-index
+    - pitfalls-index
+    - architecture-index
+    - codemap
+    - document-control-plane
+    - task-runtime-kernel
+    - restate-poc-architecture
+    - adr-0001-restate-poc
+    - durable-runtime-pitfalls
+    - local-restate-poc-runbook
+    - incident-bootstrap-base-gate-projection-executing
+    - bl-0031-bootstrap-base-failure-convergence
+    - core-v2-roadmap
+    - tasks-index
+    - archived-tasks-index
+    - core-v2-five-plus-one-agent-requirements
+    - brainstorm-index
+    - incidents-index
+    - bl-0032-core-v2-architecture
+    - bl-0033-core-v2-artifacts
+    - bl-0034-core-v2-role-runtime
+    - bl-0035-core-v2-architect-review
+    - bl-0036-core-v2-implementation
+    - bl-0037-core-v2-documentation
+    - bl-0038-core-v2-test-verification
+    - bl-0039-core-v2-final-review
+    - bl-0040-core-v2-unified-acceptance
+    - task-0029-manifest
+    - task-0029-spec
+    - task-0029-design
+    - task-0029-plan
+    - task-0029-verification
+    - task-0029-docs-impact
+    - task-0028-manifest
+    - task-0028-spec
+    - task-0028-design
+    - task-0028-plan
+    - task-0028-verification
+    - task-0028-docs-impact
+  reviewed:
+    architecture-overview:
+      outcome: unchanged
+      reason: "Bootstrap 兼容恢复细节不改变系统顶层边界"
+    local-restate-poc-runbook:
+      outcome: updated
+      reason: "增加派发前预检、重复 run 语义和受限 recovery 命令"
+    research-index:
+      outcome: not_applicable
+      reason: "本次结论来自代码、Git 与真实 Restate 故障，不登记外部调研"
+    backlog-index:
+      outcome: updated
+      reason: "BL-0031 转 Task，并登记 Core v2 后续 Ready Backlog"
+    pitfalls-index:
+      outcome: unchanged
+      reason: "Pitfall 集合仍由同一 durable-task-runtime 文档承载，目录入口不变"
+    runbooks-index:
+      outcome: unchanged
+      reason: "只更新既有本地 Restate Runbook，没有新增或移动 Runbook"
+    moye-task-control-skill:
+      outcome: unchanged
+      reason: "Skill 仍只通过 CLI/Runtime/文档图操作，不需要新增直接状态写入"
+    durable-workflow-research:
+      outcome: not_applicable
+      reason: "不产生新的 Runtime 选型结论"
+    adr-0002-doc-lifecycle-roles:
+      outcome: unchanged
+      reason: "遵循既有文档生命周期和归档规则，没有改变 Accepted 决策"
+    task-lifecycle-worktree-convergence-brainstorm:
+      outcome: unchanged
+      reason: "历史完整 Harness Brainstorm 不作为本次实现依据"
+    multi-agent-core-closure-requirements:
+      outcome: unchanged
+      reason: "保留旧 Fully Consumed 需求历史，新 5+1 基线通过独立 Source supersede"
+    task-0013-manifest: { outcome: unchanged, reason: "不改写历史 Control Kernel Task" }
+    task-0014-manifest: { outcome: unchanged, reason: "不改写历史 Role 协议 Task" }
+    task-0015-manifest: { outcome: unchanged, reason: "不改写历史 Review/Finding Task" }
+    task-0016-manifest: { outcome: unchanged, reason: "不改写历史 Recovery Budget Task" }
+    task-0017-manifest: { outcome: unchanged, reason: "不改写历史 Observer/Docs Task" }
+    task-0018-manifest: { outcome: unchanged, reason: "不改写历史 Core Closure Task" }
+    task-0019-manifest: { outcome: unchanged, reason: "不改写历史页面产品 Task" }
+    task-0020-manifest: { outcome: unchanged, reason: "不改写历史状态机 Task" }
+    task-0021-manifest: { outcome: unchanged, reason: "不改写历史真实多角色验收 Task" }
+    task-0027-manifest: { outcome: unchanged, reason: "TASK-0028 归档不会改写其前序 UI Task" }
+    task-0028-manifest:
+      outcome: updated
+      reason: "Runtime successor 合法形成 FAILED_TERMINAL 并移动到 Archive；原包内容由归档材料保留"
+    task-0029-manifest:
+      outcome: updated
+      reason: "当前 Task 包记录 Spec、Design、Plan、Verification 和 Docs Impact"
+    task-0002-manifest: { outcome: unchanged, reason: "不改写历史 Bootstrap Task" }
+    task-0003-manifest: { outcome: unchanged, reason: "不改写历史协议 Task" }
+    task-0004-manifest: { outcome: unchanged, reason: "不改写历史 Git Effect Task" }
+    task-0005-manifest: { outcome: unchanged, reason: "不改写历史 Agent Adapter Task" }
+    task-0006-manifest: { outcome: unchanged, reason: "不改写历史 Coding Workflow Task" }
+    task-0007-manifest: { outcome: unchanged, reason: "不改写历史 Trace Task" }
+    task-0008-manifest: { outcome: unchanged, reason: "不改写历史 Demo Task" }
+    task-0009-manifest: { outcome: unchanged, reason: "不改写历史 Telemetry Task" }
+    task-0001-manifest: { outcome: unchanged, reason: "不改写历史 Runtime Task" }
+    adr-0003-typescript-poc:
+      outcome: unchanged
+      reason: "继续使用既有 TypeScript Restate PoC 决策"
+    adr-0004-otlp-phoenix-demo:
+      outcome: not_applicable
+      reason: "不改变 OTLP 或 Phoenix 边界"

@@ -1,0 +1,26 @@
+schema_version: 1
+id: TASK-0028
+title: 将单任务审计改为全屏路由并持久化本地 Runtime
+status: closed
+outcome: failed_terminal
+backlog_refs:
+  - BL-0029
+  - BL-0030
+spec_revision: 1
+workflow_id: bootstrap-recovery/TASK-0028
+execution_mode: goal-bootstrap
+base_commit: ed2b9211d44bc024fbf1b3aecd82533ccbfa00a1
+archive:
+  status: pending
+  archived_at: null
+  archived_path: null
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: bootstrap-runtime-failure.json
+failure:
+  code: BOOTSTRAP_BASE_COMMIT_NOT_FROZEN
+  category: CONFLICT
+  message: Task TASK-0028 base_commit was not frozen when its manifest was introduced
+  failed_step: bootstrap-preflight
+  source_workflow_ref: restate://TaskWorkflow/TASK-0028#inv_11E8Qgaf5P8C7sJatlpDb7inf2nwlhoknv

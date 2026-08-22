@@ -1,0 +1,13 @@
+schema_version: 1
+id: "BL-0034"
+title: "实现五类 Agent 共用的真实 Role Runtime v2"
+kind: "feature"
+status: "ready"
+priority: "high"
+source_refs: [core-v2-five-plus-one-agent-requirements]
+affected_areas: [agent-runtime, role-runner, task-runtime, trace]
+acceptance_outline:
+  - "五类角色共享 Attempt、Generation、Session、Event、Artifact 和 Reconcile 合约"
+  - "产品路径只接受真实 Runner，不以 Fake 或 Scenario Adapter 证明能力"
+  - "完成的昂贵 Run 可恢复复用，UNKNOWN 不盲目重跑"
+resolution: { task_refs: [], duplicate_of: null, reason: "Core v2 角色执行底座" }

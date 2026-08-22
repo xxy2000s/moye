@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { mkdir, readFile, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
@@ -16,6 +17,29 @@ export interface BootstrapEvidenceVerificationInput {
   readonly repositoryRoot: string;
   readonly taskId: string;
   readonly evidence: TaskExecutionEvidence;
+}
+
+export interface BootstrapPreflightInput {
+  readonly repositoryRoot: string;
+  readonly taskId: string;
+}
+
+export interface BootstrapPreflightReceipt {
+  readonly taskId: string;
+  readonly manifestRef: string;
+  readonly manifestCommit: string;
+  readonly introductionCommit: string;
+  readonly introductionParent: string;
+  readonly baseCommit: string;
+  readonly receiptDigest: string;
+}
+
+export interface BootstrapFailureInput extends BootstrapClosureInput {
+  readonly errorCode: string;
+  readonly errorCategory: string;
+  readonly errorMessage: string;
+  readonly failedStep: string;
+  readonly sourceWorkflowRef?: string;
 }
 
 export interface BootstrapClosureInput {
@@ -38,6 +62,24 @@ export async function verifyAndPersistBootstrapClosure(
     evidence: input.evidence,
   }, input);
   await persistBootstrapClosure(input);
+}
+
+export async function verifyBootstrapPreflight(
+  input: BootstrapPreflightInput,
+): Promise<BootstrapPreflightReceipt> {
+  const repositoryRoot = await realpath(input.repositoryRoot);
+  const manifestCommit = (await output(
+    "git", ["-C", repositoryRoot, "rev-parse", "HEAD"], repositoryRoot,
+  )).trim();
+  const receipt = await inspectBootstrapBaseline(repositoryRoot, input.taskId, manifestCommit);
+  const manifestPath = await containedFile(repositoryRoot, receipt.manifestRef);
+  await assertCommittedContent(
+    repositoryRoot,
+    manifestCommit,
+    receipt.manifestRef,
+    await readFile(manifestPath, "utf8"),
+  );
+  return receipt;
 }
 
 export async function persistBootstrapClosure(input: BootstrapClosureInput): Promise<void> {
@@ -72,6 +114,64 @@ export async function persistBootstrapClosure(input: BootstrapClosureInput): Pro
   const artifacts = bootstrapClosureArtifacts(input, current);
   await writeStableFile(taskPath, artifacts.manifest);
   await writeStableFile(path.join(taskRoot, "bootstrap-runtime-evidence.json"), artifacts.runtimeEvidence);
+}
+
+export async function persistBootstrapFailure(input: BootstrapFailureInput): Promise<void> {
+  assertTaskId(input.task.taskId);
+  if (input.task.state !== "CLOSED" || input.task.outcome !== "FAILED_TERMINAL") {
+    throw new MoyeError({
+      code: "BOOTSTRAP_TASK_NOT_FAILED",
+      category: "CONFLICT",
+      message: `Task ${input.task.taskId} must be FAILED_TERMINAL before failure evidence is persisted`,
+    });
+  }
+  const root = path.resolve(input.activeTasksRoot);
+  const taskRoot = path.resolve(root, input.task.taskId);
+  if (path.dirname(taskRoot) !== root) {
+    throw new MoyeError({
+      code: "BOOTSTRAP_TASK_PATH_INVALID",
+      category: "VALIDATION",
+      message: "Bootstrap task path must be a direct child of activeTasksRoot",
+    });
+  }
+  const taskPath = path.join(taskRoot, "task.yaml");
+  const current = parse(await readFile(taskPath, "utf8"), { maxAliasCount: 0 }) as Record<string, unknown>;
+  if (current["id"] !== input.task.taskId || current["spec_revision"] !== input.task.specRevision) {
+    throw new MoyeError({
+      code: "BOOTSTRAP_MANIFEST_MISMATCH",
+      category: "CONFLICT",
+      message: `Task manifest does not match ${input.task.taskId} revision ${input.task.specRevision}`,
+    });
+  }
+  const result = asRecord(current["result"]);
+  const archive = asRecord(current["archive"]);
+  const failure = {
+    code: input.errorCode,
+    category: input.errorCategory,
+    message: input.errorMessage,
+    failed_step: input.failedStep,
+    ...(input.sourceWorkflowRef === undefined ? {} : { source_workflow_ref: input.sourceWorkflowRef }),
+  };
+  const manifest = stringify({
+    ...current,
+    status: "closed",
+    outcome: "failed_terminal",
+    workflow_id: input.workflowId,
+    execution_mode: "goal-bootstrap",
+    failure,
+    archive: { ...archive, status: "pending" },
+    result: { ...result, closure_report: "bootstrap-runtime-failure.json" },
+  }, { lineWidth: 0 });
+  const runtimeEvidence = `${JSON.stringify({
+    taskId: input.task.taskId,
+    workflowId: input.workflowId,
+    state: input.task.state,
+    outcome: input.task.outcome,
+    failure,
+    ...(input.task.execution === undefined ? {} : { execution: input.task.execution }),
+  }, null, 2)}\n`;
+  await writeStableFile(taskPath, manifest);
+  await writeStableFile(path.join(taskRoot, "bootstrap-runtime-failure.json"), runtimeEvidence);
 }
 
 export async function verifyBootstrapEvidence(
@@ -135,50 +235,8 @@ export async function verifyBootstrapEvidence(
       await readFile(manifestPath, "utf8"),
     );
   }
-  const manifest = parse(committedManifestContent, { maxAliasCount: 0 }) as Record<string, unknown>;
-  if (manifest["id"] !== input.taskId || manifest["execution_mode"] !== "goal-bootstrap") {
-    throw new MoyeError({
-      code: "BOOTSTRAP_MODE_NOT_DECLARED",
-      category: "CONFLICT",
-      message: `Task ${input.taskId} did not predeclare goal-bootstrap execution`,
-    });
-  }
-  const baseCommit = manifest["base_commit"];
-  if (typeof baseCommit !== "string" || !/^[0-9a-f]{40}([0-9a-f]{24})?$/.test(baseCommit)) {
-    throw new MoyeError({
-      code: "BOOTSTRAP_BASE_COMMIT_INVALID",
-      category: "VALIDATION",
-      message: `Task ${input.taskId} has no valid base_commit`,
-    });
-  }
-  const introduction = (await output(
-    "git",
-    ["-C", repositoryRoot, "log", "--diff-filter=A", "--format=%H", "--", expectedManifest],
-    repositoryRoot,
-  )).trim().split("\n").filter(Boolean).at(-1);
-  if (introduction === undefined) {
-    throw new MoyeError({
-      code: "BOOTSTRAP_TASK_INTRODUCTION_MISSING",
-      category: "CONFLICT",
-      message: `Cannot find the committed introduction of ${expectedManifest}`,
-    });
-  }
-  const introducedManifest = parse(
-    await output("git", ["-C", repositoryRoot, "show", `${introduction}:${expectedManifest}`], repositoryRoot),
-    { maxAliasCount: 0 },
-  ) as Record<string, unknown>;
-  const introductionParent = (await output(
-    "git",
-    ["-C", repositoryRoot, "rev-parse", `${introduction}^`],
-    repositoryRoot,
-  )).trim();
-  if (introducedManifest["base_commit"] !== baseCommit || introductionParent !== baseCommit) {
-    throw new MoyeError({
-      code: "BOOTSTRAP_BASE_COMMIT_NOT_FROZEN",
-      category: "CONFLICT",
-      message: `Task ${input.taskId} base_commit was not frozen when its manifest was introduced`,
-    });
-  }
+  const baseline = await inspectBootstrapBaseline(repositoryRoot, input.taskId, input.evidence.resultCommit);
+  const baseCommit = baseline.baseCommit;
   await run("git", ["-C", repositoryRoot, "merge-base", "--is-ancestor", baseCommit, input.evidence.resultCommit], repositoryRoot);
   for (const ref of input.evidence.verificationRefs) {
     const filePath = await containedFile(repositoryRoot, path.relative(
@@ -228,6 +286,76 @@ export async function verifyBootstrapEvidence(
     });
   }
   await run("ruby", ["scripts/docs_graph.rb", "validate-impact", "--report", impactPath], repositoryRoot);
+}
+
+async function inspectBootstrapBaseline(
+  repositoryRoot: string,
+  taskId: string,
+  manifestCommit: string,
+): Promise<BootstrapPreflightReceipt> {
+  assertTaskId(taskId);
+  const manifestRef = `docs/delivery/tasks/${taskId}/task.yaml`;
+  const committedManifestContent = await output(
+    "git", ["-C", repositoryRoot, "show", `${manifestCommit}:${manifestRef}`], repositoryRoot,
+  );
+  const manifest = parse(committedManifestContent, { maxAliasCount: 0 }) as Record<string, unknown>;
+  if (manifest["id"] !== taskId || manifest["execution_mode"] !== "goal-bootstrap") {
+    throw new MoyeError({
+      code: "BOOTSTRAP_MODE_NOT_DECLARED",
+      category: "CONFLICT",
+      message: `Task ${taskId} did not predeclare goal-bootstrap execution`,
+    });
+  }
+  const baseCommit = manifest["base_commit"];
+  if (typeof baseCommit !== "string" || !/^[0-9a-f]{40}([0-9a-f]{24})?$/.test(baseCommit)) {
+    throw new MoyeError({
+      code: "BOOTSTRAP_BASE_COMMIT_INVALID",
+      category: "VALIDATION",
+      message: `Task ${taskId} has no valid base_commit`,
+    });
+  }
+  try {
+    await execFileAsync("git", ["-C", repositoryRoot, "cat-file", "-e", `${baseCommit}^{commit}`], {
+      cwd: repositoryRoot, timeout: 30_000, maxBuffer: 4 * 1024 * 1024,
+    });
+  } catch (error) {
+    throw new MoyeError({
+      code: "BOOTSTRAP_BASE_COMMIT_MISSING",
+      category: "CONFLICT",
+      message: `Task ${taskId} base_commit does not identify an existing commit`,
+      cause: error,
+    });
+  }
+  const introductionCommit = (await output(
+    "git", ["-C", repositoryRoot, "log", "--diff-filter=A", "--format=%H", "--", manifestRef], repositoryRoot,
+  )).trim().split("\n").filter(Boolean).at(-1);
+  if (introductionCommit === undefined) {
+    throw new MoyeError({
+      code: "BOOTSTRAP_TASK_INTRODUCTION_MISSING",
+      category: "CONFLICT",
+      message: `Cannot find the committed introduction of ${manifestRef}`,
+    });
+  }
+  const introducedManifest = parse(
+    await output("git", ["-C", repositoryRoot, "show", `${introductionCommit}:${manifestRef}`], repositoryRoot),
+    { maxAliasCount: 0 },
+  ) as Record<string, unknown>;
+  const introductionParent = (await output(
+    "git", ["-C", repositoryRoot, "rev-parse", `${introductionCommit}^`], repositoryRoot,
+  )).trim();
+  if (introducedManifest["base_commit"] !== baseCommit || introductionParent !== baseCommit) {
+    throw new MoyeError({
+      code: "BOOTSTRAP_BASE_COMMIT_NOT_FROZEN",
+      category: "CONFLICT",
+      message: `Task ${taskId} base_commit was not frozen when its manifest was introduced`,
+      details: { introductionCommit, introductionParent, baseCommit },
+    });
+  }
+  const stable = { taskId, manifestRef, manifestCommit, introductionCommit, introductionParent, baseCommit };
+  return {
+    ...stable,
+    receiptDigest: `sha256:${createHash("sha256").update(JSON.stringify(stable)).digest("hex")}`,
+  };
 }
 
 function bootstrapClosureArtifacts(

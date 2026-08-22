@@ -6,7 +6,12 @@ import {
   freezeArchiveManifest,
   resolveArchivePaths,
 } from "../archive/file-archive.js";
-import { verifyAndPersistBootstrapClosure, verifyBootstrapEvidence } from "../archive/bootstrap-closure.js";
+import {
+  persistBootstrapFailure,
+  verifyAndPersistBootstrapClosure,
+  verifyBootstrapEvidence,
+  verifyBootstrapPreflight,
+} from "../archive/bootstrap-closure.js";
 import type {
   ArchiveInput,
   ArchiveMoveResult,
@@ -23,6 +28,7 @@ import {
   closeTask,
   createTaskProjection,
   failTask,
+  recoverFailedBootstrapTask,
   recordBootstrapEvidence,
   transitionTask,
   updateArchiveStatus,
@@ -44,9 +50,22 @@ interface ArchiveWorkflowState {
   result: ArchiveMoveResult;
 }
 
+interface BootstrapFailureRecoveryState {
+  projection: TaskProjection;
+  sourceProjection: TaskProjection;
+}
+
 export interface TaskAuthorityState {
   owner: "TASK_WORKFLOW" | "CODING_WORKFLOW" | "CORE_WORKFLOW";
   specRevision: number;
+  recoveryWorkflowRef?: string;
+  sourceWorkflowRef?: string;
+}
+
+export interface BootstrapRecoveryHandoffInput {
+  readonly specRevision: number;
+  readonly recoveryWorkflowRef: string;
+  readonly sourceWorkflowRef: string;
 }
 
 export interface TaskWorkflowInput {
@@ -67,6 +86,16 @@ export interface ArchiveWorkflowInput extends ArchiveInput {
   readonly task: TaskProjection;
 }
 
+export interface BootstrapFailureRecoveryInput {
+  readonly taskId: string;
+  readonly projectId: string;
+  readonly specRevision: number;
+  readonly sourceWorkflowRef: string;
+  readonly sourceInvocationRef: string;
+  readonly expectedFailureCode: "BOOTSTRAP_BASE_COMMIT_NOT_FROZEN";
+  readonly sourceInput: TaskWorkflowInput;
+}
+
 export const taskAuthority = restate.object({
   name: "TaskAuthority",
   handlers: {
@@ -85,8 +114,51 @@ export const taskAuthority = restate.object({
       const revision = Math.max(currentRevision ?? input.specRevision, input.specRevision);
       ctx.set("owner", input.owner);
       ctx.set("specRevision", revision);
-      return { owner: input.owner, specRevision: revision };
+      const recoveryWorkflowRef = await ctx.get("recoveryWorkflowRef") as string | null;
+      const sourceWorkflowRef = await ctx.get("sourceWorkflowRef") as string | null;
+      return {
+        owner: input.owner,
+        specRevision: revision,
+        ...(recoveryWorkflowRef === null ? {} : { recoveryWorkflowRef }),
+        ...(sourceWorkflowRef === null ? {} : { sourceWorkflowRef }),
+      };
     },
+
+    beginBootstrapRecovery: restate.handlers.object.exclusive(
+      { ingressPrivate: true },
+      async (
+        ctx: restate.ObjectContext<TaskAuthorityState>,
+        input: BootstrapRecoveryHandoffInput,
+      ): Promise<TaskAuthorityState> => {
+      const [owner, specRevision, existingRecovery, existingSource] = await Promise.all([
+        ctx.get("owner") as Promise<TaskAuthorityState["owner"] | null>,
+        ctx.get("specRevision") as Promise<number | null>,
+        ctx.get("recoveryWorkflowRef") as Promise<string | null>,
+        ctx.get("sourceWorkflowRef") as Promise<string | null>,
+      ]);
+      if (owner !== "TASK_WORKFLOW" || specRevision !== input.specRevision) {
+        throw new restate.TerminalError(
+          `Task ${ctx.key} is not owned by TaskWorkflow revision ${input.specRevision}`,
+          { errorCode: 409 },
+        );
+      }
+      if (existingRecovery !== null && (
+        existingRecovery !== input.recoveryWorkflowRef || existingSource !== input.sourceWorkflowRef
+      )) {
+        throw new restate.TerminalError(`Task ${ctx.key} already has a different recovery successor`, {
+          errorCode: 409,
+        });
+      }
+      ctx.set("recoveryWorkflowRef", input.recoveryWorkflowRef);
+      ctx.set("sourceWorkflowRef", input.sourceWorkflowRef);
+        return {
+          owner,
+          specRevision,
+          recoveryWorkflowRef: input.recoveryWorkflowRef,
+          sourceWorkflowRef: input.sourceWorkflowRef,
+        };
+      },
+    ),
 
     get: restate.handlers.object.shared(
       async (ctx: restate.ObjectSharedContext<TaskAuthorityState>): Promise<TaskAuthorityState | null> => {
@@ -94,7 +166,16 @@ export const taskAuthority = restate.object({
           ctx.get("owner") as Promise<TaskAuthorityState["owner"] | null>,
           ctx.get("specRevision") as Promise<number | null>,
         ]);
-        return owner === null || specRevision === null ? null : { owner, specRevision };
+        const [recoveryWorkflowRef, sourceWorkflowRef] = await Promise.all([
+          ctx.get("recoveryWorkflowRef") as Promise<string | null>,
+          ctx.get("sourceWorkflowRef") as Promise<string | null>,
+        ]);
+        return owner === null || specRevision === null ? null : {
+          owner,
+          specRevision,
+          ...(recoveryWorkflowRef === null ? {} : { recoveryWorkflowRef }),
+          ...(sourceWorkflowRef === null ? {} : { sourceWorkflowRef }),
+        };
       },
     ),
   },
@@ -263,6 +344,16 @@ export const taskWorkflow = restate.workflow({
       ctx: restate.WorkflowContext<TaskWorkflowState>,
       input: TaskWorkflowInput,
     ): Promise<TaskProjection> => {
+      if (input.bootstrapEvidence !== undefined) {
+        await ctx.run(
+          "verify-bootstrap-preflight",
+          () => runArchiveEffect(() => verifyBootstrapPreflight({
+            repositoryRoot: runtimeRepositoryRoot(),
+            taskId: input.taskId,
+          })),
+          { maxRetryAttempts: 5 },
+        );
+      }
       await ctx.objectClient(taskAuthority, input.taskId).claim({
         owner: "TASK_WORKFLOW",
         specRevision: input.specRevision,
@@ -299,18 +390,63 @@ export const taskWorkflow = restate.workflow({
         }
       } else {
         const bootstrapEvidence = input.bootstrapEvidence;
-        await ctx.run(
-          "verify-bootstrap-evidence",
-          () => runArchiveEffect(() => verifyBootstrapEvidence({
-            repositoryRoot: runtimeRepositoryRoot(),
-            taskId: input.taskId,
-            evidence: bootstrapEvidence,
-          })),
-          { maxRetryAttempts: 5 },
-        );
-        task = recordBootstrapEvidence(task, bootstrapEvidence, await durableNow(ctx));
+        try {
+          await ctx.run(
+            "verify-bootstrap-evidence",
+            () => runArchiveEffect(() => verifyBootstrapEvidence({
+              repositoryRoot: runtimeRepositoryRoot(),
+              taskId: input.taskId,
+              evidence: bootstrapEvidence,
+            })),
+            { maxRetryAttempts: 5 },
+          );
+          task = recordBootstrapEvidence(task, bootstrapEvidence, await durableNow(ctx));
+          ctx.set("projection", task);
+          await boardClient(ctx, input.projectId).upsertTask(task);
+
+          task = transitionTask(task, "VERIFYING", "verification", await durableNow(ctx));
+          ctx.set("projection", task);
+          await boardClient(ctx, input.projectId).upsertTask(task);
+
+          const closedTask = closeTask(task, "SUCCEEDED", await durableNow(ctx));
+          await ctx.run(
+            "verify-and-persist-bootstrap-closure",
+            () => runArchiveEffect(() => verifyAndPersistBootstrapClosure({
+              repositoryRoot: runtimeRepositoryRoot(),
+              activeTasksRoot: bootstrapActiveTasksRoot(),
+              task: closedTask,
+              evidence: bootstrapEvidence,
+              workflowId: `task/${input.taskId}`,
+            })),
+            { maxRetryAttempts: 5 },
+          );
+          task = closedTask;
+          ctx.set("projection", task);
+          await boardClient(ctx, input.projectId).upsertTask(task);
+        } catch (error) {
+          if (isRestateControlError(error)) throw error;
+          const failure = bootstrapFailure(error);
+          task = failTask(task, failure.message, await durableNow(ctx));
+          ctx.set("projection", task);
+          await boardClient(ctx, input.projectId).upsertTask(task);
+          await ctx.run(
+            "persist-bootstrap-failure",
+            () => runArchiveEffect(() => persistBootstrapFailure({
+              activeTasksRoot: bootstrapActiveTasksRoot(),
+              task,
+              evidence: bootstrapEvidence,
+              workflowId: `task/${input.taskId}`,
+              errorCode: failure.code,
+              errorCategory: failure.category,
+              errorMessage: failure.message,
+              failedStep: "bootstrap-evidence-or-closure",
+            })),
+            { maxRetryAttempts: 5 },
+          );
+        }
+        task = await runTaskArchive(ctx, bootstrapArchiveInput(input), task);
         ctx.set("projection", task);
-        await boardClient(ctx, input.projectId).upsertTask(task);
+        return task;
       }
 
       task = transitionTask(
@@ -322,31 +458,14 @@ export const taskWorkflow = restate.workflow({
       ctx.set("projection", task);
       await boardClient(ctx, input.projectId).upsertTask(task);
 
-      if (input.bootstrapEvidence === undefined) {
-        await ctx.run("verify-task", async () => ({ passed: true }));
-        task = closeTask(task, "SUCCEEDED", await durableNow(ctx));
-      } else {
-        const bootstrapEvidence = input.bootstrapEvidence;
-        const closedTask = closeTask(task, "SUCCEEDED", await durableNow(ctx));
-        await ctx.run(
-          "verify-and-persist-bootstrap-closure",
-          () => runArchiveEffect(() => verifyAndPersistBootstrapClosure({
-            repositoryRoot: runtimeRepositoryRoot(),
-            activeTasksRoot: bootstrapActiveTasksRoot(),
-            task: closedTask,
-            evidence: bootstrapEvidence,
-            workflowId: `task/${input.taskId}`,
-          })),
-          { maxRetryAttempts: 5 },
-        );
-        task = closedTask;
-      }
+      await ctx.run("verify-task", async () => ({ passed: true }));
+      task = closeTask(task, "SUCCEEDED", await durableNow(ctx));
       ctx.set("projection", task);
       await boardClient(ctx, input.projectId).upsertTask(task);
 
       task = await runTaskArchive(
         ctx,
-        input.bootstrapEvidence === undefined ? input : bootstrapArchiveInput(input),
+        input,
         task,
       );
       ctx.set("projection", task);
@@ -361,11 +480,136 @@ export const taskWorkflow = restate.workflow({
   },
 });
 
+export const bootstrapFailureRecoveryWorkflow = restate.workflow({
+  name: "BootstrapFailureRecoveryWorkflow",
+  options: { workflowRetention: { days: 30 } },
+  handlers: {
+    run: async (
+      ctx: restate.WorkflowContext<BootstrapFailureRecoveryState>,
+      input: BootstrapFailureRecoveryInput,
+    ): Promise<TaskProjection> => {
+      if (ctx.key !== input.taskId || input.sourceInput.taskId !== input.taskId ||
+          input.sourceInput.projectId !== input.projectId ||
+          input.sourceInput.specRevision !== input.specRevision ||
+          input.sourceInput.bootstrapEvidence === undefined ||
+          input.sourceWorkflowRef !== `restate://TaskWorkflow/${input.taskId}`) {
+        throw new restate.TerminalError("Bootstrap recovery input does not match the source Task", {
+          errorCode: 400,
+        });
+      }
+      const sourceProjection = await ctx.workflowClient<typeof taskWorkflow>(
+        taskWorkflow, input.taskId,
+      ).status();
+      if (sourceProjection === null) {
+        throw new restate.TerminalError(`Task ${input.taskId} has no source projection`, { errorCode: 404 });
+      }
+      ctx.set("sourceProjection", sourceProjection);
+      // Attaching by Invocation ID proves the original keyed run ended with the
+      // same deterministic failure; it never submits a second Task execution.
+      let sourceFailure: ReturnType<typeof bootstrapFailure> | undefined;
+      try {
+        await ctx.invocation(restate.InvocationIdParser.fromString(input.sourceInvocationRef)).attach<TaskProjection>();
+      } catch (error) {
+        if (isRestateControlError(error)) throw error;
+        sourceFailure = bootstrapFailure(error);
+      }
+      if (sourceFailure === undefined || sourceFailure.code !== input.expectedFailureCode ||
+          !sourceFailure.message.includes(`Task ${input.taskId}`)) {
+        throw new restate.TerminalError(
+          `Source Workflow did not fail with ${input.expectedFailureCode}`,
+          { errorCode: 409 },
+        );
+      }
+      let baselineFailure: ReturnType<typeof bootstrapFailure> | undefined;
+      try {
+        await ctx.run(
+          "reconcile-bootstrap-baseline-failure",
+          () => runArchiveEffect(() => verifyBootstrapPreflight({
+            repositoryRoot: runtimeRepositoryRoot(),
+            taskId: input.taskId,
+          })),
+          { maxRetryAttempts: 5 },
+        );
+      } catch (error) {
+        if (isRestateControlError(error)) throw error;
+        baselineFailure = bootstrapFailure(error);
+      }
+      if (baselineFailure === undefined || baselineFailure.code !== input.expectedFailureCode) {
+        throw new restate.TerminalError(
+          `Current Git evidence does not reproduce ${input.expectedFailureCode}`,
+          { errorCode: 409 },
+        );
+      }
+
+      const recoveryWorkflowRef = `restate://BootstrapFailureRecoveryWorkflow/${input.taskId}`;
+      await ctx.objectClient(taskAuthority, input.taskId).beginBootstrapRecovery({
+        specRevision: input.specRevision,
+        recoveryWorkflowRef,
+        sourceWorkflowRef: input.sourceWorkflowRef,
+      });
+      let task = recoverFailedBootstrapTask(
+        sourceProjection,
+        `${input.sourceWorkflowRef}#${input.sourceInvocationRef}`,
+        baselineFailure.message,
+        await durableNow(ctx),
+      );
+      ctx.set("projection", task);
+      await boardClient(ctx, input.projectId).upsertTask(task);
+      const bootstrapEvidence = input.sourceInput.bootstrapEvidence;
+      await ctx.run(
+        "persist-recovered-bootstrap-failure",
+        () => runArchiveEffect(() => persistBootstrapFailure({
+          activeTasksRoot: bootstrapActiveTasksRoot(),
+          task,
+          evidence: bootstrapEvidence,
+          workflowId: `bootstrap-recovery/${input.taskId}`,
+          errorCode: baselineFailure.code,
+          errorCategory: baselineFailure.category,
+          errorMessage: baselineFailure.message,
+          failedStep: "bootstrap-preflight",
+          sourceWorkflowRef: `${input.sourceWorkflowRef}#${input.sourceInvocationRef}`,
+        })),
+        { maxRetryAttempts: 5 },
+      );
+      const archiveBase = bootstrapArchiveInput(input.sourceInput);
+      task = await ctx.workflowClient<typeof archiveWorkflow>(archiveWorkflow, input.taskId).run({
+        task,
+        taskId: archiveBase.taskId,
+        projectId: archiveBase.projectId,
+        specRevision: archiveBase.specRevision,
+        activeTasksRoot: archiveBase.activeTasksRoot,
+        archiveRoot: archiveBase.archiveRoot,
+        archivedAt: archiveBase.archivedAt,
+        ...(archiveBase.fault === undefined ? {} : { fault: archiveBase.fault }),
+      });
+      ctx.set("projection", task);
+      await boardClient(ctx, input.projectId).upsertTask(task);
+      return task;
+    },
+
+    status: restate.handlers.workflow.shared(async (
+      ctx: restate.WorkflowSharedContext<BootstrapFailureRecoveryState>,
+    ): Promise<TaskProjection | null> => ctx.get("projection")),
+  },
+});
+
 function boardClient(
   ctx: restate.Context,
   projectId: string,
 ) {
   return ctx.objectClient<typeof projectBoard>(projectBoard, projectId);
+}
+
+function bootstrapFailure(error: unknown): { code: string; category: string; message: string } {
+  if (error instanceof restate.TerminalError) {
+    return {
+      code: error.metadata?.["code"] ?? `RESTATE_${error.code}`,
+      category: error.metadata?.["category"] ?? "TERMINAL",
+      message: error.message,
+    };
+  }
+  const moyeError = asMoyeError(error);
+  return { code: moyeError.code, category: moyeError.category, message: moyeError.message };
 }
 
 async function durableNow(ctx: restate.Context): Promise<string> {

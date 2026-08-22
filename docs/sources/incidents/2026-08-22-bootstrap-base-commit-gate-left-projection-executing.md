@@ -1,6 +1,6 @@
 # Incident：Bootstrap 基线门禁失败后 Projection 停留在 EXECUTING
 
-> 状态：Open / Mitigated
+> 状态：Resolved
 > 日期：2026-08-22
 > 严重级别：Development task closure blocked
 > 负责人：Moye
@@ -10,7 +10,7 @@
 
 TASK-0028 首次登记时把父提交 `ed2b9211...` 误写为不存在的 `ed2b9214...`。实现完成后虽修正当前 Manifest，Bootstrap Closure 仍正确拒绝关闭，因为 `base_commit` 必须在 Manifest 首次引入时冻结，不能事后改写。
 
-Restate 的 `TaskWorkflow/TASK-0028/run` Invocation 以 `BOOTSTRAP_BASE_COMMIT_NOT_FROZEN` 完成失败，但此前已经持久化的 Task Projection 仍停在 `EXECUTING`。功能实现与页面服务可用，TASK-0028 不能通过 Archive Gate，保持 Active。
+Restate 的 `TaskWorkflow/TASK-0028/run` Invocation 以 `BOOTSTRAP_BASE_COMMIT_NOT_FROZEN` 完成失败，但此前已经持久化的 Task Projection 仍停在 `EXECUTING`。TASK-0029 增加派发前预检、派发后失败收敛和 append-only successor recovery；2026-08-23 已在保留原 Projection/Invocation 的前提下把 TASK-0028 收敛为 `FAILED_TERMINAL + ARCHIVED`。
 
 ## Impact
 
@@ -28,6 +28,8 @@ Restate 的 `TaskWorkflow/TASK-0028/run` Invocation 以 `BOOTSTRAP_BASE_COMMIT_N
 | 16:16 | `status TASK-0028` 确认 Projection 为 `EXECUTING`，事件停在 `TaskExecuting` |
 | 16:17 | Introspection SQL 确认 owning run Invocation 为 `completed/failure` |
 | 16:18 | 新 UI 已部署到主 Board；未修改 Runtime 主状态或伪造归档 |
+| 2026-08-23 01:25 | 新部署按原 Invocation ID attach 失败，重放同一 Git 基线错误并创建唯一 Recovery successor |
+| 2026-08-23 01:25 | successor 追加 `TaskRecoveryStarted → TaskClosed`，ArchiveWorkflow 完成唯一归档 |
 
 ## Detection
 
@@ -45,7 +47,9 @@ Restate 的 `TaskWorkflow/TASK-0028/run` Invocation 以 `BOOTSTRAP_BASE_COMMIT_N
 
 ## Resolution
 
-已保持 TASK-0028 Active 并保留真实 Runtime Failure，没有编辑 Projection、删除 Invocation、重写 Git 历史或放宽 Closure Gate。主页面服务已部署实现结果。永久修复进入 BL-0031。
+TASK-0029 实现三层同源预检：CLI 派发前、TaskWorkflow 首次状态写入前、最终 Closure Gate。进入 Projection 后的确定性 Bootstrap 失败由原 Workflow terminalize 并归档。
+
+对已经完成失败的 TASK-0028，`BootstrapFailureRecoveryWorkflow/TASK-0028` 按原 Invocation ID attach 并确认相同 `BOOTSTRAP_BASE_COMMIT_NOT_FROZEN`，再次只读核验 Git 基线后，由 TaskAuthority 追加一次 recovery ref。successor 从原事件序列继续追加 Recovery/TaskClosed，并调用既有 ArchiveWorkflow。原 TaskWorkflow Projection 与失败 Invocation 保持未修改。
 
 ## Evidence
 
@@ -53,22 +57,26 @@ Restate 的 `TaskWorkflow/TASK-0028/run` Invocation 以 `BOOTSTRAP_BASE_COMMIT_N
 - `TaskWorkflow/TASK-0028/status`：`state=EXECUTING`，最后事件为 `TaskExecuting`；
 - `sys_invocation`：`TaskWorkflow/TASK-0028/run` 为 `completed/failure`；
 - Git：Manifest 引入提交为 `6da186f`，其父提交为 `ed2b9211d44bc024fbf1b3aecd82533ccbfa00a1`。
+- 原失败 Invocation：`inv_11E8Qgaf5P8C7sJatlpDb7inf2nwlhoknv`，仍为失败历史来源；
+- Recovery Projection：Event sequence 3～6 为 `TaskRecoveryStarted`、`TaskClosed`、`ArchivePending`、`ArchiveArchived`；
+- 最终结果：`state=CLOSED`、`outcome=FAILED_TERMINAL`、`archiveStatus=ARCHIVED`；
+- Archive Artifact：`docs/delivery/tasks/archive/2026-08-23-TASK-0028/bootstrap-runtime-failure.json`。
 
 ## Backlog Outputs
 
 | Backlog ID | 类型 | 说明 | 状态 |
 |---|---|---|---|
-| BL-0031 | Prevent / Recover | 提前校验 Bootstrap 基线，并让确定性关闭材料失败收敛为可审计终态 | Captured |
+| BL-0031 | Prevent / Recover | 提前校验 Bootstrap 基线，并让确定性关闭材料失败收敛为可审计终态 | Converted to TASK-0029 |
 
 ## Immediate Action Items
 
 | 行动 | 类型 | 负责人 | 截止时间 | 状态 |
 |---|---|---|---|---|
 | 保留 Projection、Invocation 和 Task Artifact 原始失败证据 | Mitigate | Moye | 2026-08-22 | Done |
-| 增加创建前基线预检与 Workflow 失败收敛路径 | Prevent | BL-0031 | 待调度 | Open |
+| 增加创建前基线预检与 Workflow 失败收敛路径 | Prevent | TASK-0029 | 2026-08-23 | Done |
 
 ## Knowledge Promotion
 
-- 是否形成 Pitfall：暂不新增；已由 Closure Gate 的冻结规则覆盖，待修复后判断是否需要独立条目；
+- 是否形成 Pitfall：已新增 Durable Runtime Pitfall #14，覆盖晚校验导致 Invocation 与业务状态分离；
 - 是否需要 ADR：否，不改变防篡改原则；
-- 是否更新 Architecture/Runbook：BL-0031 实现时更新 Task Runtime Architecture、Runbook 与 CLI 操作说明。
+- 是否更新 Architecture/Runbook：TASK-0029 已更新 Task Runtime、Restate PoC、CodeMap、Runbook 与 CLI 操作说明。

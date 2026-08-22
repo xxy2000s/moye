@@ -227,6 +227,12 @@ Coding Workflow 在实际外部操作前发布对应 `STEP_STARTED`：Implementa
 
 该视图仍只覆盖当前已经实现的 Coding/TaskWorkflow 状态，不冒充总体架构中规划的 Lease、Fencing、完整 Replan 或多 Daemon 状态。Board、Trace Builder 和浏览器均没有状态推进命令。
 
+### 5.0.12 当前已实现 Bootstrap 预检与失败 successor 切片
+
+Goal Bootstrap 使用三次同源校验：CLI 在派发前给出同步错误，`TaskWorkflow` 在 Authority claim 和首个 Projection 之前用 durable Step 兜底，最终 Closure Gate 在接受 Result Commit 时再次验证。三处复用 `verifyBootstrapPreflight` 的同一 Git 基线规则：当前 Manifest、首次引入 Manifest 的 `base_commit` 与引入提交父提交必须一致。派发前失败不创建 Authority、Projection 或 Board 记录；进入 Projection 后的确定性 Evidence/Closure 失败由 TaskWorkflow 追加唯一 `FAILED_TERMINAL`、写 `bootstrap-runtime-failure.json` 并进入同一 ArchiveWorkflow。
+
+升级前已经以 Invocation Failure 结束、但 Projection 留在 `EXECUTING` 的 Bootstrap Task 不能 restart、purge、patch 或伪造 Board。唯一兼容路径是窄化的 `BootstrapFailureRecoveryWorkflow/<task_id>`：它按 Invocation ID attach 原失败、重放只读基线检查、验证无 Evidence 的 `EXECUTING/NOT_READY` Projection，再让 TaskAuthority 追加一次 successor ref。successor 只追加 `TaskRecoveryStarted` 和 `TaskClosed(FAILED_TERMINAL)`，持久化失败证据并调用既有 Archive；原 Workflow Projection 和 Invocation 永久保留为来源历史。该兼容路径不接受成功、非 Bootstrap、已关闭或错误码不匹配的 Task，也不是普通 Retry。
+
 ### 5.1 模型关系
 
 ```mermaid

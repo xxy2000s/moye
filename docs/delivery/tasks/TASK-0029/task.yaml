@@ -1,15 +1,14 @@
 schema_version: 1
-id: TASK-0028
-title: 将单任务审计改为全屏路由并持久化本地 Runtime
+id: TASK-0029
+title: 修复 Bootstrap 预检、失败收敛与历史任务恢复
 status: received
 outcome:
 backlog_refs:
-  - BL-0029
-  - BL-0030
+  - BL-0031
 spec_revision: 1
-workflow_id: task/TASK-0028
+workflow_id: task/TASK-0029
 execution_mode: goal-bootstrap
-base_commit: ed2b9211d44bc024fbf1b3aecd82533ccbfa00a1
+base_commit: 3d2a64a93eec6a4147df4cf0559bd6b9fd92be8e
 archive:
   status: not_ready
   archived_at:

@@ -1,7 +1,7 @@
 # Durable Task Runtime Pitfalls
 
 > 状态：Active
-> 更新日期：2026-08-22
+> 更新日期：2026-08-23
 > 关联设计：[Task Runtime Kernel](../../current/architecture/task-runtime-kernel.md)
 
 ## 1. 使用 Trace 作为业务状态
@@ -94,3 +94,10 @@
 - 后果：ProjectBoard Projection、Workflow Journal 和 Domain Event 随容器消失；Git Task Archive 仍在，但不能原样重建运行时执行历史。
 - 检测：`docker inspect` 中 `/restate-data` 没有 Mount，或 Compose 配置中 Restate 没有命名卷/绑定卷。
 - 规避：标准本地入口使用 `npm run runtime:up`，把 `/restate-data` 挂载到 `moye_restate_data`；日常停止只用 `runtime:down`，不执行 `down -v`。Git Archive 与 Runtime Projection 分别审计，禁止页面扫描目录伪造 History。
+
+## 14. 在 Projection 已推进后才验证不可变 Bootstrap 基线
+
+- 触发：先 claim Authority 并写入 `RECEIVED/EXECUTING`，直到 Closure 才检查 Manifest 首次引入提交和 `base_commit`。
+- 后果：Gate 正确拒绝证据，但 Workflow Invocation 已完成失败，业务 Projection 永久停在非终态；Restate Workflow 又不能 restart-as-new。
+- 检测：`sys_invocation` 为 `completed/failure`，而同 key shared status 仍是 `EXECUTING/NOT_READY`；Board 和 Invocation 结论分离。
+- 规避：CLI 与 Workflow 首次状态写入前复用同一只读 Preflight，最终 Gate 再校验；进入 Projection 后的确定性错误必须在 Workflow 内 terminalize。历史遗留只能通过核对原 Invocation 的 append-only successor recovery 收敛，不能 purge、patch state 或直接改 Board。

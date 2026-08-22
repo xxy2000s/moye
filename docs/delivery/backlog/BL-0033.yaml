@@ -1,0 +1,13 @@
+schema_version: 1
+id: "BL-0033"
+title: "将 Core v2 研发生命周期文档建模为一等 Artifact"
+kind: "feature"
+status: "ready"
+priority: "high"
+source_refs: [core-v2-five-plus-one-agent-requirements]
+affected_areas: [task-artifacts, task-envelope, document-control]
+acceptance_outline:
+  - "Spec、Design、Plan、Docs Impact、Test Plan、Test Report、Review 和 Knowledge Disposition 有稳定 Schema"
+  - "Artifact 绑定 Task、Revision、Attempt、Commit 和 Digest"
+  - "旧 Revision Artifact 不得满足新 Gate"
+resolution: { task_refs: [], duplicate_of: null, reason: "为五类角色提供可恢复交接协议" }

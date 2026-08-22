@@ -5,6 +5,7 @@ import {
   createTaskProjection,
   failTask,
   recordBootstrapEvidence,
+  recoverFailedBootstrapTask,
   transitionTask,
   updateArchiveStatus,
 } from "../../src/domain/task.js";
@@ -18,6 +19,27 @@ const input = {
 } as const;
 
 describe("task lifecycle", () => {
+  it("only recovers an unevidenced executing bootstrap projection by appending history", () => {
+    const created = createTaskProjection(input, "2026-08-19T00:00:00.000Z");
+    const executing = transitionTask(created, "EXECUTING", "implementation", "2026-08-19T00:00:01.000Z");
+    const recovered = recoverFailedBootstrapTask(
+      executing,
+      "restate://TaskWorkflow/TASK-0001#inv_source",
+      "base not frozen",
+      "2026-08-19T00:00:02.000Z",
+    );
+    expect(recovered).toMatchObject({ state: "CLOSED", outcome: "FAILED_TERMINAL", archiveStatus: "PENDING" });
+    expect(recovered.events.map((event) => event.type)).toEqual([
+      "TaskCreated", "TaskExecuting", "TaskRecoveryStarted", "TaskClosed",
+    ]);
+    expect(() => recoverFailedBootstrapTask(
+      recovered,
+      "restate://TaskWorkflow/TASK-0001#inv_source",
+      "again",
+      "2026-08-19T00:00:03.000Z",
+    )).toThrow(/not an unevidenced EXECUTING/);
+  });
+
   it("keeps CLOSED separate from archive completion", () => {
     const created = createTaskProjection(input, "2026-08-19T00:00:00.000Z");
     const executing = transitionTask(

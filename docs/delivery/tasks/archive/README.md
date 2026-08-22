@@ -41,5 +41,6 @@ YYYY-MM-DD-TASK-NNNN
 | [TASK-0025](./2026-08-22-TASK-0025/spec.md) | Succeeded | 2026-08-22 | 补齐状态机节点的执行与系统管控下钻 |
 | [TASK-0026](./2026-08-22-TASK-0026/spec.md) | Succeeded | 2026-08-22 | 重构节点 Inspector 并内联 Agent Events 预览 |
 | [TASK-0027](./2026-08-22-TASK-0027/spec.md) | Succeeded | 2026-08-22 | 优化状态机边标签与合法路径详情 |
+| [TASK-0028](./2026-08-23-TASK-0028/spec.md) | Failed Terminal | 2026-08-23 | 全屏任务审计与持久化已实现；Bootstrap 基线未冻结导致任务失败收敛 |
 
 Bootstrap Task 的 `task.yaml` 冻结在 Archive 开始前，因此其中 `archive.status: pending` 描述的是冻结点；最终 `ARCHIVED` 事实由目录位置、`archive-manifest.json` 和 ProjectBoard Projection 共同证明。TASK-0002 归档后文档图门禁曾发现 Spec 的 Active 相对链接因目录层级变化而失效，控制面只修正了该链接；修正前内容仍由 Result Commit `ff1954f4e4360e85276cf22aa30d6f5e8e396f84` 保存。后续 Task 使用不随 Active/Archive 深度变化的稳定引用。

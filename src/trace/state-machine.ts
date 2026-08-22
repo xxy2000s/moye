@@ -49,7 +49,7 @@ export interface StateMachineExecution {
 export interface TaskStateMachineTrace {
   readonly schemaVersion: 1;
   readonly authority: "derived-from-runtime-projection";
-  readonly workflow: "CodingTaskWorkflow" | "TaskWorkflow";
+  readonly workflow: "CodingTaskWorkflow" | "TaskWorkflow" | "BootstrapFailureRecoveryWorkflow";
   readonly definition: {
     readonly nodes: readonly StateMachineNode[];
     readonly edges: readonly StateMachineEdge[];
@@ -149,7 +149,10 @@ export function buildCodingStateMachine(projection: CodingWorkflowProjection): T
   });
 }
 
-export function buildTaskStateMachine(projection: TaskProjection): TaskStateMachineTrace {
+export function buildTaskStateMachine(
+  projection: TaskProjection,
+  workflow: "TaskWorkflow" | "BootstrapFailureRecoveryWorkflow" = "TaskWorkflow",
+): TaskStateMachineTrace {
   const history = taskHistory(projection.events);
   const overall = projection.archiveStatus === "ARCHIVED"
     ? "ARCHIVED"
@@ -167,7 +170,7 @@ export function buildTaskStateMachine(projection: TaskProjection): TaskStateMach
     evidenceDigests: [projection.execution.resultCommit, ...projection.execution.verificationRefs, projection.execution.docsImpactRef],
   }];
   return finalizeMachine({
-    workflow: "TaskWorkflow",
+    workflow,
     nodes: TASK_NODES,
     edges: TASK_EDGES,
     business: projection.state,

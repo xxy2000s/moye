@@ -1,7 +1,7 @@
 # 本地运行 Restate PoC
 
 > 状态：Verified  
-> 验证日期：2026-08-22
+> 验证日期：2026-08-23
 > 适用版本：Node.js 22、Restate SDK 1.16.7、Restate Server 1.7.4
 
 ## 1. 第一次体验
@@ -109,12 +109,15 @@ npm run cli -- create --file /path/to/task.json
 npm run cli -- status TASK-EXAMPLE
 npm run cli -- wait TASK-EXAMPLE --timeout-ms 900000
 npm run cli -- close --file /path/to/task.json
+npm run cli -- recover-bootstrap-failure --file /path/to/recovery.json
 npm run cli -- backlog sync --dir docs/delivery/backlog --project moye
 ```
 
 - `create` 异步提交 keyed owning Workflow；`status/wait` 先解析 TaskAuthority，不会把 Coding Task 错查到 TaskWorkflow；
 - `wait` 在成功/失败 Archive 终态、Archive 失败或 `WAITING_RECONCILE` 返回；不会创建第二个 Invocation；
-- `close` 连接同一 Workflow 并等待业务终态，不创建第二条流程；
+- Bootstrap `validate/create/close` 在派发前校验 Manifest 首次引入提交与冻结 Base；失败时不会创建 Authority、Projection 或 Board 记录；Runtime 在首次写状态前执行同一兜底校验；
+- `close` 只提交指定 Bootstrap Workflow；已存在的重复 `run` 由 Restate 明确拒绝，使用 `status/wait` 查询既有结果；
+- `recover-bootstrap-failure` 只用于升级前已经 Invocation 失败、Projection 仍为无 Evidence `EXECUTING/NOT_READY` 的已知 Bootstrap 故障。输入必须包含原 Invocation ID 和预期错误码；命令创建 append-only successor，不能用于 Retry、成功任务或手工改写 Projection；
 - `archive` 和 `reconcile` 连接同一 keyed ArchiveWorkflow。
 - `backlog sync` 在提交前校验完整 YAML 批次；重复同步按 Source Digest 收敛；运行时独有记录默认保留并报告。
 - `CodingTaskWorkflow/<task_id>` 接受冻结 Envelope 和真实 Runner 配置；产品链是 Context → Worktree → Implementation → Self Review → Verification → independent Review → Repair/Replan → Merge → Docs Gate → Closure → Archive。Blocking Finding 的 `REPAIR` 创建新 Generation，`REPLAN` 创建 Spec Revision N+1；主状态、全部 Session 与事件摘要同步到 Board。
