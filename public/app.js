@@ -550,16 +550,62 @@ function renderMachineNodeInspector(machine, nodeId, trace) {
   const outgoing = machine.definition.edges.filter(edge => edge.from === node.id);
   const history = machine.history.filter(item => item.from === node.id || item.to === node.id);
   const executions = machine.executions.filter(item => machineExecutionBelongsToNode(item, node.id));
+  const agentExecutions = executions.filter(item => machineSessionForExecution(item, trace));
+  const technicalExecutions = executions.filter(item => !machineSessionForExecution(item, trace));
   const edgeItems = (items, direction) => items.map(edge => `<li class="kind-${edge.kind.toLowerCase()} ${edge.traversed ? "traversed" : ""}"><code>${escapeHtml(direction === "in" ? edge.from : edge.to)}</code><span>${escapeHtml(machineEdgeLabel(edge.kind))}${edge.traversed ? " · 实际" : ""}</span><small>${escapeHtml(edge.label)}</small></li>`).join("");
   return `<header><div><span>${escapeHtml(node.domain)} · ${node.terminal ? "终态" : "可转换状态"}</span><h4>${escapeHtml(node.label)}</h4><code>${escapeHtml(node.id)}</code></div><div class="machine-inspector-actions"><strong class="status-${node.status.toLowerCase()}">${node.status === "CURRENT" ? "当前" : node.status === "VISITED" ? "已进入" : "未进入"}</strong><button type="button" data-machine-inspector-close aria-label="关闭节点详情">关闭详情</button></div></header>
-    <div class="machine-inspector-counts"><span>入边 <strong>${incoming.length}</strong></span><span>出边 <strong>${outgoing.length}</strong></span><span>实际 Event <strong>${history.length}</strong></span><span>执行实例 <strong>${executions.length}</strong></span></div>
-    ${history.length ? `<section class="machine-node-section"><div class="machine-node-section-heading"><span>01</span><div><h5>实际状态事件</h5><p>由连续 Domain Event 证明，不是页面推断。</p></div></div><ol class="machine-node-events">${history.map(item => `<li><span class="sequence">${String(item.sequence).padStart(2, "0")}</span><div><strong>${escapeHtml(item.from)} → ${escapeHtml(item.to)}</strong><small>${escapeHtml(item.eventType)} · ${formatTime(item.at)}</small>${item.detail ? `<code>${escapeHtml(shortDigest(item.detail))}</code>` : ""}</div></li>`).join("")}</ol></section>` : `<p class="machine-node-empty"><strong>本次运行没有进入这个状态。</strong><span>下方只展示代码允许的合法转换，不会虚构 Attempt、Session 或 Evidence。</span></p>`}
-    ${executions.length ? `<section class="machine-node-section"><div class="machine-node-section-heading"><span>02</span><div><h5>执行实例与 Agent</h5><p>Attempt、Run、Session、时间和证据按当前节点聚合。</p></div></div><div class="machine-node-executions">${executions.map(item => renderMachineExecutionDetail(item, trace)).join("")}</div></section>` : ""}
+    <div class="machine-inspector-counts" aria-label="节点事实计数"><span><strong>${agentExecutions.length}</strong> Agent</span><span><strong>${history.length}</strong> 状态记录</span><span><strong>${executions.length}</strong> 执行实例</span></div>
+    ${agentExecutions.length ? `<section class="machine-node-section machine-node-agent-section"><div class="machine-node-section-heading"><p class="machine-node-section-kicker">Agent activity</p><h5>Agent 活动</h5><p>来自这个节点实际 Run / Session 的对话、工具调用、工具结果、系统和错误事件。</p></div><div class="machine-agent-activities">${agentExecutions.map(item => renderMachineAgentActivity(item, trace)).join("")}</div></section>` : ""}
+    ${history.length ? `<section class="machine-node-section"><div class="machine-node-section-heading"><p class="machine-node-section-kicker">Workflow facts</p><h5>状态流转记录</h5><p><strong>Domain Event</strong> 是 Workflow 写入的业务事实，只证明这个状态如何进入和离开；它不是 Agent 的聊天或工具日志。</p></div><ol class="machine-node-events">${history.map(item => `<li><span class="sequence">#${String(item.sequence).padStart(2, "0")}</span><div><strong>${escapeHtml(item.from)} → ${escapeHtml(item.to)}</strong><small>${escapeHtml(item.eventType)} · ${formatTime(item.at)}</small>${item.detail ? `<code>${escapeHtml(shortDigest(item.detail))}</code>` : ""}</div></li>`).join("")}</ol></section>` : `<p class="machine-node-empty"><strong>本次运行没有进入这个状态。</strong><span>只展示代码允许的合法转换，不会虚构 Agent、Session、Attempt 或 Evidence。</span></p>`}
     ${renderMachineControlFacts(trace, node.id)}
+    ${technicalExecutions.length ? `<details class="machine-node-technical"><summary>执行 ID 与 Evidence <span>${technicalExecutions.length}</span></summary><div class="machine-node-executions">${technicalExecutions.map(item => renderMachineExecutionDetail(item, trace)).join("")}</div></details>` : ""}
     <details class="machine-node-transitions"><summary>查看合法进入与离开路径</summary><div class="machine-inspector-grid">
       <section><h5>进入这个状态</h5><ul>${edgeItems(incoming, "in") || "<li>没有入边</li>"}</ul></section>
       <section><h5>从这里继续</h5><ul>${edgeItems(outgoing, "out") || "<li>没有出边</li>"}</ul></section>
     </div></details>`;
+}
+
+function machineSessionForExecution(execution, trace) {
+  return trace?.agents?.find(item => item.runId === execution.id)
+    || trace?.roles?.find(item => item.runId === execution.id)
+    || trace?.reviews?.find(item => item.runId === execution.id);
+}
+
+function renderMachineAgentActivity(execution, trace) {
+  const session = machineSessionForExecution(execution, trace);
+  if (!session) return "";
+  const role = trace?.roles?.find(item => item.runId === execution.id);
+  const review = trace?.reviews?.find(item => item.runId === execution.id);
+  const kind = role?.kind || (review ? "INDEPENDENT_REVIEW" : "IMPLEMENTATION");
+  const verdict = role?.verdict || review?.verdict;
+  const findings = review ? `${review.findingCount} Finding · ${review.blockingFindingCount} Blocking` : role ? `${role.findingCount} Finding` : "";
+  const summary = role?.summary || review?.summary;
+  const eventButton = sessionEventsButton({
+    eventsUrl: session.eventsUrl,
+    kind,
+    binding: `${execution.attemptId || execution.id} · ${execution.sessionId || "等待 Session"}`,
+    runnerKind: execution.producer || session.runnerKind,
+    label: "查看全部 Agent Events",
+  });
+  return `<article class="machine-agent-activity">
+    <header><div><span class="machine-agent-mark" aria-hidden="true">A</span><div><small>${escapeHtml(roleLabel(kind))}</small><h6>${escapeHtml(runnerLabel(execution.producer || session.runnerKind))}</h6></div></div><strong class="state-${executionColor(execution.state)}">${escapeHtml(execution.state)}</strong></header>
+    <div class="machine-agent-glance"><span>Session <code>${escapeHtml(execution.sessionId || "等待建立")}</code></span>${execution.startedAt ? `<span>${formatDuration(execution.startedAt, execution.finishedAt)}</span>` : ""}${execution.generation === undefined ? "" : `<span>Generation ${execution.generation}</span>`}${verdict ? `<span>${escapeHtml(verdict)}</span>` : ""}</div>
+    ${summary ? `<p class="machine-agent-summary">${escapeHtml(summary)}</p>` : ""}
+    ${findings ? `<p class="machine-agent-findings">${escapeHtml(findings)}</p>` : ""}
+    <div class="machine-agent-primary-action">${eventButton}</div>
+    ${session.eventsUrl ? `<div class="machine-agent-preview" data-machine-agent-preview data-events-url="${escapeAttribute(session.eventsUrl)}" aria-live="polite"><div class="machine-agent-preview-loading">正在读取这个 Session 的真实 Agent Events…</div></div>` : ""}
+    <details class="machine-agent-technical"><summary>Run、Attempt 与 Evidence</summary>${renderMachineExecutionTechnical(execution, trace)}</details>
+  </article>`;
+}
+
+function renderMachineExecutionTechnical(execution, trace) {
+  const attempt = trace?.business?.attempts?.find(item => item.attemptId === (execution.attemptId || execution.id));
+  const evidence = attempt?.evidenceRecords || [];
+  return `<dl class="machine-node-facts">
+    <div><dt>Run ID</dt><dd><code>${escapeHtml(execution.id)}</code></dd></div>
+    ${execution.attemptId ? `<div><dt>Attempt</dt><dd><code>${escapeHtml(execution.attemptId)}</code></dd></div>` : ""}
+    ${attempt?.specRevision === undefined ? "" : `<div><dt>证据绑定</dt><dd>R${attempt.specRevision} · G${attempt.generation}</dd></div>`}
+  </dl>${(evidence.length || execution.evidenceDigests.length) ? `<ul class="machine-agent-evidence">${evidence.length ? evidence.map(record => `<li><strong>${escapeHtml(record.artifactName)}</strong><code>${escapeHtml(record.artifactRef)}</code><small>${escapeHtml(record.contentDigest)}</small></li>`).join("") : execution.evidenceDigests.map(digest => `<li><code>${escapeHtml(digest)}</code></li>`).join("")}</ul>` : ""}`;
 }
 
 function machineExecutionBelongsToNode(execution, nodeId) {
@@ -571,20 +617,7 @@ function machineExecutionBelongsToNode(execution, nodeId) {
 
 function renderMachineExecutionDetail(execution, trace) {
   const attempt = trace?.business?.attempts?.find(item => item.attemptId === (execution.attemptId || execution.id));
-  const agent = trace?.agents?.find(item => item.runId === execution.id);
-  const role = trace?.roles?.find(item => item.runId === execution.id);
-  const review = trace?.reviews?.find(item => item.runId === execution.id);
-  const session = agent || role || review;
   const evidence = attempt?.evidenceRecords || [];
-  const verdict = role?.verdict || review?.verdict;
-  const summary = role?.summary || review?.summary;
-  const findings = review ? `${review.findingCount} 个 Finding · ${review.blockingFindingCount} 个 Blocking` : role ? `${role.findingCount} 个 Finding` : "";
-  const eventButton = sessionEventsButton({
-    eventsUrl: session?.eventsUrl,
-    kind: role?.kind || (review ? "INDEPENDENT_REVIEW" : agent ? "IMPLEMENTATION" : execution.kind),
-    binding: `${execution.attemptId || execution.id} · ${execution.sessionId || "等待 Session"}`,
-    runnerKind: execution.producer || session?.runnerKind,
-  });
   return `<article class="machine-node-execution">
     <div class="machine-node-execution-heading"><span class="tag ${executionColor(execution.state)}">${escapeHtml(executionKindLabel(execution.kind))}</span><strong>${escapeHtml(execution.state)}</strong>${execution.generation === undefined ? "" : `<em>Generation ${execution.generation}</em>`}</div>
     <dl class="machine-node-facts">
@@ -594,11 +627,7 @@ function renderMachineExecutionDetail(execution, trace) {
       ${execution.sessionId ? `<div><dt>Session</dt><dd><code>${escapeHtml(execution.sessionId)}</code></dd></div>` : ""}
       ${execution.startedAt ? `<div><dt>开始</dt><dd>${formatTime(execution.startedAt)}</dd></div><div><dt>耗时</dt><dd>${formatDuration(execution.startedAt, execution.finishedAt)}</dd></div>` : ""}
       ${attempt?.specRevision === undefined ? "" : `<div><dt>证据绑定</dt><dd>R${attempt.specRevision} · G${attempt.generation}</dd></div>`}
-      ${verdict ? `<div><dt>Gate 结论</dt><dd><strong>${escapeHtml(verdict)}</strong></dd></div>` : ""}
     </dl>
-    ${summary ? `<p class="machine-node-summary">${escapeHtml(summary)}</p>` : ""}
-    ${findings ? `<p class="machine-node-findings">${escapeHtml(findings)}</p>` : ""}
-    ${session?.eventsUrl ? `<div class="machine-node-actions">${eventButton}</div>` : ""}
     ${(evidence.length || execution.evidenceDigests.length) ? `<details class="machine-node-evidence"><summary>Evidence · ${evidence.length || execution.evidenceDigests.length} 项</summary>${evidence.length ? `<ul>${evidence.map(record => `<li><strong>${escapeHtml(record.artifactName)}</strong><code>${escapeHtml(record.artifactRef)}</code><small>${escapeHtml(record.contentDigest)}</small></li>`).join("")}</ul>` : `<ul>${execution.evidenceDigests.map(digest => `<li><code>${escapeHtml(digest)}</code></li>`).join("")}</ul>`}</details>` : ""}
   </article>`;
 }
@@ -645,7 +674,7 @@ function renderMachineControlFacts(trace, nodeId) {
   }
   if (["ARCHIVING", "ARCHIVED", "ARCHIVE_FAILED"].includes(nodeId)) rows.push(["Archive 状态", trace.task.archiveStatus]);
   if (rows.length === 0 && details.length === 0) return "";
-  return `<section class="machine-node-section machine-node-control"><div class="machine-node-section-heading"><span>03</span><div><h5>系统管控与结果</h5><p>Workflow、Git、Verification、Recovery 与 Archive 的只读事实。</p></div></div><dl class="machine-node-facts">${rows.map(([label, value, code]) => `<div><dt>${escapeHtml(label)}</dt><dd>${code ? `<code>${escapeHtml(value)}</code>` : escapeHtml(value)}</dd></div>`).join("")}</dl>${details.length ? `<ul class="machine-node-control-list">${details.join("")}</ul>` : ""}</section>`;
+  return `<section class="machine-node-section machine-node-control"><div class="machine-node-section-heading"><p class="machine-node-section-kicker">Control plane</p><h5>系统控制与结果</h5><p>Workflow、Git、Verification、Recovery 与 Archive 对这个节点的约束和结果。</p></div><dl class="machine-node-facts">${rows.map(([label, value, code]) => `<div><dt>${escapeHtml(label)}</dt><dd>${code ? `<code>${escapeHtml(value)}</code>` : escapeHtml(value)}</dd></div>`).join("")}</dl>${details.length ? `<ul class="machine-node-control-list">${details.join("")}</ul>` : ""}</section>`;
 }
 
 function bindStateMachineGraph(machine, trace) {
@@ -671,7 +700,10 @@ function bindStateMachineGraph(machine, trace) {
     inspector.setAttribute("aria-hidden", String(!open));
     if (open) {
       inspector.innerHTML = renderMachineNodeInspector(machine, machineGraphUiState.selectedId, trace);
-      if (trace?.traceKind === "CODING") bindAgentEventsDialog(trace, inspector);
+      if (trace?.traceKind === "CODING") {
+        bindAgentEventsDialog(trace, inspector);
+        bindMachineAgentEventPreviews(inspector);
+      }
       const close = inspector.querySelector("[data-machine-inspector-close]");
       close?.addEventListener("click", () => setInspectorOpen(false, true));
       if (moveFocus && close instanceof HTMLButtonElement) window.requestAnimationFrame(() => close.focus());
@@ -690,6 +722,10 @@ function bindStateMachineGraph(machine, trace) {
     machineGraphUiState.scrollTop = scroll.scrollTop;
     machineGraphUiState.selectedId = nodeId;
     setInspectorOpen(true, true);
+    window.requestAnimationFrame(() => stage.scrollIntoView({
+      block: "start",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    }));
   };
   section.querySelectorAll("[data-machine-node]").forEach(button => button.addEventListener("click", () => selectNode(button.dataset.machineNode)));
   closeMachineGraphInspector = restoreFocus => {
@@ -752,9 +788,48 @@ function executionColor(state) {
   return "blue";
 }
 
-function sessionEventsButton({ eventsUrl, kind, binding, runnerKind }) {
+function sessionEventsButton({ eventsUrl, kind, binding, runnerKind, label = "在弹窗查看对话" }) {
   if (!eventsUrl) return '<span class="session-events-unavailable">Events 尚未就绪</span>';
-  return `<button type="button" class="session-events-trigger" data-agent-events-trigger data-agent-events-url="${escapeAttribute(eventsUrl)}" data-agent-events-download-url="${escapeAttribute(eventsUrl)}" data-agent-events-kind="${escapeHtml(kind)}" data-agent-events-binding="${escapeHtml(`${binding} · ${runnerLabel(runnerKind)}`)}" data-agent-events-runner="${escapeHtml(runnerKind)}" aria-controls="agent-events-dialog" aria-haspopup="dialog" aria-expanded="false">在弹窗查看对话</button>`;
+  return `<button type="button" class="session-events-trigger" data-agent-events-trigger data-agent-events-url="${escapeAttribute(eventsUrl)}" data-agent-events-download-url="${escapeAttribute(eventsUrl)}" data-agent-events-kind="${escapeHtml(kind)}" data-agent-events-binding="${escapeHtml(`${binding} · ${runnerLabel(runnerKind)}`)}" data-agent-events-runner="${escapeHtml(runnerKind)}" aria-controls="agent-events-dialog" aria-haspopup="dialog" aria-expanded="false">${escapeHtml(label)}</button>`;
+}
+
+function bindMachineAgentEventPreviews(root) {
+  root.querySelectorAll("[data-machine-agent-preview]").forEach(preview => {
+    if (!(preview instanceof HTMLElement) || !preview.dataset.eventsUrl) return;
+    const load = async () => {
+      preview.innerHTML = '<div class="machine-agent-preview-loading" role="status">正在读取这个 Session 的真实 Agent Events…</div>';
+      try {
+        const source = new URL(preview.dataset.eventsUrl, window.location.origin);
+        source.searchParams.set("cursor", "0");
+        source.searchParams.set("limit", "200");
+        const response = await fetch(source, { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const page = await response.json();
+        preview.innerHTML = renderMachineAgentEventPreview(page);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        preview.innerHTML = `<div class="machine-agent-preview-error"><p>Agent Events 预览读取失败：${escapeHtml(message)}</p><button type="button" data-machine-agent-preview-retry>重新读取</button></div>`;
+        preview.querySelector("[data-machine-agent-preview-retry]")?.addEventListener("click", () => void load(), { once: true });
+      }
+    };
+    void load();
+  });
+}
+
+function renderMachineAgentEventPreview(page) {
+  const events = Array.isArray(page.events) ? page.events : [];
+  if (events.length === 0) return `<p class="machine-agent-preview-empty">${page.completed ? "这个 Session 没有输出 Agent Event。" : "Agent 已启动，正在等待第一条事件。"}</p>`;
+  const categories = ["conversation", "tool", "tool_result", "system", "error"];
+  const labels = { conversation: "对话", tool: "工具调用", tool_result: "工具结果", system: "系统", error: "错误" };
+  const counts = categories.map(category => `<span><strong>${events.filter(event => event.category === category).length}</strong>${labels[category]}</span>`).join("");
+  const latest = events.slice(-3).map(event => {
+    const speaker = eventSpeaker(event);
+    const summary = event.parsed === undefined ? "原始事件解析失败，完整文本仍保留在 Events 弹窗。" : eventSummary(event.parsed, event.type);
+    return `<li><span class="machine-agent-event-mark" aria-hidden="true">${escapeHtml(speaker.mark)}</span><div><p><strong>${escapeHtml(speaker.label)}</strong><small>#${String(event.sequence).padStart(2, "0")} · ${escapeHtml(categoryLabel(event.category))}</small></p><span>${escapeHtml(summary)}</span></div></li>`;
+  }).join("");
+  const total = page.total ?? events.length;
+  const previewLabel = events.length < total ? "当前预览末尾" : "最近活动";
+  return `<div class="machine-agent-event-counts" aria-label="Agent Event 分类计数">${counts}</div><div class="machine-agent-preview-heading"><strong>${previewLabel}</strong><small>已读取 ${events.length} / ${total} 条${page.completed ? " · Session 已完成" : " · 运行中"}</small></div><ol class="machine-agent-preview-list">${latest}</ol>`;
 }
 
 function bindAgentEventsDialog(trace, root = elements.detail) {

@@ -102,8 +102,12 @@ describe("npm run demo", () => {
     expect(app).toContain("machineGraphUiState.inspectorOpen");
     expect(app).toContain("renderMachineExecutionDetail");
     expect(app).toContain("renderMachineControlFacts");
-    expect(app).toContain("执行实例与 Agent");
-    expect(app).toContain("系统管控与结果");
+    expect(app).toContain("renderMachineAgentActivity");
+    expect(app).toContain("bindMachineAgentEventPreviews");
+    expect(app).toContain("查看全部 Agent Events");
+    expect(app).toContain("状态流转记录");
+    expect(app).toContain("它不是 Agent 的聊天或工具日志");
+    expect(app).toContain("系统控制与结果");
     expect(app).toContain("machineExecutionBelongsToNode");
     expect(app).toContain('nodeId === "DOCS" && execution.step === "DOCS_GATE"');
     expect(app).toContain("trigger.dataset.agentEventsBound");
@@ -112,6 +116,8 @@ describe("npm run demo", () => {
     expect(styles).toContain('.machine-graph-stage[data-inspector-open="true"]');
     expect(styles).toContain(".machine-node-execution");
     expect(styles).toContain(".machine-node-control");
+    expect(styles).toContain(".machine-agent-activity");
+    expect(styles).toContain(".machine-agent-preview-list");
     expect(styles).toContain("position: fixed");
     expect(styles).toContain("width: 100vw");
     expect(app).toContain("openAgentEventsDialog");
