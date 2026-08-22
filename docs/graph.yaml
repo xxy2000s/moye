@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 70
+graph_revision: 71
 updated_at: "2026-08-23"
 
 entrypoints:
@@ -2512,6 +2512,54 @@ documents:
     authority: task-evidence
     read_when: [task-close, task-archive]
 
+  - id: task-0036-manifest
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0036/task.yaml
+    type: task-manifest
+    status: archived
+    scope: core-v2-test-verification
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0036-spec
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0036/spec.md
+    type: task-spec
+    status: archived
+    scope: core-v2-test-verification
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0036-design
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0036/design.md
+    type: task-design
+    status: archived
+    scope: core-v2-test-verification
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0036-plan
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0036/plan.md
+    type: task-plan
+    status: archived
+    scope: core-v2-test-verification
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0036-verification
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0036/verification.md
+    type: verification
+    status: archived
+    scope: core-v2-test-verification
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0036-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0036/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: core-v2-test-verification
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
 relations:
   - from: root-readme
     to: docs-index
@@ -4058,6 +4106,38 @@ relations:
     type: reports_on
 
   - from: task-0035-manifest
+    to: core-v2-agent-lifecycle
+    type: implements_slice_of
+
+  - from: bl-0038-core-v2-test-verification
+    to: task-0036-manifest
+    type: schedules_into
+
+  - from: archived-tasks-index
+    to: task-0036-manifest
+    type: indexes
+
+  - from: task-0036-spec
+    to: task-0036-manifest
+    type: belongs_to
+
+  - from: task-0036-design
+    to: task-0036-spec
+    type: refines
+
+  - from: task-0036-plan
+    to: task-0036-manifest
+    type: belongs_to
+
+  - from: task-0036-verification
+    to: task-0036-manifest
+    type: verifies
+
+  - from: task-0036-docs-impact
+    to: task-0036-manifest
+    type: reports_on
+
+  - from: task-0036-manifest
     to: core-v2-agent-lifecycle
     type: implements_slice_of
 

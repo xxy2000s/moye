@@ -1,0 +1,46 @@
+schema_version: 1
+task_id: TASK-0036
+graph_revision: 71
+intents: [workflow-change, task-create, effect-change]
+changed_paths: [docs/delivery/backlog/BL-0038.yaml, docs/delivery/backlog/README.md, docs/delivery/core-v2-roadmap.md, docs/delivery/tasks/archive/2026-08-23-TASK-0036/design.md, docs/delivery/tasks/archive/2026-08-23-TASK-0036/docs-impact.yaml, docs/delivery/tasks/archive/2026-08-23-TASK-0036/plan.md, docs/delivery/tasks/archive/2026-08-23-TASK-0036/spec.md, docs/delivery/tasks/archive/2026-08-23-TASK-0036/task.yaml, docs/delivery/tasks/archive/2026-08-23-TASK-0036/verification.md, docs/delivery/tasks/archive/README.md, docs/graph.yaml, docs/knowledge/current/architecture/core-v2-agent-lifecycle.md, docs/knowledge/current/codemap/README.md, src/domain/core-v2-lifecycle.ts, src/testing/trusted-test-runner.ts, tests/e2e/core-v2-test-verification.test.ts, tests/unit/core-v2-lifecycle.test.ts]
+docs:
+  read: [agent-contract, docs-index, codemap, document-control-plane, task-runtime-kernel, restate-poc-architecture, durable-runtime-pitfalls, tasks-index, core-v2-agent-lifecycle, architecture-index, backlog-index, bl-0038-core-v2-test-verification, sources-index, core-v2-roadmap, archived-tasks-index, task-0036-design, task-0036-docs-impact, task-0036-plan, task-0036-spec, task-0036-manifest, task-0036-verification]
+  reviewed:
+    architecture-overview: { outcome: unchanged, reason: "实现既有边界" }
+    local-restate-poc-runbook: { outcome: unchanged, reason: "无新命令" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "不改 Restate 决策" }
+    adr-0005-core-v2-agent-model: { outcome: unchanged, reason: "落实 Test 角色" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "继续 Seal" }
+    core-v2-five-plus-one-agent-requirements: { outcome: unchanged, reason: "消费 Test slice" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "边界未变" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "历史输入" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "历史输入" }
+    task-0013-manifest: { outcome: unchanged, reason: "历史" }
+    task-0014-manifest: { outcome: unchanged, reason: "历史" }
+    task-0015-manifest: { outcome: unchanged, reason: "历史" }
+    task-0016-manifest: { outcome: unchanged, reason: "历史" }
+    task-0017-manifest: { outcome: unchanged, reason: "历史" }
+    task-0018-manifest: { outcome: unchanged, reason: "历史" }
+    task-0019-manifest: { outcome: unchanged, reason: "历史" }
+    task-0020-manifest: { outcome: unchanged, reason: "历史" }
+    task-0021-manifest: { outcome: unchanged, reason: "历史" }
+    task-0028-manifest: { outcome: unchanged, reason: "历史" }
+    task-0029-manifest: { outcome: unchanged, reason: "历史" }
+    task-0030-manifest: { outcome: unchanged, reason: "历史" }
+    task-0031-manifest: { outcome: unchanged, reason: "复用 Artifact" }
+    task-0032-manifest: { outcome: unchanged, reason: "复用 Runtime" }
+    task-0033-manifest: { outcome: unchanged, reason: "复用 Lifecycle" }
+    task-0034-manifest: { outcome: unchanged, reason: "复用 Checkpoint" }
+    task-0035-manifest: { outcome: unchanged, reason: "复用 Docs Gate" }
+    task-0003-manifest: { outcome: unchanged, reason: "历史" }
+    task-0004-manifest: { outcome: unchanged, reason: "历史" }
+    task-0005-manifest: { outcome: unchanged, reason: "历史" }
+    task-0006-manifest: { outcome: unchanged, reason: "历史" }
+    task-0007-manifest: { outcome: unchanged, reason: "历史" }
+    task-0008-manifest: { outcome: unchanged, reason: "历史" }
+    task-0009-manifest: { outcome: unchanged, reason: "历史" }
+    task-0001-manifest: { outcome: unchanged, reason: "历史" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "TypeScript" }
+    adr-0004-otlp-phoenix-demo: { outcome: not_applicable, reason: "无观测导出" }
+    moye-task-control-skill: { outcome: unchanged, reason: "现有门禁" }
+    task-0002-manifest: { outcome: unchanged, reason: "历史" }

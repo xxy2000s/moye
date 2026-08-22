@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createCoreV2Lifecycle, workflowAcceptArchitectV2, workflowAcceptDesignReviewV2, workflowAcceptDocumentationV2, workflowAcceptImplementationV2, workflowAuthorizeRepairV2, workflowReplanV2 } from "../../src/domain/core-v2-lifecycle.js";
+import { createCoreV2Lifecycle, workflowAcceptArchitectV2, workflowAcceptDesignReviewV2, workflowAcceptDocumentationV2, workflowAcceptImplementationV2, workflowAcceptTestAssessmentV2, workflowAcceptTestPlanV2, workflowAuthorizeRepairV2, workflowRecordTrustedTestRunV2, workflowReplanV2 } from "../../src/domain/core-v2-lifecycle.js";
 import { completeRoleAttemptV2, createRoleAttemptV2, createRoleRunEvidenceV2, startRoleAttemptV2 } from "../../src/domain/role-runtime-v2.js";
 import type { AgentRoleV2, RolePhaseV2 } from "../../src/domain/role-runtime-v2.js";
 
@@ -73,6 +73,17 @@ describe("Core v2 Architect and Design Review lifecycle", () => {
       type: "DOCS_IMPACT", routeDigest: sha("8"), reportRef: "artifact://docs-impact", dispositions: [],
     }, time(6))).toThrow(/does not bind/);
   });
+
+  it("requires Trusted Runner Evidence between Test Plan and Assessment", () => {
+    const documented = documentedReady();
+    let planned = workflowAcceptTestPlanV2(documented, success("TEST_VERIFICATION", "TEST_PLAN", "c".repeat(40)), testPlan(), time(7));
+    expect(planned.state).toBe("TEST_EXECUTION_REQUIRED");
+    expect(() => workflowAcceptTestAssessmentV2(planned, success("TEST_VERIFICATION", "TEST_ASSESSMENT", "c".repeat(40)), report("PASS"), time(8)))
+      .toThrow(/requires recorded/);
+    planned = workflowRecordTrustedTestRunV2(planned, { runId: "run-1", manifestRef: "artifact://test-manifest", manifestDigest: sha("9"), at: time(8) });
+    const assessed = workflowAcceptTestAssessmentV2(planned, success("TEST_VERIFICATION", "TEST_ASSESSMENT", "c".repeat(40)), report("PASS"), time(9));
+    expect(assessed.state).toBe("FINAL_REVIEW_REQUIRED");
+  });
 });
 
 function implementationReady() {
@@ -80,6 +91,19 @@ function implementationReady() {
   const architect = workflowAcceptArchitectV2(initial, success("ARCHITECT", "ARCHITECT"), deliverable(), time(3));
   return workflowAcceptDesignReviewV2(architect, success("REVIEW", "DESIGN_REVIEW"), { verdict: "PASSED", findingRefs: [] }, time(4));
 }
+
+function documentedReady() {
+  const implemented = workflowAcceptImplementationV2(implementationReady(), success("IMPLEMENTATION", "IMPLEMENTATION"), checkpoint("PASSED"), time(5));
+  return workflowAcceptDocumentationV2(implemented, success("DOCUMENTATION", "DOCUMENTATION", "c".repeat(40)), {
+    type: "DOCS_IMPACT", routeDigest: sha("8"), reportRef: "artifact://docs-impact",
+    dispositions: [{ documentId: "codemap", outcome: "updated", reason: "changed" }],
+  }, time(6));
+}
+
+function testPlan() { return { type: "TEST_PLAN" as const, cases: [{ id: "TC-1", requirementIds: ["REQ-1"], category: "NORMAL" as const, argv: ["node", "--version"] }] }; }
+function report(recommendation: "PASS" | "FINDINGS" | "INCONCLUSIVE") { return { type: "TEST_REPORT" as const, candidateCommit: "c".repeat(40),
+  outcomes: [{ caseId: "TC-1", status: recommendation === "PASS" ? "PASSED" as const : recommendation === "FINDINGS" ? "FAILED" as const : "UNKNOWN" as const,
+    evidenceRefs: ["artifact://test-manifest"] }], recommendation, findingRefs: recommendation === "FINDINGS" ? ["finding://test"] : [] }; }
 
 function checkpoint(verdict: "PASSED" | "FINDINGS") { return {
   candidateCommit: "c".repeat(40), treeDigest: "d".repeat(40), checkpointRef: "artifact://checkpoint",

@@ -13,6 +13,8 @@ import type {
   LifecycleArtifactRef,
   PlanPayload,
   SpecPayload,
+  TestPlanPayload,
+  TestReportPayload,
 } from "./lifecycle-artifact.js";
 import { parseRoleAttemptV2 } from "./role-runtime-v2.js";
 import type { RoleAttemptV2 } from "./role-runtime-v2.js";
@@ -25,7 +27,11 @@ export type CoreV2LifecycleState =
   | "IMPLEMENTATION_REQUIRED"
   | "REPAIR_REQUIRED"
   | "DOCUMENTATION_REQUIRED"
-  | "TEST_PLAN_REQUIRED";
+  | "TEST_PLAN_REQUIRED"
+  | "TEST_EXECUTION_REQUIRED"
+  | "TEST_ASSESSMENT_REQUIRED"
+  | "WAITING_RECONCILE"
+  | "FINAL_REVIEW_REQUIRED";
 
 export interface CoreV2LifecycleEvent {
   readonly sequence: number;
@@ -65,6 +71,7 @@ export interface CoreV2LifecycleProjection {
   readonly state: CoreV2LifecycleState;
   readonly artifacts: readonly LifecycleArtifact[];
   readonly implementationCheckpoints: readonly ImplementationCheckpointV2[];
+  readonly trustedTestRun: { readonly runId: string; readonly manifestRef: string; readonly manifestDigest: string } | null;
   readonly invalidatedRevisions: readonly InvalidatedRevisionV2[];
   readonly events: readonly CoreV2LifecycleEvent[];
   readonly projectionDigest: string;
@@ -96,6 +103,7 @@ export function createCoreV2Lifecycle(input: {
     state: "ARCHITECT_REQUIRED",
     artifacts: [],
     implementationCheckpoints: [],
+    trustedTestRun: null,
     invalidatedRevisions: [],
     events: [{ sequence: 1, type: "ArchitectRequired", at, detail: `r${input.specRevision}` }],
   });
@@ -265,6 +273,54 @@ export function workflowAcceptDocumentationV2(
   });
 }
 
+export function workflowAcceptTestPlanV2(
+  projectionInput: CoreV2LifecycleProjection,
+  attemptInput: RoleAttemptV2,
+  payload: TestPlanPayload,
+  atInput: string,
+): CoreV2LifecycleProjection {
+  const projection = parseProjection(projectionInput);
+  if (projection.state !== "TEST_PLAN_REQUIRED" || projection.candidateCommit === null) throw conflict("CORE_V2_TEST_PLAN_NOT_REQUIRED", "Test Plan is not currently required");
+  const attempt = successfulAttempt(attemptInput, projection, "TEST_VERIFICATION", "TEST_PLAN", projection.candidateCommit);
+  if (attempt.generation !== projection.implementationGeneration) throw conflict("CORE_V2_TEST_GENERATION_INVALID", "Test Plan does not match Implementation Generation");
+  const dependencies = [requiredArtifact(projection, "SPEC"), requiredArtifact(projection, "DESIGN")].map(lifecycleArtifactRef);
+  const artifact = createLifecycleArtifact({ taskId: projection.taskId, specRevision: projection.specRevision, kind: "TEST_PLAN",
+    subjectCommit: projection.candidateCommit, producer: producerFromTest(attempt), dependencies, payload });
+  return next(projection, { state: "TEST_EXECUTION_REQUIRED", artifacts: [...projection.artifacts, artifact], type: "TestPlanAccepted", at: instant(atInput), detail: artifact.artifactDigest });
+}
+
+export function workflowRecordTrustedTestRunV2(
+  projectionInput: CoreV2LifecycleProjection,
+  input: { readonly runId: string; readonly manifestRef: string; readonly manifestDigest: string; readonly at: string },
+): CoreV2LifecycleProjection {
+  const projection = parseProjection(projectionInput);
+  if (projection.state !== "TEST_EXECUTION_REQUIRED") throw conflict("CORE_V2_TEST_EXECUTION_NOT_REQUIRED", "Trusted Test execution is not currently required");
+  const trustedTestRun = { runId: required(input.runId, "runId"), manifestRef: required(input.manifestRef, "manifestRef"), manifestDigest: sha(input.manifestDigest, "manifestDigest") };
+  return seal({ ...withoutDigest(projection), state: "TEST_ASSESSMENT_REQUIRED", trustedTestRun,
+    events: append(projection.events, "TrustedTestRunRecorded", instant(input.at), trustedTestRun.manifestDigest) });
+}
+
+export function workflowAcceptTestAssessmentV2(
+  projectionInput: CoreV2LifecycleProjection,
+  attemptInput: RoleAttemptV2,
+  payload: TestReportPayload,
+  atInput: string,
+): CoreV2LifecycleProjection {
+  const projection = parseProjection(projectionInput);
+  if (projection.state !== "TEST_ASSESSMENT_REQUIRED" || projection.candidateCommit === null || projection.trustedTestRun === null) {
+    throw conflict("CORE_V2_TEST_ASSESSMENT_NOT_REQUIRED", "Test Assessment requires recorded Trusted Runner Evidence");
+  }
+  const attempt = successfulAttempt(attemptInput, projection, "TEST_VERIFICATION", "TEST_ASSESSMENT", projection.candidateCommit);
+  if (attempt.generation !== projection.implementationGeneration || !payload.outcomes.every((item) => item.evidenceRefs.includes(projection.trustedTestRun!.manifestRef))) {
+    throw conflict("CORE_V2_TEST_EVIDENCE_BINDING_INVALID", "Test Report outcomes must bind the Trusted Runner Manifest");
+  }
+  const plan = requiredArtifact(projection, "TEST_PLAN");
+  const artifact = createLifecycleArtifact({ taskId: projection.taskId, specRevision: projection.specRevision, kind: "TEST_REPORT",
+    subjectCommit: projection.candidateCommit, producer: producerFromTest(attempt), dependencies: [lifecycleArtifactRef(plan)], payload });
+  const state = payload.recommendation === "PASS" ? "FINAL_REVIEW_REQUIRED" : payload.recommendation === "FINDINGS" ? "REPAIR_REQUIRED" : "WAITING_RECONCILE";
+  return next(projection, { state, artifacts: [...projection.artifacts, artifact], type: state === "FINAL_REVIEW_REQUIRED" ? "TestVerificationPassed" : state === "REPAIR_REQUIRED" ? "TestVerificationRequestedRepair" : "TestVerificationUnknown", at: instant(atInput), detail: artifact.artifactDigest });
+}
+
 export function workflowReplanV2(
   projectionInput: CoreV2LifecycleProjection,
   input: { readonly nextSubjectCommit: string; readonly reason: string; readonly at: string },
@@ -287,6 +343,7 @@ export function workflowReplanV2(
     state: "ARCHITECT_REQUIRED",
     artifacts: [],
     implementationCheckpoints: [],
+    trustedTestRun: null,
     invalidatedRevisions: [...projection.invalidatedRevisions, invalidated],
     events: append(projection.events, "SpecRevisionReplanned", instant(input.at), `r${projection.specRevision + 1}:${reason}`),
   });
@@ -295,8 +352,8 @@ export function workflowReplanV2(
 function successfulAttempt(
   input: RoleAttemptV2,
   projection: CoreV2LifecycleProjection,
-  role: "ARCHITECT" | "IMPLEMENTATION" | "DOCUMENTATION" | "REVIEW",
-  phase: "ARCHITECT" | "IMPLEMENTATION" | "DOCUMENTATION" | "DESIGN_REVIEW",
+  role: "ARCHITECT" | "IMPLEMENTATION" | "DOCUMENTATION" | "TEST_VERIFICATION" | "REVIEW",
+  phase: "ARCHITECT" | "IMPLEMENTATION" | "DOCUMENTATION" | "TEST_PLAN" | "TEST_ASSESSMENT" | "DESIGN_REVIEW",
   expectedCommit = projection.subjectCommit,
 ): RoleAttemptV2 {
   const attempt = parseRoleAttemptV2(JSON.parse(JSON.stringify(input)), input.attemptDigest);
@@ -310,6 +367,10 @@ function successfulAttempt(
 
 function producerFrom(attempt: RoleAttemptV2) {
   return { role: attempt.role as "ARCHITECT" | "REVIEW", phase: attempt.phase, attemptId: attempt.attemptId, generation: attempt.generation, sessionId: attempt.run!.sessionId! };
+}
+
+function producerFromTest(attempt: RoleAttemptV2) {
+  return { role: "TEST_VERIFICATION" as const, phase: attempt.phase, attemptId: attempt.attemptId, generation: attempt.generation, sessionId: attempt.run!.sessionId! };
 }
 
 function requiredArtifact(projection: CoreV2LifecycleProjection, kind: "SPEC" | "DESIGN" | "PLAN" | "DOCS_IMPACT" | "TEST_PLAN" | "TEST_REPORT"): LifecycleArtifact {
@@ -340,6 +401,7 @@ function required(value: string, field: string): string { if (typeof value !== "
 function commit(value: string, field: string): string { if (!/^[0-9a-f]{40}([0-9a-f]{24})?$/.test(value)) throw validation("CORE_V2_COMMIT_INVALID", `${field} must be a full Git commit id`); return value; }
 function gitObject(value: string, field: string): string { if (!/^[0-9a-f]{40}([0-9a-f]{24})?$/.test(value)) throw validation("CORE_V2_GIT_OBJECT_INVALID", `${field} must be a full Git object id`); return value; }
 function stableRefs(values: readonly string[], field: string): string[] { if (!Array.isArray(values)) throw validation("CORE_V2_REFS_INVALID", `${field} must be an array`); const refs = values.map((value) => required(value, field)).sort(); if (new Set(refs).size !== refs.length) throw validation("CORE_V2_REFS_DUPLICATE", `${field} must be unique`); return refs; }
+function sha(value: string, field: string): string { if (!/^sha256:[0-9a-f]{64}$/.test(value)) throw validation("CORE_V2_DIGEST_INVALID", `${field} must be SHA-256`); return value; }
 function choice<const T extends readonly string[]>(value: string, values: T, field: string): T[number] { if (!values.includes(value)) throw validation("CORE_V2_ENUM_INVALID", `${field} is invalid`); return value as T[number]; }
 function digest(value: unknown): string { return `sha256:${createHash("sha256").update(JSON.stringify(value)).digest("hex")}`; }
 function deepFreeze<T>(value: T): T { if (typeof value === "object" && value !== null && !Object.isFrozen(value)) { Object.freeze(value); for (const item of Object.values(value as Record<string, unknown>)) deepFreeze(item); } return value; }

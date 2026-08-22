@@ -82,6 +82,7 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 - `core/workflow.ts` 用确定性 Scenario Adapter 贯通线性成功、Repair、Replan、UNKNOWN→Reconcile、预算终止和取消；`core/scenario-artifact.ts` 在昂贵执行前写稳定 Intent，复用已确认结果并把仅有 Intent 的情况停为 UNKNOWN；
 - `domain/role-runtime-v2.ts` 定义 Core v2 六类 Role、隔离 Phase、固定权限、Attempt/Generation/Event、Run Evidence 和 UNKNOWN/Reconcile 领域协议；`agent/role-runtime-v2.ts` 先持久化 Intent，再以 argv-only 真实 Codex/Claude 进程生成 Session、原始 Event、stderr、结构化 Output 与逐文件摘要 Manifest，完整结果可复用，Intent-only 禁止盲重跑；
 - `domain/core-v2-lifecycle.ts` 是 Core v2 逐阶段扩展的 Workflow Reducer；当前实现 Architect/Design Review/REPLAN、Implementation Checkpoint/Repair，以及绑定 Candidate Commit 的 Documentation/Docs Impact 交接；
+- `testing/trusted-test-runner.ts` 是 argv-only 真实测试执行 Effect Adapter，持久化 Intent、逐 Case 退出码/stdout/stderr 与 Manifest，并在 Intent-only 恢复时返回 UNKNOWN；
 - `agent/role-runner.ts` 为确定性 Core PoC 提供旧统一角色协议；`agent/live-role.ts` 为 Coding 产品 Context、Self Review、Replan、Docs Gate 提供真实只读 CLI Session、结构化 Finding、稳定 Intent/Manifest 与原始事件；
 - `agent/runner.ts` 规范请求、验证 Worktree/Git common dir、运行中 JSONL Stream 与最终 Artifact；`codex-exec.ts` 以 `workspace-write + --add-dir <validated-git-common-dir>` 允许真实 commit，`claude-print.ts` 维持自己的 argv-only 边界；两者只把 stdout chunk 交给行边界写入器，不推进 Task 状态；Claude 原生 OTel/内容采集只注入当前子进程，默认关闭；
 - `product/live-task.ts` 只接受 `CODEX_EXEC | CLAUDE_PRINT`，在进入 Runtime 前拒绝 Fake、越界仓库、非 Git 仓库和冲突 ref；它创建受管 Task Package、Artifact Root、Worktree Root 与冻结 Envelope；

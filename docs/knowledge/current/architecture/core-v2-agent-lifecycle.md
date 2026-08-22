@@ -50,6 +50,8 @@ Implementation 阶段只接受 Workflow 当前授权 Generation 的成功 `IMPLE
 
 Documentation 阶段只接受绑定当前 Candidate Commit 和 Implementation Generation 的成功 Attempt。通过 Router、Graph 与 Impact Gate 的摘要形成 `DOCS_IMPACT` Artifact，并精确依赖当前 Revision 的 Spec/Design；Agent 的自然语言声明本身不能推进到 Test Plan。
 
+Test/Verification 使用两个隔离只读 Attempt：`TEST_PLAN` 形成 Requirement/Case/argv 映射；`TEST_ASSESSMENT` 只能在真实 Trusted Runner Manifest 已记录后形成综合报告。`src/testing/trusted-test-runner.ts` 先持久化 Intent，再以 `shell:false` 执行命令并保存退出码和 stdout/stderr Digest；恢复时发现 Intent-only 必须返回 UNKNOWN，不启动第二次命令。PASS、FINDINGS、INCONCLUSIVE 分别路由到 Final Review、Repair、`WAITING_RECONCILE`。
+
 ## 5. Artifact 与 Gate
 
 每个 Artifact 绑定 Task ID、Spec Revision、Step/Attempt、Producer、Candidate Commit 和 Content Digest。旧 Revision Evidence 永远不能满足新 Gate。Agent Verdict 只是建议；Workflow 只有在确定性 Gate 校验全部绑定后才推进。
