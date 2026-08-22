@@ -8,6 +8,7 @@ import {
 } from "./lifecycle-artifact.js";
 import type {
   DesignPayload,
+  DocsImpactPayload,
   LifecycleArtifact,
   LifecycleArtifactRef,
   PlanPayload,
@@ -23,7 +24,8 @@ export type CoreV2LifecycleState =
   | "REPLAN_REQUIRED"
   | "IMPLEMENTATION_REQUIRED"
   | "REPAIR_REQUIRED"
-  | "DOCUMENTATION_REQUIRED";
+  | "DOCUMENTATION_REQUIRED"
+  | "TEST_PLAN_REQUIRED";
 
 export interface CoreV2LifecycleEvent {
   readonly sequence: number;
@@ -230,6 +232,39 @@ export function workflowAuthorizeRepairV2(
   });
 }
 
+export function workflowAcceptDocumentationV2(
+  projectionInput: CoreV2LifecycleProjection,
+  attemptInput: RoleAttemptV2,
+  payload: DocsImpactPayload,
+  atInput: string,
+): CoreV2LifecycleProjection {
+  const projection = parseProjection(projectionInput);
+  if (projection.state !== "DOCUMENTATION_REQUIRED" || projection.candidateCommit === null) {
+    throw conflict("CORE_V2_DOCUMENTATION_NOT_REQUIRED", "Documentation result is not currently required");
+  }
+  const attempt = successfulAttempt(attemptInput, projection, "DOCUMENTATION", "DOCUMENTATION", projection.candidateCommit);
+  if (attempt.generation !== projection.implementationGeneration) {
+    throw conflict("CORE_V2_DOCUMENTATION_GENERATION_INVALID", "Documentation Attempt does not match the active Implementation Generation");
+  }
+  const dependencies = [requiredArtifact(projection, "SPEC"), requiredArtifact(projection, "DESIGN")].map(lifecycleArtifactRef);
+  const artifact = createLifecycleArtifact({
+    taskId: projection.taskId,
+    specRevision: projection.specRevision,
+    kind: "DOCS_IMPACT",
+    subjectCommit: projection.candidateCommit,
+    producer: { role: "DOCUMENTATION", phase: attempt.phase, attemptId: attempt.attemptId, generation: attempt.generation, sessionId: attempt.run!.sessionId! },
+    dependencies,
+    payload,
+  });
+  return next(projection, {
+    state: "TEST_PLAN_REQUIRED",
+    artifacts: [...projection.artifacts, artifact],
+    type: "DocumentationGateAccepted",
+    at: instant(atInput),
+    detail: artifact.artifactDigest,
+  });
+}
+
 export function workflowReplanV2(
   projectionInput: CoreV2LifecycleProjection,
   input: { readonly nextSubjectCommit: string; readonly reason: string; readonly at: string },
@@ -260,13 +295,14 @@ export function workflowReplanV2(
 function successfulAttempt(
   input: RoleAttemptV2,
   projection: CoreV2LifecycleProjection,
-  role: "ARCHITECT" | "IMPLEMENTATION" | "REVIEW",
-  phase: "ARCHITECT" | "IMPLEMENTATION" | "DESIGN_REVIEW",
+  role: "ARCHITECT" | "IMPLEMENTATION" | "DOCUMENTATION" | "REVIEW",
+  phase: "ARCHITECT" | "IMPLEMENTATION" | "DOCUMENTATION" | "DESIGN_REVIEW",
+  expectedCommit = projection.subjectCommit,
 ): RoleAttemptV2 {
   const attempt = parseRoleAttemptV2(JSON.parse(JSON.stringify(input)), input.attemptDigest);
   if (attempt.state !== "SUCCEEDED" || attempt.run?.outcome !== "SUCCEEDED" || attempt.run.sessionId === undefined ||
       attempt.taskId !== projection.taskId || attempt.specRevision !== projection.specRevision ||
-      attempt.subjectCommit !== projection.subjectCommit || attempt.role !== role || attempt.phase !== phase) {
+      attempt.subjectCommit !== expectedCommit || attempt.role !== role || attempt.phase !== phase) {
     throw conflict("CORE_V2_ROLE_RESULT_BINDING_INVALID", `${role}/${phase} Attempt does not bind the current Task Revision`);
   }
   return attempt;
@@ -276,7 +312,7 @@ function producerFrom(attempt: RoleAttemptV2) {
   return { role: attempt.role as "ARCHITECT" | "REVIEW", phase: attempt.phase, attemptId: attempt.attemptId, generation: attempt.generation, sessionId: attempt.run!.sessionId! };
 }
 
-function requiredArtifact(projection: CoreV2LifecycleProjection, kind: "SPEC" | "DESIGN" | "PLAN"): LifecycleArtifact {
+function requiredArtifact(projection: CoreV2LifecycleProjection, kind: "SPEC" | "DESIGN" | "PLAN" | "DOCS_IMPACT" | "TEST_PLAN" | "TEST_REPORT"): LifecycleArtifact {
   const artifact = projection.artifacts.find((item) => item.kind === kind);
   if (artifact === undefined) throw conflict("CORE_V2_ARTIFACT_MISSING", `${kind} Artifact is missing`);
   return artifact;

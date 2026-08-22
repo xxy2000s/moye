@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createCoreV2Lifecycle, workflowAcceptArchitectV2, workflowAcceptDesignReviewV2, workflowAcceptImplementationV2, workflowAuthorizeRepairV2, workflowReplanV2 } from "../../src/domain/core-v2-lifecycle.js";
+import { createCoreV2Lifecycle, workflowAcceptArchitectV2, workflowAcceptDesignReviewV2, workflowAcceptDocumentationV2, workflowAcceptImplementationV2, workflowAuthorizeRepairV2, workflowReplanV2 } from "../../src/domain/core-v2-lifecycle.js";
 import { completeRoleAttemptV2, createRoleAttemptV2, createRoleRunEvidenceV2, startRoleAttemptV2 } from "../../src/domain/role-runtime-v2.js";
 import type { AgentRoleV2, RolePhaseV2 } from "../../src/domain/role-runtime-v2.js";
 
@@ -60,6 +60,19 @@ describe("Core v2 Architect and Design Review lifecycle", () => {
     expect(() => workflowAcceptImplementationV2(authorized, success("IMPLEMENTATION", "IMPLEMENTATION"), checkpoint("PASSED"), time(7)))
       .toThrow(/authorized Generation/);
   });
+
+  it("accepts Documentation evidence bound to the Candidate Commit", () => {
+    const implemented = workflowAcceptImplementationV2(implementationReady(), success("IMPLEMENTATION", "IMPLEMENTATION"), checkpoint("PASSED"), time(5));
+    const documented = workflowAcceptDocumentationV2(implemented, success("DOCUMENTATION", "DOCUMENTATION", "c".repeat(40)), {
+      type: "DOCS_IMPACT", routeDigest: sha("8"), reportRef: "artifact://docs-impact",
+      dispositions: [{ documentId: "codemap", outcome: "updated", reason: "module changed" }],
+    }, time(6));
+    expect(documented.state).toBe("TEST_PLAN_REQUIRED");
+    expect(documented.artifacts.at(-1)).toMatchObject({ kind: "DOCS_IMPACT", subjectCommit: "c".repeat(40) });
+    expect(() => workflowAcceptDocumentationV2(implemented, success("DOCUMENTATION", "DOCUMENTATION"), {
+      type: "DOCS_IMPACT", routeDigest: sha("8"), reportRef: "artifact://docs-impact", dispositions: [],
+    }, time(6))).toThrow(/does not bind/);
+  });
 });
 
 function implementationReady() {
@@ -73,10 +86,10 @@ function checkpoint(verdict: "PASSED" | "FINDINGS") { return {
   testEvidenceRefs: ["artifact://unit-tests"], selfReview: { verdict, findingRefs: verdict === "PASSED" ? [] : ["finding://self-review"] },
 }; }
 
-function success(role: AgentRoleV2, phase: RolePhaseV2) {
+function success(role: AgentRoleV2, phase: RolePhaseV2, subjectCommit = base) {
   const scheduled = createRoleAttemptV2({
     taskId: "TASK-LIFECYCLE", specRevision: 1, role, phase, generation: 0, runnerKind: "CODEX_EXEC",
-    inputDigest: sha("1"), subjectCommit: base, inputArtifactRefs: [], scheduledAt: time(0),
+    inputDigest: sha("1"), subjectCommit, inputArtifactRefs: [], scheduledAt: time(0),
   });
   const running = startRoleAttemptV2(scheduled, time(1));
   return completeRoleAttemptV2(running, createRoleRunEvidenceV2({

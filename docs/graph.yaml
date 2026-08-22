@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 69
+graph_revision: 70
 updated_at: "2026-08-23"
 
 entrypoints:
@@ -2464,6 +2464,54 @@ documents:
     authority: task-evidence
     read_when: [task-close, task-archive]
 
+  - id: task-0035-manifest
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0035/task.yaml
+    type: task-manifest
+    status: archived
+    scope: core-v2-documentation
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0035-spec
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0035/spec.md
+    type: task-spec
+    status: archived
+    scope: core-v2-documentation
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0035-design
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0035/design.md
+    type: task-design
+    status: archived
+    scope: core-v2-documentation
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0035-plan
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0035/plan.md
+    type: task-plan
+    status: archived
+    scope: core-v2-documentation
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0035-verification
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0035/verification.md
+    type: verification
+    status: archived
+    scope: core-v2-documentation
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0035-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0035/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: core-v2-documentation
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
 relations:
   - from: root-readme
     to: docs-index
@@ -3978,6 +4026,38 @@ relations:
     type: reports_on
 
   - from: task-0034-manifest
+    to: core-v2-agent-lifecycle
+    type: implements_slice_of
+
+  - from: bl-0037-core-v2-documentation
+    to: task-0035-manifest
+    type: schedules_into
+
+  - from: archived-tasks-index
+    to: task-0035-manifest
+    type: indexes
+
+  - from: task-0035-spec
+    to: task-0035-manifest
+    type: belongs_to
+
+  - from: task-0035-design
+    to: task-0035-spec
+    type: refines
+
+  - from: task-0035-plan
+    to: task-0035-manifest
+    type: belongs_to
+
+  - from: task-0035-verification
+    to: task-0035-manifest
+    type: verifies
+
+  - from: task-0035-docs-impact
+    to: task-0035-manifest
+    type: reports_on
+
+  - from: task-0035-manifest
     to: core-v2-agent-lifecycle
     type: implements_slice_of
 
