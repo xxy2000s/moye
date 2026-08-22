@@ -530,6 +530,7 @@ function normalizePayload(kind: LifecycleArtifactKind, value: unknown): Lifecycl
 }
 
 function assertPhase(kind: LifecycleArtifactKind, phase: string): void {
+  if ((kind === "SPEC" || kind === "DESIGN" || kind === "PLAN") && phase === "ARCHITECT") return;
   const expected = kind === "DESIGN_REVIEW" ? "DESIGN_REVIEW"
     : kind === "FINAL_REVIEW" ? "FINAL_REVIEW"
       : kind === "TEST_PLAN" ? "TEST_PLAN"

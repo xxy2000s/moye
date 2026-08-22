@@ -1,0 +1,24 @@
+schema_version: 1
+id: TASK-0033
+title: 接入 Architect 与隔离 Design Review
+status: seal_prepared
+outcome: null
+backlog_refs:
+  - BL-0035
+spec_revision: 1
+workflow_id: sealed-task/TASK-0033
+execution_mode: sealed-result-commit
+base_commit: 5ad38e62cf9e383bb12427bbcc7233622d56c7f4
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-23-TASK-0033
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:68dc01d99f7eda193d0b0691994cc44e76a3a52758db7becfb51db957d60490f
+  base_commit: 5ad38e62cf9e383bb12427bbcc7233622d56c7f4
+  archive_path: docs/delivery/tasks/archive/2026-08-23-TASK-0033

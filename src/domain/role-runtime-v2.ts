@@ -120,7 +120,7 @@ const rolePhases: Readonly<Record<AgentRoleV2, readonly RolePhaseV2[]>> = {
 
 export function createRoleAttemptV2(input: CreateRoleAttemptV2Input): RoleAttemptV2 {
   const normalized = normalizeCreate(input);
-  const attemptId = `${normalized.taskId}/${normalized.phase}/r${normalized.specRevision}/g${normalized.generation}`;
+  const attemptId = `${normalized.taskId}.${normalized.phase}.r${normalized.specRevision}.g${normalized.generation}`;
   return sealAttempt({
     schemaVersion: 1,
     ...normalized,
@@ -398,7 +398,7 @@ function validateAttemptCore(input: Record<string, unknown>): void {
     inputArtifactRefs: refs(input["inputArtifactRefs"] as readonly string[], "inputArtifactRefs"),
     scheduledAt: instant(input["scheduledAt"], "scheduledAt"),
   });
-  const expectedAttemptId = `${normalized.taskId}/${normalized.phase}/r${normalized.specRevision}/g${normalized.generation}`;
+  const expectedAttemptId = `${normalized.taskId}.${normalized.phase}.r${normalized.specRevision}.g${normalized.generation}`;
   if (input["attemptId"] !== expectedAttemptId || input["permission"] !== normalized.permission ||
       !(["SCHEDULED", "RUNNING", "WAITING_RECONCILE", "SUCCEEDED", "FAILED", "CANCELLED"] as const).includes(input["state"] as RoleAttemptState)) {
     throw validation("ROLE_ATTEMPT_SHAPE_INVALID", "Role Attempt identity, permission or state is invalid");

@@ -47,7 +47,7 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 | [BL-0032](./BL-0032.yaml) | Converted | 冻结 Core v2 的 5+1 Agent 架构与提交归档边界 | TASK-0030 |
 | [BL-0033](./BL-0033.yaml) | Converted to Task | 将 Core v2 研发生命周期文档建模为一等 Artifact | TASK-0031（Active） |
 | [BL-0034](./BL-0034.yaml) | Converted to Task | 实现五类 Agent 共用的真实 Role Runtime v2 | TASK-0032（Archived） |
-| [BL-0035](./BL-0035.yaml) | Ready | 接入 Architect 与隔离 Design Review | TASK-0033（Planned） |
+| [BL-0035](./BL-0035.yaml) | Converted to Task | 接入 Architect 与隔离 Design Review | TASK-0033（Sealed） |
 | [BL-0036](./BL-0036.yaml) | Ready | 接入 Implementation、Self Review 与 Repair Checkpoint | TASK-0034（Planned） |
 | [BL-0037](./BL-0037.yaml) | Ready | 接入真实 Documentation Agent 与文档门禁 | TASK-0035（Planned） |
 | [BL-0038](./BL-0038.yaml) | Ready | 实现独立 Test Verification Agent 与 Trusted Runner | TASK-0036（Planned） |
