@@ -1,0 +1,26 @@
+schema_version: 1
+id: "BL-0030"
+title: "持久化本地 Restate 并明确历史投影恢复边界"
+kind: "bug"
+status: "converted_to_task"
+priority: "high"
+
+source_refs:
+  - incident-restate-board-projection-loss
+affected_areas:
+  - local-runtime
+  - restate-storage
+  - project-board
+  - operations
+
+acceptance_outline:
+  - "本地标准启动使用持久化 /restate-data，容器重启或重建不清空新 Projection"
+  - "Runbook 区分 Git Task Archive、ProjectBoard Projection 与 Workflow Journal"
+  - "停止服务默认不删除持久化卷"
+  - "不通过扫描 Artifact 伪造 Runtime Domain Event 或恢复完成状态"
+
+resolution:
+  task_refs:
+    - TASK-0028
+  duplicate_of:
+  reason: "真实本地容器重建已造成旧 Board Projection 丢失；TASK-0028 补齐持久化入口与恢复边界"

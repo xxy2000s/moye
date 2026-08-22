@@ -1,0 +1,20 @@
+schema_version: 1
+id: TASK-0028
+title: 将单任务审计改为全屏路由并持久化本地 Runtime
+status: received
+outcome:
+backlog_refs:
+  - BL-0029
+  - BL-0030
+spec_revision: 1
+workflow_id: task/TASK-0028
+execution_mode: goal-bootstrap
+base_commit: ed2b92145c059dc94a7292d97e3825ee3d110a16
+archive:
+  status: not_ready
+  archived_at:
+  archived_path:
+result:
+  pull_request:
+  merge_commit:
+  closure_report:

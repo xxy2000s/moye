@@ -23,7 +23,7 @@ tasks/
 
 | Task | 状态 | 目标 |
 |---|---|---|
-| — | — | 当前没有 Active Task |
+| [TASK-0028](./TASK-0028/spec.md) | Received | 全屏任务审计、Domain Event 时间线与本地 Runtime 持久化 |
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 

@@ -19,5 +19,6 @@ Finding 与 Incident 的边界：
 - [状态机节点下钻缺少执行与管控细节](./state-machine-node-details-shallow.md)：节点 Inspector 只显示计数和摘要，无法直接核对 Agent、Attempt、系统 Gate 与 Session Events。
 - [节点 Agent Events 入口隐蔽且 Inspector 信息过密](./node-agent-events-hidden-and-inspector-dense.md)：真实 Agent Events 被埋在执行卡片底部，Domain Event 与 Agent Event 缺少清晰边界，节点详情难以扫描。
 - [状态机边标签与合法路径详情可读性不足](./state-machine-edge-labels-and-legal-path-detail-dense.md)：未经过合法边的完整说明以小字铺在画布上，节点合法路径仍使用拥挤的旧式双卡片布局。
+- [单任务弹窗与原始 Domain Event 难以持续审计](./task-detail-dialog-and-domain-events-hard-to-audit.md)：任务没有独立 URL，原始业务事件展开后也缺少稳定的时间线层级。
 
 不要为了演示目录创建虚构 Bug。

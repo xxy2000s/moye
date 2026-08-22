@@ -1,0 +1,26 @@
+schema_version: 1
+id: "BL-0029"
+title: "将单任务审计改为全屏路由并重构 Domain Event 时间线"
+kind: "bug"
+status: "converted_to_task"
+priority: "high"
+
+source_refs:
+  - finding-task-detail-dialog-domain-events
+affected_areas:
+  - project-board
+  - task-audit
+  - domain-events
+  - browser-navigation
+
+acceptance_outline:
+  - "任务卡进入可直达的 /tasks/<task_id> 全屏审计页"
+  - "右上角返回项目，浏览器 Back/Forward 与直接刷新行为可预测"
+  - "原始 Domain Event 按 sequence、转换、事件类型、时间和 detail 扫读"
+  - "Agent Events Chatbot Dialog 与节点 Inspector 行为保持不变"
+
+resolution:
+  task_refs:
+    - TASK-0028
+  duplicate_of:
+  reason: "用户在真实页面验收中明确要求全屏路由和可读的原始 Domain Event"

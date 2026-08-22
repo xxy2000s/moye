@@ -19,3 +19,7 @@ YYYY-MM-DD-short-title.md
 7. 更新本索引和 `docs/graph.yaml`，关联 Backlog、受影响的 Architecture、Pitfall 和 Runbook。
 
 不要为了演示文档体系创建虚构 Incident。
+
+## 已记录 Incident
+
+- [本地 Restate 容器重建后 Board 历史投影丢失](./2026-08-22-restate-board-projection-lost-after-container-recreate.md)：Git Task Archive 未丢失，但未持久化的 Restate Journal 与 ProjectBoard Projection 随旧容器消失。

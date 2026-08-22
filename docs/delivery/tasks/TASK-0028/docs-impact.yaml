@@ -1,0 +1,48 @@
+schema_version: 1
+task_id: TASK-0028
+graph_revision: 61
+intents: [finding-intake, incident-response, task-create, coding-task-poc, docs-change]
+changed_paths:
+  - public/index.html
+  - public/app.js
+  - public/styles.css
+  - src/board/server.ts
+  - compose.yaml
+  - package.json
+  - tests/e2e/demo.test.ts
+  - README.md
+  - docs/sources/findings/task-detail-dialog-and-domain-events-hard-to-audit.md
+  - docs/sources/incidents/2026-08-22-restate-board-projection-lost-after-container-recreate.md
+  - docs/delivery/backlog/BL-0029.yaml
+  - docs/delivery/backlog/BL-0030.yaml
+  - docs/delivery/tasks/TASK-0028/task.yaml
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/current/architecture/poc-01-restate.md
+  - docs/knowledge/guidance/pitfalls/durable-task-runtime.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - docs/graph.yaml
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - findings-index
+    - incidents-index
+    - backlog-index
+    - tasks-index
+    - task-runtime-kernel
+    - overnight-multi-task-goal
+    - finding-backlog-docs-not-projected
+    - bl-0008-backlog-projection-sync
+    - bl-0002-single-agent-coding-loop
+    - restate-poc-architecture
+    - durable-runtime-pitfalls
+    - meta-index
+    - adr-0002-doc-lifecycle-roles
+    - root-readme
+    - sources-index
+    - architecture-index
+    - local-restate-poc-runbook
+    - runbooks-index
+  reviewed: {}

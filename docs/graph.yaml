@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 60
+graph_revision: 61
 updated_at: "2026-08-22"
 
 entrypoints:
@@ -725,6 +725,86 @@ documents:
     type: docs-impact
     status: archived
     scope: state-machine-edge-legibility
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: finding-task-detail-dialog-domain-events
+    path: docs/sources/findings/task-detail-dialog-and-domain-events-hard-to-audit.md
+    type: finding
+    status: confirmed
+    scope: task-detail-routing-domain-events
+    authority: finding
+    read_when: [coding-task-poc, task-execution, trace-change]
+
+  - id: incident-restate-board-projection-loss
+    path: docs/sources/incidents/2026-08-22-restate-board-projection-lost-after-container-recreate.md
+    type: incident
+    status: resolved-follow-up
+    scope: local-runtime-persistence
+    authority: incident-record
+    read_when: [incident-response, operations-change, task-execution]
+
+  - id: bl-0029-task-detail-route-domain-events
+    path: docs/delivery/backlog/BL-0029.yaml
+    type: backlog
+    status: converted_to_task
+    scope: task-detail-routing-domain-events
+    authority: backlog
+    read_when: [task-create, coding-task-poc, trace-change]
+
+  - id: bl-0030-local-runtime-persistence
+    path: docs/delivery/backlog/BL-0030.yaml
+    type: backlog
+    status: converted_to_task
+    scope: local-runtime-persistence
+    authority: backlog
+    read_when: [task-create, operations-change, incident-response]
+
+  - id: task-0028-manifest
+    path: docs/delivery/tasks/TASK-0028/task.yaml
+    type: task-manifest
+    status: active
+    scope: task-detail-routing-runtime-persistence
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution, task-close]
+
+  - id: task-0028-spec
+    path: docs/delivery/tasks/TASK-0028/spec.md
+    type: task-spec
+    status: active
+    scope: task-detail-routing-runtime-persistence
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution, task-close]
+
+  - id: task-0028-design
+    path: docs/delivery/tasks/TASK-0028/design.md
+    type: task-design
+    status: active
+    scope: task-detail-routing-runtime-persistence
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution]
+
+  - id: task-0028-plan
+    path: docs/delivery/tasks/TASK-0028/plan.md
+    type: task-plan
+    status: active
+    scope: task-detail-routing-runtime-persistence
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0028-verification
+    path: docs/delivery/tasks/TASK-0028/verification.md
+    type: verification
+    status: active
+    scope: task-detail-routing-runtime-persistence
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0028-docs-impact
+    path: docs/delivery/tasks/TASK-0028/docs-impact.yaml
+    type: docs-impact
+    status: active
+    scope: task-detail-routing-runtime-persistence
     authority: task-evidence
     read_when: [task-close, task-archive]
 
@@ -2908,6 +2988,74 @@ relations:
   - from: task-0027-manifest
     to: task-0026-manifest
     type: refines
+
+  - from: findings-index
+    to: finding-task-detail-dialog-domain-events
+    type: indexes
+
+  - from: finding-task-detail-dialog-domain-events
+    to: bl-0029-task-detail-route-domain-events
+    type: creates_backlog
+
+  - from: incidents-index
+    to: incident-restate-board-projection-loss
+    type: indexes
+
+  - from: incident-restate-board-projection-loss
+    to: bl-0030-local-runtime-persistence
+    type: creates_backlog
+
+  - from: incident-restate-board-projection-loss
+    to: local-restate-poc-runbook
+    type: updates
+
+  - from: backlog-index
+    to: bl-0029-task-detail-route-domain-events
+    type: indexes
+
+  - from: backlog-index
+    to: bl-0030-local-runtime-persistence
+    type: indexes
+
+  - from: bl-0029-task-detail-route-domain-events
+    to: task-0028-manifest
+    type: schedules_into
+
+  - from: bl-0030-local-runtime-persistence
+    to: task-0028-manifest
+    type: schedules_into
+
+  - from: tasks-index
+    to: task-0028-manifest
+    type: indexes
+
+  - from: task-0028-spec
+    to: task-0028-manifest
+    type: belongs_to
+
+  - from: task-0028-design
+    to: task-0028-spec
+    type: refines
+
+  - from: task-0028-plan
+    to: task-0028-manifest
+    type: belongs_to
+
+  - from: task-0028-verification
+    to: task-0028-manifest
+    type: verifies
+
+  - from: task-0028-docs-impact
+    to: task-0028-manifest
+    type: reports_on
+
+  - from: task-0028-manifest
+    to: task-0027-manifest
+    type: refines
+
+  - from: task-0028-manifest
+    to: restate-poc-architecture
+    type: implements_slice_of
 
   - from: bl-0013-agent-events-dialog
     to: task-0012-manifest
