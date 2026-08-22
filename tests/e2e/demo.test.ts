@@ -77,7 +77,7 @@ describe("npm run demo", () => {
     const html = await (await fetch(boardUrl)).text();
     const app = await (await fetch(`${boardUrl}/app.js`)).text();
     expect(html).toContain("任务控制面 · Coding Demo");
-    expect(app).toContain("七个阶段，一眼看清做到哪里");
+    expect(app).toContain("八个阶段，一眼看清做到哪里");
     expect(app).toContain("查看 Agent Events");
     expect(html).toContain('id="agent-events-dialog"');
     expect(html).toContain("data-agent-events-viewer");

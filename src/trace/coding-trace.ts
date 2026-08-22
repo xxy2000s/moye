@@ -29,7 +29,7 @@ export interface CodingTaskTrace {
     readonly authority: "CodingTaskWorkflow projection";
     readonly events: CodingWorkflowProjection["events"];
     readonly steps: readonly {
-      readonly stepId: CodingPipelineStepId;
+      readonly stepId: CodingPipelineStepId | "REVIEW";
       readonly sequence: number;
       readonly status: StepAttempt["status"] | "NOT_STARTED";
       readonly attemptIds: readonly string[];
@@ -52,6 +52,18 @@ export interface CodingTaskTrace {
     readonly downloadUrl?: string;
     readonly completed: boolean;
   };
+  readonly reviews: readonly {
+    readonly runId: string;
+    readonly attempt: number;
+    readonly runnerKind: string;
+    readonly sessionId?: string;
+    readonly outcome: string;
+    readonly verdict: string | null;
+    readonly summary: string;
+    readonly findingCount: number;
+    readonly blockingFindingCount: number;
+    readonly resultDigest: string;
+  }[];
   readonly git: {
     readonly workspaceEffectId?: string;
     readonly branch?: string;
@@ -139,15 +151,24 @@ export function buildCodingTaskTrace(
     business: {
       authority: "CodingTaskWorkflow projection" as const,
       events: projection.events.map((event) => ({ ...event })),
-      steps: projection.steps.map((step) => {
+      steps: [...projection.steps.map((step) => {
         const attempts = projection.attempts.filter((attempt) => attempt.stepId === step.stepId);
         return {
           stepId: step.stepId,
           sequence: step.sequence,
-          status: attempts.at(-1)?.status ?? "NOT_STARTED",
+          status: (attempts.at(-1)?.status ?? "NOT_STARTED") as StepAttempt["status"] | "NOT_STARTED",
           attemptIds: attempts.map((attempt) => attempt.attemptId),
         };
-      }),
+      }), ...((projection.reviews?.length ?? 0) > 0 || projection.currentStep === "REVIEW" ? [{
+        stepId: "REVIEW" as const,
+        sequence: projection.steps.length + 1,
+        status: projection.review === undefined
+          ? "RUNNING" as const
+          : projection.review.outcome === "SUCCEEDED" && projection.review.verdict === "PASSED"
+            ? "SUCCEEDED" as const
+            : projection.state === "FAILED" ? "FAILED" as const : "RUNNING" as const,
+        attemptIds: (projection.reviews ?? []).map((review) => review.runId),
+      }] : [])],
       attempts: projection.attempts.map(cloneAttempt),
       evidenceBindings: projection.evidenceBindings.map((binding) => ({
         ...binding,
@@ -166,6 +187,18 @@ export function buildCodingTaskTrace(
         ...(agent === undefined ? {} : { runDigest: agent.runDigest }),
       },
     }),
+    reviews: (projection.reviews ?? []).map((review) => ({
+      runId: review.runId,
+      attempt: review.attempt,
+      runnerKind: review.runnerKind,
+      ...(review.sessionId === undefined ? {} : { sessionId: review.sessionId }),
+      outcome: review.outcome,
+      verdict: review.verdict,
+      summary: review.summary,
+      findingCount: review.findings.length,
+      blockingFindingCount: review.findings.filter((finding) => finding.severity === "BLOCKING").length,
+      resultDigest: review.resultDigest,
+    })),
     ...(agent === undefined && agentRun === undefined ? {} : {
       agentEvents: {
         viewUrl: `/api/tasks/${encodeURIComponent(projection.taskId)}/agent-events`,
@@ -332,6 +365,13 @@ function collectArtifacts(projection: CodingWorkflowProjection): CodingTaskTrace
       kind: "verification-evidence",
       artifactRef: projection.verification.evidenceRef,
       contentDigest: projection.verification.evidenceContentDigest,
+    });
+  }
+  for (const review of projection.reviews ?? []) {
+    artifacts.push({
+      kind: `review-${review.attempt}`,
+      artifactRef: review.manifestArtifactRef,
+      contentDigest: review.resultDigest,
     });
   }
   if (projection.docs !== undefined) {

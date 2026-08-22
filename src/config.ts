@@ -5,6 +5,8 @@ export interface MoyeConfig {
   readonly servicePort: number;
   readonly boardPort: number;
   readonly artifactRoots: readonly string[];
+  readonly liveRuntimeRoot: string;
+  readonly repositoryRoots: readonly string[];
   readonly observability: {
     readonly enabled: boolean;
     readonly otlpTracesEndpoint: string;
@@ -23,6 +25,7 @@ export interface MoyeConfig {
 export function loadConfig(
   environment: NodeJS.ProcessEnv = process.env,
 ): MoyeConfig {
+  const liveRuntimeRoot = environment["MOYE_LIVE_RUNTIME_ROOT"] ?? ".moye-runtime/live";
   return {
     projectId: environment["MOYE_PROJECT_ID"] ?? "moye",
     restateIngressUrl:
@@ -32,6 +35,8 @@ export function loadConfig(
     servicePort: parsePort(environment["RESTATE_SERVICE_PORT"], 9080),
     boardPort: parsePort(environment["MOYE_BOARD_PORT"], 3000),
     artifactRoots: parsePaths(environment["MOYE_ARTIFACT_ROOTS"]),
+    liveRuntimeRoot,
+    repositoryRoots: parsePaths(environment["MOYE_REPOSITORY_ROOTS"] ?? process.cwd()),
     observability: {
       enabled: parseBoolean(environment["MOYE_OBSERVABILITY_ENABLED"], false),
       otlpTracesEndpoint: environment["MOYE_OTLP_TRACES_ENDPOINT"] ?? "http://127.0.0.1:6006/v1/traces",

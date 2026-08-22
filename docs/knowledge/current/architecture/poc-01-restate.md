@@ -68,7 +68,7 @@ NOT_READY → PENDING → ARCHIVED | FAILED
 
 ProjectBoard 只保存查询投影。CLI、Skill、Board API 和目录位置都不能直接推进状态。`task_id` 同时是 Workflow key、事件关联和人类查询入口。
 
-`TaskAuthority/<task_id>` 在任一主 Workflow 开始前冻结 `owner + spec_revision`，冲突 owner 被拒绝。`CodingTaskWorkflow` 独占编码聚合 Projection，按固定八阶段推进；`CoreClosureWorkflow` 独占多角色 Core Projection，并把确定性 Scenario Adapter 的完整结果固定为一个 Closure Digest。Workspace、Agent、Verification、Merge、Docs 和 Scenario Adapter 只返回证据，不写 Projection。Observer 把兼容 Coding TaskProjection 同步到 ProjectBoard，但 Board 不是主状态源；当前 Core Workflow 只提供 Restate `status` 查询，尚未接入 Board UI。
+`TaskAuthority/<task_id>` 在任一主 Workflow 开始前冻结 `owner + spec_revision`，冲突 owner 被拒绝。`CodingTaskWorkflow` 独占编码聚合 Projection，产品模式按 Context、Workspace、Implementation、Verification、Review、Merge、Docs、Closure、Archive 推进；`CoreClosureWorkflow` 独占多角色 Core Projection，并把确定性 Scenario Adapter 的完整结果固定为一个 Closure Digest。Workspace、Agent、Review、Verification、Merge、Docs 和 Scenario Adapter 只返回证据，不写 Projection。Observer 把兼容 Coding TaskProjection 同步到 ProjectBoard，但 Board 不是主状态源；当前 Core Workflow 只提供 Restate `status` 查询，尚未接入 Board UI。
 
 Git Backlog 是导入条目字段的所有者。CLI 完整校验 `BL-*.yaml` 后，通过单次 `ProjectBoard.syncBacklog` 提交；Object 比较 Source Digest，内容未变时不重写状态。Projection 独有记录采用 `PRESERVE` 并显式报告，Web 查询仍然只读取 Projection。
 
@@ -100,7 +100,7 @@ Archive 使用 `archive/<task_id>/revision-<spec_revision>` 作为稳定操作�
 
 Core Scenario Effect 同样先写稳定 Intent，但把整个确定性场景结果保存为内容寻址 Artifact。结果 rename 后 Worker 退出时，Restate 可以重放 `ctx.run`，Adapter 会验证并复用结果；仅有 Intent 而无结果时停止为 UNKNOWN。Core Closure 的成功、预算终止和取消都从同一最终 Projection 推导，Observer、Board、Archive 或外层 Merge 失败不能回写已确认 Outcome。
 
-Core PoC 已用确定性 Adapter 验证 Repair/Replan、中央预算和 UNKNOWN Reconcile；尚未实现真实多角色模型 Adapter、人工解除冲突、跨设备 Git Artifact 或 Core Board UI，这些继续由 [Task Runtime Kernel](./task-runtime-kernel.md) 约束后续设计。
+Core PoC 已用确定性 Adapter 验证 Repair/Replan、中央预算和 UNKNOWN Reconcile。Coding 产品路径已接入真实 Implementation + 只读 Review + 一次 Repair，但尚未把 Docs Role、Spec Replan 和完整 CoreClosureResult 接到真实模型，也未实现人工解除冲突、跨设备 Git Artifact 或 Core Board UI。
 
 ## 6. 查询与 Trace
 
@@ -110,7 +110,7 @@ Board 固定展示需求池、进行中、待归档、已归档。通用 Task �
 2. Durable Runtime：Workflow Ref 与 Restate Admin 入口，Journal 是执行、重放和中断恢复权威；
 3. Technical Evidence：Agent Session/Artifact、Branch、Checkpoint、Verification 和 Merge，是诊断证据。
 
-`GET /api/tasks/<task_id>/trace` 和看板详情只读。默认页面把业务事实整理为“需求与上下文 → 隔离工作区 → Agent 编码 → 自动验证 → 合入分支 → 文档检查 → 归档”，并直接展示 `Task → CodingTaskWorkflow → Agent Session → Git Commit` 关联链。Workflow 在 Agent Activity 前把稳定 Run locator 写入 Projection；Runner 把 CLI stdout 按完整 JSONL 行增量写入受管 Run 目录。`GET /api/tasks/<task_id>/agent-events` 只根据该 locator 提供有界 cursor 页面，运行中固定文件快照并验证 execution intent，完成后改用 manifest 大小与 SHA-256 校验。页面自动跟随并可按对话、工具调用、工具结果、系统和错误筛选，不再永久截断前 200 条；原始 Artifact 下载仍是显式次级入口。Journal、其他 Artifact 和恢复建议渐进披露在高级诊断区；Restate 链接携带 Workflow service 与 Task key 过滤条件，而不是打开无上下文首页。恢复分类从已有 Projection 派生为 `NONE | WAIT_OR_RECONCILE | FAILED_TERMINAL | ARCHIVE_RETRY`，只说明应等待、对账、创建后续 Task 或重新附着 Archive，不直接推进状态。因此 Trace 和 Event Viewer 都不会成为第二套状态机，三层事实只通过 `task_id`、Attempt ID、Run ID、Effect ID 和 Content Digest 关联。
+`GET /api/tasks/<task_id>/trace` 和看板详情只读。默认页面把业务事实整理为“需求与上下文 → 隔离工作区 → Agent 编码 → 自动验证 → 独立审查 → 合入分支 → 文档检查 → 归档”，并直接展示 `Task → CodingTaskWorkflow → Agent Session → Git Commit` 关联链。Review 阶段展示独立 Session、Verdict、Finding 和 Repair 次数。Workflow 在 Agent Activity 前把稳定 Run locator 写入 Projection；Runner 把 CLI stdout 按完整 JSONL 行增量写入受管 Run 目录。`GET /api/tasks/<task_id>/agent-events` 只根据该 locator 提供有界 cursor 页面，运行中固定文件快照并验证 execution intent，完成后改用 manifest 大小与 SHA-256 校验。页面自动跟随并可按对话、工具调用、工具结果、系统和错误筛选，不再永久截断前 200 条；原始 Artifact 下载仍是显式次级入口。Journal、其他 Artifact 和恢复建议渐进披露在高级诊断区；Restate 链接携带 Workflow service 与 Task key 过滤条件，而不是打开无上下文首页。恢复分类从已有 Projection 派生为 `NONE | WAIT_OR_RECONCILE | FAILED_TERMINAL | ARCHIVE_RETRY`，只说明应等待、对账、创建后续 Task 或重新附着 Archive，不直接推进状态。因此 Trace 和 Event Viewer 都不会成为第二套状态机，三层事实只通过 `task_id`、Attempt ID、Run ID、Effect ID 和 Content Digest 关联。
 
 TASK-0009 在这个只读派生层增加后端无关 `TraceSink`：默认 Noop，显式开启后由官方 OpenTelemetry exporter 发送 OTLP/HTTP protobuf。稳定 Task Trace ID 只用于查询关联；每个已持久化 Attempt 映射为短 Span，Agent Run 是 IMPLEMENT Attempt 的子 Span，另有零时长 Task Snapshot，不创建持续数天的在线 root span。导出在 Coding Workflow 已得到业务 Projection 后执行，失败最多形成诊断日志，不能反向改变成功、失败或归档终态。Phoenix 是 `compose.yaml` 的可选本地 Profile，并非运行时依赖；该边界由 [ADR-0004](../../decisions/adr/0004-use-otlp-contract-and-optional-phoenix.md) 冻结。
 

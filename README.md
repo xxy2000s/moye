@@ -2,7 +2,7 @@
 
 Moye 是一个面向代码研发任务的全自动、可恢复、可追踪 Harness。它以 Task 为业务聚合根，协调 Agent、Daemon、Worktree、测试、Review、Git 合并和知识沉淀，目标是让一次研发任务从需求进入到主干合入形成可验证闭环。
 
-当前状态：**首个本地单 Agent 编码闭环、真实 Codex/Claude CLI 事件流、三层 Trace 与可选 OTLP/Phoenix 诊断 Demo 已实现并通过验收**。
+当前状态：**页面可提交真实 Codex/Claude 本地编码任务；隔离 Worktree、独立只读 Review、一次自动 Repair、验证、Git 合入、关闭与归档闭环已通过真实 Codex 验收**。
 
 ## 当前目标
 
@@ -64,6 +64,12 @@ npm run test:e2e
 
 `test:e2e` 会启动隔离的 Restate 1.7.4 容器、强杀 Service、重启并验证唯一归档，结束后自动清理容器。开发启动、服务注册、CLI 和看板操作见 [本地 PoC Runbook](./docs/knowledge/guidance/runbooks/local-restate-poc.md)。
 
+启动 Restate、注册 Moye 服务后，Board 顶部的“真实 Agent 任务”表单可直接提交允许仓库。产品 API 只接受 `CODEX_EXEC` 或 `CLAUDE_PRINT`，不会回落 Fake。真实、隔离、可重复的产品验收命令是：
+
+```bash
+npm run acceptance:live
+```
+
 运行时包含两个本地入口：
 
 - Restate Service Endpoint：默认 `9080`；
@@ -74,7 +80,7 @@ CLI 统一使用 `npm run cli -- <command>`；项目 Agent 应使用 [moye-task-
 Coding Task 出现在看板后，点击卡片默认先看到：
 
 1. 任务结论与 Task → Workflow → Agent Session → Git Commit 关联链；
-2. 需求与上下文、隔离工作区、Agent 编码、自动验证、合入分支、文档检查、归档七个阶段；
+2. 需求与上下文、隔离工作区、Agent 编码、自动验证、独立审查、合入分支、文档检查、归档八个阶段；
 3. 每个阶段展开后的 Attempt 和 Evidence；
 4. `查看 Agent Events` 打开独立弹窗持续展示完整 Agent CLI JSONL，可筛选工具过程、展开原始 JSON，并通过游标读取全部事件；关闭后回到原任务详情。
 

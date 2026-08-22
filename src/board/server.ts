@@ -8,12 +8,13 @@ import type { BacklogProjection } from "../domain/backlog.js";
 import type { ProjectBoardSnapshot } from "../domain/board.js";
 import { assertTaskId, type TaskProjection } from "../domain/task.js";
 import { invoke, send } from "../restate/ingress.js";
-import type { TaskWorkflowInput } from "../restate/services.js";
 import type { TaskAuthorityState } from "../restate/services.js";
 import type { CodingWorkflowProjection } from "../coding/workflow.js";
 import { buildCodingTaskTrace } from "../trace/coding-trace.js";
 import type { MoyeConfig } from "../config.js";
 import type { AgentArtifactFile } from "../agent/runner.js";
+import { buildLiveCodingTask, listLiveCapabilities } from "../product/live-task.js";
+import { MoyeError } from "../domain/errors.js";
 
 export interface BoardServerOptions {
   readonly port: number;
@@ -22,6 +23,8 @@ export interface BoardServerOptions {
   readonly restateAdminUrl: string;
   readonly publicRoot: string;
   readonly artifactRoots?: readonly string[];
+  readonly liveRuntimeRoot?: string;
+  readonly repositoryRoots?: readonly string[];
   readonly observability?: MoyeConfig["observability"];
 }
 
@@ -52,6 +55,15 @@ async function route(
       "get",
     );
     writeJson(response, 200, snapshot);
+    return;
+  }
+
+  if (method === "GET" && url.pathname === "/api/live-capabilities") {
+    writeJson(response, 200, await listLiveCapabilities({
+      projectId: options.projectId,
+      runtimeRoot: options.liveRuntimeRoot ?? ".moye-runtime/live",
+      allowedRepositoryRoots: options.repositoryRoots ?? [],
+    }));
     return;
   }
 
@@ -190,19 +202,18 @@ async function route(
   }
 
   if (method === "POST" && url.pathname === "/api/tasks") {
-    const input = await readJson<TaskWorkflowInput>(request);
-    if (input.projectId !== options.projectId) {
-      writeJson(response, 400, { error: `projectId must be ${options.projectId}` });
-      return;
+    try {
+      const built = await buildLiveCodingTask(await readJson<unknown>(request), {
+        projectId: options.projectId,
+        runtimeRoot: options.liveRuntimeRoot ?? ".moye-runtime/live",
+        allowedRepositoryRoots: options.repositoryRoots ?? [],
+      });
+      const receipt = await send(options.ingressUrl, "CodingTaskWorkflow", built.taskId, "run", built.input);
+      writeJson(response, 202, { accepted: true, taskId: built.taskId, workflow: "CodingTaskWorkflow", ...receipt });
+    } catch (error) {
+      if (!(error instanceof MoyeError)) throw error;
+      writeJson(response, 400, { error: error.message, code: error.code });
     }
-    const receipt = await send(
-      options.ingressUrl,
-      "TaskWorkflow",
-      input.taskId,
-      "run",
-      input,
-    );
-    writeJson(response, 202, receipt);
     return;
   }
 

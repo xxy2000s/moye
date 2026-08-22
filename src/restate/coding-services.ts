@@ -14,6 +14,7 @@ import type { TaskProjection } from "../domain/task.js";
 import type { GitCommandRunner } from "../git/workspace-effect.js";
 import { nodeGitCommandRunner } from "../git/workspace-effect.js";
 import { buildCodingTraceBatch, createTraceSink } from "../trace/telemetry.js";
+import { CliLiveReviewRunner } from "../review/live-review.js";
 import { archiveWorkflow, projectBoard, taskAuthority } from "./services.js";
 
 interface CodingWorkflowState {
@@ -60,6 +61,7 @@ export const codingTaskWorkflow = restate.workflow({
       const agentRunner = createAgentRunner(input, config);
       const projection = await runCodingWorkflow(input, {
         agentRunner,
+        ...(input.reviewMode === "REAL" ? { reviewRunner: new CliLiveReviewRunner() } : {}),
         now: () => new Date(workflowEpoch + workflowTick++),
         gitRunner: createGitRunner(input),
         activity: <T>(name: string, operation: () => Promise<T>): Promise<T> => ctx.run(
@@ -194,7 +196,7 @@ function toTaskProjection(input: CodingTaskWorkflowInput, projection: CodingWork
     title: input.title,
     state: projection.state === "RUNNING" ? (projection.currentStep === "CONTEXT" ? "RECEIVED" : "EXECUTING") : "CLOSED",
     currentStep: projection.currentStep,
-    attempt: projection.attempts.filter((attempt) => attempt.stepId === "IMPLEMENT").length,
+    attempt: projection.agentRuns?.length ?? projection.attempts.filter((attempt) => attempt.stepId === "IMPLEMENT").length,
     specRevision: projection.specRevision,
     backlogRefs: [...input.backlogRefs],
     archiveStatus: projection.archiveStatus,

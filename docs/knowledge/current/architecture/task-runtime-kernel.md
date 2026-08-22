@@ -206,6 +206,14 @@ ProjectBoard 接收 Coding 的状态和事件摘要；`src/trace/coding-trace.ts
 
 真实 Restate 1.7.4 验证覆盖线性成功、Repair、Replan、UNKNOWN→Reconcile、预算耗尽、取消、Docs Gate 首次失败恢复、Observer 失败、异步提交回执丢失和 Worker `SIGKILL`。所有场景最终只有一个 Closure Digest，持久化后的场景执行计数保持 1。
 
+### 5.0.10 当前已实现页面真实 Agent 产品切片
+
+Board `POST /api/tasks` 只接受 `CODEX_EXEC | CLAUDE_PRINT`，在任何 Runtime 状态写入前拒绝 Fake。提交器校验允许仓库、冻结 Base/Target Ref、创建仓库外受管 Worktree/Artifact/Task Package，并异步派发唯一 `CodingTaskWorkflow/<task_id>`。
+
+真实 Implementation Commit 先绑定 Verification，再由第二个只读 CLI Session 产生结构化 ReviewResult。存在 Blocking Finding 时，Workflow 在固定一次 Repair 预算内创建新的 Implementation Agent Run、Checkpoint、Verification 和 Review；预算耗尽则保留 Findings 并失败，不合入。通过后才允许 Merge、Docs disposition、业务关闭与独立 Archive。所有实际 Agent Run 都有稳定 Run ID 和 Artifact；产品 Trace 展示 Review/Repair，但 Board 与 Trace 仍不能推进状态。
+
+该产品切片复用 Core 不变量，但当前状态所有者仍是 CodingTaskWorkflow；完整 Docs Role、Spec Replan 和 `CoreClosureResult` 接线仍属于后续 Core 产品化，不得从页面可用性推断为已完成。
+
 ### 5.1 模型关系
 
 ```mermaid

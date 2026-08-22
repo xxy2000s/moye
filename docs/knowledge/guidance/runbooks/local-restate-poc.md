@@ -1,7 +1,7 @@
 # 本地运行 Restate PoC
 
 > 状态：Verified  
-> 验证日期：2026-08-21
+> 验证日期：2026-08-22
 > 适用版本：Node.js 22、Restate SDK 1.16.7、Restate Server 1.7.4
 
 ## 1. 第一次体验
@@ -18,7 +18,7 @@ npm run demo
 1. “需求池”显示需求来源及其派发状态；
 2. “已归档”显示闭环完成的 Coding Task；
 3. 点击 Task 卡片，先看任务结论与 `Task → Workflow → Agent Session → Git Commit` 关联链；
-4. 依次展开“需求与上下文、隔离工作区、Agent 编码、自动验证、合入分支、文档检查、归档”，查看各阶段 Attempt 和 Evidence；
+4. 依次展开“需求与上下文、隔离工作区、Agent 编码、自动验证、独立 Review、合入分支、文档检查、归档”，查看各阶段 Attempt 和 Evidence；
 5. 只有排障时再展开“高级诊断”。其中的链接会在 Restate 中按当前 `task_id` 精确过滤；
 6. 按 `Ctrl-C` 停止本地服务。
 
@@ -49,9 +49,12 @@ Docker daemon 可用时，以下命令会启动隔离容器、注册服务、提
 npm install
 npm run check
 npm run test:e2e
+npm run acceptance:live
 ```
 
-当前成功标准：17 个单元测试文件共 96 项、4 个 E2E 文件共 11 项通过；除归档恢复与 Backlog 同步外，E2E 还覆盖一键 Coding Demo、Fake Coding Workflow 的唯一 Merge、运行中受控 JSONL Stream 与 cursor 完整读取、成功/失败 OTLP Trace、受控 Agent Artifact 下载、重复命令拒绝、Agent 异常退出、Verification 失败不合并、Merge 丢回执对账、Git 更新后 Worker 退出恢复，以及 Verification 期间 Worker 重启不重复命令。单元测试另外证明 chunk 跨行不会提前暴露半行、Workspace/Agent/Merge 的 UNKNOWN 全部保留结构化错误并要求先对账，以及静态文件、活动 Event Stream 和完成 Artifact 的符号链接、根目录逃逸、Intent 或摘要不匹配都会被拒绝。
+`npm run acceptance:live` 是产品可用性门禁：它经页面使用的同一个 `POST /api/tasks` 入口先确认 Fake 被拒绝，再在隔离临时 Git 仓库中调用真实 Codex 完成 Implementation 和独立只读 Review，随后验证命令、唯一 Merge、Board Closure 与 Archive。它会消耗真实模型额度；常规单元/E2E 仍可使用确定性 Fixture 验证恢复语义。
+
+当前成功标准：全部单元测试与类型检查通过，真实 Restate E2E 覆盖归档恢复、Backlog 同步、唯一 Merge、事件流、Trace、Verification 失败、未知结果对账与 Worker 重启；Live Acceptance 另外证明页面产品路径没有用 Fake/Mock 冒充成功。
 
 TASK-0011 已通过 `npm run demo:codex` 再次执行真实 Codex 隔离 Fixture：运行中事件从 4 条增长至 13 条，完成时冻结 17 条，包含命令执行、文件修改、Git Commit、工具结果和最终回答，并通过 Verification、唯一 Merge 与 Archive。自动化回归仍使用 Fake/受控进程，避免每次测试消耗模型额度。
 
@@ -69,8 +72,12 @@ docker run --rm --name moye-restate \
 
 ```bash
 npm install
+MOYE_REPOSITORY_ROOTS=/absolute/path/to/allowed/repo \
+MOYE_LIVE_RUNTIME_ROOT=/absolute/path/outside/repo/moye-live \
 npm run dev
 ```
+
+打开 Board 顶部的“发起真实编码任务”，选择允许的仓库和 `Codex` 或 `Claude`。目标分支不存在时会从 Base 自动创建；目标分支已被任一 Worktree 检出、不是 Git ref、或 Runtime Root 位于目标仓库内时，提交会在进入 Runtime 前失败。产品表单不提供 Fake 选项，服务端也会拒绝伪造的 Fake 请求。
 
 注册 HTTP/2 Service Endpoint：
 
@@ -104,7 +111,7 @@ npm run cli -- backlog sync --dir docs/delivery/backlog --project moye
 - `close` 连接同一 Workflow 并等待业务终态，不创建第二条流程；
 - `archive` 和 `reconcile` 连接同一 keyed ArchiveWorkflow。
 - `backlog sync` 在提交前校验完整 YAML 批次；重复同步按 Source Digest 收敛；运行时独有记录默认保留并报告。
-- `CodingTaskWorkflow/<task_id>` 接受冻结 Envelope 和 Fixture/Codex Runner 配置；主状态与事件摘要同步到 Board，点击 Coding Task 卡片可以查看 Attempt/Evidence、Journal 定位和技术日志分层 Trace。
+- `CodingTaskWorkflow/<task_id>` 接受冻结 Envelope 和 Agent Runner 配置；页面产品入口只提交真实 Codex/Claude，Workflow 在实现与验证后启动独立只读 Review，Blocking Finding 最多触发一次 Repair、重新验证和重新 Review；主状态与事件摘要同步到 Board。
 - `CoreClosureWorkflow/<task_id>` 接受冻结 Envelope、确定性场景和受管 Artifact Root；它当前是 Core 收敛 PoC/API，不会投影到 Board，也不替代 Coding Workflow。
 
 Core Workflow 的只读状态可直接从 Restate Ingress 查询：
@@ -143,6 +150,8 @@ curl http://127.0.0.1:3000/api/tasks/TASK-EXAMPLE/trace
 | `RESTATE_SERVICE_PORT` | `9080` | Restate Service Endpoint |
 | `MOYE_BOARD_PORT` | `3000` | Board HTTP Server |
 | `MOYE_ARTIFACT_ROOTS` | 空 | 允许 Board 下载 Agent Artifact 的受管根；多个路径按平台 path delimiter 分隔 |
+| `MOYE_REPOSITORY_ROOTS` | 当前工作目录 | 页面允许提交的 Git 仓库根；多个路径按平台 path delimiter 分隔 |
+| `MOYE_LIVE_RUNTIME_ROOT` | `.moye-runtime/live` | 页面任务的 Task Package、Artifact 与 Worktree 受管根；必须位于目标仓库之外 |
 | `MOYE_OBSERVABILITY_ENABLED` | `false` | 开启 Moye OTLP Trace 导出 |
 | `MOYE_OTLP_TRACES_ENDPOINT` | `http://127.0.0.1:6006/v1/traces` | OTLP/HTTP protobuf traces endpoint |
 | `MOYE_TRACE_UI_URL` | `http://127.0.0.1:6006` | Board 显示的诊断 UI 入口 |
@@ -166,6 +175,7 @@ curl http://127.0.0.1:3000/api/tasks/TASK-EXAMPLE/trace
 - Service 退出但 Restate 仍运行：重启 `npm run dev`，未确认步骤会恢复；
 - Coding Trace 显示 `WAIT_OR_RECONCILE`：先用 `workflowRef` 检查 Journal；涉及 Verification/Agent/Git 未知结果时先核对稳定 Intent、Artifact 或 Git Effect marker，不能盲目重跑；
 - Coding Trace 显示 `FAILED_TERMINAL`：保留失败 Attempt，修复需求后创建新 Task 或新 Spec Revision，不要复活旧 Attempt；
+- Review 返回 Blocking Finding：Workflow 会在预算内启动新的 Agent Run Repair；Repair 后仍有 Blocking Finding 时任务失败且不会 Merge，不要手工改写 Verdict；
 - Coding Trace 显示 `ARCHIVE_RETRY`：业务已关闭，只重新附着同一 ArchiveWorkflow，不重新编码；
 - Core status 停在 `EXECUTING` 且 Service 曾退出：保持同一 `task_id` 和 Artifact Root 重启 Service，让 Restate 重放；若只存在 Scenario Intent 而没有结果，按 UNKNOWN 对账，不能删除 Intent 后盲目重跑；
 - source 不存在、target 存在：Archive Reconcile 将其识别为已移动；

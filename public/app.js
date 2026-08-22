@@ -10,6 +10,8 @@ const elements = {
   detail: document.querySelector("#detail-content"),
   eventsDialog: document.querySelector("#agent-events-dialog"),
   eventsViewer: document.querySelector("#agent-events-dialog [data-agent-events-viewer]"),
+  taskForm: document.querySelector("#live-task-form"),
+  taskStatus: document.querySelector("#task-submit-status"),
 };
 
 const lanes = {
@@ -24,6 +26,7 @@ const PIPELINE_STAGES = [
   { id: "WORKSPACE", label: "隔离工作区", description: "创建独立 Worktree 与任务分支" },
   { id: "IMPLEMENT", label: "Agent 编码", description: "绑定一次可追踪的 Agent Session" },
   { id: "VERIFY", label: "自动验证", description: "运行固定命令并固化验证证据" },
+  { id: "REVIEW", label: "独立审查", description: "只读 Agent 审查；阻断问题进入 Repair" },
   { id: "MERGE", label: "合入分支", description: "检查 Git 事实并合入目标分支" },
   { id: "DOCS", label: "文档检查", description: "确认关联文档、影响声明与知识沉淀" },
   { id: "ARCHIVE", label: "归档", description: "固化结果与回执，完成闭环" },
@@ -46,8 +49,80 @@ elements.eventsDialog.addEventListener("close", () => {
   shouldRestoreAgentEventsFocus = true;
 });
 document.querySelector("#refresh").addEventListener("click", loadBoard);
+elements.taskForm.addEventListener("submit", submitLiveTask);
+await loadLiveCapabilities();
 await loadBoard();
 setInterval(loadBoard, 5000);
+
+async function loadLiveCapabilities() {
+  const repository = elements.taskForm.elements.repositoryRoot;
+  try {
+    const response = await fetch("/api/live-capabilities", { cache: "no-store" });
+    if (!response.ok) throw new Error(await response.text());
+    const capabilities = await response.json();
+    repository.replaceChildren(...capabilities.repositoryRoots.map(root => {
+      const option = document.createElement("option");
+      option.value = root;
+      option.textContent = root;
+      return option;
+    }));
+    if (capabilities.repositoryRoots.length === 0) {
+      repository.innerHTML = '<option value="">没有配置可执行仓库</option>';
+    }
+  } catch (error) {
+    repository.innerHTML = '<option value="">仓库配置读取失败</option>';
+    elements.taskStatus.textContent = error instanceof Error ? error.message : String(error);
+    elements.taskStatus.className = "submit-error";
+  }
+}
+
+async function submitLiveTask(event) {
+  event.preventDefault();
+  const form = elements.taskForm;
+  const button = form.querySelector('button[type="submit"]');
+  button.disabled = true;
+  elements.taskStatus.className = "";
+  elements.taskStatus.textContent = "正在校验仓库并提交到 Runtime…";
+  try {
+    const data = new FormData(form);
+    const validationCommands = String(data.get("validationCommands") || "").split(/\r?\n/)
+      .map(line => line.trim()).filter(Boolean).map((line, index) => ({
+        commandId: `CMD-LIVE-${String(index + 1).padStart(2, "0")}`,
+        argv: JSON.parse(line),
+      }));
+    if (validationCommands.some(command => !Array.isArray(command.argv) || command.argv.length === 0)) {
+      throw new Error("每条验证命令必须是非空 JSON 字符串数组");
+    }
+    const response = await fetch("/api/tasks", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        title: String(data.get("title") || ""),
+        objective: String(data.get("objective") || ""),
+        acceptanceCriteria: String(data.get("acceptanceCriteria") || "").split(/\r?\n/).map(line => line.trim()).filter(Boolean),
+        repositoryRoot: String(data.get("repositoryRoot") || ""),
+        baseBranch: String(data.get("baseBranch") || ""),
+        targetBranch: String(data.get("targetBranch") || ""),
+        runnerKind: String(data.get("runnerKind") || ""),
+        docsDisposition: String(data.get("docsDisposition") || ""),
+        validationCommands,
+      }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || `提交失败（HTTP ${response.status}）`);
+    elements.taskStatus.className = "submit-success";
+    elements.taskStatus.textContent = `${result.taskId} 已由真实 ${String(data.get("runnerKind"))} 接收；可在“进行中”查看。`;
+    form.elements.title.value = "";
+    form.elements.objective.value = "";
+    form.elements.acceptanceCriteria.value = "";
+    await loadBoard();
+  } catch (error) {
+    elements.taskStatus.className = "submit-error";
+    elements.taskStatus.textContent = error instanceof Error ? error.message : String(error);
+  } finally {
+    button.disabled = false;
+  }
+}
 
 async function loadBoard() {
   try {
@@ -220,7 +295,7 @@ function renderCodingTrace(trace, summary) {
     <p class="trace-note">Trace 与 JSONL 只用于诊断；任务状态以 Moye Projection / Domain Event 为准，中断恢复以 Restate Journal 为准。</p>
 
     <section class="journey-section" aria-labelledby="journey-title">
-      <div class="trace-heading"><div><p class="eyebrow">任务执行旅程</p><h3 id="journey-title">七个阶段，一眼看清做到哪里</h3></div><span>点击阶段查看证据</span></div>
+      <div class="trace-heading"><div><p class="eyebrow">任务执行旅程</p><h3 id="journey-title">八个阶段，一眼看清做到哪里</h3></div><span>点击阶段查看证据</span></div>
       <div class="journey">${journey}</div>
     </section>
 
@@ -473,6 +548,9 @@ function renderStageDetail(trace, stepId, attempt) {
   if (stepId === "VERIFY") facts = trace.verification
     ? `<p><strong>验证结论：</strong>${trace.verification.passed ? "✓ 全部通过" : `! ${escapeHtml(trace.verification.code || "未通过")}`}<br>${trace.verification.commands.map(command => `<code>${escapeHtml(command.commandId)}</code> → exit ${command.exitCode ?? "signal"}，${command.durationMs} ms`).join("<br>")}</p>`
     : `<p>尚无验证结果。</p>`;
+  if (stepId === "REVIEW") facts = trace.reviews?.length
+    ? `<p><strong>Review Attempts：</strong>${trace.reviews.length}<br>${trace.reviews.map(review => `<code>#${review.attempt}</code> ${escapeHtml(runnerLabel(review.runnerKind))} → <strong>${escapeHtml(review.verdict || review.outcome)}</strong>，阻断问题 ${review.blockingFindingCount}<br><span>${escapeHtml(review.summary)}</span>`).join("<br>")}</p>`
+    : `<p>尚无独立 Review 结果。</p>`;
   if (stepId === "MERGE") facts = `<p><strong>结果提交：</strong><code>${escapeHtml(shortSha(trace.git.resultCommit))}</code><br><strong>合入提交：</strong><code>${escapeHtml(shortSha(trace.git.mergeCommit))}</code></p>`;
   if (stepId === "DOCS") facts = `<p><strong>文档证据：</strong>${evidence.length ? `${evidence.length} 项已绑定` : "尚未绑定"}</p>`;
   if (stepId === "ARCHIVE") facts = `<p><strong>归档状态：</strong>${escapeHtml(archiveStatusLabel(trace.task.archiveStatus))}<br><strong>闭环结论：</strong>${trace.task.state === "CLOSED" && trace.task.archiveStatus === "ARCHIVED" ? "任务结果与归档回执均已确认" : "等待归档回执"}</p>`;

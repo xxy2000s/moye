@@ -40,6 +40,24 @@ h1 { margin: 0; font: 400 clamp(44px, 6vw, 88px)/.98 "Newsreader", "Songti SC", 
 #refresh:hover { background: #3a3936; }
 #refresh:active { transform: scale(.98); }
 
+.task-composer { display: grid; grid-template-columns: minmax(240px, .42fr) minmax(0, 1fr); gap: 48px; margin-bottom: 20px; padding: 28px; border: 1px solid var(--line); border-radius: 8px; background: white; }
+.composer-copy h2 { margin: 0 0 14px; font: 400 31px/1.12 "Newsreader", "Songti SC", serif; }
+.composer-copy > p:last-child { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
+.task-composer form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.field { display: grid; gap: 7px; min-width: 0; }
+.field-wide { grid-column: 1 / -1; }
+.field > span { color: var(--muted); font: 600 9px/1.2 "SF Mono", monospace; letter-spacing: .08em; }
+.field input, .field textarea, .field select { width: 100%; min-height: 42px; padding: 10px 11px; border: 1px solid var(--line); border-radius: 5px; color: var(--ink); background: var(--canvas); font: 12px/1.5 "SF Mono", monospace; }
+.field textarea { resize: vertical; }
+.field input:focus, .field textarea:focus, .field select:focus { outline: 2px solid #9ebdce; outline-offset: 1px; }
+.field small { color: var(--muted); font-size: 10px; line-height: 1.45; }
+.composer-actions { display: flex; align-items: center; gap: 14px; }
+.composer-actions button { flex: 0 0 auto; min-height: 44px; padding: 0 17px; border: 0; border-radius: 5px; color: white; background: var(--ink); cursor: pointer; }
+.composer-actions button:disabled { cursor: wait; opacity: .55; }
+.composer-actions p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.composer-actions .submit-success { color: var(--green-ink); }
+.composer-actions .submit-error { color: var(--red-ink); }
+
 .summary { display: grid; grid-template-columns: 1fr .65fr .9fr 1fr; border: 1px solid var(--line); background: var(--surface); margin-bottom: 20px; }
 .summary div { min-width: 0; padding: 18px 20px; border-right: 1px solid var(--line); }
 .summary div:last-child { border-right: 0; }
@@ -255,6 +273,9 @@ dialog > form { position: sticky; top: 0; display: flex; justify-content: flex-e
   .masthead, main { padding-left: 18px; padding-right: 18px; }
   main { padding-top: 52px; }
   .intro { grid-template-columns: 1fr; gap: 32px; }
+  .task-composer { grid-template-columns: 1fr; gap: 28px; padding: 20px; }
+  .task-composer form { grid-template-columns: 1fr; }
+  .field { grid-column: 1; }
   .summary { grid-template-columns: repeat(2, 1fr); }
   .summary div:nth-child(2) { border-right: 0; }
   .summary div:nth-child(-n+2) { border-bottom: 1px solid var(--line); }

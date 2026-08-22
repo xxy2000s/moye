@@ -27,9 +27,9 @@
 
 ### 1.2 当前实现切片
 
-当前代码实现了总体架构中的本地单 Agent 垂直切片：Task/Archive Durable Workflow、冻结 TaskEnvelope、Step/Attempt/Evidence、隔离 Worktree、Fake/真实 Codex/Claude Adapter、运行中 Agent JSONL Stream、Verification、本地原子 Merge、查询投影、三层 Trace、CLI/Skill 和本地 Board。一键 Demo 可在隔离 Git Fixture 中选择 Fake、Codex 或 Claude，Board 把 Task、Workflow、Agent Session 与 Git Commit 聚合成中文七阶段业务旅程，并通过 cursor API 持续展示完整 CLI 事件；Restate UI 只作为高级运行时排障入口。
+当前代码实现了可从 Board 提交的本地真实 Agent 垂直切片：Task/Archive Durable Workflow、冻结 TaskEnvelope、Step/Attempt/Evidence、隔离 Worktree、真实 Codex/Claude Implementation、独立只读 Review、一次 Finding-driven Repair、运行中 Agent JSONL Stream、Verification、本地原子 Merge、查询投影、三层 Trace、CLI/Skill 和本地 Board。产品 API 禁止 Fake；Fake 只保留在 Demo 与自动化夹具。Board 把 Task、Implementation/Review Session、Verification 与 Git Commit 聚合成中文八阶段业务旅程；Restate UI 只作为高级运行时排障入口。
 
-多角色 Core 已实现纯领域 Control Kernel，Docs、Implementation、Review 共用的 Role Attempt/Request/Result/Artifact 协议和确定性 Fake Role Runner，以及结构化 Self Review、ReviewFinding Gate 和四类有界恢复。只读 Observer 能从 Projection/Attempt/Artifact 定位重建 Trace、成本、告警与待审核知识候选；最终 changed paths 可重新执行 Context Route，逐项 Docs Impact 经现有 Graph Validator 通过后才从 `DOCS_IMPACT_REQUIRED` 进入 `CLOSURE_REQUIRED`。`CoreClosureWorkflow/<task_id>` 现已作为唯一 Restate 写入者，通过内容寻址 Scenario Artifact 串联成功、Repair、Replan、UNKNOWN 对账、预算终止和取消，并让三种 Outcome 都生成不可变 Closure Result。Observer 不拥有业务状态，候选不能自动提升为 ADR 或 Architecture，Gate 失败保持可恢复。当前 Scenario Adapter 使用确定性事实做控制闭环验收；真实 Codex/Claude 多角色 Adapter、Core Board UI、Daemon 集群、远程 Git/PR、生产运营平台与自动知识反馈仍未实现，不能从 PoC 收敛证据推断为已完成。
+多角色 Core 已实现纯领域 Control Kernel，Docs、Implementation、Review 共用的 Role Attempt/Request/Result/Artifact 协议和确定性 Fake Role Runner，以及结构化 Self Review、ReviewFinding Gate 和四类有界恢复。只读 Observer 能从 Projection/Attempt/Artifact 定位重建 Trace、成本、告警与待审核知识候选；最终 changed paths 可重新执行 Context Route，逐项 Docs Impact 经现有 Graph Validator 通过后才从 `DOCS_IMPACT_REQUIRED` 进入 `CLOSURE_REQUIRED`。`CoreClosureWorkflow/<task_id>` 仍是确定性 Core 收敛 PoC。页面产品化路径由同一个 keyed `CodingTaskWorkflow/<task_id>` 持有真实 Coding Projection，并复用 Core 的独立 Review、Finding-driven Repair、预算和外层 Archive 原则；它没有宣称已经把完整 Core Reducer、Docs Role 或 Replan 接入真实模型。Daemon 集群、远程 Git/PR、生产运营平台与自动知识反馈仍未实现。
 
 ## 2. 设计结论
 

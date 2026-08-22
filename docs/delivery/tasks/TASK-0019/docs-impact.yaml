@@ -1,0 +1,130 @@
+schema_version: 1
+task_id: TASK-0019
+graph_revision: 45
+intents: [task-create, task-runtime-change, workflow-change, coding-task-poc, docs-change]
+changed_paths:
+  - README.md
+  - docs/delivery/backlog/BL-0020.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/tasks/TASK-0019/task.yaml
+  - docs/delivery/tasks/TASK-0019/spec.md
+  - docs/delivery/tasks/TASK-0019/design.md
+  - docs/delivery/tasks/TASK-0019/plan.md
+  - docs/delivery/tasks/TASK-0019/verification.md
+  - docs/delivery/tasks/TASK-0019/docs-impact.yaml
+  - docs/delivery/tasks/README.md
+  - docs/graph.yaml
+  - docs/knowledge/current/architecture/overview.md
+  - docs/knowledge/current/architecture/poc-01-restate.md
+  - docs/knowledge/current/architecture/task-runtime-kernel.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - docs/sources/brainstorm/multi-agent-core-closure-requirements.md
+  - package.json
+  - public/app.js
+  - public/index.html
+  - public/styles.css
+  - scripts/live_product_acceptance.ts
+  - src/board/server.ts
+  - src/coding/workflow.ts
+  - src/config.ts
+  - src/index.ts
+  - src/product/live-task.ts
+  - src/restate/coding-services.ts
+  - src/review/live-review.ts
+  - src/trace/coding-trace.ts
+  - tests/e2e/demo.test.ts
+  - tests/unit/live-task.test.ts
+docs:
+  read:
+    - agent-contract
+    - root-readme
+    - docs-index
+    - codemap
+    - document-control-plane
+    - backlog-index
+    - tasks-index
+    - task-runtime-kernel
+    - durable-runtime-pitfalls
+    - overnight-multi-task-goal
+    - finding-backlog-docs-not-projected
+    - bl-0008-backlog-projection-sync
+    - bl-0002-single-agent-coding-loop
+    - restate-poc-architecture
+    - meta-index
+    - adr-0002-doc-lifecycle-roles
+    - sources-index
+    - adr-0001-restate-poc
+    - architecture-index
+    - runbooks-index
+    - brainstorm-index
+    - bl-0020-live-agent-product-loop
+    - task-0019-manifest
+    - task-0019-spec
+    - task-0019-design
+    - task-0019-plan
+    - task-0019-verification
+    - task-0019-docs-impact
+    - architecture-overview
+    - local-restate-poc-runbook
+    - durable-workflow-research
+    - task-lifecycle-worktree-convergence-brainstorm
+    - multi-agent-core-closure-requirements
+    - task-spec-document-closure-brainstorm
+    - task-0013-manifest
+    - task-0014-manifest
+    - task-0015-manifest
+    - task-0016-manifest
+    - task-0017-manifest
+    - task-0018-manifest
+    - task-0001-manifest
+    - task-0002-manifest
+    - task-0003-manifest
+    - task-0004-manifest
+    - task-0005-manifest
+    - task-0006-manifest
+    - task-0007-manifest
+    - task-0008-manifest
+    - task-0009-manifest
+    - adr-0003-typescript-poc
+    - adr-0004-otlp-phoenix-demo
+  reviewed:
+    architecture-overview: { outcome: updated, reason: "登记页面真实 Coding Task、独立 Review/Repair 及其与确定性 Core PoC 的边界" }
+    local-restate-poc-runbook: { outcome: updated, reason: "增加页面真实任务配置、Live Acceptance、八阶段观察与 Review 失败判读" }
+    moye-task-control-skill: { outcome: unchanged, reason: "现有 Route、Result Commit、Runtime Closure、Docs Impact 与 Archive Gate 流程完整适用" }
+    durable-workflow-research: { outcome: unchanged, reason: "继续使用已接受的 Restate PoC，不增加 Workflow 引擎或新基础设施选择" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "产品路径复用既有 Worktree/Git 收敛原则，不回写历史开放讨论" }
+    multi-agent-core-closure-requirements: { outcome: updated, reason: "记录 TASK-0019 的真实 Coding Adapter 消费，同时明确未完成通用 Core Docs/Replan 真实接线" }
+    task-spec-document-closure-brainstorm: { outcome: unchanged, reason: "使用用户 Docs disposition 与仓库现有门禁，不改变早期 Task Spec/文档模型讨论" }
+    task-0013-manifest: { outcome: unchanged, reason: "真实产品任务不改变 Core Control Kernel 的历史交付证据" }
+    task-0014-manifest: { outcome: unchanged, reason: "新增 Coding 专用真实 Review Adapter，不改写通用 Role Runner 历史证据" }
+    task-0015-manifest: { outcome: unchanged, reason: "复用 Review/Finding 语义但不改写其协议交付记录" }
+    task-0016-manifest: { outcome: unchanged, reason: "Repair 预算保持一次且不改变通用 Recovery/Replan 协议历史" }
+    task-0017-manifest: { outcome: unchanged, reason: "页面 Review/Repair 投影不改变 Observer 或 Knowledge Candidate 协议" }
+    task-0018-manifest: { outcome: unchanged, reason: "Coding 产品 Workflow 与确定性 CoreClosureWorkflow 并存，不改写其 Closure 故障矩阵" }
+    task-0001-manifest: { outcome: unchanged, reason: "沿用基础 Task/Archive Runtime，不改变其历史事实" }
+    task-0002-manifest: { outcome: unchanged, reason: "BL-0020 使用既有 Backlog 文档转换协议" }
+    task-0003-manifest: { outcome: unchanged, reason: "继续冻结 TaskEnvelope 与 Expected Digest，不改变协议" }
+    task-0004-manifest: { outcome: unchanged, reason: "复用 Git Workspace Effect、Checkpoint 与 ref CAS，不改变其所有权" }
+    task-0005-manifest: { outcome: unchanged, reason: "复用既有真实 Codex/Claude Implementation Runner，不改写历史交付" }
+    task-0006-manifest: { outcome: unchanged, reason: "扩展既有 Coding Workflow 的 Review/Repair，不引入第二个主状态机" }
+    task-0007-manifest: { outcome: unchanged, reason: "Trace 继续只读派生；只增加 Review/Repair 展示事实" }
+    task-0008-manifest: { outcome: unchanged, reason: "保留隔离 Demo/Fake 测试入口，产品 API 明确不可达 Fake" }
+    task-0009-manifest: { outcome: unchanged, reason: "不改变 OTLP/Phoenix 选择或敏感内容采集边界" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "继续使用 TypeScript 与现有依赖，没有新增框架或技术选型" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "页面与 Review Artifact 扩展不改变 OTLP/Phoenix 决策" }
+    codemap: { outcome: updated, reason: "登记 product/live-task、review/live-review、Live Acceptance 入口与高风险路径" }
+    task-runtime-kernel: { outcome: updated, reason: "新增页面真实 Agent 产品切片、不变量及 Coding/Core 主权边界" }
+    restate-poc-architecture: { outcome: updated, reason: "更新 Coding Workflow 的独立 Review/Repair、页面产品入口与八阶段投影" }
+    document-control-plane: { outcome: unchanged, reason: "继续执行既有 Router、Graph、Impact Validator 与文档类型规则" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "真实 CLI Intent-only UNKNOWN 停止、幂等与 Reconcile 均遵守现有陷阱约束" }
+    research-index: { outcome: not_applicable, reason: "没有引入外部资料或形成新的技术选型调研" }
+    bl-0003-repair-replan-budget: { outcome: unchanged, reason: "页面 Coding Repair 使用固定一次预算，不改变该 Backlog 的通用 Core 协议历史" }
+    bl-0006-production-observability: { outcome: unchanged, reason: "新增页面观察字段不建设生产运营平台" }
+    bl-0007-knowledge-feedback-loop: { outcome: unchanged, reason: "本任务不增加自动知识候选提升或效果反馈" }
+    tasks-index: { outcome: updated, reason: "登记 TASK-0019 Active Task；Runtime Archive 后由 housekeeping commit 收敛" }
+    backlog-index: { outcome: updated, reason: "登记 BL-0020 并链接 TASK-0019" }
+    task-0019-manifest: { outcome: updated, reason: "记录真实产品 Spec、Design、验证证据和 Docs Impact" }
+    bl-0020-live-agent-product-loop: { outcome: updated, reason: "创建并转换为 TASK-0019，验收口径限定为真实 Coding Task 产品闭环" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "新增页面路径仍使用既有 Restate PoC，没有扩大为最终生产选型" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "没有新增文档角色；Task/Backlog/Architecture/Runbook 按既有生命周期更新" }

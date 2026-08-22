@@ -35,6 +35,26 @@
         </div>
       </section>
 
+      <section class="task-composer reveal" aria-labelledby="task-composer-title">
+        <div class="composer-copy">
+          <p class="eyebrow">真实 Agent 任务</p>
+          <h2 id="task-composer-title">提交一个真正会改代码的任务</h2>
+          <p>只调用本机 Codex 或 Claude。任务会在隔离 Worktree 执行、跑你声明的验证命令、合入独立目标分支并归档；产品入口不接受 Fake。</p>
+        </div>
+        <form id="live-task-form">
+          <label class="field field-wide"><span>任务标题</span><input name="title" required maxlength="160" placeholder="例如：给解析器补充空输入校验"></label>
+          <label class="field field-wide"><span>目标</span><textarea name="objective" required rows="3" placeholder="清楚描述要实现的行为和范围"></textarea></label>
+          <label class="field field-wide"><span>验收条件（每行一条）</span><textarea name="acceptanceCriteria" required rows="3" placeholder="空输入返回明确错误&#10;现有测试保持通过"></textarea></label>
+          <label class="field field-wide"><span>仓库</span><select name="repositoryRoot" required><option value="">正在读取允许的仓库…</option></select></label>
+          <label class="field"><span>执行 Agent</span><select name="runnerKind" required><option value="CODEX_EXEC">Codex Exec</option><option value="CLAUDE_PRINT">Claude Print</option></select></label>
+          <label class="field"><span>文档影响</span><select name="docsDisposition" required><option value="unchanged">无需更新</option><option value="updated">需要更新</option><option value="not_applicable">不适用</option></select></label>
+          <label class="field"><span>基线分支</span><input name="baseBranch" required value="master"></label>
+          <label class="field"><span>结果分支</span><input name="targetBranch" required value="moye/results" aria-describedby="target-help"><small id="target-help">不存在时自动从基线创建；不能是已签出的分支。</small></label>
+          <label class="field field-wide"><span>验证命令（JSON argv，每行一个）</span><textarea name="validationCommands" required rows="3" spellcheck="false">["npm","test"]</textarea></label>
+          <div class="composer-actions field-wide"><button type="submit">启动真实任务</button><p id="task-submit-status" role="status" aria-live="polite"></p></div>
+        </form>
+      </section>
+
       <section class="summary reveal" aria-label="项目摘要">
         <div><span>项目</span><strong id="project-id">—</strong></div>
         <div><span>进行中任务</span><strong id="active-count">0</strong></div>

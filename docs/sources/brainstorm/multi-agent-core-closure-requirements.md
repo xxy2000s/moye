@@ -418,6 +418,8 @@ CLOSED.outcome
 
 消费结果：TASK-0018 已实现统一 Closure Gate、Core Scenario Artifact 对账和 `CoreClosureWorkflow/<task_id>`。真实 Restate 验证覆盖成功、Repair、Replan、UNKNOWN→Reconcile、预算耗尽、取消、Docs Gate 首次失败、Observer 失败、异步回执丢失与 Worker 重启；确定性 Scenario Adapter 是控制闭环证据，不代表真实多角色模型质量。
 
+后续产品化消费：TASK-0019 把页面入口接到真实 `CodingTaskWorkflow`，产品请求在进入 Runtime 前拒绝 Fake，并用彼此独立的 Codex/Claude Implementation 与只读 Review Session、一次 Finding-driven Repair、Verification、Git Merge 和 Archive 形成可直接使用的编码闭环。这个增量是 Coding Workflow 的真实 Adapter 切片；它没有把通用 Core Role Runner、Docs Role 或 Spec Replan 接到真实模型，因此不应被表述为完整 Core 多角色协议已经产品化。
+
 ## 10. 完成定义
 
 本母需求只有在以下证据同时存在时才算被完整消费：

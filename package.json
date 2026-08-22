@@ -16,6 +16,7 @@
     "demo": "exec tsx scripts/demo.ts",
     "demo:codex": "MOYE_DEMO_RUNNER=CODEX_EXEC exec tsx scripts/demo.ts",
     "demo:claude": "MOYE_DEMO_RUNNER=CLAUDE_PRINT exec tsx scripts/demo.ts",
+    "acceptance:live": "tsx scripts/live_product_acceptance.ts",
     "demo:trace": "npm run trace:up && MOYE_OBSERVABILITY_ENABLED=true MOYE_TRACE_PROJECT_NAME=moye-demo exec tsx scripts/demo.ts",
     "trace:up": "tsx scripts/trace-compose.ts up",
     "trace:down": "tsx scripts/trace-compose.ts down",

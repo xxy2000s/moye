@@ -27,11 +27,12 @@ import type { LocalMergeResult } from "../git/merge-effect.js";
 import { applyLocalMerge, createLocalMergeRequest } from "../git/merge-effect.js";
 import type { VerificationBinding, VerificationFailure } from "../verification/gate.js";
 import { parseVerificationBinding, runVerificationGate } from "../verification/gate.js";
+import type { LiveReviewResult, LiveReviewRunner } from "../review/live-review.js";
 
 export const CODING_WORKFLOW_STEPS = Object.freeze([
   "CONTEXT", "WORKSPACE", "IMPLEMENT", "VERIFY", "MERGE", "DOCS", "CLOSED", "ARCHIVE",
 ] as const);
-export type CodingWorkflowStep = (typeof CODING_WORKFLOW_STEPS)[number];
+export type CodingWorkflowStep = (typeof CODING_WORKFLOW_STEPS)[number] | "REVIEW";
 
 export interface CodingWorkflowInput {
   readonly envelope: TaskEnvelope;
@@ -44,11 +45,13 @@ export interface CodingWorkflowInput {
   readonly runnerKind: AgentRunResult["runnerKind"];
   readonly prompt: string;
   readonly docsDisposition: "updated" | "unchanged" | "not_applicable";
+  readonly reviewMode?: "DISABLED" | "REAL";
+  readonly maxRepairAttempts?: number;
 }
 
 export interface CodingWorkflowEvent {
   readonly sequence: number;
-  readonly type: "STEP_STARTED" | "STEP_SUCCEEDED" | "WORKFLOW_FAILED" | "WORKFLOW_CLOSED" | "WORKFLOW_ARCHIVED" | "ARCHIVE_FAILED";
+  readonly type: "STEP_STARTED" | "STEP_SUCCEEDED" | "REVIEW_FINDINGS" | "REPAIR_STARTED" | "REPAIR_SUCCEEDED" | "WORKFLOW_FAILED" | "WORKFLOW_CLOSED" | "WORKFLOW_ARCHIVED" | "ARCHIVE_FAILED";
   readonly step: CodingWorkflowStep;
   readonly at: string;
   readonly detail?: string;
@@ -81,6 +84,10 @@ export interface CodingWorkflowProjection {
     readonly eventsArtifactRef: string;
   };
   readonly agent?: AgentRunResult;
+  readonly agentRuns?: readonly AgentRunResult[];
+  readonly review?: LiveReviewResult;
+  readonly reviews?: readonly LiveReviewResult[];
+  readonly repairCount?: number;
   readonly checkpoint?: GitCheckpoint;
   readonly verification?: VerificationBinding | VerificationFailure;
   readonly merge?: LocalMergeResult;
@@ -96,6 +103,7 @@ export interface CodingArchiveReceipt {
 
 export interface CodingWorkflowDependencies {
   readonly agentRunner: AgentRunner;
+  readonly reviewRunner?: LiveReviewRunner;
   readonly verificationProcessRunner?: AgentProcessRunner;
   readonly gitRunner?: GitCommandRunner;
   readonly activity?: <T>(name: string, operation: () => Promise<T>) => Promise<T>;
@@ -165,16 +173,16 @@ export async function runCodingWorkflow(
     message: string,
     errorFact?: { readonly code: string; readonly category: MoyeErrorCategory },
   ): Promise<CodingWorkflowProjection> => {
-    const codingStep = findCodingStep(envelope, step);
-    if (codingStep !== undefined) {
-      const running = projection.attempts.find((attempt) => attempt.stepId === step && attempt.status === "RUNNING");
-      if (running !== undefined) {
-        const completed = finishAttempt(running, "FAILED", canonicalNow(now), { error: message });
-        await publish({
-          ...projection,
-          attempts: projection.attempts.map((attempt) => attempt.attemptId === completed.attemptId ? completed : attempt),
-        });
-      }
+    const runningAttempts = projection.attempts.filter((attempt) => attempt.status === "RUNNING");
+    if (runningAttempts.length > 0) {
+      const completedById = new Map(runningAttempts.map((attempt) => {
+        const completed = finishAttempt(attempt, "FAILED", canonicalNow(now), { error: message });
+        return [completed.attemptId, completed] as const;
+      }));
+      await publish({
+        ...projection,
+        attempts: projection.attempts.map((attempt) => completedById.get(attempt.attemptId) ?? attempt),
+      });
     }
     await publish(withEvent({
       ...projection,
@@ -253,12 +261,12 @@ export async function runCodingWorkflow(
     ));
     if (!agentActivity.ok) return fail("IMPLEMENT", agentActivity.error.message, agentActivity.error);
     const agentRaw = agentActivity.value;
-    const agent = await parseAgentRunResult(
+    let agent = await parseAgentRunResult(
       JSON.parse(JSON.stringify(agentRaw)) as unknown,
       agentRequest,
       agentRaw.runDigest,
     );
-    await publish({ ...projection, agent });
+    await publish({ ...projection, agent, agentRuns: [...(projection.agentRuns ?? []), agent] });
     if (agent.outcome !== "SUCCEEDED") return fail("IMPLEMENT", `Agent outcome ${agent.outcome}`,
       { code: `AGENT_OUTCOME_${agent.outcome}`, category: "TERMINAL" });
     const checkpointCreatedAt = canonicalNow(now);
@@ -267,18 +275,21 @@ export async function runCodingWorkflow(
       checkpointCreatedAt,
       dependencies.gitRunner,
     ));
-    const checkpoint = parseGitCheckpoint(
+    let checkpoint = parseGitCheckpoint(
       JSON.parse(JSON.stringify(checkpointRaw)) as unknown,
       checkpointRaw.checkpointDigest,
     );
     await publish({ ...projection, checkpoint });
-    await succeed("IMPLEMENT", checkpoint.commitSha, {
-      artifactName: "agent-events.jsonl", contentDigest: agent.artifacts.events.contentDigest,
-    });
-
-    await start("VERIFY");
-    const verificationEpoch = Date.parse(canonicalNow(now));
-    const verificationRaw = await activity("verification-gate", () => {
+    if (input.reviewMode !== "REAL") {
+      await succeed("IMPLEMENT", checkpoint.commitSha, {
+        artifactName: "agent-events.jsonl", contentDigest: agent.artifacts.events.contentDigest,
+      });
+      await start("VERIFY");
+    } else {
+      await publish({ ...projection, currentStep: "VERIFY" });
+    }
+    let verificationEpoch = Date.parse(canonicalNow(now));
+    let verificationRaw = await activity("verification-gate-1", () => {
       let verificationTick = 0;
       return runVerificationGate(
         envelope,
@@ -305,9 +316,140 @@ export async function runCodingWorkflow(
       code: verification.code,
       category: verification.code === "RESULT_UNKNOWN" ? "UNKNOWN_SIDE_EFFECT" : "TERMINAL",
     });
+    let finalReview: LiveReviewResult | undefined;
+    if (input.reviewMode === "REAL") {
+      if (input.runnerKind === "FAKE" || dependencies.reviewRunner === undefined) {
+        return fail("REVIEW", "Real Review requires a real runner", { code: "REAL_REVIEW_RUNNER_REQUIRED", category: "VALIDATION" });
+      }
+      const maxRepairs = input.maxRepairAttempts ?? 1;
+      if (!Number.isSafeInteger(maxRepairs) || maxRepairs < 0 || maxRepairs > 3) {
+        return fail("REVIEW", "maxRepairAttempts must be between 0 and 3", { code: "INVALID_REPAIR_BUDGET", category: "VALIDATION" });
+      }
+      let reviewAttempt = 1;
+      let repairCount = 0;
+      while (true) {
+        await publish({ ...projection, currentStep: "REVIEW" });
+        const review = await activity(`review-agent-${reviewAttempt}`, () => dependencies.reviewRunner!.run({
+          taskId: envelope.taskId,
+          specRevision: envelope.specRevision,
+          attempt: reviewAttempt,
+          runnerKind: input.runnerKind as "CODEX_EXEC" | "CLAUDE_PRINT",
+          workspaceRoot: workspace.worktreePath,
+          artifactRoot: path.join(input.artifactRoot, "review"),
+          baseRef: input.baseRef,
+          commitSha: checkpoint.commitSha,
+          instructions: [
+            "Independently review the committed implementation against the task requirements and validation evidence.",
+            ...envelope.requirements.flatMap((requirement) => [requirement.title, ...requirement.acceptanceCriteria]),
+          ].join("\n"),
+        }));
+        finalReview = review;
+        await publish({ ...projection, review, reviews: [...(projection.reviews ?? []), review], repairCount });
+        if (review.outcome !== "SUCCEEDED" || review.verdict === null) {
+          return fail("REVIEW", review.summary || `Review outcome ${review.outcome}`, {
+            code: `REVIEW_OUTCOME_${review.outcome}`,
+            category: review.outcome === "FAILED" ? "TERMINAL" : "VALIDATION",
+          });
+        }
+        if (review.verdict === "PASSED") break;
+        await publish(withEvent(projection, "REVIEW_FINDINGS", "REVIEW", canonicalNow(now), review.resultDigest));
+        if (repairCount >= maxRepairs) {
+          return fail("REVIEW", `Review has ${review.findings.filter((finding) => finding.severity === "BLOCKING").length} blocking finding(s) after ${repairCount} repair(s)`, {
+            code: "REVIEW_FINDINGS_UNRESOLVED", category: "TERMINAL",
+          });
+        }
+        repairCount += 1;
+        const generation = repairCount + 1;
+        await publish(withEvent({ ...projection, currentStep: "IMPLEMENT", repairCount }, "REPAIR_STARTED", "IMPLEMENT", canonicalNow(now), review.resultDigest));
+        const repairRequest = await createAgentRunRequest({
+          taskId: envelope.taskId,
+          specRevision: envelope.specRevision,
+          stepId: "IMPLEMENT",
+          attemptId: `${envelope.taskId}/IMPLEMENT/attempt-${String(generation).padStart(3, "0")}`,
+          runnerKind: input.runnerKind,
+          workspaceRoot: workspace.worktreePath,
+          artifactRoot: path.join(input.artifactRoot, "agent"),
+          prompt: [
+            input.prompt,
+            "An independent reviewer found the following blocking issues. Repair them, rerun relevant checks, and create a new commit.",
+            review.summary,
+            ...review.findings.filter((finding) => finding.severity === "BLOCKING").map((finding) => `- ${finding.title}: ${finding.details}`),
+          ].join("\n"),
+        });
+        await publish({
+          ...projection,
+          agentRun: {
+            runId: repairRequest.runId,
+            runnerKind: repairRequest.runnerKind,
+            taskId: repairRequest.taskId,
+            specRevision: repairRequest.specRevision,
+            stepId: repairRequest.stepId,
+            attemptId: repairRequest.attemptId,
+            eventsArtifactRef: `agent-artifact://${repairRequest.runId}/events.jsonl`,
+          },
+        });
+        const repairActivity = await activity(`agent-repair-${generation}`, () => captureUnknownSideEffect(
+          () => dependencies.agentRunner.run(repairRequest),
+        ));
+        if (!repairActivity.ok) return fail("IMPLEMENT", repairActivity.error.message, repairActivity.error);
+        const repaired = await parseAgentRunResult(
+          JSON.parse(JSON.stringify(repairActivity.value)) as unknown,
+          repairRequest,
+          repairActivity.value.runDigest,
+        );
+        if (repaired.outcome !== "SUCCEEDED") return fail("IMPLEMENT", `Repair Agent outcome ${repaired.outcome}`, {
+          code: `AGENT_OUTCOME_${repaired.outcome}`, category: "TERMINAL",
+        });
+        agent = repaired;
+        const repairedCheckpointRaw = await activity(`result-checkpoint-${generation}`, () => createGitCheckpoint(
+          workspace, canonicalNow(now), dependencies.gitRunner,
+        ));
+        checkpoint = parseGitCheckpoint(
+          JSON.parse(JSON.stringify(repairedCheckpointRaw)) as unknown,
+          repairedCheckpointRaw.checkpointDigest,
+        );
+        verificationEpoch = Date.parse(canonicalNow(now));
+        verificationRaw = await activity(`verification-gate-${generation}`, () => {
+          let verificationTick = 0;
+          return runVerificationGate(envelope, workspace, checkpoint, {
+            artifactRoot: path.join(input.artifactRoot, "verification"),
+            ...(dependencies.verificationProcessRunner ? { processRunner: dependencies.verificationProcessRunner } : {}),
+            now: () => new Date(verificationEpoch + verificationTick++),
+          });
+        });
+        verification = verificationRaw.passed
+          ? parseVerificationBinding(JSON.parse(JSON.stringify(verificationRaw)) as unknown, verificationRaw.verificationDigest)
+          : deepFreeze(JSON.parse(JSON.stringify(verificationRaw)) as VerificationFailure);
+        await publish({
+          ...projection,
+          agent,
+          agentRuns: [...(projection.agentRuns ?? []), agent],
+          checkpoint,
+          verification,
+          repairCount,
+        });
+        if (!verification.passed) return fail("VERIFY", verification.code, {
+          code: verification.code,
+          category: verification.code === "RESULT_UNKNOWN" ? "UNKNOWN_SIDE_EFFECT" : "TERMINAL",
+        });
+        await publish(withEvent(projection, "REPAIR_SUCCEEDED", "IMPLEMENT", canonicalNow(now), checkpoint.commitSha));
+        reviewAttempt += 1;
+      }
+    }
+
+    if (input.reviewMode === "REAL") {
+      await succeed("IMPLEMENT", checkpoint.commitSha, {
+        artifactName: "agent-events.jsonl", contentDigest: agent.artifacts.events.contentDigest,
+      });
+      await start("VERIFY");
+    }
     await succeed("VERIFY", verification.verificationDigest, {
       artifactName: "verification.json", contentDigest: verification.evidenceContentDigest,
     });
+    if (finalReview !== undefined) {
+      await start("REVIEW");
+      await succeed("REVIEW", finalReview.resultDigest);
+    }
 
     await start("MERGE");
     const mergeActivity = await activity("local-merge-effect", () => captureUnknownSideEffect(async () => {

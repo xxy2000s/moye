@@ -23,7 +23,7 @@ tasks/
 
 | Task | 状态 | 目标 |
 |---|---|---|
-| — | — | 当前无 Active Task |
+| [TASK-0019](./TASK-0019/spec.md) | Executing | 接入真实 Agent 的页面可用编码闭环 |
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 

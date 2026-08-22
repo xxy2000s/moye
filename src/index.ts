@@ -25,7 +25,9 @@ const board = startBoardServer({
   ingressUrl: config.restateIngressUrl,
   restateAdminUrl: config.restateAdminUrl,
   publicRoot: join(process.cwd(), "public"),
-  artifactRoots: config.artifactRoots,
+  artifactRoots: [...new Set([...config.artifactRoots, config.liveRuntimeRoot])],
+  liveRuntimeRoot: config.liveRuntimeRoot,
+  repositoryRoots: config.repositoryRoots,
   observability: config.observability,
 });
 board.on("listening", () => {

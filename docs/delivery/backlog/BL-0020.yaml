@@ -1,0 +1,30 @@
+schema_version: 1
+id: "BL-0020"
+title: "把真实 Agent 编码闭环接入 Moye 页面"
+kind: "feature"
+status: "converted_to_task"
+priority: "critical"
+
+source_refs:
+  - multi-agent-core-closure-requirements
+affected_areas:
+  - board
+  - agent-runtime
+  - core-workflow
+  - coding-workflow
+  - git-workspace
+  - docs-gate
+
+acceptance_outline:
+  - "用户能从 Moye 页面提交本地仓库编码任务，并明确选择 CODEX_EXEC 或 CLAUDE_PRINT"
+  - "产品入口拒绝 FAKE runner；Fake 只能作为自动化测试夹具，不能作为可用性证据"
+  - "真实 Agent 完成 Implementation 与独立只读 Review，Blocking Finding 进入一次真实 Repair，并保留 Attempt 与原始事件 Artifact"
+  - "真实执行修改隔离 Worktree、运行验证、形成 Result Commit、合入目标分支，并完成文档处置、Coding Task Closure 与 Archive"
+  - "看板投影可观察任务的活动状态、Role/Attempt、验证、提交、关闭和归档结果"
+  - "至少一个临时 Git 仓库通过真实 Codex 端到端验收；测试替身不能替代该证据"
+
+resolution:
+  task_refs:
+    - TASK-0019
+  duplicate_of:
+  reason: "用户要求把非 Fake、可从页面操作的真实编码任务做成可用闭环"

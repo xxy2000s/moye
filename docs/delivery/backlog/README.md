@@ -32,6 +32,7 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 | [BL-0017](./BL-0017.yaml) | Converted | 将最终 Docs Impact 与 Knowledge Sync 接入 Core Workflow | TASK-0017 |
 | [BL-0018](./BL-0018.yaml) | Converted | 实现统一 Core Closure Gate 与故障收敛矩阵 | TASK-0018 |
 | [BL-0019](./BL-0019.yaml) | Triaged | 修复 CLI close 未附着既有 TaskWorkflow | — |
+| [BL-0020](./BL-0020.yaml) | Converted | 把多 Agent Core 接入真实本地编码任务与 Moye 页面 | TASK-0019 |
 
 ## 本轮调度结果
 
