@@ -6,4 +6,4 @@
 4. **Completed** — 接入 Worktree、验证、唯一 Merge、Docs disposition、Coding Closure 与 Archive。
 5. **Completed** — 增加页面/API 提交、Review/Repair Projection 与八阶段观察。
 6. **Completed** — 跑真实 Codex Live Acceptance、完整单元检查、真实 Restate E2E 和文档门禁。
-7. **In progress** — 创建 Result Commit，完成 TASK-0019 Runtime Closure/Archive，并启动可直接访问的页面服务。
+7. **Completed** — 创建 Result Commit，完成 TASK-0019 Runtime Closure/Archive，并启动可直接访问的页面服务。

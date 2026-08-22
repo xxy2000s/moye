@@ -1,8 +1,8 @@
 schema_version: 1
 id: TASK-0019
 title: 接入真实 Agent 的页面可用编码闭环
-status: executing
-outcome:
+status: closed
+outcome: succeeded
 backlog_refs:
   - BL-0020
 spec_revision: 1
@@ -10,17 +10,17 @@ workflow_id: task/TASK-0019
 execution_mode: goal-bootstrap
 base_commit: 42e1f41ee4127f52f4ba9ca103b2f32338818542
 archive:
-  status: not_ready
-  archived_at:
-  archived_path:
+  status: pending
+  archived_at: null
+  archived_path: null
 result:
-  pull_request:
-  merge_commit:
+  pull_request: null
+  merge_commit: null
   closure_report: task-artifact://TASK-0019/verification.md
-  implementation_commit:
+  implementation_commit: 1a543c08e6d8c42cb71be3d769c081082e7bb28b
 execution_evidence:
   executor_id: codex:/root
-  result_commit:
+  result_commit: 1a543c08e6d8c42cb71be3d769c081082e7bb28b
   verification_refs:
     - task-artifact://TASK-0019/verification.md
   docs_impact_ref: task-artifact://TASK-0019/docs-impact.yaml
