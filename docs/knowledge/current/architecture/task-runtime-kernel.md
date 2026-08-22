@@ -149,18 +149,18 @@ ProjectBoard 接收 Coding 的状态和事件摘要；`src/trace/state-machine.t
 
 这个模块是 keyed `CoreClosureWorkflow/<task_id>` 的 Reducer，不拥有独立进程或第二套运行时状态。现有 `CodingTaskWorkflow` 继续保持原单 Agent 行为，与 Core PoC 并存但不能共同认领同一 Task。
 
-### 5.0.5 当前已实现统一 Role Agent 协议切片
+### 5.0.5 当前已实现统一 Role Runtime v2 切片
 
-`src/agent/role-runner.ts` 继续为确定性 Core 协议测试提供统一角色契约；产品 Coding Workflow 由 `src/agent/live-role.ts` 将 Context、Self Review、Replan 与 Docs Gate 接到真实 Codex/Claude 只读进程：
+`src/domain/role-runtime-v2.ts` 与 `src/agent/role-runtime-v2.ts` 已提供五类主 Agent 和旁路 `OBSERVER_KNOWLEDGE` 共用的真实执行底座：
 
-- `RoleAttempt` 只能从 Core Projection 的唯一 Pending Role Dispatch 创建，固定 Role Step、Generation、Dispatch/Input Digest，并执行 `SCHEDULED → RUNNING → SUCCEEDED | FAILED | CANCELLED` 单向转换；Role Retry 必须使用 Core 新派发的 Generation N+1 和完整连续历史，普通入口不能绕过失败记录复活旧 Attempt；
-- `RoleRunRequest` 固定 Task、Spec Revision、Role、Attempt、Runner Kind、Scope、Prompt Digest 和内容寻址 Run ID；序列化恢复要求调用方提供 Expected Run ID；
-- Docs 输出 Spec/Plan/Design 或 Docs Impact/Knowledge Sync，Implementation 强制 Result Commit/Checkpoint/Test Evidence/Self Review，Review 强制 ReviewResult，并在 `FINDINGS` Verdict 下绑定 Finding Artifact；
-- 每个 Artifact Manifest 固定文件摘要、字节数和完整 Producer Tuple，恢复时重算 Manifest、文件内容和角色输出引用；不同 Artifact Kind 不能冒充；
-- Runner 调用前以稳定 Run ID 写 Execution Intent。完整 Manifest 直接恢复且不增加执行计数；只有 Intent 而没有确认结果时返回 `UNKNOWN_SIDE_EFFECT`，禁止盲目执行第二次昂贵 Run；
-- Artifact Root 与输入 Scope 分离，拒绝文件系统根、直接符号链接和 Run 目录逃逸。
+- 固定 Role/Phase 矩阵隔离 Architect、Implementation、Documentation、Test Plan、Test Assessment、Design Review、Final Review 和 Observer；产品协议的 Runner 只有 `CODEX_EXEC | CLAUDE_PRINT`，不接受 Fake；
+- `RoleAttemptV2` 固定 Task、Spec Revision、Role、Phase、Generation、Runner、权限、输入摘要、Subject Commit 和 Artifact refs，并用连续领域 Event 表达单向状态；旧 Attempt 到达终态后不能复活；
+- Runner 在启动进程前把稳定 Execution Intent 写入 Scope 外 Artifact Root。真实 CLI 使用 argv 与 `shell:false`；Session、原始 Event JSONL、stderr、结构化输出和 Manifest 都保存摘要；
+- 完整 Manifest 恢复时重算语义摘要、三个文件摘要及 Evidence 的逐字段绑定；重复请求直接复用。只有 Intent 时生成与领域 Attempt 相同算法的 Reconcile Token，返回 `UNKNOWN_SIDE_EFFECT` 而不再次调用 Agent；
+- `CONFIRMED` 只接受同一 Run/Attempt 的 Evidence；`NOT_APPLIED` 要求外部证据并把旧 Attempt 固定为失败，之后只能由 Workflow 创建 Generation N+1；
+- Architect、Test/Verification、Review 和 Observer 为只读；Implementation、Documentation 为受管 Workspace Write。Artifact Root 与 Scope 分离，拒绝根目录、直接符号链接和路径重叠。
 
-`src/agent/runner.ts` 仍只负责可写 Implementation；`src/review/live-review.ts` 负责独立 Review；`live-role.ts` 的 Run ID、Execution Intent、Manifest 和原始事件与二者保持相同的未知结果/对账边界。确定性 `CoreClosureWorkflow` Scenario 仍只用于验证纯控制协议，不作为产品成功证据。
+该底座尚未接入 Core v2 主 Workflow 阶段，因此不能单独推进 Task 或宣布 Gate 通过。`src/agent/role-runner.ts`、`live-role.ts`、`runner.ts` 和 `src/review/live-review.ts` 仍服务既有 Core/Coding 路径；后续 Task 按角色逐段迁移到 v2，最终由统一 Workflow 取代旧编排。
 
 ### 5.0.6 当前已实现 Self Review、ReviewResult 与 Finding 切片
 

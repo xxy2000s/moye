@@ -23,6 +23,7 @@ tasks/
 
 | Task | 状态 | 目标 |
 |---|---|---|
+| — | — | 当前没有 Active Task；下一项由 Core v2 Roadmap 顺序创建 |
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 

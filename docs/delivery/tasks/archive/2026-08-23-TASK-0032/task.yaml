@@ -1,0 +1,24 @@
+schema_version: 1
+id: TASK-0032
+title: 实现五类 Agent 共用的真实 Role Runtime v2
+status: seal_prepared
+outcome: null
+backlog_refs:
+  - BL-0034
+spec_revision: 1
+workflow_id: sealed-task/TASK-0032
+execution_mode: sealed-result-commit
+base_commit: 7185189086983844911297cb923d8d00d704526d
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-23-TASK-0032
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:f94b476f4a97e1c624e32b3da997c07150e2549ab4caf98bb1938f188509ff37
+  base_commit: 7185189086983844911297cb923d8d00d704526d
+  archive_path: docs/delivery/tasks/archive/2026-08-23-TASK-0032

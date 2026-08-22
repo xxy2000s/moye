@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 65
+graph_revision: 66
 updated_at: "2026-08-23"
 
 entrypoints:
@@ -859,7 +859,7 @@ documents:
   - id: bl-0034-core-v2-role-runtime
     path: docs/delivery/backlog/BL-0034.yaml
     type: backlog
-    status: ready
+    status: converted_to_task
     scope: core-v2-role-runtime
     authority: backlog
     read_when: [task-create, workflow-change]
@@ -1077,6 +1077,54 @@ documents:
     type: docs-impact
     status: archived
     scope: core-v2-lifecycle-artifacts
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0032-manifest
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0032/task.yaml
+    type: task-manifest
+    status: archived
+    scope: core-v2-role-runtime
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0032-spec
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0032/spec.md
+    type: task-spec
+    status: archived
+    scope: core-v2-role-runtime
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0032-design
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0032/design.md
+    type: task-design
+    status: archived
+    scope: core-v2-role-runtime
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0032-plan
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0032/plan.md
+    type: task-plan
+    status: archived
+    scope: core-v2-role-runtime
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0032-verification
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0032/verification.md
+    type: verification
+    status: archived
+    scope: core-v2-role-runtime
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0032-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0032/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: core-v2-role-runtime
     authority: task-evidence
     read_when: [task-close, task-archive]
 
@@ -3626,6 +3674,42 @@ relations:
     type: implements_slice_of
 
   - from: task-0031-manifest
+    to: core-v2-roadmap
+    type: implements_slice_of
+
+  - from: bl-0034-core-v2-role-runtime
+    to: task-0032-manifest
+    type: schedules_into
+
+  - from: archived-tasks-index
+    to: task-0032-manifest
+    type: indexes
+
+  - from: task-0032-spec
+    to: task-0032-manifest
+    type: belongs_to
+
+  - from: task-0032-design
+    to: task-0032-spec
+    type: refines
+
+  - from: task-0032-plan
+    to: task-0032-manifest
+    type: belongs_to
+
+  - from: task-0032-verification
+    to: task-0032-manifest
+    type: verifies
+
+  - from: task-0032-docs-impact
+    to: task-0032-manifest
+    type: reports_on
+
+  - from: task-0032-manifest
+    to: core-v2-agent-lifecycle
+    type: implements_slice_of
+
+  - from: task-0032-manifest
     to: core-v2-roadmap
     type: implements_slice_of
 
