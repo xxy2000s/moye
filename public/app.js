@@ -8,6 +8,9 @@ const elements = {
   empty: document.querySelector("#empty-state"),
   dialog: document.querySelector("#task-detail"),
   detail: document.querySelector("#detail-content"),
+  detailKicker: document.querySelector("#task-detail-kicker"),
+  detailTitle: document.querySelector("#task-detail-title"),
+  detailMeta: document.querySelector("#task-detail-meta"),
   eventsDialog: document.querySelector("#agent-events-dialog"),
   eventsViewer: document.querySelector("#agent-events-dialog [data-agent-events-viewer]"),
 };
@@ -39,11 +42,18 @@ let taskDetailRefreshInFlight = false;
 let stopAgentEventsFollower = () => {};
 let agentEventsReturnFocus;
 let shouldRestoreAgentEventsFocus = true;
-let machineGraphUiState = { filter: "ALL", zoom: 1, selectedId: undefined };
+let machineGraphUiState = { filter: "ALL", zoom: undefined, selectedId: undefined, inspectorOpen: false, scrollLeft: 0, scrollTop: 0 };
+let closeMachineGraphInspector = () => false;
 elements.dialog.addEventListener("close", () => {
   openedTaskSummary = undefined;
   openedTaskTraceSignature = "";
+  closeMachineGraphInspector = () => false;
   closeAgentEventsDialog(false);
+});
+elements.dialog.addEventListener("cancel", event => {
+  if (!machineGraphUiState.inspectorOpen) return;
+  event.preventDefault();
+  closeMachineGraphInspector(true);
 });
 elements.eventsDialog.addEventListener("close", () => {
   const returnFocus = agentEventsReturnFocus;
@@ -138,7 +148,13 @@ function cardShell(index, tagName) {
 async function openTask(summary) {
   openedTaskSummary = summary;
   openedTaskTraceSignature = "";
-  machineGraphUiState = { filter: "ALL", zoom: 1, selectedId: undefined };
+  machineGraphUiState = { filter: "ALL", zoom: undefined, selectedId: undefined, inspectorOpen: false, scrollLeft: 0, scrollTop: 0 };
+  renderTaskDetailHeader(summary, summary.title, [
+    ["状态", taskStateLabel(summary.state)],
+    ["归档", archiveStatusLabel(summary.archiveStatus)],
+  ]);
+  elements.detail.innerHTML = '<div class="task-detail-loading" role="status">正在读取 Runtime Definition、Event History 与执行证据…</div>';
+  if (!elements.dialog.open) elements.dialog.showModal();
   await loadTaskDetail(summary, true);
 }
 
@@ -153,20 +169,20 @@ async function refreshOpenTask(board) {
 async function loadTaskDetail(summary, openDialog) {
   taskDetailRefreshInFlight = true;
   try {
+    if (openDialog && !elements.dialog.open) elements.dialog.showModal();
     const taskId = summary.taskId;
     const traceResponse = await fetch(`/api/tasks/${encodeURIComponent(taskId)}/trace`, { cache: "no-store" });
     if (!traceResponse.ok) throw new Error(`轨迹查询失败（${traceResponse.status}）`);
     const trace = await traceResponse.json();
     const signature = taskTraceSignature(trace);
     if (signature !== openedTaskTraceSignature) {
-      const scrollTop = elements.dialog.scrollTop;
+      const scrollTop = elements.detail.scrollTop;
       if (trace.traceKind === "CODING") renderCodingTrace(trace, summary);
       else if (trace.traceKind === "TASK") renderTaskTrace(trace);
       else throw new Error(`未知 Trace 类型：${String(trace.traceKind)}`);
       openedTaskTraceSignature = signature;
-      if (!openDialog) elements.dialog.scrollTop = scrollTop;
+      if (!openDialog) elements.detail.scrollTop = scrollTop;
     }
-    if (openDialog && !elements.dialog.open) elements.dialog.showModal();
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     elements.detail.innerHTML = `
@@ -174,7 +190,6 @@ async function loadTaskDetail(summary, openDialog) {
       <h2 class="detail-title">暂时无法读取任务详情</h2>
       <p class="error-box">${escapeHtml(message)}</p>
       <p class="trace-note"><strong>下一步：</strong>确认 Moye 服务与 Restate Ingress 正常，然后点击“刷新投影”重试。任务状态不会因此改变。</p>`;
-    if (openDialog && !elements.dialog.open) elements.dialog.showModal();
   } finally {
     taskDetailRefreshInFlight = false;
   }
@@ -204,22 +219,28 @@ function taskTraceSignature(trace) {
   ]);
 }
 
+function renderTaskDetailHeader(task, title, facts = []) {
+  elements.detailKicker.textContent = `${task.taskId} · 规格版本 R${task.specRevision}`;
+  elements.detailTitle.textContent = title || task.taskId;
+  elements.detailMeta.innerHTML = facts.map(([label, value, tone = "neutral"]) => `
+    <span class="detail-meta-item tone-${escapeHtml(tone)}"><small>${escapeHtml(label)}</small><strong>${escapeHtml(value || "—")}</strong></span>`).join("");
+}
+
 function renderTaskTrace(trace) {
   const task = trace.task;
   const events = task.events.map(event => `
     <li><span class="sequence">${String(event.sequence).padStart(2, "0")}</span><strong>${escapeHtml(event.type)}</strong><span>${escapeHtml(event.detail || "—")}</span><time>${formatTime(event.at)}</time></li>`).join("");
+  renderTaskDetailHeader(task, task.title, [
+    ["状态", taskStateLabel(task.state), task.state === "CLOSED" ? "success" : "progress"],
+    ["归档", archiveStatusLabel(task.archiveStatus), task.archiveStatus === "ARCHIVED" ? "success" : "neutral"],
+    ["Workflow", `TaskWorkflow/${task.taskId}`],
+    ["Attempt", String(task.attempt)],
+  ]);
   elements.detail.innerHTML = `
-    <span class="detail-id">${escapeHtml(task.taskId)} · 规格版本 R${task.specRevision}</span>
-    <h2 class="detail-title">${escapeHtml(task.title)}</h2>
-    <p class="legacy-note"><strong>TaskWorkflow 业务聚合</strong>　以下状态和转换全部来自这个 Task 的 Runtime Projection/Event；没有 Coding Agent、Worktree 或 Git 事实时不会伪造。</p>
-    <div class="detail-grid">
-      <div><span>任务状态</span><strong>${escapeHtml(taskStateLabel(task.state))}</strong></div>
-      <div><span>归档状态</span><strong>${escapeHtml(archiveStatusLabel(task.archiveStatus))}</strong></div>
-      <div><span>当前步骤</span><strong>${escapeHtml(task.currentStep)}</strong></div>
-      <div><span>执行次数</span><strong>${task.attempt}</strong></div>
-      <div><span>工作流定位</span><strong>TaskWorkflow/${escapeHtml(task.taskId)}</strong></div>
-      <div><span>需求来源</span><strong>${task.backlogRefs.map(escapeHtml).join(", ") || "—"}</strong></div>
-    </div>
+    <section class="task-workspace-summary" aria-label="TaskWorkflow 摘要">
+      <div><span class="workspace-summary-mark" aria-hidden="true">T</span><p><strong>TaskWorkflow 业务聚合</strong><small>只展示 Runtime Projection 与 Event 证明的事实，不补画 Coding Agent、Worktree 或 Git 记录。</small></p></div>
+      <dl><div><dt>当前步骤</dt><dd>${escapeHtml(task.currentStep)}</dd></div><div><dt>需求来源</dt><dd>${task.backlogRefs.map(escapeHtml).join(", ") || "—"}</dd></div></dl>
+    </section>
     ${renderStateMachine(trace.stateMachine)}
     ${task.archivePath ? `<p class="result-ref"><span>归档结果</span><code>${escapeHtml(task.archivePath)}</code></p>` : ""}
     ${task.error ? `<p class="error-box">${escapeHtml(task.error)}</p>` : ""}
@@ -273,48 +294,52 @@ function renderCodingTrace(trace, summary) {
       runnerKind: review.runnerKind,
     })}</li>`).join("");
 
+  renderTaskDetailHeader(task, summary.title || task.taskId, [
+    ["状态", taskStateLabel(task.state), task.state === "CLOSED" ? "success" : task.state === "FAILED" ? "danger" : "progress"],
+    ["归档", archiveStatusLabel(task.archiveStatus), task.archiveStatus === "ARCHIVED" ? "success" : "neutral"],
+    ["Workflow", workflowRef],
+    ["Session", sessionRef],
+    ["Commit", mergeRef],
+  ]);
   elements.detail.innerHTML = `
-    <span class="detail-id">${escapeHtml(task.taskId)} · 规格版本 R${task.specRevision}</span>
-    <h2 class="detail-title">${escapeHtml(summary.title || task.taskId)}</h2>
-    <section class="task-conclusion ${conclusion.tone}" aria-label="任务结论">
-      <span class="conclusion-icon" aria-hidden="true">${conclusion.icon}</span>
-      <div><strong>${escapeHtml(conclusion.title)}</strong><p>${escapeHtml(conclusion.text)}</p></div>
+    <section class="task-workspace-summary tone-${conclusion.tone}" aria-label="任务结论">
+      <div><span class="workspace-summary-mark" aria-hidden="true">${conclusion.icon}</span><p><strong>${escapeHtml(conclusion.title)}</strong><small>${escapeHtml(conclusion.text)}</small></p></div>
+      <dl><div><dt>当前阶段</dt><dd>${escapeHtml(stepLabel(task.currentStep))}</dd></div><div><dt>执行者</dt><dd>${escapeHtml(runnerLabel(trace.agent?.runnerKind))}</dd></div></dl>
+      ${agentEvents ? `<button type="button" class="workspace-events-trigger" data-agent-events-trigger data-agent-events-url="${escapeAttribute(agentEvents.viewUrl)}" data-agent-events-download-url="${escapeAttribute(agentEvents.downloadUrl || agentEvents.viewUrl)}" data-agent-events-kind="IMPLEMENTATION" data-agent-events-binding="${escapeHtml(`${agentEvents.attemptId || "等待 Attempt"} · ${runnerLabel(agentEvents.runnerKind)}`)}" data-agent-events-runner="${escapeHtml(agentEvents.runnerKind)}" aria-controls="agent-events-dialog" aria-haspopup="dialog" aria-expanded="false">查看完整对话</button>` : ""}
     </section>
-    <div class="correlation-strip" aria-label="任务关联链">
-      ${correlationNode("任务", task.taskId)}<span aria-hidden="true">→</span>
-      ${correlationNode("工作流", workflowRef)}<span aria-hidden="true">→</span>
-      ${correlationNode("Agent 会话", sessionRef)}<span aria-hidden="true">→</span>
-      ${correlationNode("合入提交", mergeRef)}
-    </div>
-    <div class="detail-grid overview-grid">
-      <div><span>任务状态</span><strong>${escapeHtml(taskStateLabel(task.state))}</strong></div>
-      <div><span>当前阶段</span><strong>${escapeHtml(stepLabel(task.currentStep))}</strong></div>
-      <div><span>Agent 类型</span><strong>${escapeHtml(runnerLabel(trace.agent?.runnerKind))}</strong></div>
-      <div><span>归档状态</span><strong>${escapeHtml(archiveStatusLabel(task.archiveStatus))}</strong></div>
-    </div>
     ${task.error ? `<p class="error-box"><strong>失败原因：</strong>${escapeHtml(task.error)}<br><span>下一步：${escapeHtml(trace.recovery.summary)}</span></p>` : ""}
 
     ${renderStateMachine(trace.stateMachine)}
 
-    <section class="diagnostic-actions" aria-label="诊断入口">
+    <details class="task-evidence-panel">
+      <summary><span>执行证据与角色会话</span><small>${PIPELINE_STAGES.length} 个阶段 · ${(trace.roles || []).length + (trace.reviews || []).length + (trace.agent ? 1 : 0)} 个真实执行会话</small></summary>
+      <div class="task-evidence-content">
+        <div class="correlation-strip" aria-label="任务关联链">
+          ${correlationNode("任务", task.taskId)}<span aria-hidden="true">→</span>
+          ${correlationNode("工作流", workflowRef)}<span aria-hidden="true">→</span>
+          ${correlationNode("Agent 会话", sessionRef)}<span aria-hidden="true">→</span>
+          ${correlationNode("合入提交", mergeRef)}
+        </div>
+        <section class="diagnostic-actions" aria-label="诊断入口">
       <div><small>Trace ID</small><code>${escapeHtml(trace.observability.traceId)}</code></div>
       ${trace.observability.enabled && trace.observability.uiBaseUrl
         ? `<a href="${escapeAttribute(trace.observability.uiBaseUrl)}" target="_blank" rel="noreferrer">打开 Trace（Phoenix）↗</a>`
         : `<span class="diagnostic-disabled">Trace 后端未启用</span>`}
-      ${agentEvents ? `<button type="button" class="diagnostic-link" data-agent-events-trigger data-agent-events-url="${escapeAttribute(agentEvents.viewUrl)}" data-agent-events-download-url="${escapeAttribute(agentEvents.downloadUrl || agentEvents.viewUrl)}" data-agent-events-kind="IMPLEMENTATION" data-agent-events-binding="${escapeHtml(`${agentEvents.attemptId || "等待 Attempt"} · ${runnerLabel(agentEvents.runnerKind)}`)}" data-agent-events-runner="${escapeHtml(agentEvents.runnerKind)}" aria-controls="agent-events-dialog" aria-haspopup="dialog" aria-expanded="false">查看 Implementation 对话</button>` : ""}
       ${rawModelIo ? `<a class="sensitive-link" href="${escapeAttribute(rawModelIo.downloadUrl)}" target="_blank" rel="noreferrer">查看 Raw Model IO（敏感）↗</a>` : ""}
-    </section>
-    <p class="trace-note">Trace 与 JSONL 只用于诊断；任务状态以 Moye Projection / Domain Event 为准，中断恢复以 Restate Journal 为准。</p>
+        </section>
+        <p class="trace-note">Trace 与 JSONL 只用于诊断；任务状态以 Moye Projection / Domain Event 为准，中断恢复以 Restate Journal 为准。</p>
 
-    <section class="journey-section" aria-labelledby="journey-title">
+        <section class="journey-section" aria-labelledby="journey-title">
       <div class="trace-heading"><div><p class="eyebrow">Step / Attempt Evidence</p><h3 id="journey-title">按阶段核对 Attempt 与 Evidence</h3></div><span>状态由上方 Event History 证明</span></div>
       <div class="journey">${journey}</div>
-    </section>
+        </section>
 
-    <section class="journey-section" aria-label="真实角色会话">
+        <section class="journey-section" aria-label="真实角色会话">
       <div class="trace-heading"><div><p class="eyebrow">Role / Agent Sessions</p><h3>角色、会话、版本与结论</h3></div><span>${(trace.roles || []).length + (trace.reviews || []).length + (trace.agent ? 1 : 0)} 个真实执行会话</span></div>
       <ul class="action-list">${implementationSessions + roleSessions + reviewSessions || "<li>尚无角色会话</li>"}</ul>
-    </section>
+        </section>
+      </div>
+    </details>
 
     <details class="advanced-panel">
       <summary><span>高级诊断</span><small>Restate Journal、恢复建议、Artifact 与原始事件</small></summary>
@@ -371,9 +396,8 @@ function renderStateMachine(machine) {
       <div><span>整体落点</span><strong>${escapeHtml(machine.current.overall)}</strong></div>
       <div><span>Event 重建</span><strong>${escapeHtml(machine.current.historyCurrent)}</strong></div>
     </div>
-    ${renderMachineGraphCanvas(machine)}
-    <div class="machine-history"><h4>实际转换 History · ${machine.history.length} 条</h4><ol>${transitions || "<li>尚无可还原的状态转换</li>"}</ol></div>
-    <div class="machine-executions"><h4>执行实例 · ${machine.executions.length} 个</h4><ul>${executions || "<li>这个 Workflow 没有 Agent/Attempt 执行实例。</li>"}</ul></div>
+    ${renderMachineGraphCanvas(machine, transitions)}
+    <details class="machine-evidence-panel"><summary><span>执行实例 · ${machine.executions.length} 个</span><small>Attempt、Agent Run、Verification、Session 与 Evidence</small></summary><div class="machine-executions"><ul>${executions || "<li>这个 Workflow 没有 Agent/Attempt 执行实例。</li>"}</ul></div></details>
     <details class="machine-definition"><summary><span>查看完整合法边</span><small>实线标记本次已走过；Repair/Failure/Archive 分支不会隐藏</small></summary><ul>${edges}</ul></details>
   </section>`;
 }
@@ -390,15 +414,12 @@ const TASK_GRAPH_POSITIONS = {
   ARCHIVE_PENDING: [1090, 405], ARCHIVED: [1350, 405], ARCHIVE_FAILED: [1350, 605],
 };
 
-function renderMachineGraphCanvas(machine) {
+function renderMachineGraphCanvas(machine, transitions) {
   const positions = machineGraphPositions(machine);
   const traversedCount = machine.definition.edges.filter(edge => edge.traversed).length;
   const filter = (id, label, count) => `<button type="button" data-machine-filter="${id}" aria-pressed="${machineGraphUiState.filter === id}">${label}<span>${count}</span></button>`;
   const edges = machine.definition.edges.map((edge, index) => renderMachineGraphEdge(edge, index, positions, machine)).join("");
   const nodes = machine.definition.nodes.map(node => renderMachineGraphNode(node, positions.get(node.id))).join("");
-  const initialNode = machine.definition.nodes.find(node => node.id === machineGraphUiState.selectedId)
-    || machine.definition.nodes.find(node => node.status === "CURRENT")
-    || machine.definition.nodes[0];
   return `<div class="machine-graph-shell">
     <div class="machine-graph-toolbar">
       <div class="machine-graph-filters" role="group" aria-label="状态机路径筛选">
@@ -411,7 +432,7 @@ function renderMachineGraphCanvas(machine) {
       </div>
       <div class="machine-graph-zoom" role="group" aria-label="画布缩放">
         <button type="button" data-machine-zoom="out" aria-label="缩小状态机画布">−</button>
-        <output data-machine-zoom-label>${Math.round(machineGraphUiState.zoom * 100)}%</output>
+        <output data-machine-zoom-label>${Math.round((machineGraphUiState.zoom ?? 1) * 100)}%</output>
         <button type="button" data-machine-zoom="in" aria-label="放大状态机画布">＋</button>
         <button type="button" data-machine-zoom="fit">适配</button>
       </div>
@@ -419,8 +440,9 @@ function renderMachineGraphCanvas(machine) {
     <div class="machine-graph-legend" aria-label="状态机图例">
       <span class="legend-actual">实际经过</span><span class="legend-normal">合法主路径</span><span class="legend-repair">Repair / Replan / 恢复</span><span class="legend-failure">异常 / Reconcile / 失败</span><span class="legend-archive">Archive</span>
     </div>
-    <div class="machine-graph-scroll" data-machine-graph-scroll tabindex="0" aria-label="完整状态机 Graph 画布，可横向滚动">
-      <svg class="machine-graph-svg" data-machine-svg viewBox="0 0 ${MACHINE_GRAPH_SIZE.width} ${MACHINE_GRAPH_SIZE.height}" width="${MACHINE_GRAPH_SIZE.width}" height="${MACHINE_GRAPH_SIZE.height}" role="img" aria-labelledby="machine-graph-svg-title machine-graph-svg-desc">
+    <div class="machine-graph-stage" data-machine-graph-stage data-inspector-open="${machineGraphUiState.inspectorOpen}">
+      <div class="machine-graph-scroll" data-machine-graph-scroll tabindex="0" aria-label="完整状态机 Graph 画布，可横向滚动">
+        <svg class="machine-graph-svg" data-machine-svg viewBox="0 0 ${MACHINE_GRAPH_SIZE.width} ${MACHINE_GRAPH_SIZE.height}" width="${MACHINE_GRAPH_SIZE.width}" height="${MACHINE_GRAPH_SIZE.height}" role="img" aria-labelledby="machine-graph-svg-title machine-graph-svg-desc">
         <title id="machine-graph-svg-title">${escapeHtml(machine.workflow)} 完整状态机</title>
         <desc id="machine-graph-svg-desc">包含 ${machine.definition.nodes.length} 个状态和 ${machine.definition.edges.length} 条合法转换；本次实际经过 ${traversedCount} 条。</desc>
         <defs>
@@ -434,9 +456,11 @@ function renderMachineGraphCanvas(machine) {
         </g>
         <g class="machine-graph-edges">${edges}</g>
         <g class="machine-graph-nodes">${nodes}</g>
-      </svg>
+        </svg>
+      </div>
+      <aside class="machine-graph-inspector" data-machine-inspector aria-label="节点详情" aria-live="polite"${machineGraphUiState.inspectorOpen ? "" : " hidden"}></aside>
     </div>
-    <div class="machine-graph-inspector" data-machine-inspector aria-live="polite">${renderMachineNodeInspector(machine, initialNode?.id)}</div>
+    <details class="machine-history-drawer"><summary><span><strong>实际路径 · ${machine.history.length} 条</strong><small>${escapeHtml(machine.history[0]?.from || machine.current.overall)} → ${escapeHtml(machine.current.historyCurrent)}</small></span><em>展开文本事实</em></summary><div class="machine-history"><ol>${transitions || "<li>尚无可还原的状态转换</li>"}</ol></div></details>
   </div>`;
 }
 
@@ -527,7 +551,7 @@ function renderMachineNodeInspector(machine, nodeId) {
   const history = machine.history.filter(item => item.from === node.id || item.to === node.id);
   const executions = machine.executions.filter(item => item.step === node.id || (node.id === "ARCHIVING" && item.step === "ARCHIVE"));
   const edgeItems = (items, direction) => items.map(edge => `<li class="kind-${edge.kind.toLowerCase()} ${edge.traversed ? "traversed" : ""}"><code>${escapeHtml(direction === "in" ? edge.from : edge.to)}</code><span>${escapeHtml(machineEdgeLabel(edge.kind))}${edge.traversed ? " · 实际" : ""}</span><small>${escapeHtml(edge.label)}</small></li>`).join("");
-  return `<header><div><span>${escapeHtml(node.domain)} · ${node.terminal ? "终态" : "可转换状态"}</span><h4>${escapeHtml(node.label)}</h4><code>${escapeHtml(node.id)}</code></div><strong class="status-${node.status.toLowerCase()}">${node.status === "CURRENT" ? "当前" : node.status === "VISITED" ? "已进入" : "未进入"}</strong></header>
+  return `<header><div><span>${escapeHtml(node.domain)} · ${node.terminal ? "终态" : "可转换状态"}</span><h4>${escapeHtml(node.label)}</h4><code>${escapeHtml(node.id)}</code></div><div class="machine-inspector-actions"><strong class="status-${node.status.toLowerCase()}">${node.status === "CURRENT" ? "当前" : node.status === "VISITED" ? "已进入" : "未进入"}</strong><button type="button" data-machine-inspector-close aria-label="关闭节点详情">关闭详情</button></div></header>
     <div class="machine-inspector-counts"><span>入边 <strong>${incoming.length}</strong></span><span>出边 <strong>${outgoing.length}</strong></span><span>实际 Event <strong>${history.length}</strong></span><span>执行实例 <strong>${executions.length}</strong></span></div>
     <div class="machine-inspector-grid">
       <section><h5>进入这个状态</h5><ul>${edgeItems(incoming, "in") || "<li>没有入边</li>"}</ul></section>
@@ -540,19 +564,51 @@ function renderMachineNodeInspector(machine, nodeId) {
 function bindStateMachineGraph(machine) {
   const section = elements.detail.querySelector("[data-machine-graph]");
   if (!(section instanceof HTMLElement)) return;
+  const stage = section.querySelector("[data-machine-graph-stage]");
   const svg = section.querySelector("[data-machine-svg]");
   const scroll = section.querySelector("[data-machine-graph-scroll]");
   const inspector = section.querySelector("[data-machine-inspector]");
-  if (!(svg instanceof SVGElement) || !(scroll instanceof HTMLElement) || !(inspector instanceof HTMLElement)) return;
+  if (!(stage instanceof HTMLElement) || !(svg instanceof SVGElement) || !(scroll instanceof HTMLElement) || !(inspector instanceof HTMLElement)) return;
   const nodeExists = machine.definition.nodes.some(node => node.id === machineGraphUiState.selectedId);
   if (!nodeExists) machineGraphUiState.selectedId = machine.definition.nodes.find(node => node.status === "CURRENT")?.id || machine.definition.nodes[0]?.id;
 
+  const markSelectedNode = () => {
+    section.querySelectorAll("[data-machine-node]").forEach(button => {
+      button.setAttribute("aria-pressed", String(machineGraphUiState.inspectorOpen && button.dataset.machineNode === machineGraphUiState.selectedId));
+    });
+  };
+  const setInspectorOpen = (open, moveFocus = false) => {
+    machineGraphUiState.inspectorOpen = open;
+    stage.dataset.inspectorOpen = String(open);
+    inspector.hidden = !open;
+    inspector.setAttribute("aria-hidden", String(!open));
+    if (open) {
+      inspector.innerHTML = renderMachineNodeInspector(machine, machineGraphUiState.selectedId);
+      const close = inspector.querySelector("[data-machine-inspector-close]");
+      close?.addEventListener("click", () => setInspectorOpen(false, true));
+      if (moveFocus && close instanceof HTMLButtonElement) window.requestAnimationFrame(() => close.focus());
+    } else {
+      inspector.replaceChildren();
+      if (moveFocus) {
+        const selected = section.querySelector(`[data-machine-node="${CSS.escape(machineGraphUiState.selectedId || "")}"]`);
+        if (selected instanceof HTMLButtonElement) window.requestAnimationFrame(() => selected.focus());
+      }
+    }
+    markSelectedNode();
+  };
   const selectNode = nodeId => {
+    if (!nodeId) return;
+    machineGraphUiState.scrollLeft = scroll.scrollLeft;
+    machineGraphUiState.scrollTop = scroll.scrollTop;
     machineGraphUiState.selectedId = nodeId;
-    section.querySelectorAll("[data-machine-node]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.machineNode === nodeId)));
-    inspector.innerHTML = renderMachineNodeInspector(machine, nodeId);
+    setInspectorOpen(true, true);
   };
   section.querySelectorAll("[data-machine-node]").forEach(button => button.addEventListener("click", () => selectNode(button.dataset.machineNode)));
+  closeMachineGraphInspector = restoreFocus => {
+    if (!section.isConnected || !machineGraphUiState.inspectorOpen) return false;
+    setInspectorOpen(false, restoreFocus);
+    return true;
+  };
 
   const applyFilter = filter => {
     machineGraphUiState.filter = filter;
@@ -565,23 +621,33 @@ function bindStateMachineGraph(machine) {
   section.querySelectorAll("[data-machine-filter]").forEach(button => button.addEventListener("click", () => applyFilter(button.dataset.machineFilter)));
 
   const applyZoom = value => {
-    machineGraphUiState.zoom = Math.min(1.6, Math.max(.55, value));
+    machineGraphUiState.zoom = Math.min(1.6, Math.max(.5, value));
     svg.style.width = `${MACHINE_GRAPH_SIZE.width * machineGraphUiState.zoom}px`;
     svg.style.height = `${MACHINE_GRAPH_SIZE.height * machineGraphUiState.zoom}px`;
     section.querySelector("[data-machine-zoom-label]").textContent = `${Math.round(machineGraphUiState.zoom * 100)}%`;
   };
+  const fitZoom = () => Math.min(1, scroll.clientWidth / MACHINE_GRAPH_SIZE.width, scroll.clientHeight / MACHINE_GRAPH_SIZE.height);
   section.querySelectorAll("[data-machine-zoom]").forEach(button => button.addEventListener("click", () => {
     const action = button.dataset.machineZoom;
     if (action === "in") applyZoom(machineGraphUiState.zoom + .15);
     else if (action === "out") applyZoom(machineGraphUiState.zoom - .15);
-    else applyZoom(Math.min(1, scroll.clientWidth / MACHINE_GRAPH_SIZE.width));
+    else applyZoom(fitZoom());
   }));
 
-  selectNode(machineGraphUiState.selectedId);
   applyFilter(machineGraphUiState.filter);
-  applyZoom(machineGraphUiState.zoom);
-  const current = section.querySelector(`[data-machine-node="${CSS.escape(machine.current.overall)}"]`);
-  if (current instanceof HTMLElement) current.scrollIntoView({ block: "nearest", inline: "center" });
+  applyZoom(machineGraphUiState.zoom ?? fitZoom());
+  setInspectorOpen(machineGraphUiState.inspectorOpen, false);
+  scroll.scrollLeft = machineGraphUiState.scrollLeft;
+  scroll.scrollTop = machineGraphUiState.scrollTop;
+  if (machineGraphUiState.scrollLeft === 0 && svg.clientWidth > scroll.clientWidth) {
+    const current = section.querySelector(`[data-machine-node="${CSS.escape(machine.current.overall)}"]`)?.closest("foreignObject");
+    const x = current instanceof SVGElement ? Number(current.getAttribute("x")) : 0;
+    scroll.scrollLeft = Math.max(0, (x + 68) * machineGraphUiState.zoom - scroll.clientWidth / 2);
+  }
+  scroll.addEventListener("scroll", () => {
+    machineGraphUiState.scrollLeft = scroll.scrollLeft;
+    machineGraphUiState.scrollTop = scroll.scrollTop;
+  }, { passive: true });
 }
 
 function machineEdgeLabel(kind) {

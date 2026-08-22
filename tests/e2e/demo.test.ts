@@ -76,6 +76,7 @@ describe("npm run demo", () => {
 
     const html = await (await fetch(boardUrl)).text();
     const app = await (await fetch(`${boardUrl}/app.js`)).text();
+    const styles = await (await fetch(`${boardUrl}/styles.css`)).text();
     expect(html).toContain("不是进度条");
     expect(html).toContain("本页面只读，不创建或推进 Task");
     expect(html).toContain("等待归档，或失败终止后等待后续动作");
@@ -89,12 +90,21 @@ describe("npm run demo", () => {
     expect(app).toContain("renderMachineNodeInspector");
     expect(app).toContain("machine.definition.edges");
     expect(app).toContain('task.outcome === "FAILED_TERMINAL" ? "FAILED" : task.state');
-    expect(app).toContain("实际转换 History");
+    expect(app).toContain("实际路径 ·");
     expect(app).toContain("查看完整合法边");
     expect(app).toContain("查看 Agent Events");
     expect(html).toContain('id="agent-events-dialog"');
     expect(html).toContain("data-agent-events-viewer");
-    expect(html).toMatch(/<dialog id="task-detail">[\s\S]*?<\/dialog>\s*<dialog id="agent-events-dialog"/);
+    expect(html).toMatch(/<dialog id="task-detail"[\s\S]*?<\/dialog>\s*<dialog id="agent-events-dialog"/);
+    expect(html).toContain('class="task-detail-frame"');
+    expect(app).toContain("data-machine-graph-stage");
+    expect(app).toContain("data-machine-inspector-close");
+    expect(app).toContain("machineGraphUiState.inspectorOpen");
+    expect(app).toContain('class="machine-history-drawer"');
+    expect(app).toContain('class="task-evidence-panel"');
+    expect(styles).toContain('.machine-graph-stage[data-inspector-open="true"]');
+    expect(styles).toContain("position: fixed");
+    expect(styles).toContain("width: 100vw");
     expect(app).toContain("openAgentEventsDialog");
     expect(app).toContain("await refreshOpenTask(board)");
     expect(app).toContain("taskTraceSignature(trace)");

@@ -1,0 +1,27 @@
+schema_version: 1
+id: "BL-0025"
+title: "将 Task 详情重构为居中画布优先的审计工作区"
+kind: "feature"
+status: "converted_to_task"
+priority: "high"
+
+source_refs: []
+affected_areas:
+  - project-board
+  - state-machine-graph
+  - user-experience
+  - accessibility
+
+acceptance_outline:
+  - "点击 Task 后默认打开居中的大尺寸审计工作区，首屏以状态机总览和画布为视觉主体"
+  - "Task 摘要、路径筛选、缩放和图例保持紧凑，不让长证据列表挤压首屏画布"
+  - "点击节点后桌面端展开右侧详情栏，关闭后恢复居中画布且不丢失筛选、缩放和选择上下文"
+  - "窄屏节点详情使用 Bottom Sheet，画布保留在背景工作区并且页面不产生横向溢出"
+  - "实际 History 收为底部可展开事实栏，完整 Events/Agent 对话继续使用独立 Chatbot 弹窗"
+  - "自动化与真实浏览器验收覆盖默认总览、详情开关、移动端和 Events 弹窗"
+
+resolution:
+  task_refs:
+    - TASK-0024
+  duplicate_of:
+  reason: "用户确认采用画布优先、按需展开节点详情的 Master/Detail 布局；TASK-0024 实现并验收该只读展示重构"

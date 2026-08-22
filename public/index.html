@@ -80,9 +80,18 @@
       </section>
     </main>
 
-    <dialog id="task-detail">
-      <form method="dialog"><button class="close" aria-label="关闭详情">关闭</button></form>
-      <div id="detail-content"></div>
+    <dialog id="task-detail" class="task-detail-dialog" aria-labelledby="task-detail-title">
+      <section class="task-detail-frame">
+        <header class="task-detail-header">
+          <div class="task-detail-heading">
+            <p id="task-detail-kicker" class="detail-id">Task Audit Workspace</p>
+            <h2 id="task-detail-title">正在加载任务</h2>
+            <div id="task-detail-meta" class="task-detail-meta" aria-label="任务摘要"></div>
+          </div>
+          <form method="dialog"><button class="close" aria-label="关闭详情">关闭</button></form>
+        </header>
+        <div id="detail-content" class="task-detail-content"></div>
+      </section>
     </dialog>
 
     <dialog id="agent-events-dialog" class="agent-events-dialog" aria-labelledby="agent-events-title">

@@ -85,12 +85,12 @@ npm run acceptance:live
 
 CLI 统一使用 `npm run cli -- <command>`；项目 Agent 应使用 [moye-task-control Skill](./.agents/skills/moye-task-control/SKILL.md) 路由文档依赖和关闭门禁。
 
-Coding Task 出现在看板后，点击卡片默认先看到：
+Coding Task 出现在看板后，点击卡片会进入居中的 Task Audit Workspace。默认视图以状态摘要和 Graph 画布为中心，不预占详情侧栏：
 
 1. 当前业务状态、独立 Archive 状态，以及 Projection 与 Event History 是否一致；
-2. 一张完整状态机 Graph 画布：normal、Repair、Replan、Reconcile、failure、archive 全部合法边常驻可查，实际 Event 走过的节点和边实时点亮；可按本次路径、主流程、恢复/回滚、异常/失败和归档筛选，并点击节点下钻 Event、Attempt、Session 与 Evidence；
-3. 每条实际转换绑定的 Event sequence/type/time；
-4. 所有 Context/Implementation/Self Review/Review/Docs Gate Session、Spec Revision、StepAttempt Generation、Verification、Evidence 和 Git 结果；
+2. 一张完整状态机 Graph 画布：normal、Repair、Replan、Reconcile、failure、archive 全部合法边常驻可查，实际 Event 走过的节点和边实时点亮；可按本次路径、主流程、恢复/回滚、异常/失败和归档筛选；
+3. 点击节点才打开详情：桌面在画布右侧显示 Inspector，窄屏在底部显示 Bottom Sheet；`Esc` 先关闭节点详情并把焦点还给节点，不会直接退出 Task；
+4. “实际路径”、执行实例、完整合法边、角色会话和高级诊断默认折叠，需要时再展开；每条实际转换仍绑定 Event sequence/type/time；
 5. 每条 Context、Implementation、Self Review、Review、Replan 与 Docs Gate Session 都在同一个 Chatbot 弹窗中展示；可按对话、工具调用、工具结果、系统和错误筛选，运行中增量跟随，原始 JSON/JSONL 只作为下钻与导出证据。
 
 Restate Journal、恢复建议、技术 Artifact 与原始事件收在“高级诊断”中。进入 Restate 的链接已经按 `CodingTaskWorkflow + task_id` 过滤；Restate 负责执行排障，Moye Board 才是任务业务视图。

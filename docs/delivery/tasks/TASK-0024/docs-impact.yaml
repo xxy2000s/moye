@@ -1,0 +1,85 @@
+schema_version: 1
+task_id: TASK-0024
+graph_revision: 53
+intents: [task-create, coding-task-poc, docs-change]
+changed_paths:
+  - README.md
+  - docs/delivery/backlog/BL-0025.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/tasks/TASK-0024/task.yaml
+  - docs/delivery/tasks/TASK-0024/spec.md
+  - docs/delivery/tasks/TASK-0024/design.md
+  - docs/delivery/tasks/TASK-0024/plan.md
+  - docs/delivery/tasks/TASK-0024/verification.md
+  - docs/delivery/tasks/TASK-0024/docs-impact.yaml
+  - docs/delivery/tasks/README.md
+  - docs/graph.yaml
+  - docs/knowledge/current/architecture/poc-01-restate.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - public/index.html
+  - public/app.js
+  - public/styles.css
+  - tests/e2e/demo.test.ts
+docs:
+  read:
+    - agent-contract
+    - root-readme
+    - docs-index
+    - codemap
+    - document-control-plane
+    - overnight-multi-task-goal
+    - finding-backlog-docs-not-projected
+    - bl-0008-backlog-projection-sync
+    - bl-0002-single-agent-coding-loop
+    - task-runtime-kernel
+    - restate-poc-architecture
+    - durable-runtime-pitfalls
+    - meta-index
+    - adr-0002-doc-lifecycle-roles
+    - architecture-index
+    - local-restate-poc-runbook
+    - runbooks-index
+    - bl-0025-centered-graph-workspace
+    - backlog-index
+    - sources-index
+    - task-0024-spec
+    - tasks-index
+    - task-0024-manifest
+    - task-0024-design
+    - task-0024-plan
+    - task-0024-verification
+    - task-0024-docs-impact
+  reviewed:
+    architecture-overview: { outcome: unchanged, reason: "只调整只读审计面的信息层级，不改变总体系统边界或状态所有权" }
+    tasks-index: { outcome: updated, reason: "登记 TASK-0024 为当前 Active Task" }
+    moye-task-control-skill: { outcome: unchanged, reason: "Task 与文档门禁操作方式不变" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "不改变 Restate 选型、Journal 或 durable execution 边界" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "不改变 Worktree、Git、Closure 或外围 Harness 需求" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "只重新组织既有 Core 状态机事实的只读呈现" }
+    task-spec-document-closure-brainstorm: { outcome: unchanged, reason: "不改变 Task Spec、文档义务或知识同步协议" }
+    task-0013-manifest: { outcome: unchanged, reason: "不改变 Core ControlDecision 历史事实" }
+    task-0014-manifest: { outcome: unchanged, reason: "不改变 Role Attempt 协议" }
+    task-0015-manifest: { outcome: unchanged, reason: "不改变 Review/Finding 语义" }
+    task-0016-manifest: { outcome: unchanged, reason: "不改变 Retry、Repair、Replan 或预算语义" }
+    task-0017-manifest: { outcome: unchanged, reason: "不改变 Observer、Docs Impact 或 Knowledge Candidate" }
+    task-0018-manifest: { outcome: unchanged, reason: "不改变 Core Closure 历史事实" }
+    task-0019-manifest: { outcome: unchanged, reason: "不改写真实 Agent 页面闭环证据" }
+    task-0020-manifest: { outcome: unchanged, reason: "改进其状态机审计布局，不改写任务历史证据" }
+    task-0021-manifest: { outcome: unchanged, reason: "不改变真实 Core 单任务流程" }
+    task-0023-manifest: { outcome: unchanged, reason: "延续其完整状态机 Graph，只调整默认布局与详情展开方式" }
+    task-0024-design: { outcome: updated, reason: "冻结画布优先、桌面 Inspector、移动 Bottom Sheet 与折叠证据层级" }
+    task-0002-manifest: { outcome: unchanged, reason: "不改变 Backlog Sync" }
+    task-0003-manifest: { outcome: unchanged, reason: "不改变 TaskEnvelope 协议" }
+    task-0004-manifest: { outcome: unchanged, reason: "不改变 Git Effect" }
+    task-0005-manifest: { outcome: unchanged, reason: "不改变 Agent Adapter" }
+    task-0006-manifest: { outcome: unchanged, reason: "不改变 Coding Workflow" }
+    task-0007-manifest: { outcome: unchanged, reason: "继续使用既有只读 Trace Viewer" }
+    task-0008-manifest: { outcome: unchanged, reason: "不改变 Demo 历史事实" }
+    task-0009-manifest: { outcome: unchanged, reason: "不改变 OTLP/Phoenix 边界" }
+    task-0001-manifest: { outcome: unchanged, reason: "不改变 Task/Archive 生命周期" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "继续使用原生浏览器 JavaScript、CSS 与 SVG，无新增运行依赖" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "不改变 Trace 后端、Events Artifact 或业务状态边界" }
+    restate-poc-architecture: { outcome: updated, reason: "登记居中 Graph Workspace 与按需节点详情的只读边界" }
+    codemap: { outcome: updated, reason: "登记画布优先 Workspace、Inspector 与 Bottom Sheet" }
+    local-restate-poc-runbook: { outcome: updated, reason: "更新桌面、窄屏节点详情与实际路径核对步骤" }

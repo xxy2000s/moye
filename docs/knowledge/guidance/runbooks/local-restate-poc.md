@@ -17,10 +17,10 @@ npm run demo
 
 1. “需求池”显示需求来源及其派发状态；
 2. “已归档”显示闭环完成的 Coding Task；
-3. 点击 Task 卡片，先核对当前业务/Archive 状态和 `Projection = Event History` 一致性；
+3. 点击 Task 卡片进入居中的 Task Audit Workspace；默认不显示详情侧栏，先在完整画布中核对当前业务/Archive 状态和 `Projection = Event History` 一致性；
 4. 在状态机 Graph 中先选择“本次点亮”，核对粗实线实际路径与当前节点；再切换“恢复/回滚”“异常/失败”“归档”，确认 Repair、Replan、Reconcile、失败和 Archive 合法边完整存在；
-5. 点击任一节点核对入边、出边、相关 Event、执行实例和 Session/Evidence 数量；使用放大、缩小或“适配”查看画布，不需要拖拽才能操作；
-6. 查看“实际转换 History”，每条转换必须带 Event sequence/type/time；Graph 只负责直观呈现，文本 History、合法边列表、Attempt Generation、Agent/Review Session 和 Evidence 才是逐项核对入口；
+5. 点击任一节点核对入边、出边、相关 Event、执行实例和 Session/Evidence 数量；桌面详情出现在画布右侧，窄屏详情从底部展开。关闭按钮或 `Esc` 只收起节点详情并把焦点还给节点；使用放大、缩小或“适配”查看画布；
+6. 展开“实际路径”核对每条转换的 Event sequence/type/time；Graph 只负责直观呈现，折叠区中的文本 History、合法边列表、Attempt Generation、Agent/Review Session 和 Evidence 才是逐项核对入口；
 7. 只有排障时再展开“高级诊断”。其中的链接会在 Restate 中按当前 `task_id` 精确过滤；
 8. 按 `Ctrl-C` 停止本地服务。
 

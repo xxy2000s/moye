@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 52
+graph_revision: 53
 updated_at: "2026-08-22"
 
 entrypoints:
@@ -575,6 +575,62 @@ documents:
     scope: task-state-machine-graph
     authority: backlog
     read_when: [task-create, coding-task-poc, trace-change]
+
+  - id: bl-0025-centered-graph-workspace
+    path: docs/delivery/backlog/BL-0025.yaml
+    type: backlog
+    status: converted_to_task
+    scope: centered-graph-workspace
+    authority: backlog
+    read_when: [task-create, coding-task-poc, trace-change]
+
+  - id: task-0024-manifest
+    path: docs/delivery/tasks/TASK-0024/task.yaml
+    type: task-manifest
+    status: active
+    scope: centered-graph-workspace
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution, task-close]
+
+  - id: task-0024-spec
+    path: docs/delivery/tasks/TASK-0024/spec.md
+    type: task-spec
+    status: active
+    scope: centered-graph-workspace
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution, task-close]
+
+  - id: task-0024-design
+    path: docs/delivery/tasks/TASK-0024/design.md
+    type: task-design
+    status: active
+    scope: centered-graph-workspace
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution]
+
+  - id: task-0024-plan
+    path: docs/delivery/tasks/TASK-0024/plan.md
+    type: task-plan
+    status: active
+    scope: centered-graph-workspace
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0024-verification
+    path: docs/delivery/tasks/TASK-0024/verification.md
+    type: verification
+    status: active
+    scope: centered-graph-workspace
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0024-docs-impact
+    path: docs/delivery/tasks/TASK-0024/docs-impact.yaml
+    type: docs-impact
+    status: active
+    scope: centered-graph-workspace
+    authority: task-evidence
+    read_when: [task-close, task-archive]
 
   - id: task-0023-manifest
     path: docs/delivery/tasks/archive/2026-08-22-TASK-0023/task.yaml
@@ -2491,6 +2547,42 @@ relations:
 
   - from: task-0023-manifest
     to: task-0020-manifest
+    type: refines
+
+  - from: backlog-index
+    to: bl-0025-centered-graph-workspace
+    type: indexes
+
+  - from: bl-0025-centered-graph-workspace
+    to: task-0024-manifest
+    type: schedules_into
+
+  - from: tasks-index
+    to: task-0024-manifest
+    type: indexes
+
+  - from: task-0024-spec
+    to: task-0024-manifest
+    type: belongs_to
+
+  - from: task-0024-design
+    to: task-0024-spec
+    type: refines
+
+  - from: task-0024-plan
+    to: task-0024-manifest
+    type: belongs_to
+
+  - from: task-0024-verification
+    to: task-0024-manifest
+    type: verifies
+
+  - from: task-0024-docs-impact
+    to: task-0024-manifest
+    type: reports_on
+
+  - from: task-0024-manifest
+    to: task-0023-manifest
     type: refines
 
   - from: bl-0013-agent-events-dialog
