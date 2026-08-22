@@ -496,7 +496,7 @@ function renderMachineGraphEdge(edge, index, positions, machine) {
   const labelPosition = machineGraphEdgeLabelPosition(from, to, edge);
   return `<g class="machine-graph-edge-group kind-${edge.kind.toLowerCase()} ${edge.traversed ? "traversed" : ""}" data-machine-edge-kind="${edge.kind}" data-machine-edge-traversed="${edge.traversed}">
     <path d="${path}" class="machine-graph-edge" marker-end="url(#${marker})"><title>${escapeHtml(`${edge.from} → ${edge.to} · ${edge.label}${edge.traversed ? " · 本次实际经过" : ""}`)}</title></path>
-    ${edge.traversed ? `<g class="machine-edge-proof" transform="translate(${labelPosition[0]} ${labelPosition[1]})"><rect x="-25" y="-10" width="50" height="20" rx="10"/><text text-anchor="middle" dominant-baseline="central">#${transition?.sequence ?? "✓"} 实际</text></g>` : ""}
+    ${edge.traversed ? `<g class="machine-edge-proof" transform="translate(${labelPosition[0]} ${labelPosition[1]})" role="img" aria-label="本次经过，事件序号 ${transition?.sequence ?? "未知"}"><rect x="-21" y="-12" width="42" height="24" rx="12"/><text text-anchor="middle" dominant-baseline="central">#${transition?.sequence ?? "✓"}</text></g>` : ""}
   </g>`;
 }
 
@@ -552,17 +552,27 @@ function renderMachineNodeInspector(machine, nodeId, trace) {
   const executions = machine.executions.filter(item => machineExecutionBelongsToNode(item, node.id));
   const agentExecutions = executions.filter(item => machineSessionForExecution(item, trace));
   const technicalExecutions = executions.filter(item => !machineSessionForExecution(item, trace));
-  const edgeItems = (items, direction) => items.map(edge => `<li class="kind-${edge.kind.toLowerCase()} ${edge.traversed ? "traversed" : ""}"><code>${escapeHtml(direction === "in" ? edge.from : edge.to)}</code><span>${escapeHtml(machineEdgeLabel(edge.kind))}${edge.traversed ? " · 实际" : ""}</span><small>${escapeHtml(edge.label)}</small></li>`).join("");
+  const edgeItems = (items, direction) => items.map(edge => renderMachineTransitionRow(edge, direction, machine)).join("");
   return `<header><div><span>${escapeHtml(node.domain)} · ${node.terminal ? "终态" : "可转换状态"}</span><h4>${escapeHtml(node.label)}</h4><code>${escapeHtml(node.id)}</code></div><div class="machine-inspector-actions"><strong class="status-${node.status.toLowerCase()}">${node.status === "CURRENT" ? "当前" : node.status === "VISITED" ? "已进入" : "未进入"}</strong><button type="button" data-machine-inspector-close aria-label="关闭节点详情">关闭详情</button></div></header>
     <div class="machine-inspector-counts" aria-label="节点事实计数"><span><strong>${agentExecutions.length}</strong> Agent</span><span><strong>${history.length}</strong> 状态记录</span><span><strong>${executions.length}</strong> 执行实例</span></div>
     ${agentExecutions.length ? `<section class="machine-node-section machine-node-agent-section"><div class="machine-node-section-heading"><p class="machine-node-section-kicker">Agent activity</p><h5>Agent 活动</h5><p>来自这个节点实际 Run / Session 的对话、工具调用、工具结果、系统和错误事件。</p></div><div class="machine-agent-activities">${agentExecutions.map(item => renderMachineAgentActivity(item, trace)).join("")}</div></section>` : ""}
     ${history.length ? `<section class="machine-node-section"><div class="machine-node-section-heading"><p class="machine-node-section-kicker">Workflow facts</p><h5>状态流转记录</h5><p><strong>Domain Event</strong> 是 Workflow 写入的业务事实，只证明这个状态如何进入和离开；它不是 Agent 的聊天或工具日志。</p></div><ol class="machine-node-events">${history.map(item => `<li><span class="sequence">#${String(item.sequence).padStart(2, "0")}</span><div><strong>${escapeHtml(item.from)} → ${escapeHtml(item.to)}</strong><small>${escapeHtml(item.eventType)} · ${formatTime(item.at)}</small>${item.detail ? `<code>${escapeHtml(shortDigest(item.detail))}</code>` : ""}</div></li>`).join("")}</ol></section>` : `<p class="machine-node-empty"><strong>本次运行没有进入这个状态。</strong><span>只展示代码允许的合法转换，不会虚构 Agent、Session、Attempt 或 Evidence。</span></p>`}
     ${renderMachineControlFacts(trace, node.id)}
     ${technicalExecutions.length ? `<details class="machine-node-technical"><summary>执行 ID 与 Evidence <span>${technicalExecutions.length}</span></summary><div class="machine-node-executions">${technicalExecutions.map(item => renderMachineExecutionDetail(item, trace)).join("")}</div></details>` : ""}
-    <details class="machine-node-transitions"><summary>查看合法进入与离开路径</summary><div class="machine-inspector-grid">
-      <section><h5>进入这个状态</h5><ul>${edgeItems(incoming, "in") || "<li>没有入边</li>"}</ul></section>
-      <section><h5>从这里继续</h5><ul>${edgeItems(outgoing, "out") || "<li>没有出边</li>"}</ul></section>
+    <details class="machine-node-transitions"><summary><span>合法转换</span><small>进入 ${incoming.length} · 离开 ${outgoing.length}</small></summary><p class="machine-transition-help">这里列出代码允许的路径；“本次经过”必须有 Workflow Event 证明。</p><div class="machine-transition-groups">
+      <section><header><span>进入</span><strong>${incoming.length}</strong></header><ol>${edgeItems(incoming, "in") || '<li class="machine-transition-empty">这是起始状态，没有合法进入路径。</li>'}</ol></section>
+      <section><header><span>离开</span><strong>${outgoing.length}</strong></header><ol>${edgeItems(outgoing, "out") || '<li class="machine-transition-empty">这是终止状态，没有合法离开路径。</li>'}</ol></section>
     </div></details>`;
+}
+
+function renderMachineTransitionRow(edge, direction, machine) {
+  const transition = machine.history.find(item => item.from === edge.from && item.to === edge.to);
+  const state = edge.traversed ? `本次经过 · #${transition?.sequence ?? "?"}` : "合法但未发生";
+  return `<li class="machine-transition-row kind-${edge.kind.toLowerCase()} ${edge.traversed ? "traversed" : ""}">
+    <div class="machine-transition-route"><code>${escapeHtml(edge.from)}</code><span aria-hidden="true">→</span><code>${escapeHtml(edge.to)}</code></div>
+    <div class="machine-transition-meta"><span class="machine-transition-kind">${escapeHtml(machineEdgeLabel(edge.kind))}</span><strong>${state}</strong></div>
+    <p>${escapeHtml(edge.label)}</p>
+  </li>`;
 }
 
 function machineSessionForExecution(execution, trace) {

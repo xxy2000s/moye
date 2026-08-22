@@ -246,8 +246,8 @@ dialog > form { position: sticky; top: 0; display: flex; justify-content: flex-e
 .machine-graph-edge-group.traversed .machine-graph-edge { stroke: #2e8654; stroke-width: 4; stroke-dasharray: none; opacity: 1; filter: url(#machine-glow); }
 .machine-graph-edge-group[hidden] { display: none; }
 .machine-graph-svg marker path { fill: context-stroke; }
-.machine-edge-proof rect { fill: #e6f4e9; stroke: #6ca37a; }
-.machine-edge-proof text { fill: #285d36; font: 700 8px/1 "SF Mono", monospace; }
+.machine-edge-proof rect { fill: #e6f4e9; stroke: #4e8a60; stroke-width: 1.5; }
+.machine-edge-proof text { fill: #285d36; font: 750 10px/1 "SF Mono", monospace; }
 .machine-graph-node { display: grid; width: 100%; height: 100%; align-content: center; gap: 5px; padding: 10px 11px; overflow: hidden; border: 1px solid #cfd7db; border-radius: 9px; color: #3e4548; background: rgba(255,255,255,.97); box-shadow: 0 3px 9px rgba(36,45,49,.045); cursor: pointer; text-align: left; touch-action: manipulation; }
 .machine-graph-node:hover { border-color: #81939c; box-shadow: 0 5px 13px rgba(36,45,49,.09); }
 .machine-graph-node small { overflow: hidden; color: #788287; font: 650 8px/1.2 "SF Mono", monospace; text-overflow: ellipsis; white-space: nowrap; }
@@ -274,16 +274,30 @@ dialog > form { position: sticky; top: 0; display: flex; justify-content: flex-e
 .machine-inspector-counts { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 17px 0 4px; padding-top: 13px; border-top: 1px solid var(--line); }
 .machine-inspector-counts span { color: var(--muted); font-size: 10px; }
 .machine-inspector-counts strong { margin-right: 4px; color: var(--ink); font: 700 11px/1 "SF Mono", monospace; }
-.machine-inspector-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
-.machine-inspector-grid section { min-width: 0; padding: 11px; border: 1px solid var(--line); border-radius: 6px; background: var(--canvas); }
-.machine-inspector-grid h5 { margin: 0 0 8px; font-size: 10px; }
-.machine-inspector-grid ul { margin: 0; padding: 0; list-style: none; }
-.machine-inspector-grid li { display: grid; grid-template-columns: minmax(75px, .55fr) 90px 1fr; gap: 7px; padding: 7px 0; border-top: 1px solid var(--line); }
-.machine-inspector-grid code, .machine-inspector-grid span, .machine-inspector-grid small { overflow-wrap: anywhere; font: 8px/1.45 "SF Mono", monospace; }
-.machine-inspector-grid small { color: var(--muted); }
-.machine-inspector-grid li.traversed code { color: var(--green-ink); font-weight: 700; }
-.machine-inspector-grid li.kind-repair span { color: var(--yellow-ink); }
-.machine-inspector-grid li.kind-failure span { color: var(--red-ink); }
+.machine-node-transitions { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
+.machine-node-transitions > summary { display: flex; min-height: 44px; justify-content: space-between; gap: 12px; align-items: center; color: #41484b; cursor: pointer; font-size: 11px; font-weight: 700; list-style-position: inside; }
+.machine-node-transitions > summary small { flex: 0 0 auto; color: var(--muted); font: 600 9px/1.2 "SF Mono", monospace; }
+.machine-transition-help { margin: 4px 0 13px; color: var(--muted); font-size: 10px; line-height: 1.55; }
+.machine-transition-groups { border-top: 1px solid var(--line); }
+.machine-transition-groups section + section { margin-top: 18px; }
+.machine-transition-groups section > header { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 13px 0 8px; }
+.machine-transition-groups section > header span { color: #404649; font-size: 11px; font-weight: 750; }
+.machine-transition-groups section > header strong { display: grid; width: 22px; height: 22px; place-items: center; border-radius: 50%; color: #626c70; background: #eef1f2; font: 700 9px/1 "SF Mono", monospace; }
+.machine-transition-groups ol { margin: 0; padding: 0; list-style: none; }
+.machine-transition-row { display: grid; min-width: 0; gap: 7px; padding: 12px 0; border-top: 1px solid #e7eaeb; }
+.machine-transition-route { display: flex; min-width: 0; gap: 8px; align-items: center; }
+.machine-transition-route code { min-width: 0; overflow-wrap: anywhere; color: #343c40; font: 700 10px/1.45 "SF Mono", monospace; }
+.machine-transition-route span { flex: 0 0 auto; color: #929b9f; font-size: 12px; }
+.machine-transition-meta { display: flex; flex-wrap: wrap; gap: 7px 10px; align-items: center; }
+.machine-transition-meta span, .machine-transition-meta strong { padding: 4px 7px; border-radius: 999px; font: 700 8px/1.2 "SF Mono", monospace; white-space: nowrap; }
+.machine-transition-kind { color: #596267; background: #eef1f2; }
+.machine-transition-meta strong { color: #737c80; background: #f5f6f6; }
+.machine-transition-row.traversed .machine-transition-meta strong { color: var(--green-ink); background: var(--green); }
+.machine-transition-row.kind-repair .machine-transition-kind { color: var(--yellow-ink); background: var(--yellow); }
+.machine-transition-row.kind-failure .machine-transition-kind { color: var(--red-ink); background: var(--red); }
+.machine-transition-row.kind-archive .machine-transition-kind { color: #574d6c; background: #eeeaf4; }
+.machine-transition-row p { margin: 0; color: #687176; font-size: 10px; line-height: 1.5; overflow-wrap: anywhere; }
+.machine-transition-empty { padding: 12px 0; border-top: 1px solid #e7eaeb; color: var(--muted); font-size: 10px; line-height: 1.5; }
 .machine-inspector-note { margin: 12px 0 0; color: #62696c; font: 9px/1.6 "SF Mono", monospace; overflow-wrap: anywhere; }
 .machine-node-empty { display: grid; gap: 5px; margin: 14px 0 0; padding: 13px; border: 1px solid #ead8b1; border-radius: 7px; color: var(--yellow-ink); background: #fffaf0; }
 .machine-node-empty strong { font-size: 11px; }
@@ -591,8 +605,7 @@ dialog > form { position: sticky; top: 0; display: flex; justify-content: flex-e
   .machine-graph-legend span { flex: 0 0 auto; }
   .machine-graph-stage { height: min(52dvh, 470px); min-height: 380px; }
   .machine-graph-inspector:not([hidden]) { right: 0; bottom: 0; left: 0; max-height: 72dvh; padding-bottom: max(18px, env(safe-area-inset-bottom)); border-right: 0; border-bottom: 0; border-left: 0; border-radius: 18px 18px 0 0; }
-  .machine-inspector-grid { grid-template-columns: 1fr; }
-  .machine-inspector-grid li { grid-template-columns: minmax(80px, .7fr) 90px 1fr; }
+  .machine-node-transitions > summary { align-items: flex-start; flex-direction: column; justify-content: center; gap: 3px; }
   .machine-agent-preview-heading { align-items: flex-start; flex-direction: column; gap: 3px; }
   .machine-executions > ul { grid-template-columns: 1fr; }
   .machine-edge { grid-template-columns: 1fr; }

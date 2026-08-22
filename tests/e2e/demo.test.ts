@@ -107,6 +107,12 @@ describe("npm run demo", () => {
     expect(app).toContain("查看全部 Agent Events");
     expect(app).toContain("状态流转记录");
     expect(app).toContain("它不是 Agent 的聊天或工具日志");
+    expect(app).toContain("合法但未发生");
+    expect(app).toContain("这里列出代码允许的路径");
+    expect(app).toContain("renderMachineTransitionRow");
+    expect(app).not.toContain('class="machine-inspector-grid"');
+    expect(styles).toContain(".machine-transition-row");
+    expect(styles).toContain(".machine-edge-proof text");
     expect(app).toContain("系统控制与结果");
     expect(app).toContain("machineExecutionBelongsToNode");
     expect(app).toContain('nodeId === "DOCS" && execution.step === "DOCS_GATE"');

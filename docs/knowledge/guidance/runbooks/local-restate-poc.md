@@ -18,10 +18,10 @@ npm run demo
 1. “需求池”显示需求来源及其派发状态；
 2. “已归档”显示闭环完成的 Coding Task；
 3. 点击 Task 卡片进入居中的 Task Audit Workspace；默认不显示详情侧栏，先在完整画布中核对当前业务/Archive 状态和 `Projection = Event History` 一致性；
-4. 在状态机 Graph 中先选择“本次点亮”，核对粗实线实际路径与当前节点；再切换“恢复/回滚”“异常/失败”“归档”，确认 Repair、Replan、Reconcile、失败和 Archive 合法边完整存在；
+4. 在状态机 Graph 中先选择“本次点亮”，核对粗实线实际路径、当前节点和实际边上的 `#sequence` 徽标；再切换“恢复/回滚”“异常/失败”“归档”，确认 Repair、Replan、Reconcile、失败和 Archive 合法边完整存在，且未发生边不会在总览铺出不可读的小字；
 5. 点击有真实 Session 的 `IMPLEMENT`、`SELF_REVIEW` 或 `REVIEW` 节点，先核对 Inspector 首屏的“Agent 活动”：角色、Runner、状态、Session、耗时、Verdict/Finding、真实分类计数和最近事件预览必须来自该节点绑定的 Run；点击“查看全部 Agent Events”，核对 Chatbot Dialog 中的对话、工具调用、工具结果、系统和错误筛选，并确认关闭后焦点回到原按钮；
 6. 再核对“状态流转记录”和“系统控制与结果”。Domain Event 必须带 sequence/type/time，且只证明 Workflow 状态如何进入和离开，不能混入 Agent 对话；VERIFY 应显示命令与退出码，WORKSPACE/MERGE 应显示 Git Effect，失败或 Reconcile 节点应显示恢复判断和动作。长 Run/Attempt/Evidence ID 应默认收进技术详情；
-7. 对无 Session 的 VERIFY 和本次未经过的节点，确认页面分别显示 `0 Agent` 或零 Event/执行实例，且不出现虚构 Agent、Session/Evidence。桌面详情出现在画布右侧，窄屏详情从底部展开；关闭按钮或 `Esc` 只收起节点详情并把焦点还给节点。展开“实际路径”可再次核对转换文本事实；使用放大、缩小或“适配”查看画布；
+7. 对无 Session 的 VERIFY 和本次未经过的节点，确认页面分别显示 `0 Agent` 或零 Event/执行实例，且不出现虚构 Agent、Session/Evidence。展开节点“合法转换”，逐条核对进入/离开的 `来源 → 目标`、转换类型与说明；History 中存在的边必须显示 `本次经过 · #sequence`，其他边必须显示 `合法但未发生`。桌面详情出现在画布右侧，窄屏详情从底部展开且不横向溢出；关闭按钮或 `Esc` 只收起节点详情并把焦点还给节点。展开“实际路径”可再次核对转换文本事实；使用放大、缩小或“适配”查看画布；
 7. 只有排障时再展开“高级诊断”。其中的链接会在 Restate 中按当前 `task_id` 精确过滤；
 8. 按 `Ctrl-C` 停止本地服务。
 

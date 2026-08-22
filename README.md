@@ -88,8 +88,8 @@ CLI 统一使用 `npm run cli -- <command>`；项目 Agent 应使用 [moye-task-
 Coding Task 出现在看板后，点击卡片会进入居中的 Task Audit Workspace。默认视图以状态摘要和 Graph 画布为中心，不预占详情侧栏：
 
 1. 当前业务状态、独立 Archive 状态，以及 Projection 与 Event History 是否一致；
-2. 一张完整状态机 Graph 画布：normal、Repair、Replan、Reconcile、failure、archive 全部合法边常驻可查，实际 Event 走过的节点和边实时点亮；可按本次路径、主流程、恢复/回滚、异常/失败和归档筛选；
-3. 点击节点才打开详情：桌面在画布右侧显示 Inspector，窄屏在底部显示 Bottom Sheet；有真实 Session 的节点先展示 Agent 活动、分类计数、最近事件预览和“查看全部 Agent Events”主入口，再展示“状态流转记录”与系统控制事实。这里的 Domain Event 是 Workflow 写入、证明状态如何进入和离开的业务事实，不是 Agent 对话或工具日志；长 Run/Attempt/Evidence ID 默认收进技术详情。没有 Session 的节点只显示真实状态与系统事实，不补造 Agent；`Esc` 先关闭节点详情并把焦点还给节点，不会直接退出 Task；
+2. 一张完整状态机 Graph 画布：normal、Repair、Replan、Reconcile、failure、archive 全部合法边常驻可查，实际 Event 走过的节点和边实时点亮；画布只在实际边显示清晰的 Event sequence 徽标，未发生边的完整说明按需查看，不再以小字铺满总览；可按本次路径、主流程、恢复/回滚、异常/失败和归档筛选；
+3. 点击节点才打开详情：桌面在画布右侧显示 Inspector，窄屏在底部显示 Bottom Sheet；有真实 Session 的节点先展示 Agent 活动、分类计数、最近事件预览和“查看全部 Agent Events”主入口，再展示“状态流转记录”与系统控制事实。这里的 Domain Event 是 Workflow 写入、证明状态如何进入和离开的业务事实，不是 Agent 对话或工具日志；“合法转换”按进入/离开列出完整 `来源 → 目标`，并明确标记“本次经过 · #sequence”或“合法但未发生”。长 Run/Attempt/Evidence ID 默认收进技术详情。没有 Session 的节点只显示真实状态与系统事实，不补造 Agent；`Esc` 先关闭节点详情并把焦点还给节点，不会直接退出 Task；
 4. “实际路径”、执行实例、完整合法边、角色会话和高级诊断默认折叠，需要时再展开；每条实际转换仍绑定 Event sequence/type/time；
 5. 每条 Context、Implementation、Self Review、Review、Replan 与 Docs Gate Session 都在同一个 Chatbot 弹窗中展示；可按对话、工具调用、工具结果、系统和错误筛选，运行中增量跟随，原始 JSON/JSONL 只作为下钻与导出证据。
 
