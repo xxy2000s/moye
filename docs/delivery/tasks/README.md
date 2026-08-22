@@ -21,9 +21,7 @@ tasks/
 
 ## 当前 Active Task
 
-| Task | 状态 | 目标 |
-|---|---|---|
-| [TASK-0023](./TASK-0023/spec.md) | Received | 将完整状态机呈现为实际路径点亮的 Graph 画布 |
+当前没有 Active Task。
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 
