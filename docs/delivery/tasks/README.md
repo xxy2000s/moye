@@ -23,7 +23,6 @@ tasks/
 
 | Task | 状态 | 目标 |
 |---|---|---|
-| [TASK-0029](./TASK-0029/spec.md) | Received | Bootstrap 预检、失败收敛与历史任务合法恢复 |
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 

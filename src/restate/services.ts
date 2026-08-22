@@ -12,6 +12,16 @@ import {
   verifyBootstrapEvidence,
   verifyBootstrapPreflight,
 } from "../archive/bootstrap-closure.js";
+import {
+  createSealIntent,
+  verifySealedResultCommit,
+} from "../archive/sealed-result-commit.js";
+import type {
+  SealEvidence,
+  SealIntent,
+  SealReceipt,
+  SealedTaskInput,
+} from "../archive/sealed-result-commit.js";
 import type {
   ArchiveInput,
   ArchiveMoveResult,
@@ -30,6 +40,8 @@ import {
   failTask,
   recoverFailedBootstrapTask,
   recordBootstrapEvidence,
+  recordSealIntent,
+  recordSealReceipt,
   transitionTask,
   updateArchiveStatus,
 } from "../domain/task.js";
@@ -55,8 +67,22 @@ interface BootstrapFailureRecoveryState {
   sourceProjection: TaskProjection;
 }
 
+interface SealedTaskWorkflowState {
+  projection: TaskProjection;
+  intent: SealIntent;
+  evidence: SealEvidence;
+  receipt: SealReceipt;
+}
+
+export interface SealedTaskStatus {
+  readonly projection: TaskProjection;
+  readonly intent: SealIntent;
+  readonly evidenceSubmitted: boolean;
+  readonly receipt?: SealReceipt;
+}
+
 export interface TaskAuthorityState {
-  owner: "TASK_WORKFLOW" | "CODING_WORKFLOW" | "CORE_WORKFLOW";
+  owner: "TASK_WORKFLOW" | "CODING_WORKFLOW" | "CORE_WORKFLOW" | "SEALED_TASK_WORKFLOW";
   specRevision: number;
   recoveryWorkflowRef?: string;
   sourceWorkflowRef?: string;
@@ -592,6 +618,141 @@ export const bootstrapFailureRecoveryWorkflow = restate.workflow({
     ): Promise<TaskProjection | null> => ctx.get("projection")),
   },
 });
+
+export const sealedTaskWorkflow = restate.workflow({
+  name: "SealedTaskWorkflow",
+  options: { workflowRetention: { days: 30 } },
+  handlers: {
+    run: async (
+      ctx: restate.WorkflowContext<SealedTaskWorkflowState>,
+      input: SealedTaskInput,
+    ): Promise<TaskProjection> => {
+      if (ctx.key !== input.taskId) {
+        throw new restate.TerminalError("Sealed Task key does not match input", { errorCode: 400 });
+      }
+      let task = createTaskProjection(input, await durableNow(ctx));
+      const intent = await ctx.run(
+        "prepare-seal-intent",
+        () => runArchiveEffect(() => createSealIntent(runtimeRepositoryRoot(), input)),
+        { maxRetryAttempts: 5 },
+      );
+      await ctx.objectClient(taskAuthority, input.taskId).claim({
+        owner: "SEALED_TASK_WORKFLOW",
+        specRevision: input.specRevision,
+      });
+      ctx.set("intent", intent);
+      ctx.set("projection", task);
+      await boardClient(ctx, input.projectId).upsertTask(task);
+
+      task = transitionTask(task, "EXECUTING", "preparing-seal", await durableNow(ctx));
+      task = recordSealIntent(task, {
+        intentDigest: intent.intentDigest,
+        baseCommit: intent.baseCommit,
+        archivePath: intent.archivePath,
+      }, await durableNow(ctx));
+      ctx.set("projection", task);
+      await boardClient(ctx, input.projectId).upsertTask(task);
+
+      const evidence = await ctx.promise<SealEvidence>(sealPromiseName(intent)).get();
+      ctx.set("evidence", evidence);
+      task = transitionTask(
+        task,
+        "VERIFYING",
+        "verifying-result-commit",
+        await durableNow(ctx),
+        evidence.resultCommit,
+      );
+      ctx.set("projection", task);
+      await boardClient(ctx, input.projectId).upsertTask(task);
+
+      try {
+        const receipt = await ctx.run(
+          "verify-sealed-result-commit",
+          async () => runArchiveEffect(() => verifySealedResultCommit(
+            runtimeRepositoryRoot(), intent, evidence, new Date().toISOString(),
+          )),
+          { maxRetryAttempts: 5 },
+        );
+        ctx.set("receipt", receipt);
+        task = recordSealReceipt(task, receipt.resultCommit, receipt.packageDigest, await durableNow(ctx));
+        task = closeTask(task, "SUCCEEDED", await durableNow(ctx));
+        task = updateArchiveStatus(task, "ARCHIVED", await durableNow(ctx), {
+          archivePath: path.join(runtimeRepositoryRoot(), receipt.archivePath),
+        });
+      } catch (error) {
+        if (isRestateControlError(error)) throw error;
+        task = failTask(task, error instanceof Error ? error.message : String(error), await durableNow(ctx));
+        task = updateArchiveStatus(task, "FAILED", await durableNow(ctx), {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+      ctx.set("projection", task);
+      await boardClient(ctx, input.projectId).upsertTask(task);
+      return task;
+    },
+
+    status: restate.handlers.workflow.shared(async (
+      ctx: restate.WorkflowSharedContext<SealedTaskWorkflowState>,
+    ): Promise<TaskProjection | null> => ctx.get("projection")),
+
+    sealStatus: restate.handlers.workflow.shared(async (
+      ctx: restate.WorkflowSharedContext<SealedTaskWorkflowState>,
+    ): Promise<SealedTaskStatus | null> => {
+      const [projection, intent, evidence, receipt] = await Promise.all([
+        ctx.get("projection"), ctx.get("intent"), ctx.get("evidence"), ctx.get("receipt"),
+      ]);
+      if (projection === null || intent === null) return null;
+      return {
+        projection,
+        intent,
+        evidenceSubmitted: evidence !== null,
+        ...(receipt === null ? {} : { receipt }),
+      };
+    }),
+
+    seal: restate.handlers.workflow.shared(async (
+      ctx: restate.WorkflowSharedContext<SealedTaskWorkflowState>,
+      evidence: SealEvidence,
+    ): Promise<SealedTaskStatus> => {
+      const [projection, intent, storedEvidence, receipt] = await Promise.all([
+        ctx.get("projection"), ctx.get("intent"), ctx.get("evidence"), ctx.get("receipt"),
+      ]);
+      if (projection === null || intent === null) {
+        throw new restate.TerminalError("Task has no Seal Intent", { errorCode: 409 });
+      }
+      if (evidence.token !== intent.token || evidence.verificationPath !== intent.verificationPath ||
+          evidence.docsImpactPath !== intent.docsImpactPath || !evidence.executorId.trim()) {
+        throw new restate.TerminalError("Commit Evidence does not match the Seal Intent", { errorCode: 409 });
+      }
+      if (storedEvidence !== null) {
+        if (JSON.stringify(storedEvidence) !== JSON.stringify(evidence)) {
+          throw new restate.TerminalError("A different Result Commit Evidence was already submitted", { errorCode: 409 });
+        }
+        return {
+          projection,
+          intent,
+          evidenceSubmitted: true,
+          ...(receipt === null ? {} : { receipt }),
+        };
+      }
+      if (projection.state !== "EXECUTING" || projection.currentStep !== "waiting-result-commit") {
+        throw new restate.TerminalError("Task is not waiting for Result Commit Evidence", { errorCode: 409 });
+      }
+      const promise = ctx.promise<SealEvidence>(sealPromiseName(intent));
+      const existing = await promise.peek();
+      if (existing === undefined) {
+        await promise.resolve(evidence);
+      } else if (JSON.stringify(existing) !== JSON.stringify(evidence)) {
+        throw new restate.TerminalError("A different Result Commit Evidence was already submitted", { errorCode: 409 });
+      }
+      return { projection, intent, evidenceSubmitted: true };
+    }),
+  },
+});
+
+function sealPromiseName(intent: SealIntent): string {
+  return `result-commit-${intent.intentDigest.slice("sha256:".length)}`;
+}
 
 function boardClient(
   ctx: restate.Context,

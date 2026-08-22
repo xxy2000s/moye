@@ -115,9 +115,13 @@ async function route(
         return;
       }
       const recovered = authority.recoveryWorkflowRef !== undefined;
+      const sealed = authority.owner === "SEALED_TASK_WORKFLOW";
+      const workflowService = sealed
+        ? "SealedTaskWorkflow"
+        : recovered ? "BootstrapFailureRecoveryWorkflow" : "TaskWorkflow";
       const projection = await invoke<TaskProjection | null>(
         options.ingressUrl,
-        recovered ? "BootstrapFailureRecoveryWorkflow" : "TaskWorkflow",
+        workflowService,
         taskId,
         "status",
       );
@@ -127,14 +131,14 @@ async function route(
         task: projection,
         stateMachine: buildTaskStateMachine(
           projection,
-          recovered ? "BootstrapFailureRecoveryWorkflow" : "TaskWorkflow",
+          workflowService,
         ),
         durableRuntime: {
           authority: "Restate Journal",
           workflowRef: recovered
             ? authority.recoveryWorkflowRef
-            : `restate://TaskWorkflow/${projection.taskId}`,
-          workflowService: recovered ? "BootstrapFailureRecoveryWorkflow" : "TaskWorkflow",
+            : `restate://${workflowService}/${projection.taskId}`,
+          workflowService,
           workflowKey: projection.taskId,
           ...(authority.sourceWorkflowRef === undefined ? {} : {
             sourceWorkflowRef: authority.sourceWorkflowRef,
@@ -142,7 +146,7 @@ async function route(
           adminBaseUrl: options.restateAdminUrl,
           invocationsUrl: buildWorkflowInvocationsUrl(
             options.restateAdminUrl,
-            recovered ? "BootstrapFailureRecoveryWorkflow" : "TaskWorkflow",
+            workflowService,
             projection.taskId,
           ),
         },
@@ -314,7 +318,9 @@ async function route(
       ? await invoke<CodingWorkflowProjection | null>(options.ingressUrl, "CodingTaskWorkflow", taskId, "status")
       : await invoke<TaskProjection | null>(
         options.ingressUrl,
-        authority.recoveryWorkflowRef === undefined ? "TaskWorkflow" : "BootstrapFailureRecoveryWorkflow",
+        authority.owner === "SEALED_TASK_WORKFLOW"
+          ? "SealedTaskWorkflow"
+          : authority.recoveryWorkflowRef === undefined ? "TaskWorkflow" : "BootstrapFailureRecoveryWorkflow",
         taskId,
         "status",
       );

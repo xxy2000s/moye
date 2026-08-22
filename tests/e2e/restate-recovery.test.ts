@@ -9,9 +9,12 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import type { ProjectBoardSnapshot } from "../../src/domain/board.js";
 import type { TaskProjection } from "../../src/domain/task.js";
+import { stageSealedTaskPackage } from "../../src/archive/sealed-result-commit.js";
+import type { SealEvidence, SealedTaskInput } from "../../src/archive/sealed-result-commit.js";
 import { invoke, send } from "../../src/restate/ingress.js";
 import type {
   BootstrapFailureRecoveryInput,
+  SealedTaskStatus,
   TaskWorkflowInput,
 } from "../../src/restate/services.js";
 
@@ -219,6 +222,57 @@ describe("Restate process-loss recovery", () => {
     const detailResponse = await fetch(`http://127.0.0.1:${boardPort}/api/tasks/${legacyRecoveryInput.taskId}`);
     expect(await detailResponse.json()).toEqual(recovered);
   }, 30_000);
+
+  it("waits durably for one real Git Result Commit and closes without post-commit writes", async () => {
+    const fixture = await sealedTaskRepository();
+    service?.kill("SIGKILL");
+    await waitForExit(service, 10_000);
+    service = await startService(fixture.root);
+    await registerDeployment(servicePort);
+    await send(ingressUrl(), "SealedTaskWorkflow", fixture.input.taskId, "run", fixture.input);
+
+    let sealStatus = await waitForSeal(fixture.input.taskId, (status) =>
+      status.projection.currentStep === "waiting-result-commit", 15_000);
+    const originalIntent = sealStatus.intent;
+    service.kill("SIGKILL");
+    await waitForExit(service, 10_000);
+    service = await startService(fixture.root);
+    await registerDeployment(servicePort);
+    sealStatus = await waitForSeal(fixture.input.taskId, () => true, 15_000);
+    expect(sealStatus.intent).toEqual(originalIntent);
+
+    await stageSealedTaskPackage(fixture.root, sealStatus.intent);
+    const resultCommit = commit(fixture.root, "feat(TASK-E2E-SEAL): sealed result");
+    const evidence: SealEvidence = {
+      token: sealStatus.intent.token,
+      resultCommit,
+      executorId: "e2e/root",
+      verificationPath: sealStatus.intent.verificationPath,
+      docsImpactPath: sealStatus.intent.docsImpactPath,
+    };
+    await expect(invoke(
+      ingressUrl(), "SealedTaskWorkflow", fixture.input.taskId, "seal", { ...evidence, token: "sha256:wrong" },
+    )).rejects.toThrow(/does not match the Seal Intent/);
+    await invoke(ingressUrl(), "SealedTaskWorkflow", fixture.input.taskId, "seal", evidence);
+    const finalTask = await waitForSealedTask(
+      fixture.input.taskId, (task) => task.archiveStatus === "ARCHIVED", 30_000,
+    );
+    const headAfterClosure = git(fixture.root, ["rev-parse", "HEAD"]).trim();
+    expect(finalTask).toMatchObject({ state: "CLOSED", outcome: "SUCCEEDED", archiveStatus: "ARCHIVED" });
+    expect(finalTask.seal).toMatchObject({ resultCommit });
+    expect(headAfterClosure).toBe(resultCommit);
+    expect(git(fixture.root, ["status", "--porcelain"])).toBe("");
+    expect(git(fixture.root, ["rev-list", "--count", `${fixture.input.baseCommit}..HEAD`]).trim()).toBe("1");
+    await invoke(ingressUrl(), "SealedTaskWorkflow", fixture.input.taskId, "seal", evidence);
+    expect(git(fixture.root, ["rev-parse", "HEAD"]).trim()).toBe(headAfterClosure);
+    const detailResponse = await fetch(`http://127.0.0.1:${boardPort}/api/tasks/${fixture.input.taskId}`);
+    expect(await detailResponse.json()).toEqual(finalTask);
+    const traceResponse = await fetch(`http://127.0.0.1:${boardPort}/api/tasks/${fixture.input.taskId}/trace`);
+    expect(await traceResponse.json()).toMatchObject({
+      stateMachine: { workflow: "SealedTaskWorkflow", current: { overall: "ARCHIVED", consistency: "VERIFIED" } },
+      durableRuntime: { workflowService: "SealedTaskWorkflow" },
+    });
+  }, 60_000);
 });
 
 async function registerDeployment(port: number): Promise<void> {
@@ -230,7 +284,7 @@ async function registerDeployment(port: number): Promise<void> {
   if (!registration.ok) throw new Error(`Discovery failed: ${await registration.text()}`);
 }
 
-async function startService(): Promise<ChildProcess> {
+async function startService(repositoryRoot = bootstrapRepositoryRoot): Promise<ChildProcess> {
   const child = spawn(process.execPath, ["--import", "tsx", "src/index.ts"], {
     cwd: root,
     env: {
@@ -239,7 +293,7 @@ async function startService(): Promise<ChildProcess> {
       MOYE_BOARD_PORT: String(boardPort),
       RESTATE_INGRESS_URL: ingressUrl(),
       MOYE_PROJECT_ID: "moye-e2e",
-      MOYE_REPOSITORY_ROOT: bootstrapRepositoryRoot,
+      MOYE_REPOSITORY_ROOT: repositoryRoot,
     },
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -318,6 +372,55 @@ async function bootstrapEvidenceRepository(): Promise<{
   };
 }
 
+async function sealedTaskRepository(): Promise<{ root: string; input: SealedTaskInput }> {
+  const fixtureRoot = await mkdtemp(path.join(os.tmpdir(), "moye-sealed-e2e-"));
+  git(fixtureRoot, ["init", "-b", "master"]);
+  git(fixtureRoot, ["config", "user.email", "moye@example.invalid"]);
+  git(fixtureRoot, ["config", "user.name", "Moye E2E"]);
+  await mkdir(path.join(fixtureRoot, "scripts"), { recursive: true });
+  await writeFile(path.join(fixtureRoot, "README.md"), "sealed E2E\n");
+  await writeFile(path.join(fixtureRoot, "scripts", "docs_graph.rb"), "exit 0\n");
+  const baseCommit = commit(fixtureRoot, "base");
+  const taskId = "TASK-E2E-SEAL";
+  const activeRoot = path.join(fixtureRoot, "docs", "delivery", "tasks", taskId);
+  const archivePath = `docs/delivery/tasks/archive/2026-08-23-${taskId}`;
+  await mkdir(activeRoot, { recursive: true });
+  await writeFile(path.join(activeRoot, "task.yaml"), [
+    "schema_version: 1",
+    `id: ${taskId}`,
+    "status: received",
+    "spec_revision: 1",
+    "execution_mode: sealed-result-commit",
+    `base_commit: ${baseCommit}`,
+    "archive: { status: not_ready }",
+    "result: {}",
+    "",
+  ].join("\n"));
+  await writeFile(path.join(activeRoot, "verification.md"), "> 状态：Accepted\n");
+  await writeFile(path.join(activeRoot, "docs-impact.yaml"), [
+    "schema_version: 1",
+    `task_id: ${taskId}`,
+    "changed_paths:",
+    `  - ${archivePath}/task.yaml`,
+    `  - ${archivePath}/verification.md`,
+    `  - ${archivePath}/docs-impact.yaml`,
+    "",
+  ].join("\n"));
+  return {
+    root: fixtureRoot,
+    input: {
+      taskId,
+      projectId: "moye-e2e",
+      title: "Seal one real Result Commit",
+      specRevision: 1,
+      backlogRefs: [],
+      baseCommit,
+      archivedAt: "2026-08-23T00:00:00.000Z",
+      executorId: "e2e/root",
+    },
+  };
+}
+
 function bootstrapManifest(taskId: string, baseCommit: string): string {
   return [
     "schema_version: 1",
@@ -381,6 +484,34 @@ async function waitForTask(
     }
   }, timeoutMs);
   if (latest === null) throw new Error("Task projection remained empty");
+  return latest;
+}
+
+async function waitForSealedTask(
+  taskId: string,
+  predicate: (task: TaskProjection) => boolean,
+  timeoutMs: number,
+): Promise<TaskProjection> {
+  let latest: TaskProjection | null = null;
+  await waitUntil(async () => {
+    latest = await invoke<TaskProjection | null>(ingressUrl(), "SealedTaskWorkflow", taskId, "status");
+    return latest !== null && predicate(latest);
+  }, timeoutMs);
+  if (latest === null) throw new Error("Sealed Task projection remained empty");
+  return latest;
+}
+
+async function waitForSeal(
+  taskId: string,
+  predicate: (status: SealedTaskStatus) => boolean,
+  timeoutMs: number,
+): Promise<SealedTaskStatus> {
+  let latest: SealedTaskStatus | null = null;
+  await waitUntil(async () => {
+    latest = await invoke<SealedTaskStatus | null>(ingressUrl(), "SealedTaskWorkflow", taskId, "sealStatus");
+    return latest !== null && predicate(latest);
+  }, timeoutMs);
+  if (latest === null) throw new Error("Seal Intent remained empty");
   return latest;
 }
 

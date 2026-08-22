@@ -31,6 +31,17 @@ Use the repository CLI and document graph as gates. Never infer lifecycle state 
 - Run or reattach to archive: `npm run cli -- archive --file <archive.json>`
 - Reconcile an uncertain archive outcome: `npm run cli -- reconcile --file <archive.json>`
 
+Core v2 repository Tasks use the two-phase sealed Result Commit protocol:
+
+1. Submit the frozen Task input once: `npm run cli -- seal-start --file <sealed-task.json>`.
+2. Read the durable Intent: `npm run cli -- seal-status <TASK-ID>`.
+3. Save the returned `intent` JSON and prepare the final package: `npm run cli -- seal-stage --file <seal-intent.json>`.
+4. Create exactly one Result Commit whose parent is the frozen Base and whose changed paths are all listed by the archived Docs Impact report.
+5. Submit evidence once: `npm run cli -- seal-submit <TASK-ID> --token <TOKEN> --commit <SHA> --executor <ID>`.
+6. Use `status`/`wait` to confirm Runtime `CLOSED + ARCHIVED`; do not write or move files after the Gate succeeds.
+
+Wrong tokens are rejected without resolving the durable promise. Repeating identical evidence is idempotent. A different evidence submission conflicts; never amend or create a second Result Commit to hide a failed Gate.
+
 `create/status/wait` resolve `TaskAuthority` and address the same keyed owning Workflow; `close` remains the bootstrap TaskWorkflow attach command. `archive` and `reconcile` address the same keyed ArchiveWorkflow. `reconcile-task` only resolves the pending durable Workflow signal after external evidence exists; it cannot create a new Attempt. Never implement retry loops or a second task state machine in this Skill.
 
 ## Close the documentation gate
@@ -45,6 +56,6 @@ Use the repository CLI and document graph as gates. Never infer lifecycle state 
    ruby scripts/docs_graph.rb validate-impact --report docs/delivery/tasks/<TASK-ID>/docs-impact.yaml
    ```
 
-5. Archive the Task only after its business outcome is terminal, verification passes, document impact is complete, and the Archive Workflow reports `ARCHIVED`.
+5. For legacy/Coding flows, archive only after terminal outcome and Archive Workflow receipt. For sealed flows, prepare the Archive package before the Result Commit and treat it as closed only after `SealedTaskWorkflow` reports `ARCHIVED`.
 
 If a gate fails, keep the Task active and report the exact failed invariant. Do not weaken or bypass the gate.

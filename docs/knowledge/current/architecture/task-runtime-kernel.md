@@ -233,6 +233,14 @@ Goal Bootstrap 使用三次同源校验：CLI 在派发前给出同步错误，`
 
 升级前已经以 Invocation Failure 结束、但 Projection 留在 `EXECUTING` 的 Bootstrap Task 不能 restart、purge、patch 或伪造 Board。唯一兼容路径是窄化的 `BootstrapFailureRecoveryWorkflow/<task_id>`：它按 Invocation ID attach 原失败、重放只读基线检查、验证无 Evidence 的 `EXECUTING/NOT_READY` Projection，再让 TaskAuthority 追加一次 successor ref。successor 只追加 `TaskRecoveryStarted` 和 `TaskClosed(FAILED_TERMINAL)`，持久化失败证据并调用既有 Archive；原 Workflow Projection 和 Invocation 永久保留为来源历史。该兼容路径不接受成功、非 Bootstrap、已关闭或错误码不匹配的 Task，也不是普通 Retry。
 
+### 5.0.13 当前已实现 Sealed Result Commit 自举切片
+
+`SealedTaskWorkflow/<task_id>` 解决旧 Bootstrap 在 Result Commit 后还要改 Manifest/移动目录而形成的 SHA 自引用。Workflow 先从当前 HEAD、`execution_mode: sealed-result-commit` Manifest、Task/Revision/Base 和日期归档目标生成内容寻址 Seal Intent，将 Projection 显示为 `EXECUTING / waiting-result-commit`，再等待 keyed durable promise。TaskAuthority 的 `SEALED_TASK_WORKFLOW` owner 让 CLI、Board 和 Trace 始终查询同一状态所有者。
+
+执行者只能按 Intent 把 package 标为 `seal_prepared` 并移动到固定 Archive 路径，然后创建唯一 Result Commit。`seal` shared handler 先校验 token、Artifact 路径和 producer，再解析 promise；错误 token 不消费信号，相同 Evidence 重放幂等，不同 Evidence 冲突。Worker 在等待期间退出并重启时，Journal 重放返回完全相同的 Intent。
+
+最终 Gate 要求 Result Commit 是 clean worktree 的当前 HEAD，且只有一个父提交并精确等于冻结 Base；Active package 必须消失，Archive manifest/Verification/Docs Impact 必须存在于该 Commit并绑定相同 Task、Revision 与 Intent；Verification 必须 Accepted，Docs Impact 必须覆盖 `base..result` 的全部 changed paths并通过文档图谱影响校验。成功后 Workflow 只追加 Seal Receipt、`CLOSED` 和 `ARCHIVED` Runtime Event，不再写 Git；Result SHA 因而只存在于 Runtime Receipt。Archive 目录位置本身不能证明关闭。
+
 ### 5.1 模型关系
 
 ```mermaid

@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 63
+graph_revision: 64
 updated_at: "2026-08-23"
 
 entrypoints:
@@ -827,7 +827,7 @@ documents:
   - id: core-v2-five-plus-one-agent-requirements
     path: docs/sources/brainstorm/core-v2-five-plus-one-agent-requirements.md
     type: brainstorm
-    status: draft
+    status: partially_consumed
     scope: core-v2-productization
     authority: idea-input
     read_when: [requirement-discovery, task-create, workflow-change]
@@ -843,7 +843,7 @@ documents:
   - id: bl-0032-core-v2-architecture
     path: docs/delivery/backlog/BL-0032.yaml
     type: backlog
-    status: ready
+    status: converted_to_task
     scope: core-v2-architecture
     authority: backlog
     read_when: [task-create, architecture-change]
@@ -913,50 +913,122 @@ documents:
     read_when: [task-create, workflow-change]
 
   - id: task-0029-manifest
-    path: docs/delivery/tasks/TASK-0029/task.yaml
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0029/task.yaml
     type: task-manifest
-    status: active
+    status: archived
     scope: bootstrap-failure-convergence
     authority: task-artifact
     read_when: [task-execution, task-close]
 
   - id: task-0029-spec
-    path: docs/delivery/tasks/TASK-0029/spec.md
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0029/spec.md
     type: task-spec
-    status: active
+    status: archived
     scope: bootstrap-failure-convergence
     authority: task-artifact
     read_when: [task-execution, task-close]
 
   - id: task-0029-design
-    path: docs/delivery/tasks/TASK-0029/design.md
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0029/design.md
     type: task-design
-    status: active
+    status: archived
     scope: bootstrap-failure-convergence
     authority: task-artifact
     read_when: [task-execution]
 
   - id: task-0029-plan
-    path: docs/delivery/tasks/TASK-0029/plan.md
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0029/plan.md
     type: task-plan
-    status: active
+    status: archived
     scope: bootstrap-failure-convergence
     authority: task-artifact
     read_when: [task-execution]
 
   - id: task-0029-verification
-    path: docs/delivery/tasks/TASK-0029/verification.md
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0029/verification.md
     type: verification
-    status: active
+    status: archived
     scope: bootstrap-failure-convergence
     authority: task-evidence
     read_when: [task-close, task-archive]
 
   - id: task-0029-docs-impact
-    path: docs/delivery/tasks/TASK-0029/docs-impact.yaml
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0029/docs-impact.yaml
     type: docs-impact
-    status: active
+    status: archived
     scope: bootstrap-failure-convergence
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: core-v2-agent-lifecycle
+    path: docs/knowledge/current/architecture/core-v2-agent-lifecycle.md
+    type: architecture
+    status: active
+    scope: core-v2-agent-lifecycle
+    authority: current-design
+    read_when: [task-create, task-execution, workflow-change, architecture-change]
+
+  - id: adr-0005-core-v2-agent-model
+    path: docs/knowledge/decisions/adr/0005-adopt-core-v2-five-plus-one-agent-model.md
+    type: adr
+    status: accepted
+    scope: core-v2-agent-lifecycle
+    authority: decision
+    read_when: [task-create, workflow-change, architecture-change]
+
+  - id: adr-0006-sealed-result-commit
+    path: docs/knowledge/decisions/adr/0006-use-two-phase-sealed-result-commit.md
+    type: adr
+    status: accepted
+    scope: sealed-result-commit
+    authority: decision
+    read_when: [task-execution, task-close, task-archive]
+
+  - id: task-0030-manifest
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0030/task.yaml
+    type: task-manifest
+    status: archived
+    scope: core-v2-architecture-sealed-result-commit
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0030-spec
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0030/spec.md
+    type: task-spec
+    status: archived
+    scope: core-v2-architecture-sealed-result-commit
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0030-design
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0030/design.md
+    type: task-design
+    status: archived
+    scope: core-v2-architecture-sealed-result-commit
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0030-plan
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0030/plan.md
+    type: task-plan
+    status: archived
+    scope: core-v2-architecture-sealed-result-commit
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0030-verification
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0030/verification.md
+    type: verification
+    status: archived
+    scope: core-v2-architecture-sealed-result-commit
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0030-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0030/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: core-v2-architecture-sealed-result-commit
     authority: task-evidence
     read_when: [task-close, task-archive]
 
@@ -2249,6 +2321,10 @@ relations:
     to: restate-poc-architecture
     type: indexes
 
+  - from: architecture-index
+    to: core-v2-agent-lifecycle
+    type: indexes
+
   - from: task-runtime-kernel
     to: architecture-overview
     type: refines
@@ -2273,6 +2349,14 @@ relations:
     to: adr-0002-doc-lifecycle-roles
     type: indexes
 
+  - from: adr-index
+    to: adr-0005-core-v2-agent-model
+    type: indexes
+
+  - from: adr-index
+    to: adr-0006-sealed-result-commit
+    type: indexes
+
   - from: adr-0001-restate-poc
     to: restate-poc-architecture
     type: governs
@@ -2288,6 +2372,22 @@ relations:
   - from: adr-0002-doc-lifecycle-roles
     to: docs-index
     type: governs
+
+  - from: adr-0005-core-v2-agent-model
+    to: core-v2-agent-lifecycle
+    type: governs
+
+  - from: adr-0006-sealed-result-commit
+    to: core-v2-agent-lifecycle
+    type: governs
+
+  - from: adr-0006-sealed-result-commit
+    to: task-runtime-kernel
+    type: refines
+
+  - from: core-v2-five-plus-one-agent-requirements
+    to: core-v2-agent-lifecycle
+    type: informs
 
   - from: adr-0002-doc-lifecycle-roles
     to: tasks-index
@@ -3365,7 +3465,7 @@ relations:
     to: task-0029-manifest
     type: schedules_into
 
-  - from: tasks-index
+  - from: archived-tasks-index
     to: task-0029-manifest
     type: indexes
 
@@ -3399,6 +3499,50 @@ relations:
 
   - from: task-0029-manifest
     to: task-runtime-kernel
+    type: implements_slice_of
+
+  - from: bl-0032-core-v2-architecture
+    to: task-0030-manifest
+    type: schedules_into
+
+  - from: archived-tasks-index
+    to: task-0030-manifest
+    type: indexes
+
+  - from: task-0030-spec
+    to: task-0030-manifest
+    type: belongs_to
+
+  - from: task-0030-design
+    to: task-0030-spec
+    type: refines
+
+  - from: task-0030-plan
+    to: task-0030-manifest
+    type: belongs_to
+
+  - from: task-0030-verification
+    to: task-0030-manifest
+    type: verifies
+
+  - from: task-0030-docs-impact
+    to: task-0030-manifest
+    type: reports_on
+
+  - from: task-0030-manifest
+    to: core-v2-agent-lifecycle
+    type: implements_slice_of
+
+  - from: task-0030-manifest
+    to: adr-0005-core-v2-agent-model
+    type: implements_decision
+
+  - from: task-0030-manifest
+    to: adr-0006-sealed-result-commit
+    type: implements_decision
+
+  - from: task-0030-manifest
+    to: core-v2-roadmap
     type: implements_slice_of
 
   - from: bl-0013-agent-events-dialog

@@ -33,7 +33,7 @@ export interface StateTransitionFact {
 }
 
 export interface StateMachineExecution {
-  readonly kind: "STEP_ATTEMPT" | "AGENT_RUN" | "ROLE_RUN" | "REVIEW_RUN" | "VERIFICATION" | "BOOTSTRAP_EVIDENCE";
+  readonly kind: "STEP_ATTEMPT" | "AGENT_RUN" | "ROLE_RUN" | "REVIEW_RUN" | "VERIFICATION" | "BOOTSTRAP_EVIDENCE" | "SEAL_COMMIT";
   readonly id: string;
   readonly state: string;
   readonly step: string;
@@ -49,7 +49,7 @@ export interface StateMachineExecution {
 export interface TaskStateMachineTrace {
   readonly schemaVersion: 1;
   readonly authority: "derived-from-runtime-projection";
-  readonly workflow: "CodingTaskWorkflow" | "TaskWorkflow" | "BootstrapFailureRecoveryWorkflow";
+  readonly workflow: "CodingTaskWorkflow" | "TaskWorkflow" | "BootstrapFailureRecoveryWorkflow" | "SealedTaskWorkflow";
   readonly definition: {
     readonly nodes: readonly StateMachineNode[];
     readonly edges: readonly StateMachineEdge[];
@@ -151,7 +151,7 @@ export function buildCodingStateMachine(projection: CodingWorkflowProjection): T
 
 export function buildTaskStateMachine(
   projection: TaskProjection,
-  workflow: "TaskWorkflow" | "BootstrapFailureRecoveryWorkflow" = "TaskWorkflow",
+  workflow: "TaskWorkflow" | "BootstrapFailureRecoveryWorkflow" | "SealedTaskWorkflow" = "TaskWorkflow",
 ): TaskStateMachineTrace {
   const history = taskHistory(projection.events);
   const overall = projection.archiveStatus === "ARCHIVED"
@@ -169,6 +169,20 @@ export function buildTaskStateMachine(
     producer: projection.execution.executorId,
     evidenceDigests: [projection.execution.resultCommit, ...projection.execution.verificationRefs, projection.execution.docsImpactRef],
   }];
+  if (projection.seal !== undefined) {
+    executions.push({
+      kind: "SEAL_COMMIT",
+      id: projection.seal.resultCommit ?? projection.seal.intentDigest,
+      state: projection.seal.resultCommit === undefined ? "WAITING_COMMIT" : "VERIFIED",
+      step: projection.seal.resultCommit === undefined ? "EXECUTING" : "VERIFYING",
+      evidenceDigests: [
+        projection.seal.intentDigest,
+        projection.seal.baseCommit,
+        ...(projection.seal.resultCommit === undefined ? [] : [projection.seal.resultCommit]),
+        ...(projection.seal.packageDigest === undefined ? [] : [projection.seal.packageDigest]),
+      ],
+    });
+  }
   return finalizeMachine({
     workflow,
     nodes: TASK_NODES,

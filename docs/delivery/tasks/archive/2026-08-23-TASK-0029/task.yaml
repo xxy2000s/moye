@@ -1,0 +1,26 @@
+schema_version: 1
+id: TASK-0029
+title: 修复 Bootstrap 预检、失败收敛与历史任务恢复
+status: closed
+outcome: succeeded
+backlog_refs:
+  - BL-0031
+spec_revision: 1
+workflow_id: task/TASK-0029
+execution_mode: goal-bootstrap
+base_commit: 3d2a64a93eec6a4147df4cf0559bd6b9fd92be8e
+archive:
+  status: pending
+  archived_at: null
+  archived_path: null
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: task-artifact://TASK-0029/verification.md
+  implementation_commit: d5edefd104ebc41cf8965317b54ed278e9268ee3
+execution_evidence:
+  executor_id: goal/root
+  result_commit: d5edefd104ebc41cf8965317b54ed278e9268ee3
+  verification_refs:
+    - task-artifact://TASK-0029/verification.md
+  docs_impact_ref: task-artifact://TASK-0029/docs-impact.yaml

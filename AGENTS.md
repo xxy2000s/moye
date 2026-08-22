@@ -92,6 +92,7 @@ npm run cli -- route --intent <intent> --path <planned-path>
 - Finding 和 Incident 只记录真实发现，不创建虚构示例；后续工作进入 Backlog。
 - Backlog 不复制完整 Task Spec；调度时由稳定引用绑定到 Active Task。
 - Active Task 直接放在 `docs/delivery/tasks/`；只在通过 Archive Gate 后移入 `archive/`。
+- `execution_mode: sealed-result-commit` 的 Task 使用两阶段 Seal：Workflow 先生成 Intent 并等待；执行者在 Commit 前把最终 package 移入 Intent 指定的 Archive 路径，Result Commit 后只能提交 Evidence，Workflow 不再改写 Git。目录位置本身不代表 Task 已关闭。
 - Pitfall 必须包含触发条件、后果、检测方法和规避方式。
 - CodeMap 只记录当前存在的代码；规划结构必须明确标注 Planned。
 - 所有新文档加入 `docs/graph.yaml`、至少建立一条语义关系，并加入对应目录索引。
@@ -146,6 +147,8 @@ PoC 不负责证明 Restate 是最终生产选型。
 - CodeMap 与实际目录一致；
 - 重要决策、风险或故障进入正确文档类型；
 - 结果中列出验证证据和剩余限制。
+
+Core v2 自举 Task 还必须满足：Result Commit 的唯一父提交是 Manifest 冻结的 `base_commit`；代码、文档、验证、Docs Impact 和 sealed Archive package 位于同一个 Commit；Seal Gate 通过后工作树仍为 clean。Result Commit SHA 记录在 Runtime Receipt，不写回同一 Commit。
 
 ## 9. 项目 Skill 与运行入口
 

@@ -9,6 +9,7 @@ import {
   archiveWorkflow,
   bootstrapFailureRecoveryWorkflow,
   projectBoard,
+  sealedTaskWorkflow,
   taskAuthority,
   taskWorkflow,
 } from "./restate/services.js";
@@ -22,6 +23,7 @@ const endpoint = createServer(
       projectBoard,
       taskAuthority,
       taskWorkflow,
+      sealedTaskWorkflow,
       bootstrapFailureRecoveryWorkflow,
       archiveWorkflow,
       codingTaskWorkflow,

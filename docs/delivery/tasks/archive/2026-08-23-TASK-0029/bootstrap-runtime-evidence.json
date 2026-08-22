@@ -1,0 +1,15 @@
+{
+  "taskId": "TASK-0029",
+  "workflowId": "task/TASK-0029",
+  "state": "CLOSED",
+  "outcome": "SUCCEEDED",
+  "execution": {
+    "kind": "GOAL_BOOTSTRAP",
+    "executorId": "goal/root",
+    "resultCommit": "d5edefd104ebc41cf8965317b54ed278e9268ee3",
+    "verificationRefs": [
+      "task-artifact://TASK-0029/verification.md"
+    ],
+    "docsImpactRef": "task-artifact://TASK-0029/docs-impact.yaml"
+  }
+}

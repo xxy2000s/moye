@@ -10,8 +10,8 @@
 | 入口 | 职责 | 状态所有权 |
 |---|---|---|
 | `src/index.ts` | 同时启动 Restate HTTP/2 Endpoint 和 Board HTTP Server | 无 |
-| `src/cli/index.ts` | backlog sync、validate、route、TaskAuthority-aware create/status/wait、close、recover-bootstrap-failure、archive、reconcile-task、graph | 只提交/查询或解析显式 Recovery/Reconcile，不直接改 Projection |
-| `src/restate/services.ts` | TaskAuthority、TaskWorkflow、BootstrapFailureRecoveryWorkflow、ArchiveWorkflow、ProjectBoard | Authority 冻结并查询主 Workflow/append-only successor；Workflow 拥有 Task/Archive 流转 |
+| `src/cli/index.ts` | backlog sync、validate、route、TaskAuthority-aware create/status/wait、close、recover-bootstrap-failure、seal start/status/stage/submit、archive、reconcile-task、graph | 只提交/查询或解析显式 Seal/Recovery/Reconcile；`seal-stage` 只准备 Git package，不改 Runtime Projection |
+| `src/restate/services.ts` | TaskAuthority、TaskWorkflow、SealedTaskWorkflow、BootstrapFailureRecoveryWorkflow、ArchiveWorkflow、ProjectBoard | Authority 冻结并查询主 Workflow/append-only successor；Workflow 拥有 Task/Archive 流转与 durable Seal signal |
 | `src/restate/coding-services.ts` | CodingTaskWorkflow、Board 映射、Spec Revision 主权更新、Durable Reconcile Signal、成功/失败 Archive 子流程 | Workflow 独占 Coding Projection |
 | `src/restate/core-services.ts` | CoreClosureWorkflow 与只读 status | Workflow 独占 Core Projection；Scenario Adapter 只返回可验证 Artifact |
 | `src/product/live-task.ts` | 校验 CLI/API 真实任务、仓库白名单与 Git refs，并冻结真实多角色 Coding Workflow 输入 | 不推进状态；只构造提交材料；产品入口拒绝 Fake |
@@ -31,7 +31,7 @@ src/
 ├── core/              多角色 Core 确定性场景编排与内容寻址 Scenario Artifact 对账
 ├── demo/              隔离 Coding Demo Fixture 与安全清理
 ├── domain/            纯领域状态、错误、Backlog、Board、Core Reducer、Observer、Docs Impact 与 Review/Finding Gate
-├── archive/           Manifest、Bootstrap 关闭材料、原子移动与 Reconcile
+├── archive/           Manifest、Bootstrap 关闭材料、两阶段 Sealed Result Commit、原子移动与 Reconcile
 ├── effects/           带稳定 operation ledger 的幂等副作用样例
 ├── git/               Worktree、Checkpoint 与本地 Git Effect 对账
 ├── product/           页面真实任务的输入校验、仓库边界与冻结输入构造
@@ -85,9 +85,11 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 - `review/live-review.ts` 使用与 Implementation 独立的 CLI Session 和只读权限生成结构化 Verdict/Finding；Intent 已存在而 Manifest 缺失时返回 UNKNOWN，不盲目重跑；
 - `backlog/document-sync.ts` 先验证全部 YAML，再形成单个 ProjectBoard 批次；
 - `archive/file-archive.ts` 只依赖领域输入和文件系统；`bootstrap-closure.ts` 以同一基线检查支持 CLI/Workflow Preflight、最终 Gate、成功/失败 Artifact 和稳定写入；
+- `archive/sealed-result-commit.ts` 从冻结 Base 和 Active manifest 生成内容寻址 Seal Intent；`seal-stage` 幂等准备 Archive package，Gate 校验唯一父提交、HEAD、clean worktree、Manifest/Intent、Accepted Verification、Docs Impact/changed paths 和文档图谱。`SealedTaskWorkflow` 在 durable promise 上等待 Evidence，Worker 重启不更换 Intent；关闭成功后只更新 Runtime Projection，Git 不再发生写入；
 - `git/workspace-effect.ts` 通过 argv-only Git Adapter 管理隔离 Worktree；写操作前后都以 Branch、Worktree HEAD 和 ancestry 对账，Checkpoint 固定 Commit 与 Tree Object ID；
 - `coding/workflow.ts` 编排产品主路径并记录 Spec Revision/Step/Attempt/Role Session/Evidence/Binding；Blocking Finding 按 Recommended Action 创建 Repair Generation N+1 或 Replan Envelope Revision N+1，后续 Checkpoint/Verification 绑定新 Revision；未知外部结果等待 Durable Reconcile Signal；确定性成功/失败都进入 Archive；
 - `TaskAuthority` 保证同一 Task 只能由一个主 Workflow 推进，并允许相同 Coding owner 单调提升 Spec Revision；升级前遗留的已知 Bootstrap 故障只允许追加一次 recovery successor，原 Workflow 保持只读历史；ProjectBoard 是二级查询投影；
+- `TaskAuthority` 的 `SEALED_TASK_WORKFLOW` owner 让 CLI、Board Detail 和 Trace 精确查询 `SealedTaskWorkflow/<task_id>`；Seal Intent、Commit Receipt 和 `CLOSED/ARCHIVED` 由 Runtime 提供，页面不从 Archive 目录猜测状态；
 - `CoreClosureWorkflow/<task_id>` 通过 `ctx.run` 调用 Scenario Artifact Adapter，持久化 `EXECUTING → CLOSED` 查询投影；它不把 Board、Archive、Observer 或外层 Merge 状态写进 Core Outcome；
 - Board 通过 `TaskAuthority.get` 解析主 Workflow，不扫描目录推断 Runtime 状态；`state-machine.ts` 只从连续 Event History 标记实际 traversed 边，并列出 Repair/Replan/Reconcile/Failure/Archive 合法边、Projection/Event 一致性和全部执行实例。Server 只对合法 `/tasks/<task_id>` 页面路由回退 SPA 入口，API/静态 404 保持不变；`public/app.js` 用 History API 在 `/` 与全屏 Task Page 间导航，直接刷新和浏览器 Back/Forward 均重查同一只读 Projection。Domain Event 以 sequence、历史绑定的 `来源 → 目标`、type/time/detail 时间线呈现，没有转换的 Event 不补造边。节点 Inspector 以稳定 Step 映射聚合 Event、Step Attempt、Role/Agent/Review Run、Session、Evidence、Verification、Git、Recovery 和 Archive 事实，并把合法入边/出边投影为显式标注“本次经过”或“合法但未发生”的扁平列表。有 Session 时先显示 Agent Activity、真实分类计数、末尾事件预览和完整 Events 主入口，再显示 Workflow 状态流转与系统控制；无 Session/未进入节点保持零 Agent/执行记录。桌面 Inspector/移动 Bottom Sheet、实际路径抽屉、筛选、缩放和焦点返回均为只读浏览状态；`/agent-events` 与 `/roles/<run-id>/events` 可增量读取当前 Implementation/Role/Review，完成后按摘要读取任一 Session，均校验 Projection allowlist、Execution Intent、受管根和 realpath；所有 Session 入口复用同一个 Chatbot Event Dialog，原始 JSON/JSONL 是次要证据动作；Board 无状态写入口；
 - `telemetry.ts` 从持久化 Attempt 生成短 Span 并输出标准 OTLP/HTTP protobuf；导出失败只影响诊断，不回写 Task 业务终态；
@@ -100,6 +102,7 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 | `src/archive/file-archive.ts` | 未知移动结果、路径逃逸、双目录冲突 | `tests/unit/file-archive.test.ts`、E2E |
 | `src/agent/runner.ts`、`live-role.ts`、`role-runner.ts`、`codex-exec.ts`、`claude-print.ts` | Agent/Role Run 重复调用、角色 Schema/Producer 篡改、未知结果盲重试、chunk 边界丢行、JSONL 伪造、敏感内容误采集、Raw API 目录逃逸、Shell 注入 | Agent/Role/Codex/Claude unit + 受控流/真实 Codex 多 Session Acceptance |
 | `src/archive/bootstrap-closure.ts`、`task-artifacts.ts` | 自举基线派发过晚、证据与提交不一致、失败 Artifact 重放、归档后引用失效 | Bootstrap unit + 旧服务升级/真实 Restate E2E |
+| `src/archive/sealed-result-commit.ts` | Commit 自引用、多提交关闭、错误 Evidence、归档目录冒充状态、Worker 等待时丢 Intent | Seal unit + 真实 Git/Restate SIGKILL E2E |
 | `src/backlog/document-sync.ts` | 坏条目部分写入、枚举漂移、无意义重复同步 | `tests/unit/backlog-sync.test.ts`、真实 Restate E2E |
 | `src/domain/coding-task.ts` | Spec 漂移后沿用旧证据、Attempt 被复活、Shell 命令边界丢失 | `tests/unit/coding-task.test.ts` |
 | `src/domain/core-control.ts`、`core-observer.ts`、`core-docs-impact.ts`、`core-closure.ts`、`review-finding.ts` | 过期 Decision、跨 Revision Attempt 碰撞、恢复动作混淆、UNKNOWN 盲重试、Observer 越权、Trace 漏证据、失败 Docs Gate 误关闭、冲突 Closure、预算无限循环 | Core Control/Recovery/Observer/Docs/Closure、Role/Review unit |

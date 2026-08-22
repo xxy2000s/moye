@@ -2,7 +2,7 @@ schema_version: 1
 id: "BL-0032"
 title: "冻结 Core v2 的 5+1 Agent 架构与提交归档边界"
 kind: "debt"
-status: "ready"
+status: "converted_to_task"
 priority: "high"
 source_refs: [core-v2-five-plus-one-agent-requirements]
 affected_areas: [task-runtime, agent-runtime, document-control, archive]
@@ -10,4 +10,4 @@ acceptance_outline:
   - "Architecture 固定五类主流程 Agent、旁路 Observer/Knowledge 和确定性 Gate"
   - "ADR 决定单 Task Result Commit 与 Git Task Archive 的无循环绑定协议"
   - "状态权威、权限、Repair/Replan/Reconcile 和非目标明确"
-resolution: { task_refs: [], duplicate_of: null, reason: "Core v2 路线的正式设计入口" }
+resolution: { task_refs: ["TASK-0030"], duplicate_of: null, reason: "由 TASK-0030 冻结正式设计并实现 Seal 协议" }

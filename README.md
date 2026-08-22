@@ -156,4 +156,4 @@ Moye 使用自己定义的 Task、证据和知识治理原则建设自身：
 
 ## 当前边界
 
-本轮已经实现 Task/Archive Workflow、真实多角色本地 Coding Workflow、Fake/真实 Codex 与 Claude Print Adapter、Self Review、独立 Review、Repair、Spec Revision N+1 Replan、显式 WAITING_RECONCILE/Resume、成功与失败归档、全部 Session JSONL 下钻、实际路径点亮的完整只读状态机 Graph、幂等 Worktree/Verification/Merge、Board Projection、三层 Trace、OTLP、受控 Artifact 下载和统一 CLI。多 Daemon/Lease/Fencing、远程 Git Provider/PR、鉴权、多租户，以及 Metrics/Logs/告警/SLO 等生产运营能力仍属于后续阶段。
+本轮已经实现 Task/Archive Workflow、真实多角色本地 Coding Workflow、两阶段 Sealed Result Commit 自举协议、Fake/真实 Codex 与 Claude Print Adapter、Self Review、独立 Review、Repair、Spec Revision N+1 Replan、显式 WAITING_RECONCILE/Resume、成功与失败归档、全部 Session JSONL 下钻、实际路径点亮的完整只读状态机 Graph、幂等 Worktree/Verification/Merge、Board Projection、三层 Trace、OTLP、受控 Artifact 下载和统一 CLI。Core v2 的 5 个主流程 Agent + 1 个非阻塞 Observer/Knowledge 模型已经冻结为 Architecture/ADR，但五类 Agent 尚未全部接入统一产品 Workflow；该实现进度以 `docs/delivery/core-v2-roadmap.md` 为准。多 Daemon/Lease/Fencing、远程 Git Provider/PR、鉴权、多租户，以及 Metrics/Logs/告警/SLO 等生产运营能力仍属于后续阶段。

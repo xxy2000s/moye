@@ -1,0 +1,147 @@
+schema_version: 1
+task_id: TASK-0030
+graph_revision: 64
+intents:
+  - task-runtime-change
+  - architecture-change
+  - task-create
+changed_paths:
+  - .agents/skills/moye-task-control/SKILL.md
+  - AGENTS.md
+  - README.md
+  - docs/delivery/backlog/BL-0032.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/core-v2-roadmap.md
+  - docs/delivery/tasks/README.md
+  - docs/delivery/tasks/TASK-0029/design.md
+  - docs/delivery/tasks/TASK-0029/docs-impact.yaml
+  - docs/delivery/tasks/TASK-0029/plan.md
+  - docs/delivery/tasks/TASK-0029/spec.md
+  - docs/delivery/tasks/TASK-0029/task.yaml
+  - docs/delivery/tasks/TASK-0029/verification.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0029/archive-manifest.json
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0029/bootstrap-runtime-evidence.json
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0029/design.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0029/docs-impact.yaml
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0029/plan.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0029/spec.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0029/task.yaml
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0029/verification.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0030/design.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0030/docs-impact.yaml
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0030/plan.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0030/spec.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0030/task.yaml
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0030/verification.md
+  - docs/delivery/tasks/archive/README.md
+  - docs/graph.yaml
+  - docs/knowledge/current/architecture/README.md
+  - docs/knowledge/current/architecture/core-v2-agent-lifecycle.md
+  - docs/knowledge/current/architecture/task-runtime-kernel.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/decisions/adr/0005-adopt-core-v2-five-plus-one-agent-model.md
+  - docs/knowledge/decisions/adr/0006-use-two-phase-sealed-result-commit.md
+  - docs/knowledge/decisions/adr/README.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - docs/sources/brainstorm/core-v2-five-plus-one-agent-requirements.md
+  - src/archive/sealed-result-commit.ts
+  - src/board/server.ts
+  - src/cli/index.ts
+  - src/domain/task.ts
+  - src/index.ts
+  - src/restate/services.ts
+  - src/trace/state-machine.ts
+  - tests/e2e/restate-recovery.test.ts
+  - tests/unit/sealed-result-commit.test.ts
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - core-v2-agent-lifecycle
+    - architecture-index
+    - adr-0005-core-v2-agent-model
+    - adr-index
+    - adr-0006-sealed-result-commit
+    - task-runtime-kernel
+    - restate-poc-architecture
+    - adr-0001-restate-poc
+    - durable-runtime-pitfalls
+    - moye-task-control-skill
+    - root-readme
+    - local-restate-poc-runbook
+    - runbooks-index
+    - tasks-index
+    - archived-tasks-index
+    - backlog-index
+    - bl-0032-core-v2-architecture
+    - sources-index
+    - brainstorm-index
+    - core-v2-five-plus-one-agent-requirements
+    - core-v2-roadmap
+    - task-0029-manifest
+    - task-0029-spec
+    - task-0029-design
+    - task-0029-plan
+    - task-0029-verification
+    - task-0029-docs-impact
+    - task-0030-manifest
+    - task-0030-spec
+    - task-0030-design
+    - task-0030-plan
+    - task-0030-verification
+    - task-0030-docs-impact
+  reviewed:
+    architecture-overview:
+      outcome: unchanged
+      reason: "Core v2 细化角色生命周期与提交边界，不改变顶层 Harness 边界"
+    durable-workflow-research:
+      outcome: unchanged
+      reason: "继续使用既有 Restate PoC 研究结论，本 Task 不作最终 Runtime 选型"
+    research-index:
+      outcome: not_applicable
+      reason: "本次没有登记外部资料或新增内部 Research"
+    adr-0002-doc-lifecycle-roles:
+      outcome: unchanged
+      reason: "Seal 保持现有文档角色与图谱治理，只增加关闭协议"
+    core-v2-five-plus-one-agent-requirements:
+      outcome: updated
+      reason: "记录 Architecture、ADR 与 TASK-0030 的正式消费去向，保留后续角色接线范围"
+    task-lifecycle-worktree-convergence-brainstorm:
+      outcome: unchanged
+      reason: "历史总体方案保留，当前决策由新的 Core v2 Architecture 与 ADR 承载"
+    multi-agent-core-closure-requirements:
+      outcome: unchanged
+      reason: "旧角色基线保持历史，已由 Core v2 5+1 输入取代"
+    task-0013-manifest: { outcome: unchanged, reason: "不改写历史 Control Kernel Task" }
+    task-0014-manifest: { outcome: unchanged, reason: "不改写历史 Role 协议 Task" }
+    task-0015-manifest: { outcome: unchanged, reason: "不改写历史 Review/Finding Task" }
+    task-0016-manifest: { outcome: unchanged, reason: "不改写历史 Recovery Budget Task" }
+    task-0017-manifest: { outcome: unchanged, reason: "不改写历史 Observer/Docs Task" }
+    task-0018-manifest: { outcome: unchanged, reason: "不改写历史 Core Closure Task" }
+    task-0019-manifest: { outcome: unchanged, reason: "不改写历史页面产品 Task" }
+    task-0020-manifest: { outcome: unchanged, reason: "不改写历史状态机 Task" }
+    task-0021-manifest: { outcome: unchanged, reason: "不改写历史真实多角色验收 Task" }
+    task-0028-manifest: { outcome: unchanged, reason: "不改写已归档 Bootstrap 故障 Task" }
+    task-0029-manifest:
+      outcome: updated
+      reason: "提交 TASK-0029 已完成的 Runtime Closure 与 Archive 管理事实"
+    task-0030-manifest:
+      outcome: updated
+      reason: "当前 package 绑定冻结 Base、Seal Intent 和最终验证证据"
+    task-0002-manifest: { outcome: unchanged, reason: "不改写历史 Bootstrap Task" }
+    task-0003-manifest: { outcome: unchanged, reason: "不改写历史协议 Task" }
+    task-0004-manifest: { outcome: unchanged, reason: "不改写历史 Git Effect Task" }
+    task-0005-manifest: { outcome: unchanged, reason: "不改写历史 Agent Adapter Task" }
+    task-0006-manifest: { outcome: unchanged, reason: "不改写历史 Coding Workflow Task" }
+    task-0007-manifest: { outcome: unchanged, reason: "不改写历史 Trace Task" }
+    task-0008-manifest: { outcome: unchanged, reason: "不改写历史 Demo Task" }
+    task-0009-manifest: { outcome: unchanged, reason: "不改写历史 Telemetry Task" }
+    task-0001-manifest: { outcome: unchanged, reason: "不改写历史 Runtime Task" }
+    adr-0003-typescript-poc:
+      outcome: unchanged
+      reason: "继续使用既有 TypeScript Restate PoC 决策"
+    adr-0004-otlp-phoenix-demo:
+      outcome: not_applicable
+      reason: "不改变 OTLP 或 Phoenix 边界"

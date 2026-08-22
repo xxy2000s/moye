@@ -1,11 +1,12 @@
 # Core v2：5+1 Agent 研发闭环需求基线
 
 > 文档类型：Brainstorm / Requirement Baseline  
-> 状态：Draft / Scheduled for consumption  
+> 状态：Draft / Partially consumed
 > 基线日期：2026-08-23  
 > 目标范围：单机、单仓库、单 Task、单主 Workflow、真实多 Agent 研发闭环  
 > 取代范围：[旧多 Agent Core 闭环需求基线](./multi-agent-core-closure-requirements.md)中的角色划分与 Happy Path  
-> 正式消费方：[Core v2 Delivery Roadmap](../../delivery/core-v2-roadmap.md)、后续 Architecture、ADR 与 Active Task Spec
+> 正式消费方：[Core v2 Delivery Roadmap](../../delivery/core-v2-roadmap.md)、[Core v2 Agent Lifecycle](../../knowledge/current/architecture/core-v2-agent-lifecycle.md)、[ADR-0005](../../knowledge/decisions/adr/0005-adopt-core-v2-five-plus-one-agent-model.md)、[TASK-0030](../../delivery/tasks/archive/2026-08-23-TASK-0030/spec.md)
+> 剩余消费：TASK-0031 至 TASK-0039 负责把各角色接入统一产品 Workflow
 
 本文保存已经确认的 Core v2 产品需求，但在 Architecture、ADR 和 Task Spec 消费前仍然只是 `idea-input`，不代表当前代码已经具备这些能力。
 

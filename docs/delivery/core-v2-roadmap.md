@@ -10,7 +10,7 @@
 
 - 严格按依赖顺序执行 `TASK-0029` 至 `TASK-0039`；当前 Task 验收、关闭并归档后才创建下一个 Active Task Package；
 - 每个 Task 绑定一个独立 Result Commit，提交信息和 Task Artifact 都包含稳定 Task ID；不得把多个实现 Task 混入同一个 Result Commit；
-- Runtime 生成的 Closure/Archive 证据属于该 Task 的管理事实，不得伪装成另一个实现 Task；TASK-0030 将正式决定如何让 Git 中的 Task Archive 与 Result Commit 保持无循环绑定；
+- Runtime 生成的 Closure/Archive 证据属于该 Task 的管理事实，不得伪装成另一个实现 Task；TASK-0030 已决定并实现两阶段 Seal，Result SHA 和最终业务 Outcome 保存在 Runtime Receipt，Git package 永久保持 `seal_prepared` 以避免自引用；
 - 每个 Task 都必须有 Requirement → Test → Evidence 映射、针对风险的失败路径测试、`npm run check`、目标 E2E 和 Docs Impact Gate；
 - 自动化测试中的 Fake 只允许证明低层协议；产品能力验收必须使用真实 Restate、真实进程、真实 Git 和真实受控命令，Agent 能力验收使用真实 Agent Runner；
 - 路线图只协调交付，不定义当前架构。重大取舍进入 ADR，当前设计进入 Architecture。
@@ -19,8 +19,8 @@
 
 | Task | Backlog | 状态 | 目标与核心验收 | Result Commit |
 |---|---|---|---|---|
-| TASK-0029 | BL-0031 | Active | Bootstrap 派发前预检、派发后失败终态收敛、TASK-0028 合法恢复；真实 Restate 证明 Board/Event/Archive 一致 | — |
-| TASK-0030 | BL-0032 | Planned | 冻结 Core v2 Architecture、状态权威、5+1 角色、两阶段提交/归档边界与 ADR；消除一个 Task 一个 Result Commit 的循环证据问题 | — |
+| TASK-0029 | BL-0031 | Archived / Succeeded | Bootstrap 派发前预检、派发后失败终态收敛、TASK-0028 合法恢复；真实 Restate 证明 Board/Event/Archive 一致 | `d5edefd` |
+| TASK-0030 | BL-0032 | Sealed / Runtime authoritative | 冻结 Core v2 Architecture、状态权威、5+1 角色、两阶段提交/归档边界与 ADR；消除一个 Task 一个 Result Commit 的循环证据问题 | `SealedTaskWorkflow` Receipt |
 | TASK-0031 | BL-0033 | Planned | 将 Spec、Design、Plan、Docs Impact、Test Plan、Test Report、Review、Knowledge Disposition 建模为带 Revision/Digest 的一等 Artifact | — |
 | TASK-0032 | BL-0034 | Planned | 统一真实 Role Runtime v2：五类角色共享 Attempt/Generation/Session/Event/Artifact/Reconcile 协议，禁止产品路径回退 Fake | — |
 | TASK-0033 | BL-0035 | Planned | 接入 ARCHITECT 与隔离 DESIGN_REVIEW；Spec/Design 缺陷可 REPLAN 到 Revision R+1 | — |

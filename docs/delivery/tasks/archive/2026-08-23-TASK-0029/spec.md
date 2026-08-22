@@ -2,8 +2,8 @@
 
 > 状态：Accepted for implementation  
 > Spec Revision：1  
-> Backlog：[BL-0031](../../backlog/BL-0031.yaml)  
-> Incident：[2026-08-22 Bootstrap 基线门禁导致 Projection 停留 EXECUTING](../../../sources/incidents/2026-08-22-bootstrap-base-commit-gate-left-projection-executing.md)
+> Backlog：[BL-0031](../../../backlog/BL-0031.yaml)
+> Incident：[2026-08-22 Bootstrap 基线门禁导致 Projection 停留 EXECUTING](../../../../sources/incidents/2026-08-22-bootstrap-base-commit-gate-left-projection-executing.md)
 
 ## 目标
 

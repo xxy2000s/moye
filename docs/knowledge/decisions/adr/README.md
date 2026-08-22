@@ -20,6 +20,8 @@ Accepted ADR 不重写历史论证。改变决策时创建新 ADR，并在两份
 | [0002](./0002-organize-docs-by-lifecycle-role.md) | Accepted | 按 Sources、Delivery、Knowledge、Meta 组织文档 |
 | [0003](./0003-use-typescript-for-restate-poc.md) | Accepted | 首个 Restate PoC 使用 TypeScript |
 | [0004](./0004-use-otlp-contract-and-optional-phoenix.md) | Accepted | 使用 OTLP 契约与可选 Phoenix 作为轻量 Trace Demo |
+| [0005](./0005-adopt-core-v2-five-plus-one-agent-model.md) | Accepted | 采用五个主流程 Agent 加一个非阻塞旁路 Agent |
+| [0006](./0006-use-two-phase-sealed-result-commit.md) | Accepted | 使用两阶段 Sealed Result Commit 关闭仓库 Task |
 
 ## 新建 ADR
 

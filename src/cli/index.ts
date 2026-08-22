@@ -18,6 +18,13 @@ import type { BootstrapFailureRecoveryInput } from "../restate/services.js";
 import { buildLiveCodingTask } from "../product/live-task.js";
 import type { CodingReconcileInput } from "../restate/coding-services.js";
 import { verifyBootstrapPreflight } from "../archive/bootstrap-closure.js";
+import { stageSealedTaskPackage } from "../archive/sealed-result-commit.js";
+import type {
+  SealEvidence,
+  SealIntent,
+  SealedTaskInput,
+} from "../archive/sealed-result-commit.js";
+import type { SealedTaskStatus } from "../restate/services.js";
 
 const [command = "help", ...args] = process.argv.slice(2);
 const config = loadConfig();
@@ -101,6 +108,46 @@ try {
       print(result);
       break;
     }
+    case "seal-start": {
+      const input = await loadJson<SealedTaskInput>(requiredOption(args, "--file"));
+      createTaskProjection(input, new Date().toISOString());
+      const receipt = await send(
+        config.restateIngressUrl, "SealedTaskWorkflow", input.taskId, "run", input,
+      );
+      print({ accepted: true, taskId: input.taskId, workflow: "SealedTaskWorkflow", ...receipt });
+      break;
+    }
+    case "seal-status": {
+      const taskId = requiredArgument(args, "task id");
+      print(await invoke<SealedTaskStatus | null>(
+        config.restateIngressUrl, "SealedTaskWorkflow", taskId, "sealStatus",
+      ));
+      break;
+    }
+    case "seal-stage": {
+      const intent = await loadJson<SealIntent>(requiredOption(args, "--file"));
+      await stageSealedTaskPackage(resolve(process.env["MOYE_REPOSITORY_ROOT"] ?? process.cwd()), intent);
+      print({ staged: true, taskId: intent.taskId, archivePath: intent.archivePath, intentDigest: intent.intentDigest });
+      break;
+    }
+    case "seal-submit": {
+      const taskId = requiredArgument(args, "task id");
+      const status = await invoke<SealedTaskStatus | null>(
+        config.restateIngressUrl, "SealedTaskWorkflow", taskId, "sealStatus",
+      );
+      if (status === null) throw new Error(`No Seal Intent exists for ${taskId}`);
+      const evidence: SealEvidence = {
+        token: requiredOption(args, "--token"),
+        resultCommit: requiredOption(args, "--commit"),
+        executorId: requiredOption(args, "--executor"),
+        verificationPath: status.intent.verificationPath,
+        docsImpactPath: status.intent.docsImpactPath,
+      };
+      print(await invoke<SealedTaskStatus>(
+        config.restateIngressUrl, "SealedTaskWorkflow", taskId, "seal", evidence,
+      ));
+      break;
+    }
     case "reconcile-task": {
       const taskId = requiredArgument(args, "task id");
       const input: CodingReconcileInput = {
@@ -149,6 +196,9 @@ async function taskStatus(taskId: string): Promise<TaskProjection | CodingWorkfl
       );
     }
     return invoke<TaskProjection | null>(config.restateIngressUrl, "TaskWorkflow", taskId, "status");
+  }
+  if (authority.owner === "SEALED_TASK_WORKFLOW") {
+    return invoke<TaskProjection | null>(config.restateIngressUrl, "SealedTaskWorkflow", taskId, "status");
   }
   throw new Error(`Task ${taskId} is owned by ${authority.owner}; no unified product projection is available`);
 }
@@ -239,6 +289,10 @@ Usage:
   moye create --file task.json
   moye close --file task.json
   moye recover-bootstrap-failure --file recovery.json
+  moye seal-start --file sealed-task.json
+  moye seal-status TASK-ID
+  moye seal-stage --file seal-intent.json
+  moye seal-submit TASK-ID --token TOKEN --commit SHA --executor ID
   moye archive --file archive.json
   moye reconcile --file archive.json
   moye reconcile-task TASK-ID --token TOKEN --evidence TEXT

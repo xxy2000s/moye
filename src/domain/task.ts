@@ -41,6 +41,15 @@ export interface TaskProjection {
   readonly lastEventAt: string;
   readonly events: readonly TaskEventSummary[];
   readonly execution?: TaskExecutionEvidence;
+  readonly seal?: TaskSealSummary;
+}
+
+export interface TaskSealSummary {
+  readonly intentDigest: string;
+  readonly baseCommit: string;
+  readonly archivePath: string;
+  readonly resultCommit?: string;
+  readonly packageDigest?: string;
 }
 
 export interface TaskExecutionEvidence {
@@ -310,6 +319,58 @@ export function recordBootstrapEvidence(
         detail: `${evidence.executorId}:${evidence.resultCommit}`,
       },
     ],
+  };
+}
+
+export function recordSealIntent(
+  projection: TaskProjection,
+  seal: TaskSealSummary,
+  now: string,
+): TaskProjection {
+  if (projection.state !== "EXECUTING" || projection.seal !== undefined) {
+    throw new MoyeError({
+      code: "SEAL_INTENT_INVALID_STATE",
+      category: "CONFLICT",
+      message: `Task ${projection.taskId} must be EXECUTING without an existing Seal Intent`,
+    });
+  }
+  return {
+    ...projection,
+    currentStep: "waiting-result-commit",
+    seal,
+    lastEventAt: now,
+    events: [...projection.events, {
+      sequence: projection.events.length + 1,
+      type: "SealIntentPrepared",
+      at: now,
+      detail: seal.intentDigest,
+    }],
+  };
+}
+
+export function recordSealReceipt(
+  projection: TaskProjection,
+  resultCommit: string,
+  packageDigest: string,
+  now: string,
+): TaskProjection {
+  if (projection.state !== "VERIFYING" || projection.seal === undefined) {
+    throw new MoyeError({
+      code: "SEAL_RECEIPT_INVALID_STATE",
+      category: "CONFLICT",
+      message: `Task ${projection.taskId} must be VERIFYING with a Seal Intent`,
+    });
+  }
+  return {
+    ...projection,
+    seal: { ...projection.seal, resultCommit, packageDigest },
+    lastEventAt: now,
+    events: [...projection.events, {
+      sequence: projection.events.length + 1,
+      type: "SealCommitVerified",
+      at: now,
+      detail: resultCommit,
+    }],
   };
 }
 

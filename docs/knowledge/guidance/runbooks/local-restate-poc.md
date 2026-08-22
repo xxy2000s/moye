@@ -119,6 +119,20 @@ npm run cli -- backlog sync --dir docs/delivery/backlog --project moye
 - `close` 只提交指定 Bootstrap Workflow；已存在的重复 `run` 由 Restate 明确拒绝，使用 `status/wait` 查询既有结果；
 - `recover-bootstrap-failure` 只用于升级前已经 Invocation 失败、Projection 仍为无 Evidence `EXECUTING/NOT_READY` 的已知 Bootstrap 故障。输入必须包含原 Invocation ID 和预期错误码；命令创建 append-only successor，不能用于 Retry、成功任务或手工改写 Projection；
 - `archive` 和 `reconcile` 连接同一 keyed ArchiveWorkflow。
+- Core v2 仓库自举任务使用 `seal-start → seal-status → seal-stage → git commit → seal-submit → wait`。`seal-stage` 只按 Workflow 冻结的 Intent 准备归档 package；`seal-submit` 只解析 durable promise，Gate 会校验唯一父提交、HEAD、clean worktree、Archive package、Accepted Verification、Docs Impact 和实际 changed paths。成功后 Workflow 只更新 Runtime，不再写 Git：
+
+```bash
+npm run cli -- seal-start --file /path/to/sealed-task.json
+npm run cli -- seal-status TASK-EXAMPLE > /tmp/seal-status.json
+# 从输出中保存 intent 对象为 /tmp/seal-intent.json
+npm run cli -- seal-stage --file /tmp/seal-intent.json
+git add -A && git commit -m 'feat(TASK-EXAMPLE): result'
+npm run cli -- seal-submit TASK-EXAMPLE \
+  --token 'sha256:...' --commit "$(git rev-parse HEAD)" --executor 'goal/root'
+npm run cli -- wait TASK-EXAMPLE
+```
+
+目录已经位于 `archive/` 但 Runtime 尚未返回 `ARCHIVED` 时，状态仍是 `WAITING_COMMIT` 或 `VERIFYING`，不能从目录扫描推导成功。错误 token 不会消费信号；相同 Evidence 可安全重复提交；不同 Commit 冲突时停止并保留证据，不能盲目 amend 或追加第二个 Result Commit。
 - `backlog sync` 在提交前校验完整 YAML 批次；重复同步按 Source Digest 收敛；运行时独有记录默认保留并报告。
 - `CodingTaskWorkflow/<task_id>` 接受冻结 Envelope 和真实 Runner 配置；产品链是 Context → Worktree → Implementation → Self Review → Verification → independent Review → Repair/Replan → Merge → Docs Gate → Closure → Archive。Blocking Finding 的 `REPAIR` 创建新 Generation，`REPLAN` 创建 Spec Revision N+1；主状态、全部 Session 与事件摘要同步到 Board。
 - `CoreClosureWorkflow/<task_id>` 接受冻结 Envelope、确定性场景和受管 Artifact Root；它当前是 Core 收敛 PoC/API，不会投影到 Board，也不替代 Coding Workflow。
