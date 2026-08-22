@@ -46,6 +46,8 @@ INTAKE → CONTEXT_PLAN
 
 `src/domain/core-v2-lifecycle.ts` 已接入第一段 Workflow Reducer：成功 ARCHITECT Attempt 原子生成同 Revision 的 Spec/Design/Plan，随后只接受独立 `REVIEW/DESIGN_REVIEW` Attempt。Review `PASSED` 才进入 Implementation；`FINDINGS` 进入 `REPLAN_REQUIRED`，提升到 R+1 并把旧 Revision 的四个 Artifact ref 显式记录为 invalidated。Role Attempt ID 使用可嵌入 Artifact Producer 的稳定 segment；单个 Architect Attempt 的三项产物使用 `ARCHITECT` phase。
 
+Implementation 阶段只接受 Workflow 当前授权 Generation 的成功 `IMPLEMENTATION` Attempt。每次结果形成 append-only Checkpoint，绑定实现前基线、Candidate Commit、Git tree、测试 Evidence 与结构化 Self Review。`PASSED` 进入 Documentation；`FINDINGS` 进入 `REPAIR_REQUIRED`，只有显式 Repair 授权才能创建 Generation N+1，旧 Checkpoint 永不复活或覆盖。
+
 ## 5. Artifact 与 Gate
 
 每个 Artifact 绑定 Task ID、Spec Revision、Step/Attempt、Producer、Candidate Commit 和 Content Digest。旧 Revision Evidence 永远不能满足新 Gate。Agent Verdict 只是建议；Workflow 只有在确定性 Gate 校验全部绑定后才推进。

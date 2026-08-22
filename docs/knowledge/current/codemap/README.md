@@ -81,7 +81,7 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 - `domain/review-finding.ts` 固定 Self Review、Candidate-bound Review Input、成功 ReviewResult、独立执行失败、Finding 稳定身份/追加处置和 Blocking Gate；Core 只接受绑定最近 Review Manifest Digest 的可信 Gate Result；
 - `core/workflow.ts` 用确定性 Scenario Adapter 贯通线性成功、Repair、Replan、UNKNOWN→Reconcile、预算终止和取消；`core/scenario-artifact.ts` 在昂贵执行前写稳定 Intent，复用已确认结果并把仅有 Intent 的情况停为 UNKNOWN；
 - `domain/role-runtime-v2.ts` 定义 Core v2 六类 Role、隔离 Phase、固定权限、Attempt/Generation/Event、Run Evidence 和 UNKNOWN/Reconcile 领域协议；`agent/role-runtime-v2.ts` 先持久化 Intent，再以 argv-only 真实 Codex/Claude 进程生成 Session、原始 Event、stderr、结构化 Output 与逐文件摘要 Manifest，完整结果可复用，Intent-only 禁止盲重跑；
-- `domain/core-v2-lifecycle.ts` 是 Core v2 逐阶段扩展的 Workflow Reducer；当前实现 Architect 三 Artifact、隔离 Design Review、PASSED 到 Implementation 和 Finding 驱动的 Revision R+1 REPLAN，并保存旧 Revision invalidation history；
+- `domain/core-v2-lifecycle.ts` 是 Core v2 逐阶段扩展的 Workflow Reducer；当前实现 Architect 三 Artifact、隔离 Design Review、Revision R+1 REPLAN，以及 Implementation Candidate Checkpoint、Self Review 和显式 Generation N+1 Repair，并保存全部旧 Revision/Checkpoint history；
 - `agent/role-runner.ts` 为确定性 Core PoC 提供旧统一角色协议；`agent/live-role.ts` 为 Coding 产品 Context、Self Review、Replan、Docs Gate 提供真实只读 CLI Session、结构化 Finding、稳定 Intent/Manifest 与原始事件；
 - `agent/runner.ts` 规范请求、验证 Worktree/Git common dir、运行中 JSONL Stream 与最终 Artifact；`codex-exec.ts` 以 `workspace-write + --add-dir <validated-git-common-dir>` 允许真实 commit，`claude-print.ts` 维持自己的 argv-only 边界；两者只把 stdout chunk 交给行边界写入器，不推进 Task 状态；Claude 原生 OTel/内容采集只注入当前子进程，默认关闭；
 - `product/live-task.ts` 只接受 `CODEX_EXEC | CLAUDE_PRINT`，在进入 Runtime 前拒绝 Fake、越界仓库、非 Git 仓库和冲突 ref；它创建受管 Task Package、Artifact Root、Worktree Root 与冻结 Envelope；
@@ -111,7 +111,7 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 | `src/domain/core-control.ts`、`core-observer.ts`、`core-docs-impact.ts`、`core-closure.ts`、`review-finding.ts` | 过期 Decision、跨 Revision Attempt 碰撞、恢复动作混淆、UNKNOWN 盲重试、Observer 越权、Trace 漏证据、失败 Docs Gate 误关闭、冲突 Closure、预算无限循环 | Core Control/Recovery/Observer/Docs/Closure、Role/Review unit |
 | `src/domain/lifecycle-artifact.ts` | 聊天文本冒充产物、旧 Revision/Commit 证据复用、Digest 篡改、依赖 ref 伪造、Test Report 漏项 | Lifecycle Artifact unit + 完整九类交接链 E2E |
 | `src/domain/role-runtime-v2.ts`、`src/agent/role-runtime-v2.ts` | Role/Phase 越权、Fake 混入产品协议、跨 Attempt Evidence、完整结果重复执行、Intent-only 盲重跑、Artifact 篡改 | Role Runtime v2 unit + 六类角色真实 OS 子进程/复用/UNKNOWN/Reconcile/篡改 E2E |
-| `src/domain/core-v2-lifecycle.ts` | Architect/Review 越权、旧 Revision Artifact 复用、Finding 绕过 REPLAN、Projection 篡改 | Core v2 Lifecycle unit + 序列化 Architect/Design Review/Replan E2E |
+| `src/domain/core-v2-lifecycle.ts` | 角色越权、旧 Revision Artifact 复用、Finding 绕过 REPLAN/REPAIR、旧 Generation 覆盖、Projection 篡改 | Core v2 Lifecycle unit + 序列化 Architect/Review/Implementation/Repair E2E |
 | `src/core/workflow.ts`、`src/core/scenario-artifact.ts`、`src/restate/core-services.ts` | 已确认昂贵场景重复、Intent-only 盲重试、Worker 退出后重复结果、回执丢失产生第二个 Closure | Core Workflow unit + 真实 Restate 六场景/异步回执/SIGKILL E2E |
 | `src/git/workspace-effect.ts` | 路径/符号链接逃逸、Base 漂移、分支冲突、未知 Git 结果重复写 | `tests/unit/workspace-effect.test.ts` |
 | `src/product/live-task.ts`、`src/review/live-review.ts`、`src/agent/live-role.ts` | Fake 混入产品入口、仓库越界、ref 冲突、角色 Session 混用、Finding 未触发 Repair/Replan、未知结果盲重跑 | Live Task/Role unit + `npm run acceptance:live` 真实 Codex Context/Implementation/Self Review/Review/Docs Gate 验收 |
