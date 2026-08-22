@@ -39,6 +39,7 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 | [BL-0024](./BL-0024.yaml) | Converted | 将完整 Task 状态机呈现为实际路径点亮的 Graph 画布 | TASK-0023 |
 | [BL-0025](./BL-0025.yaml) | Converted | 将 Task 详情重构为居中画布优先的审计工作区 | TASK-0024 |
 | [BL-0026](./BL-0026.yaml) | Converted | 补齐状态机节点的执行与系统管控下钻 | TASK-0025 |
+| [BL-0027](./BL-0027.yaml) | Converted | 重构节点 Inspector 并内联 Agent Events 预览 | TASK-0026 |
 
 ## 本轮调度结果
 

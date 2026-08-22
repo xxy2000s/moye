@@ -1,0 +1,8 @@
+schema_version: 1
+task_id: TASK-0026
+graph_revision: 57
+intents: [task-create, coding-task-poc, docs-change]
+changed_paths: []
+docs:
+  read: []
+  reviewed: {}

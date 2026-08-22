@@ -1,0 +1,26 @@
+schema_version: 1
+id: "BL-0027"
+title: "重构节点 Inspector 并内联 Agent Events 预览"
+kind: "bug"
+status: "converted_to_task"
+priority: "high"
+
+source_refs:
+  - finding-node-agent-events-hidden-inspector-dense
+affected_areas:
+  - project-board
+  - state-machine-graph
+  - agent-events-viewer
+  - task-audit
+
+acceptance_outline:
+  - "有 Agent Session 的节点首屏优先显示 Agent 活动和明确的完整 Events 入口"
+  - "节点内从真实 Events API 加载分类计数和最近事件预览"
+  - "Domain Event 改用可理解说明并明确其与 Agent Event 的边界"
+  - "减少嵌套卡片和装饰，桌面与移动端保持清晰可扫描"
+
+resolution:
+  task_refs:
+    - TASK-0026
+  duplicate_of:
+  reason: "用户在真实页面验收中确认 Agent Events 入口不可发现且节点展开视觉过密；TASK-0026 直接修复"

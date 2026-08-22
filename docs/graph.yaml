@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 56
+graph_revision: 57
 updated_at: "2026-08-22"
 
 entrypoints:
@@ -599,6 +599,70 @@ documents:
     scope: state-machine-node-details
     authority: backlog
     read_when: [task-create, coding-task-poc, trace-change]
+
+  - id: finding-node-agent-events-hidden-inspector-dense
+    path: docs/sources/findings/node-agent-events-hidden-and-inspector-dense.md
+    type: finding
+    status: confirmed
+    scope: node-agent-event-inspector
+    authority: finding
+    read_when: [coding-task-poc, task-execution, trace-change]
+
+  - id: bl-0027-node-agent-event-inspector
+    path: docs/delivery/backlog/BL-0027.yaml
+    type: backlog
+    status: converted_to_task
+    scope: node-agent-event-inspector
+    authority: backlog
+    read_when: [task-create, coding-task-poc, trace-change]
+
+  - id: task-0026-manifest
+    path: docs/delivery/tasks/TASK-0026/task.yaml
+    type: task-manifest
+    status: active
+    scope: node-agent-event-inspector
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution, task-close]
+
+  - id: task-0026-spec
+    path: docs/delivery/tasks/TASK-0026/spec.md
+    type: task-spec
+    status: active
+    scope: node-agent-event-inspector
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution, task-close]
+
+  - id: task-0026-design
+    path: docs/delivery/tasks/TASK-0026/design.md
+    type: task-design
+    status: active
+    scope: node-agent-event-inspector
+    authority: task-artifact
+    read_when: [coding-task-poc, task-execution]
+
+  - id: task-0026-plan
+    path: docs/delivery/tasks/TASK-0026/plan.md
+    type: task-plan
+    status: active
+    scope: node-agent-event-inspector
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0026-verification
+    path: docs/delivery/tasks/TASK-0026/verification.md
+    type: verification
+    status: active
+    scope: node-agent-event-inspector
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0026-docs-impact
+    path: docs/delivery/tasks/TASK-0026/docs-impact.yaml
+    type: docs-impact
+    status: active
+    scope: node-agent-event-inspector
+    authority: task-evidence
+    read_when: [task-close, task-archive]
 
   - id: task-0025-manifest
     path: docs/delivery/tasks/archive/2026-08-22-TASK-0025/task.yaml
@@ -2691,6 +2755,50 @@ relations:
 
   - from: task-0025-manifest
     to: task-0024-manifest
+    type: refines
+
+  - from: findings-index
+    to: finding-node-agent-events-hidden-inspector-dense
+    type: indexes
+
+  - from: finding-node-agent-events-hidden-inspector-dense
+    to: bl-0027-node-agent-event-inspector
+    type: creates_backlog
+
+  - from: backlog-index
+    to: bl-0027-node-agent-event-inspector
+    type: indexes
+
+  - from: bl-0027-node-agent-event-inspector
+    to: task-0026-manifest
+    type: schedules_into
+
+  - from: tasks-index
+    to: task-0026-manifest
+    type: indexes
+
+  - from: task-0026-spec
+    to: task-0026-manifest
+    type: belongs_to
+
+  - from: task-0026-design
+    to: task-0026-spec
+    type: refines
+
+  - from: task-0026-plan
+    to: task-0026-manifest
+    type: belongs_to
+
+  - from: task-0026-verification
+    to: task-0026-manifest
+    type: verifies
+
+  - from: task-0026-docs-impact
+    to: task-0026-manifest
+    type: reports_on
+
+  - from: task-0026-manifest
+    to: task-0025-manifest
     type: refines
 
   - from: bl-0013-agent-events-dialog
