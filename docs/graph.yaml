@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 53
+graph_revision: 54
 updated_at: "2026-08-22"
 
 entrypoints:
@@ -585,49 +585,49 @@ documents:
     read_when: [task-create, coding-task-poc, trace-change]
 
   - id: task-0024-manifest
-    path: docs/delivery/tasks/TASK-0024/task.yaml
+    path: docs/delivery/tasks/archive/2026-08-22-TASK-0024/task.yaml
     type: task-manifest
-    status: active
+    status: archived
     scope: centered-graph-workspace
     authority: task-artifact
     read_when: [coding-task-poc, task-execution, task-close]
 
   - id: task-0024-spec
-    path: docs/delivery/tasks/TASK-0024/spec.md
+    path: docs/delivery/tasks/archive/2026-08-22-TASK-0024/spec.md
     type: task-spec
-    status: active
+    status: archived
     scope: centered-graph-workspace
     authority: task-artifact
     read_when: [coding-task-poc, task-execution, task-close]
 
   - id: task-0024-design
-    path: docs/delivery/tasks/TASK-0024/design.md
+    path: docs/delivery/tasks/archive/2026-08-22-TASK-0024/design.md
     type: task-design
-    status: active
+    status: archived
     scope: centered-graph-workspace
     authority: task-artifact
     read_when: [coding-task-poc, task-execution]
 
   - id: task-0024-plan
-    path: docs/delivery/tasks/TASK-0024/plan.md
+    path: docs/delivery/tasks/archive/2026-08-22-TASK-0024/plan.md
     type: task-plan
-    status: active
+    status: archived
     scope: centered-graph-workspace
     authority: task-artifact
     read_when: [task-execution]
 
   - id: task-0024-verification
-    path: docs/delivery/tasks/TASK-0024/verification.md
+    path: docs/delivery/tasks/archive/2026-08-22-TASK-0024/verification.md
     type: verification
-    status: active
+    status: archived
     scope: centered-graph-workspace
     authority: task-evidence
     read_when: [task-close, task-archive]
 
   - id: task-0024-docs-impact
-    path: docs/delivery/tasks/TASK-0024/docs-impact.yaml
+    path: docs/delivery/tasks/archive/2026-08-22-TASK-0024/docs-impact.yaml
     type: docs-impact
-    status: active
+    status: archived
     scope: centered-graph-workspace
     authority: task-evidence
     read_when: [task-close, task-archive]
@@ -2557,7 +2557,7 @@ relations:
     to: task-0024-manifest
     type: schedules_into
 
-  - from: tasks-index
+  - from: archived-tasks-index
     to: task-0024-manifest
     type: indexes
 

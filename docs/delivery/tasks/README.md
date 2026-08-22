@@ -21,9 +21,7 @@ tasks/
 
 ## 当前 Active Task
 
-| Task | 状态 | 目标 |
-|---|---|---|
-| [TASK-0024](./TASK-0024/spec.md) | Executing | 将 Task 详情重构为居中画布优先的审计工作区 |
+当前没有 Active Task。
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 

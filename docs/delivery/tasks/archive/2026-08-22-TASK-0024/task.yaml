@@ -1,8 +1,8 @@
 schema_version: 1
 id: TASK-0024
 title: 将 Task 详情重构为居中画布优先的审计工作区
-status: executing
-outcome:
+status: closed
+outcome: succeeded
 backlog_refs:
   - BL-0025
 spec_revision: 1
@@ -10,17 +10,17 @@ workflow_id: task/TASK-0024
 execution_mode: goal-bootstrap
 base_commit: 4c022d922cfefe3686c906fffb94a7dde2df9da4
 archive:
-  status: not_ready
-  archived_at:
-  archived_path:
+  status: pending
+  archived_at: null
+  archived_path: null
 result:
-  pull_request:
-  merge_commit:
+  pull_request: null
+  merge_commit: null
   closure_report: task-artifact://TASK-0024/verification.md
-  implementation_commit:
+  implementation_commit: 237f7e4c54e0628101c6f726f78038b05aa4ecb8
 execution_evidence:
   executor_id: codex:/root
-  result_commit:
+  result_commit: 237f7e4c54e0628101c6f726f78038b05aa4ecb8
   verification_refs:
     - task-artifact://TASK-0024/verification.md
   docs_impact_ref: task-artifact://TASK-0024/docs-impact.yaml
