@@ -1,0 +1,26 @@
+schema_version: 1
+id: "BL-0026"
+title: "补齐状态机节点的执行与系统管控下钻"
+kind: "bug"
+status: "converted_to_task"
+priority: "high"
+
+source_refs:
+  - finding-state-machine-node-details-shallow
+affected_areas:
+  - project-board
+  - state-machine-graph
+  - agent-events-viewer
+  - task-audit
+
+acceptance_outline:
+  - "点击已执行节点后直接看到关联 Event、Step Attempt、Generation、时间和 Evidence"
+  - "Agent、Role 和 Review 节点展示 Runner、Session、结论、摘要与打开该 Session 对话的入口"
+  - "Verification、Workspace、Merge、Docs 和 Reconcile 节点展示对应系统管控事实"
+  - "未执行节点不虚构执行记录，移动端 Bottom Sheet 保持可读和可滚动"
+
+resolution:
+  task_refs:
+    - TASK-0025
+  duplicate_of:
+  reason: "用户在真实页面验收中确认节点点击后无法看到 Agent 执行和系统管控细节；TASK-0025 直接修复"

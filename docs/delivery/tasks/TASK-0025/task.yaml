@@ -1,0 +1,26 @@
+schema_version: 1
+id: TASK-0025
+title: 补齐状态机节点的执行与系统管控下钻
+status: executing
+outcome:
+backlog_refs:
+  - BL-0026
+spec_revision: 1
+workflow_id: task/TASK-0025
+execution_mode: goal-bootstrap
+base_commit: 2896ffc22a53b69c9bd7b08d59957cff369767b6
+archive:
+  status: not_ready
+  archived_at:
+  archived_path:
+result:
+  pull_request:
+  merge_commit:
+  closure_report: task-artifact://TASK-0025/verification.md
+  implementation_commit:
+execution_evidence:
+  executor_id: codex:/root
+  result_commit:
+  verification_refs:
+    - task-artifact://TASK-0025/verification.md
+  docs_impact_ref: task-artifact://TASK-0025/docs-impact.yaml
