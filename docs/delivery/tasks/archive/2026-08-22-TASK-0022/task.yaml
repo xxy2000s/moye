@@ -1,8 +1,8 @@
 schema_version: 1
 id: TASK-0022
 title: 将全角色 Events 改为可筛选的 Chatbot 弹窗
-status: executing
-outcome:
+status: closed
+outcome: succeeded
 backlog_refs:
   - BL-0023
 spec_revision: 1
@@ -10,17 +10,17 @@ workflow_id: task/TASK-0022
 execution_mode: goal-bootstrap
 base_commit: ac35edb751e017435203766ed6566af5ee07baf1
 archive:
-  status: not_ready
-  archived_at:
-  archived_path:
+  status: pending
+  archived_at: null
+  archived_path: null
 result:
-  pull_request:
-  merge_commit:
+  pull_request: null
+  merge_commit: null
   closure_report: task-artifact://TASK-0022/verification.md
-  implementation_commit:
+  implementation_commit: fbe8c2bbb9ece838c2d9b7a732abfd0f20e3f5e9
 execution_evidence:
   executor_id: codex:/root
-  result_commit:
+  result_commit: fbe8c2bbb9ece838c2d9b7a732abfd0f20e3f5e9
   verification_refs:
     - task-artifact://TASK-0022/verification.md
   docs_impact_ref: task-artifact://TASK-0022/docs-impact.yaml

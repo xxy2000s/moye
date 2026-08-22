@@ -23,7 +23,7 @@ tasks/
 
 | Task | 状态 | 目标 |
 |---|---|---|
-| [TASK-0022](./TASK-0022/spec.md) | Received | 将全角色 Events 改为可筛选的 Chatbot 弹窗 |
+当前没有 Active Task。
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 

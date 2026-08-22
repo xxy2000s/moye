@@ -35,5 +35,6 @@ YYYY-MM-DD-TASK-NNNN
 | [TASK-0019](./2026-08-22-TASK-0019/spec.md) | Succeeded | 2026-08-22 | 真实 Agent 的页面可用编码闭环 |
 | [TASK-0020](./2026-08-22-TASK-0020/spec.md) | Succeeded | 2026-08-22 | 页面可审计的真实 Task 状态机与转换证据 |
 | [TASK-0021](./2026-08-22-TASK-0021/spec.md) | Succeeded | 2026-08-22 | 真实 Core 单任务闭环、Web 全程审计与全角色事件流 |
+| [TASK-0022](./2026-08-22-TASK-0022/spec.md) | Succeeded | 2026-08-22 | 将全角色 Events 改为可筛选的 Chatbot 弹窗 |
 
 Bootstrap Task 的 `task.yaml` 冻结在 Archive 开始前，因此其中 `archive.status: pending` 描述的是冻结点；最终 `ARCHIVED` 事实由目录位置、`archive-manifest.json` 和 ProjectBoard Projection 共同证明。TASK-0002 归档后文档图门禁曾发现 Spec 的 Active 相对链接因目录层级变化而失效，控制面只修正了该链接；修正前内容仍由 Result Commit `ff1954f4e4360e85276cf22aa30d6f5e8e396f84` 保存。后续 Task 使用不随 Active/Archive 深度变化的稳定引用。
