@@ -89,7 +89,7 @@ Coding Task 出现在看板后，点击卡片会进入居中的 Task Audit Works
 
 1. 当前业务状态、独立 Archive 状态，以及 Projection 与 Event History 是否一致；
 2. 一张完整状态机 Graph 画布：normal、Repair、Replan、Reconcile、failure、archive 全部合法边常驻可查，实际 Event 走过的节点和边实时点亮；可按本次路径、主流程、恢复/回滚、异常/失败和归档筛选；
-3. 点击节点才打开详情：桌面在画布右侧显示 Inspector，窄屏在底部显示 Bottom Sheet；`Esc` 先关闭节点详情并把焦点还给节点，不会直接退出 Task；
+3. 点击节点才打开详情：桌面在画布右侧显示 Inspector，窄屏在底部显示 Bottom Sheet；Inspector 按“实际状态事件 → 执行实例与 Agent → 系统管控与结果”组织该节点的 Domain Event、Attempt/Run、Generation、Session、Evidence、Verification、Git、Recovery 和 Archive 事实，有 Session 时可直接打开对应 Chatbot Events；`Esc` 先关闭节点详情并把焦点还给节点，不会直接退出 Task；
 4. “实际路径”、执行实例、完整合法边、角色会话和高级诊断默认折叠，需要时再展开；每条实际转换仍绑定 Event sequence/type/time；
 5. 每条 Context、Implementation、Self Review、Review、Replan 与 Docs Gate Session 都在同一个 Chatbot 弹窗中展示；可按对话、工具调用、工具结果、系统和错误筛选，运行中增量跟随，原始 JSON/JSONL 只作为下钻与导出证据。
 

@@ -241,13 +241,13 @@ function renderTaskTrace(trace) {
       <div><span class="workspace-summary-mark" aria-hidden="true">T</span><p><strong>TaskWorkflow 业务聚合</strong><small>只展示 Runtime Projection 与 Event 证明的事实，不补画 Coding Agent、Worktree 或 Git 记录。</small></p></div>
       <dl><div><dt>当前步骤</dt><dd>${escapeHtml(task.currentStep)}</dd></div><div><dt>需求来源</dt><dd>${task.backlogRefs.map(escapeHtml).join(", ") || "—"}</dd></div></dl>
     </section>
-    ${renderStateMachine(trace.stateMachine)}
+    ${renderStateMachine(trace.stateMachine, trace)}
     ${task.archivePath ? `<p class="result-ref"><span>归档结果</span><code>${escapeHtml(task.archivePath)}</code></p>` : ""}
     ${task.error ? `<p class="error-box">${escapeHtml(task.error)}</p>` : ""}
     <details class="advanced-panel"><summary><span>原始 Domain Event</span><small>状态机 History 的逐条来源</small></summary><ol class="timeline">${events}</ol>
       ${trace.durableRuntime.invocationsUrl ? `<a class="runtime-link" href="${escapeAttribute(trace.durableRuntime.invocationsUrl)}" target="_blank" rel="noreferrer">在 Restate 中核对 Journal ↗</a>` : ""}
     </details>`;
-  bindStateMachineGraph(trace.stateMachine);
+  bindStateMachineGraph(trace.stateMachine, trace);
 }
 
 function renderCodingTrace(trace, summary) {
@@ -309,7 +309,7 @@ function renderCodingTrace(trace, summary) {
     </section>
     ${task.error ? `<p class="error-box"><strong>失败原因：</strong>${escapeHtml(task.error)}<br><span>下一步：${escapeHtml(trace.recovery.summary)}</span></p>` : ""}
 
-    ${renderStateMachine(trace.stateMachine)}
+    ${renderStateMachine(trace.stateMachine, trace)}
 
     <details class="task-evidence-panel">
       <summary><span>执行证据与角色会话</span><small>${PIPELINE_STAGES.length} 个阶段 · ${(trace.roles || []).length + (trace.reviews || []).length + (trace.agent ? 1 : 0)} 个真实执行会话</small></summary>
@@ -364,11 +364,11 @@ function renderCodingTrace(trace, summary) {
       </div>
     </details>`;
 
-  bindStateMachineGraph(trace.stateMachine);
+  bindStateMachineGraph(trace.stateMachine, trace);
   bindAgentEventsDialog(trace);
 }
 
-function renderStateMachine(machine) {
+function renderStateMachine(machine, trace) {
   const transitions = machine.history.map(item => `
     <li class="machine-transition domain-${item.domain.toLowerCase()}">
       <span class="sequence">${String(item.sequence).padStart(2, "0")}</span>
@@ -396,7 +396,7 @@ function renderStateMachine(machine) {
       <div><span>整体落点</span><strong>${escapeHtml(machine.current.overall)}</strong></div>
       <div><span>Event 重建</span><strong>${escapeHtml(machine.current.historyCurrent)}</strong></div>
     </div>
-    ${renderMachineGraphCanvas(machine, transitions)}
+    ${renderMachineGraphCanvas(machine, transitions, trace)}
     <details class="machine-evidence-panel"><summary><span>执行实例 · ${machine.executions.length} 个</span><small>Attempt、Agent Run、Verification、Session 与 Evidence</small></summary><div class="machine-executions"><ul>${executions || "<li>这个 Workflow 没有 Agent/Attempt 执行实例。</li>"}</ul></div></details>
     <details class="machine-definition"><summary><span>查看完整合法边</span><small>实线标记本次已走过；Repair/Failure/Archive 分支不会隐藏</small></summary><ul>${edges}</ul></details>
   </section>`;
@@ -543,25 +543,112 @@ function machineGraphEdgeLabelPosition(fromPosition, toPosition, edge) {
   return [(fx + tx) / 2, (fy + ty) / 2 - 15];
 }
 
-function renderMachineNodeInspector(machine, nodeId) {
+function renderMachineNodeInspector(machine, nodeId, trace) {
   const node = machine.definition.nodes.find(item => item.id === nodeId) || machine.definition.nodes[0];
   if (!node) return "";
   const incoming = machine.definition.edges.filter(edge => edge.to === node.id);
   const outgoing = machine.definition.edges.filter(edge => edge.from === node.id);
   const history = machine.history.filter(item => item.from === node.id || item.to === node.id);
-  const executions = machine.executions.filter(item => item.step === node.id || (node.id === "ARCHIVING" && item.step === "ARCHIVE"));
+  const executions = machine.executions.filter(item => machineExecutionBelongsToNode(item, node.id));
   const edgeItems = (items, direction) => items.map(edge => `<li class="kind-${edge.kind.toLowerCase()} ${edge.traversed ? "traversed" : ""}"><code>${escapeHtml(direction === "in" ? edge.from : edge.to)}</code><span>${escapeHtml(machineEdgeLabel(edge.kind))}${edge.traversed ? " · 实际" : ""}</span><small>${escapeHtml(edge.label)}</small></li>`).join("");
   return `<header><div><span>${escapeHtml(node.domain)} · ${node.terminal ? "终态" : "可转换状态"}</span><h4>${escapeHtml(node.label)}</h4><code>${escapeHtml(node.id)}</code></div><div class="machine-inspector-actions"><strong class="status-${node.status.toLowerCase()}">${node.status === "CURRENT" ? "当前" : node.status === "VISITED" ? "已进入" : "未进入"}</strong><button type="button" data-machine-inspector-close aria-label="关闭节点详情">关闭详情</button></div></header>
     <div class="machine-inspector-counts"><span>入边 <strong>${incoming.length}</strong></span><span>出边 <strong>${outgoing.length}</strong></span><span>实际 Event <strong>${history.length}</strong></span><span>执行实例 <strong>${executions.length}</strong></span></div>
-    <div class="machine-inspector-grid">
+    ${history.length ? `<section class="machine-node-section"><div class="machine-node-section-heading"><span>01</span><div><h5>实际状态事件</h5><p>由连续 Domain Event 证明，不是页面推断。</p></div></div><ol class="machine-node-events">${history.map(item => `<li><span class="sequence">${String(item.sequence).padStart(2, "0")}</span><div><strong>${escapeHtml(item.from)} → ${escapeHtml(item.to)}</strong><small>${escapeHtml(item.eventType)} · ${formatTime(item.at)}</small>${item.detail ? `<code>${escapeHtml(shortDigest(item.detail))}</code>` : ""}</div></li>`).join("")}</ol></section>` : `<p class="machine-node-empty"><strong>本次运行没有进入这个状态。</strong><span>下方只展示代码允许的合法转换，不会虚构 Attempt、Session 或 Evidence。</span></p>`}
+    ${executions.length ? `<section class="machine-node-section"><div class="machine-node-section-heading"><span>02</span><div><h5>执行实例与 Agent</h5><p>Attempt、Run、Session、时间和证据按当前节点聚合。</p></div></div><div class="machine-node-executions">${executions.map(item => renderMachineExecutionDetail(item, trace)).join("")}</div></section>` : ""}
+    ${renderMachineControlFacts(trace, node.id)}
+    <details class="machine-node-transitions"><summary>查看合法进入与离开路径</summary><div class="machine-inspector-grid">
       <section><h5>进入这个状态</h5><ul>${edgeItems(incoming, "in") || "<li>没有入边</li>"}</ul></section>
       <section><h5>从这里继续</h5><ul>${edgeItems(outgoing, "out") || "<li>没有出边</li>"}</ul></section>
-    </div>
-    ${history.length ? `<p class="machine-inspector-note">实际关联：${history.map(item => `#${item.sequence} ${escapeHtml(item.eventType)}`).join(" · ")}</p>` : `<p class="machine-inspector-note">本次运行没有进入该状态；这里只展示代码允许的合法转换。</p>`}
-    ${executions.length ? `<p class="machine-inspector-note">Evidence：${executions.map(item => `${escapeHtml(executionKindLabel(item.kind))} ${escapeHtml(item.state)}${item.sessionId ? ` · Session ${escapeHtml(item.sessionId)}` : ""}`).join("；")}</p>` : ""}`;
+    </div></details>`;
 }
 
-function bindStateMachineGraph(machine) {
+function machineExecutionBelongsToNode(execution, nodeId) {
+  if (execution.step === nodeId) return true;
+  if (nodeId === "DOCS" && execution.step === "DOCS_GATE") return true;
+  if (nodeId === "ARCHIVING" && execution.step === "ARCHIVE") return true;
+  return false;
+}
+
+function renderMachineExecutionDetail(execution, trace) {
+  const attempt = trace?.business?.attempts?.find(item => item.attemptId === (execution.attemptId || execution.id));
+  const agent = trace?.agents?.find(item => item.runId === execution.id);
+  const role = trace?.roles?.find(item => item.runId === execution.id);
+  const review = trace?.reviews?.find(item => item.runId === execution.id);
+  const session = agent || role || review;
+  const evidence = attempt?.evidenceRecords || [];
+  const verdict = role?.verdict || review?.verdict;
+  const summary = role?.summary || review?.summary;
+  const findings = review ? `${review.findingCount} 个 Finding · ${review.blockingFindingCount} 个 Blocking` : role ? `${role.findingCount} 个 Finding` : "";
+  const eventButton = sessionEventsButton({
+    eventsUrl: session?.eventsUrl,
+    kind: role?.kind || (review ? "INDEPENDENT_REVIEW" : agent ? "IMPLEMENTATION" : execution.kind),
+    binding: `${execution.attemptId || execution.id} · ${execution.sessionId || "等待 Session"}`,
+    runnerKind: execution.producer || session?.runnerKind,
+  });
+  return `<article class="machine-node-execution">
+    <div class="machine-node-execution-heading"><span class="tag ${executionColor(execution.state)}">${escapeHtml(executionKindLabel(execution.kind))}</span><strong>${escapeHtml(execution.state)}</strong>${execution.generation === undefined ? "" : `<em>Generation ${execution.generation}</em>`}</div>
+    <dl class="machine-node-facts">
+      <div><dt>${execution.attemptId ? "Run ID" : "执行 ID"}</dt><dd><code>${escapeHtml(execution.id)}</code></dd></div>
+      ${execution.attemptId ? `<div><dt>Attempt</dt><dd><code>${escapeHtml(execution.attemptId)}</code></dd></div>` : ""}
+      ${execution.producer ? `<div><dt>执行者</dt><dd>${escapeHtml(runnerLabel(execution.producer))}</dd></div>` : ""}
+      ${execution.sessionId ? `<div><dt>Session</dt><dd><code>${escapeHtml(execution.sessionId)}</code></dd></div>` : ""}
+      ${execution.startedAt ? `<div><dt>开始</dt><dd>${formatTime(execution.startedAt)}</dd></div><div><dt>耗时</dt><dd>${formatDuration(execution.startedAt, execution.finishedAt)}</dd></div>` : ""}
+      ${attempt?.specRevision === undefined ? "" : `<div><dt>证据绑定</dt><dd>R${attempt.specRevision} · G${attempt.generation}</dd></div>`}
+      ${verdict ? `<div><dt>Gate 结论</dt><dd><strong>${escapeHtml(verdict)}</strong></dd></div>` : ""}
+    </dl>
+    ${summary ? `<p class="machine-node-summary">${escapeHtml(summary)}</p>` : ""}
+    ${findings ? `<p class="machine-node-findings">${escapeHtml(findings)}</p>` : ""}
+    ${session?.eventsUrl ? `<div class="machine-node-actions">${eventButton}</div>` : ""}
+    ${(evidence.length || execution.evidenceDigests.length) ? `<details class="machine-node-evidence"><summary>Evidence · ${evidence.length || execution.evidenceDigests.length} 项</summary>${evidence.length ? `<ul>${evidence.map(record => `<li><strong>${escapeHtml(record.artifactName)}</strong><code>${escapeHtml(record.artifactRef)}</code><small>${escapeHtml(record.contentDigest)}</small></li>`).join("")}</ul>` : `<ul>${execution.evidenceDigests.map(digest => `<li><code>${escapeHtml(digest)}</code></li>`).join("")}</ul>`}</details>` : ""}
+  </article>`;
+}
+
+function renderMachineControlFacts(trace, nodeId) {
+  if (!trace) return "";
+  const rows = [];
+  const details = [];
+  if (trace.durableRuntime?.workflowRef) rows.push(["Workflow", trace.durableRuntime.workflowRef, true]);
+  if (nodeId === "CONTEXT") {
+    rows.push(["规格版本", `R${trace.task.specRevision}`]);
+    const latest = trace.specRevisions?.at(-1);
+    if (latest?.envelopeDigest) rows.push(["Envelope", latest.envelopeDigest, true]);
+  }
+  if (nodeId === "WORKSPACE") {
+    if (trace.git?.workspaceEffectId) rows.push(["Worktree Effect", trace.git.workspaceEffectId, true]);
+    if (trace.git?.branch) rows.push(["任务分支", trace.git.branch, true]);
+    if (trace.git?.baseCommit) rows.push(["Base Commit", trace.git.baseCommit, true]);
+  }
+  if (nodeId === "IMPLEMENT") {
+    if (trace.git?.resultCommit) rows.push(["Result Commit", trace.git.resultCommit, true]);
+    if (trace.git?.resultTree) rows.push(["Result Tree", trace.git.resultTree, true]);
+    if (trace.agent) rows.push(["进程结果", `exit ${trace.agent.exitCode ?? "signal"}${trace.agent.signal ? ` · ${trace.agent.signal}` : ""}`]);
+  }
+  if (nodeId === "VERIFY" && trace.verification) {
+    rows.push(["验证结论", trace.verification.passed ? "PASSED" : trace.verification.code || "FAILED"]);
+    if (trace.verification.verifiedCommit) rows.push(["验证提交", trace.verification.verifiedCommit, true]);
+    details.push(...trace.verification.commands.map(command => `<li><strong>${escapeHtml(command.commandId)}</strong><span>exit ${command.exitCode ?? command.signal ?? "unknown"} · ${command.durationMs} ms</span><code>stdout ${escapeHtml(shortDigest(command.stdoutDigest))}</code><code>stderr ${escapeHtml(shortDigest(command.stderrDigest))}</code></li>`));
+  }
+  if (nodeId === "MERGE") {
+    if (trace.git?.mergeEffectId) rows.push(["Merge Effect", trace.git.mergeEffectId, true]);
+    if (trace.git?.targetRef) rows.push(["Target Ref", trace.git.targetRef, true]);
+    if (trace.git?.mergeCommit) rows.push(["Merge Commit", trace.git.mergeCommit, true]);
+    if (trace.git?.reconciledAfterUnknown !== undefined) rows.push(["未知结果对账", trace.git.reconciledAfterUnknown ? "已通过 Git facts 对账" : "未触发"]);
+  }
+  if (["WAITING_RECONCILE", "FAILED"].includes(nodeId) && trace.recovery) {
+    rows.push(["恢复分类", recoveryLabel(trace.recovery.classification)]);
+    rows.push(["恢复判断", trace.recovery.summary]);
+    details.push(...trace.recovery.actions.map(action => `<li><strong>${escapeHtml(action.label)}</strong><span>${action.automatic ? "自动" : "人工"} · ${escapeHtml(action.reason)}</span></li>`));
+  }
+  if (["CLOSED", "FAILED"].includes(nodeId)) {
+    if (trace.task.outcome) rows.push(["业务 Outcome", trace.task.outcome]);
+    if (trace.task.error) rows.push(["错误", trace.task.error]);
+  }
+  if (["ARCHIVING", "ARCHIVED", "ARCHIVE_FAILED"].includes(nodeId)) rows.push(["Archive 状态", trace.task.archiveStatus]);
+  if (rows.length === 0 && details.length === 0) return "";
+  return `<section class="machine-node-section machine-node-control"><div class="machine-node-section-heading"><span>03</span><div><h5>系统管控与结果</h5><p>Workflow、Git、Verification、Recovery 与 Archive 的只读事实。</p></div></div><dl class="machine-node-facts">${rows.map(([label, value, code]) => `<div><dt>${escapeHtml(label)}</dt><dd>${code ? `<code>${escapeHtml(value)}</code>` : escapeHtml(value)}</dd></div>`).join("")}</dl>${details.length ? `<ul class="machine-node-control-list">${details.join("")}</ul>` : ""}</section>`;
+}
+
+function bindStateMachineGraph(machine, trace) {
   const section = elements.detail.querySelector("[data-machine-graph]");
   if (!(section instanceof HTMLElement)) return;
   const stage = section.querySelector("[data-machine-graph-stage]");
@@ -583,7 +670,8 @@ function bindStateMachineGraph(machine) {
     inspector.hidden = !open;
     inspector.setAttribute("aria-hidden", String(!open));
     if (open) {
-      inspector.innerHTML = renderMachineNodeInspector(machine, machineGraphUiState.selectedId);
+      inspector.innerHTML = renderMachineNodeInspector(machine, machineGraphUiState.selectedId, trace);
+      if (trace?.traceKind === "CODING") bindAgentEventsDialog(trace, inspector);
       const close = inspector.querySelector("[data-machine-inspector-close]");
       close?.addEventListener("click", () => setInspectorOpen(false, true));
       if (moveFocus && close instanceof HTMLButtonElement) window.requestAnimationFrame(() => close.focus());
@@ -655,7 +743,7 @@ function machineEdgeLabel(kind) {
 }
 
 function executionKindLabel(kind) {
-  return ({ STEP_ATTEMPT: "Step Attempt", AGENT_RUN: "Agent Run", REVIEW_RUN: "Review Run", VERIFICATION: "Verification", BOOTSTRAP_EVIDENCE: "Bootstrap Evidence" })[kind] || kind;
+  return ({ STEP_ATTEMPT: "Step Attempt", AGENT_RUN: "Agent Run", ROLE_RUN: "Role Run", REVIEW_RUN: "Review Run", VERIFICATION: "Verification", BOOTSTRAP_EVIDENCE: "Bootstrap Evidence" })[kind] || kind;
 }
 
 function executionColor(state) {
@@ -669,9 +757,11 @@ function sessionEventsButton({ eventsUrl, kind, binding, runnerKind }) {
   return `<button type="button" class="session-events-trigger" data-agent-events-trigger data-agent-events-url="${escapeAttribute(eventsUrl)}" data-agent-events-download-url="${escapeAttribute(eventsUrl)}" data-agent-events-kind="${escapeHtml(kind)}" data-agent-events-binding="${escapeHtml(`${binding} · ${runnerLabel(runnerKind)}`)}" data-agent-events-runner="${escapeHtml(runnerKind)}" aria-controls="agent-events-dialog" aria-haspopup="dialog" aria-expanded="false">在弹窗查看对话</button>`;
 }
 
-function bindAgentEventsDialog(trace) {
-  elements.detail.querySelectorAll("[data-agent-events-trigger]").forEach(trigger => {
+function bindAgentEventsDialog(trace, root = elements.detail) {
+  root.querySelectorAll("[data-agent-events-trigger]").forEach(trigger => {
     if (!(trigger instanceof HTMLButtonElement)) return;
+    if (trigger.dataset.agentEventsBound === "true") return;
+    trigger.dataset.agentEventsBound = "true";
     trigger.dataset.agentEventsDefaultLabel = trigger.textContent.trim();
     trigger.addEventListener("click", () => openAgentEventsDialog(trigger, {
       taskId: trace.task.taskId,
