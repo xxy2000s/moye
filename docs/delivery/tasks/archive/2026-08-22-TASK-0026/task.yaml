@@ -1,8 +1,8 @@
 schema_version: 1
 id: TASK-0026
 title: 重构节点 Inspector 并内联 Agent Events 预览
-status: executing
-outcome:
+status: closed
+outcome: succeeded
 backlog_refs:
   - BL-0027
 spec_revision: 1
@@ -10,17 +10,17 @@ workflow_id: task/TASK-0026
 execution_mode: goal-bootstrap
 base_commit: 7f380eaeb076cdc58810d1dadb3426932c3be33e
 archive:
-  status: not_ready
-  archived_at:
-  archived_path:
+  status: pending
+  archived_at: null
+  archived_path: null
 result:
-  pull_request:
-  merge_commit:
+  pull_request: null
+  merge_commit: null
   closure_report: task-artifact://TASK-0026/verification.md
-  implementation_commit:
+  implementation_commit: 707fd4a8cfa8b4633159786dac5a79803bbdcde1
 execution_evidence:
   executor_id: codex:/root
-  result_commit:
+  result_commit: 707fd4a8cfa8b4633159786dac5a79803bbdcde1
   verification_refs:
     - task-artifact://TASK-0026/verification.md
   docs_impact_ref: task-artifact://TASK-0026/docs-impact.yaml

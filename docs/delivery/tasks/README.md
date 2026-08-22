@@ -23,7 +23,7 @@ tasks/
 
 | Task | 状态 | 目标 |
 |---|---|---|
-| [TASK-0026](./TASK-0026/spec.md) | Executing | 重构节点 Inspector 并内联 Agent Events 预览 |
+| — | — | 当前没有 Active Task |
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 
