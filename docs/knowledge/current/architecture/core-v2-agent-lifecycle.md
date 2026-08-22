@@ -38,6 +38,10 @@ INTAKE → CONTEXT_PLAN
 
 每个 Artifact 绑定 Task ID、Spec Revision、Step/Attempt、Producer、Candidate Commit 和 Content Digest。旧 Revision Evidence 永远不能满足新 Gate。Agent Verdict 只是建议；Workflow 只有在确定性 Gate 校验全部绑定后才推进。
 
+当前 `src/domain/lifecycle-artifact.ts` 已冻结九类一等 Artifact：`SPEC`、`DESIGN`、`PLAN`、`DOCS_IMPACT`、`TEST_PLAN`、`TEST_REPORT`、`DESIGN_REVIEW`、`FINAL_REVIEW` 和 `KNOWLEDGE_DISPOSITION`。公共 Envelope 固定 Task/Revision、Subject Commit、Producer Role/Phase、Attempt/Generation/Session、Dependency refs、Content Digest 与 Artifact Digest；Parser 从未信任 JSON 重建并重算摘要。
+
+Dependency policy 是角色交接协议而非自由引用：Design 依赖 Spec；Plan 依赖 Spec + Design；Design Review 依赖三项 Architect 产物；Test Plan 依赖 Spec + Design；Test Report 依赖 Test Plan；Final Review 依赖 Docs Impact + Test Report。Review Subject Digest 由完整依赖集合计算；Test Report 的 `PASS` 只有在覆盖每个 Test Case 且全部 `PASSED` 时成立。Gate 必须同时解析依赖链并按 Task/Revision/Kind/Subject Commit/Artifact Digest 精确匹配，形状正确但未解析到真实 Artifact 的 ref 不能通过。
+
 ## 5. 单 Result Commit Seal
 
 Git 中的 Task package 使用两阶段 Seal：Workflow 先发布 Seal Intent并等待；最终 Result Commit 同时包含代码、文档和位于 Archive 路径的 sealed package；Workflow 再验证 Commit 并发布 `CLOSED/ARCHIVED`。目录位置只是 Seal Evidence，不是业务状态，避免在 Commit 后由 Runtime 改写文件造成 SHA 循环。

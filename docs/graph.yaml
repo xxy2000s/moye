@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 64
+graph_revision: 65
 updated_at: "2026-08-23"
 
 entrypoints:
@@ -851,7 +851,7 @@ documents:
   - id: bl-0033-core-v2-artifacts
     path: docs/delivery/backlog/BL-0033.yaml
     type: backlog
-    status: ready
+    status: converted_to_task
     scope: core-v2-artifacts
     authority: backlog
     read_when: [task-create, task-lifecycle-design]
@@ -1029,6 +1029,54 @@ documents:
     type: docs-impact
     status: archived
     scope: core-v2-architecture-sealed-result-commit
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0031-manifest
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0031/task.yaml
+    type: task-manifest
+    status: archived
+    scope: core-v2-lifecycle-artifacts
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0031-spec
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0031/spec.md
+    type: task-spec
+    status: archived
+    scope: core-v2-lifecycle-artifacts
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0031-design
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0031/design.md
+    type: task-design
+    status: archived
+    scope: core-v2-lifecycle-artifacts
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0031-plan
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0031/plan.md
+    type: task-plan
+    status: archived
+    scope: core-v2-lifecycle-artifacts
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0031-verification
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0031/verification.md
+    type: verification
+    status: archived
+    scope: core-v2-lifecycle-artifacts
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0031-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0031/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: core-v2-lifecycle-artifacts
     authority: task-evidence
     read_when: [task-close, task-archive]
 
@@ -3542,6 +3590,42 @@ relations:
     type: implements_decision
 
   - from: task-0030-manifest
+    to: core-v2-roadmap
+    type: implements_slice_of
+
+  - from: bl-0033-core-v2-artifacts
+    to: task-0031-manifest
+    type: schedules_into
+
+  - from: archived-tasks-index
+    to: task-0031-manifest
+    type: indexes
+
+  - from: task-0031-spec
+    to: task-0031-manifest
+    type: belongs_to
+
+  - from: task-0031-design
+    to: task-0031-spec
+    type: refines
+
+  - from: task-0031-plan
+    to: task-0031-manifest
+    type: belongs_to
+
+  - from: task-0031-verification
+    to: task-0031-manifest
+    type: verifies
+
+  - from: task-0031-docs-impact
+    to: task-0031-manifest
+    type: reports_on
+
+  - from: task-0031-manifest
+    to: core-v2-agent-lifecycle
+    type: implements_slice_of
+
+  - from: task-0031-manifest
     to: core-v2-roadmap
     type: implements_slice_of
 

@@ -1,0 +1,24 @@
+schema_version: 1
+id: TASK-0031
+title: 将 Core v2 生命周期文档建模为一等 Artifact
+status: seal_prepared
+outcome: null
+backlog_refs:
+  - BL-0033
+spec_revision: 1
+workflow_id: sealed-task/TASK-0031
+execution_mode: sealed-result-commit
+base_commit: 0c3b2f11d26f194ee1eaecb842f452f1c0b8088f
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-23-TASK-0031
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:9d3341ae33d91330d6de4587aa7e86e8f7616d46fefc540bb98952c8845114fe
+  base_commit: 0c3b2f11d26f194ee1eaecb842f452f1c0b8088f
+  archive_path: docs/delivery/tasks/archive/2026-08-23-TASK-0031

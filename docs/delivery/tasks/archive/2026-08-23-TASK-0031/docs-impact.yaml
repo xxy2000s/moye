@@ -1,0 +1,82 @@
+schema_version: 1
+task_id: TASK-0031
+graph_revision: 65
+intents:
+  - task-lifecycle-design
+  - task-create
+changed_paths:
+  - docs/delivery/backlog/BL-0033.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/core-v2-roadmap.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0031/design.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0031/docs-impact.yaml
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0031/plan.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0031/spec.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0031/task.yaml
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0031/verification.md
+  - docs/delivery/tasks/archive/README.md
+  - docs/graph.yaml
+  - docs/knowledge/current/architecture/core-v2-agent-lifecycle.md
+  - docs/knowledge/current/architecture/task-runtime-kernel.md
+  - docs/knowledge/current/codemap/README.md
+  - src/domain/lifecycle-artifact.ts
+  - tests/e2e/lifecycle-artifact-chain.test.ts
+  - tests/unit/lifecycle-artifact.test.ts
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - bl-0033-core-v2-artifacts
+    - backlog-index
+    - sources-index
+    - core-v2-roadmap
+    - tasks-index
+    - task-runtime-kernel
+    - archived-tasks-index
+    - core-v2-agent-lifecycle
+    - architecture-index
+    - restate-poc-architecture
+    - durable-runtime-pitfalls
+    - task-0031-manifest
+    - task-0031-spec
+    - task-0031-design
+    - task-0031-plan
+    - task-0031-verification
+    - task-0031-docs-impact
+  reviewed:
+    architecture-overview: { outcome: unchanged, reason: "一等 Artifact 细化 Core 交接协议，不改变顶层系统边界" }
+    local-restate-poc-runbook: { outcome: unchanged, reason: "没有新增运行或排障命令" }
+    moye-task-control-skill: { outcome: unchanged, reason: "继续使用 TASK-0030 已实现的 Seal 操作流程" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "纯领域 Artifact 不改变 Restate PoC 决策" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "Artifact schema 落实既有文档角色，没有 supersede 决策" }
+    adr-0005-core-v2-agent-model: { outcome: unchanged, reason: "实现已接受 5+1 角色模型的交接材料，不改变角色数量" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "继续使用两阶段 Seal，无新提交边界取舍" }
+    core-v2-five-plus-one-agent-requirements: { outcome: unchanged, reason: "本 Task 消费 Artifact 要求，剩余 Workflow 接线仍由 Roadmap 跟踪" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "历史总体方案不作为当前 Artifact schema 权威" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "旧需求基线保持历史，不改写" }
+    task-0013-manifest: { outcome: unchanged, reason: "不改写历史 Control Kernel Task" }
+    task-0014-manifest: { outcome: unchanged, reason: "不改写历史 Role 协议 Task" }
+    task-0015-manifest: { outcome: unchanged, reason: "不改写历史 Review/Finding Task" }
+    task-0016-manifest: { outcome: unchanged, reason: "不改写历史 Recovery Task" }
+    task-0017-manifest: { outcome: unchanged, reason: "不改写历史 Observer/Docs Task" }
+    task-0018-manifest: { outcome: unchanged, reason: "不改写历史 Core Closure Task" }
+    task-0019-manifest: { outcome: unchanged, reason: "不改写历史产品 Task" }
+    task-0020-manifest: { outcome: unchanged, reason: "不改写历史状态机 Task" }
+    task-0021-manifest: { outcome: unchanged, reason: "不改写历史多角色验收 Task" }
+    task-0028-manifest: { outcome: unchanged, reason: "不改写历史 Bootstrap 故障 Task" }
+    task-0029-manifest: { outcome: unchanged, reason: "不改写已关闭 Bootstrap 正确性 Task" }
+    task-0030-manifest: { outcome: unchanged, reason: "复用其 Seal 协议，不改写已 sealed package" }
+    task-0031-manifest: { outcome: updated, reason: "当前 Task package 固定 Spec、Design、Plan、Verification、Docs Impact 与 Seal Intent" }
+    task-0002-manifest: { outcome: unchanged, reason: "不改写历史 Bootstrap Task" }
+    task-0003-manifest: { outcome: unchanged, reason: "不改写历史协议 Task" }
+    task-0004-manifest: { outcome: unchanged, reason: "不改写历史 Git Effect Task" }
+    task-0005-manifest: { outcome: unchanged, reason: "不改写历史 Agent Adapter Task" }
+    task-0006-manifest: { outcome: unchanged, reason: "不改写历史 Coding Workflow Task" }
+    task-0007-manifest: { outcome: unchanged, reason: "不改写历史 Trace Task" }
+    task-0008-manifest: { outcome: unchanged, reason: "不改写历史 Demo Task" }
+    task-0009-manifest: { outcome: unchanged, reason: "不改写历史 Telemetry Task" }
+    task-0001-manifest: { outcome: unchanged, reason: "不改写历史 Runtime Task" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "继续使用 TypeScript 实现领域协议" }
+    adr-0004-otlp-phoenix-demo: { outcome: not_applicable, reason: "不涉及 OTLP 或 Phoenix" }

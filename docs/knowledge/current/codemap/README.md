@@ -77,6 +77,7 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 - `domain/core-control.ts` 从已验证 TaskEnvelope 创建内容寻址 Core Projection 和 ControlDecision；唯一 Reducer 校验 Expected State/Version、Required Gate、单 Pending Role 与固定预算形状，分别持久化 Operation Retry、Role Attempt Retry、Finding-driven Repair、Spec Replan、Unknown Effect/Reconcile、Evidence Invalidation 和失败终态候选；
 - `domain/core-observer.ts` 从 Core 只读事实重建 Trace/Usage/Recovery 摘要、Alert 与 `PROPOSED` Knowledge Candidate，不接收状态写入口；`domain/core-docs-impact.ts` 用 argv-only Ruby Adapter 刷新 Final Route、校验逐项 disposition/新 Markdown 注册并保存 Graph/Impact Gate 证据；
 - `domain/core-closure.ts` 从已验证 Envelope、最终 Core Projection 与完整 Trace Index 推导 `SUCCEEDED | FAILED_TERMINAL | CANCELLED`，Closure 与 CLOSED Projection 均内容寻址且不可变；
+- `domain/lifecycle-artifact.ts` 定义 Core v2 九类生命周期 Artifact、角色/Phase 权限、Revision/Commit/Producer/Attempt 绑定、固定依赖图、未信任 JSON 重建和精确 Artifact Set Gate；Review subject 与 Test Plan/Report coverage 都由确定性摘要校验，旧 Revision 或未解析 dependency 不能过 Gate；
 - `domain/review-finding.ts` 固定 Self Review、Candidate-bound Review Input、成功 ReviewResult、独立执行失败、Finding 稳定身份/追加处置和 Blocking Gate；Core 只接受绑定最近 Review Manifest Digest 的可信 Gate Result；
 - `core/workflow.ts` 用确定性 Scenario Adapter 贯通线性成功、Repair、Replan、UNKNOWN→Reconcile、预算终止和取消；`core/scenario-artifact.ts` 在昂贵执行前写稳定 Intent，复用已确认结果并把仅有 Intent 的情况停为 UNKNOWN；
 - `agent/role-runner.ts` 为确定性 Core PoC 提供统一角色协议；`agent/live-role.ts` 为 Coding 产品 Context、Self Review、Replan、Docs Gate 提供真实只读 CLI Session、结构化 Finding、稳定 Intent/Manifest 与原始事件；
@@ -106,6 +107,7 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 | `src/backlog/document-sync.ts` | 坏条目部分写入、枚举漂移、无意义重复同步 | `tests/unit/backlog-sync.test.ts`、真实 Restate E2E |
 | `src/domain/coding-task.ts` | Spec 漂移后沿用旧证据、Attempt 被复活、Shell 命令边界丢失 | `tests/unit/coding-task.test.ts` |
 | `src/domain/core-control.ts`、`core-observer.ts`、`core-docs-impact.ts`、`core-closure.ts`、`review-finding.ts` | 过期 Decision、跨 Revision Attempt 碰撞、恢复动作混淆、UNKNOWN 盲重试、Observer 越权、Trace 漏证据、失败 Docs Gate 误关闭、冲突 Closure、预算无限循环 | Core Control/Recovery/Observer/Docs/Closure、Role/Review unit |
+| `src/domain/lifecycle-artifact.ts` | 聊天文本冒充产物、旧 Revision/Commit 证据复用、Digest 篡改、依赖 ref 伪造、Test Report 漏项 | Lifecycle Artifact unit + 完整九类交接链 E2E |
 | `src/core/workflow.ts`、`src/core/scenario-artifact.ts`、`src/restate/core-services.ts` | 已确认昂贵场景重复、Intent-only 盲重试、Worker 退出后重复结果、回执丢失产生第二个 Closure | Core Workflow unit + 真实 Restate 六场景/异步回执/SIGKILL E2E |
 | `src/git/workspace-effect.ts` | 路径/符号链接逃逸、Base 漂移、分支冲突、未知 Git 结果重复写 | `tests/unit/workspace-effect.test.ts` |
 | `src/product/live-task.ts`、`src/review/live-review.ts`、`src/agent/live-role.ts` | Fake 混入产品入口、仓库越界、ref 冲突、角色 Session 混用、Finding 未触发 Repair/Replan、未知结果盲重跑 | Live Task/Role unit + `npm run acceptance:live` 真实 Codex Context/Implementation/Self Review/Review/Docs Gate 验收 |

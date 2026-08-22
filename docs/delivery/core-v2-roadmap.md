@@ -21,7 +21,7 @@
 |---|---|---|---|---|
 | TASK-0029 | BL-0031 | Archived / Succeeded | Bootstrap 派发前预检、派发后失败终态收敛、TASK-0028 合法恢复；真实 Restate 证明 Board/Event/Archive 一致 | `d5edefd` |
 | TASK-0030 | BL-0032 | Sealed / Runtime authoritative | 冻结 Core v2 Architecture、状态权威、5+1 角色、两阶段提交/归档边界与 ADR；消除一个 Task 一个 Result Commit 的循环证据问题 | `SealedTaskWorkflow` Receipt |
-| TASK-0031 | BL-0033 | Planned | 将 Spec、Design、Plan、Docs Impact、Test Plan、Test Report、Review、Knowledge Disposition 建模为带 Revision/Digest 的一等 Artifact | — |
+| TASK-0031 | BL-0033 | Sealed / Runtime authoritative | 将 Spec、Design、Plan、Docs Impact、Test Plan、Test Report、Review、Knowledge Disposition 建模为带 Revision/Digest 的一等 Artifact | `SealedTaskWorkflow` Receipt |
 | TASK-0032 | BL-0034 | Planned | 统一真实 Role Runtime v2：五类角色共享 Attempt/Generation/Session/Event/Artifact/Reconcile 协议，禁止产品路径回退 Fake | — |
 | TASK-0033 | BL-0035 | Planned | 接入 ARCHITECT 与隔离 DESIGN_REVIEW；Spec/Design 缺陷可 REPLAN 到 Revision R+1 | — |
 | TASK-0034 | BL-0036 | Planned | 接入 IMPLEMENTATION、代码/测试写入、Self Review、Checkpoint；实现缺陷可 REPAIR 到 Attempt N+1 | — |

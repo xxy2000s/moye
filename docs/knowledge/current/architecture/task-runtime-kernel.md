@@ -241,6 +241,12 @@ Goal Bootstrap 使用三次同源校验：CLI 在派发前给出同步错误，`
 
 最终 Gate 要求 Result Commit 是 clean worktree 的当前 HEAD，且只有一个父提交并精确等于冻结 Base；Active package 必须消失，Archive manifest/Verification/Docs Impact 必须存在于该 Commit并绑定相同 Task、Revision 与 Intent；Verification 必须 Accepted，Docs Impact 必须覆盖 `base..result` 的全部 changed paths并通过文档图谱影响校验。成功后 Workflow 只追加 Seal Receipt、`CLOSED` 和 `ARCHIVED` Runtime Event，不再写 Git；Result SHA 因而只存在于 Runtime Receipt。Archive 目录位置本身不能证明关闭。
 
+### 5.0.14 当前已实现 Lifecycle Artifact 协议切片
+
+`src/domain/lifecycle-artifact.ts` 将 Spec、Design、Plan、Docs Impact、Test Plan、Test Report、两次隔离 Review 和 Knowledge Disposition 建模为 discriminated schema。每个 Artifact 固定 Task、Spec Revision、Subject Commit、Producer Role/Phase、Attempt/Generation/Session、Dependency refs、Payload Content Digest 与整体 Artifact Digest；所有构造结果深冻结，跨 Worker JSON 必须通过 Parser 重建并比较 Expected Digest。
+
+Artifact 依赖不是任意字符串：协议固定 Architect 三件套、Design Review、Documentation、Test Plan/Assessment、Final Review 的输入链。Review Subject Digest 从依赖集合派生；Test Report 必须绑定 Candidate Commit，在 Gate 中覆盖 Test Plan 的全部 Case，`PASS` 不能包含失败、未执行或未知 Outcome。Artifact Gate 同时解析整个声明集合，按 Task/Revision/Commit/Kind/Digest 精确匹配，并拒绝未解析到集合内真实 Artifact 的 Dependency ref。该模块不推进 Task；后续 Role Workflow 只消费它产生的可信 Artifact。
+
 ### 5.1 模型关系
 
 ```mermaid

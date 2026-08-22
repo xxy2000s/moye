@@ -44,5 +44,6 @@ YYYY-MM-DD-TASK-NNNN
 | [TASK-0028](./2026-08-23-TASK-0028/spec.md) | Failed Terminal | 2026-08-23 | 全屏任务审计与持久化已实现；Bootstrap 基线未冻结导致任务失败收敛 |
 | [TASK-0029](./2026-08-23-TASK-0029/spec.md) | Succeeded | 2026-08-23 | Bootstrap 预检、失败收敛、历史恢复与 Core v2 Roadmap |
 | [TASK-0030](./2026-08-23-TASK-0030/spec.md) | Sealed；业务终态见 Runtime | 2026-08-23 | Core v2 5+1 架构与单 Result Commit Seal 协议 |
+| [TASK-0031](./2026-08-23-TASK-0031/spec.md) | Sealed；业务终态见 Runtime | 2026-08-23 | Core v2 九类 Lifecycle Artifact 与精确 Gate |
 
 Bootstrap Task 的 `task.yaml` 冻结在 Archive 开始前，因此其中 `archive.status: pending` 描述的是冻结点；最终 `ARCHIVED` 事实由目录位置、`archive-manifest.json` 和 ProjectBoard Projection 共同证明。TASK-0002 归档后文档图门禁曾发现 Spec 的 Active 相对链接因目录层级变化而失效，控制面只修正了该链接；修正前内容仍由 Result Commit `ff1954f4e4360e85276cf22aa30d6f5e8e396f84` 保存。后续 Task 使用不随 Active/Archive 深度变化的稳定引用。
