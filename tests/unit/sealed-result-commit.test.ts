@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest";
 import {
   createSealIntent,
   stageSealedTaskPackage,
+  verifyHistoricalSealedResultCommit,
   verifySealedResultCommit,
 } from "../../src/archive/sealed-result-commit.js";
 
@@ -65,6 +66,24 @@ describe("sealed result commit", () => {
       verificationPath: intent.verificationPath,
       docsImpactPath: intent.docsImpactPath,
     }, "2026-08-23T01:00:00.000Z")).rejects.toThrow(/does not cover changed paths/);
+  });
+
+  it("recovers a valid historical Result Commit only when it is an ancestor of current HEAD", async () => {
+    const fixture = await sealFixture("TASK-SEAL-HISTORICAL");
+    const intent = await createSealIntent(fixture.root, fixture.input);
+    await stageSealedTaskPackage(fixture.root, intent);
+    const resultCommit = commit(fixture.root, "sealed result");
+    await writeFile(path.join(fixture.root, "later.txt"), "recovery implementation\n");
+    commit(fixture.root, "later recovery implementation");
+    const receipt = await verifyHistoricalSealedResultCommit(fixture.root, intent, {
+      token: intent.token,
+      resultCommit,
+      executorId: "test/recovery",
+      verificationPath: intent.verificationPath,
+      docsImpactPath: intent.docsImpactPath,
+    }, "2026-08-23T01:00:00.000Z");
+    expect(receipt.resultCommit).toBe(resultCommit);
+    expect(git(fixture.root, ["rev-parse", "HEAD"]).trim()).not.toBe(resultCommit);
   });
 });
 

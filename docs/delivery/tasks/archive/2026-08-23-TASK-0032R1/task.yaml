@@ -1,0 +1,24 @@
+schema_version: 1
+id: TASK-0032R1
+title: 为错误 Seal Evidence 增加 append-only recovery successor
+status: seal_prepared
+outcome: null
+backlog_refs:
+  - BL-0041
+spec_revision: 1
+workflow_id: sealed-task/TASK-0032R1
+execution_mode: sealed-result-commit
+base_commit: 72e29ce32433f2de0ea9a08a978f9553e862e11e
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-23-TASK-0032R1
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:384dda024f7625070f9f822661e689100eafd6710298252e7fe35b4dd2226d49
+  base_commit: 72e29ce32433f2de0ea9a08a978f9553e862e11e
+  archive_path: docs/delivery/tasks/archive/2026-08-23-TASK-0032R1

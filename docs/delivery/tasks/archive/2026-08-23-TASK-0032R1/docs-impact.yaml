@@ -1,0 +1,89 @@
+schema_version: 1
+task_id: TASK-0032R1
+graph_revision: 67
+intents: [workflow-change, recovery-change, task-create]
+changed_paths:
+  - docs/delivery/backlog/BL-0041.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0032R1/design.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0032R1/docs-impact.yaml
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0032R1/plan.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0032R1/spec.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0032R1/task.yaml
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0032R1/verification.md
+  - docs/delivery/tasks/archive/README.md
+  - docs/delivery/tasks/README.md
+  - docs/graph.yaml
+  - docs/knowledge/current/architecture/task-runtime-kernel.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/pitfalls/durable-task-runtime.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - docs/sources/incidents/2026-08-23-wrong-seal-result-commit-evidence.md
+  - docs/sources/incidents/README.md
+  - src/archive/sealed-result-commit.ts
+  - src/board/server.ts
+  - src/cli/index.ts
+  - src/domain/task.ts
+  - src/index.ts
+  - src/restate/services.ts
+  - src/trace/state-machine.ts
+  - tests/e2e/restate-recovery.test.ts
+  - tests/unit/sealed-result-commit.test.ts
+  - tests/unit/task.test.ts
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - task-runtime-kernel
+    - restate-poc-architecture
+    - adr-0001-restate-poc
+    - durable-runtime-pitfalls
+    - tasks-index
+    - architecture-index
+    - local-restate-poc-runbook
+    - runbooks-index
+    - backlog-index
+    - bl-0041-seal-evidence-recovery
+    - sources-index
+    - task-0032r1-design
+    - task-0032r1-docs-impact
+    - task-0032r1-plan
+    - task-0032r1-spec
+    - task-0032r1-manifest
+    - task-0032r1-verification
+    - archived-tasks-index
+    - pitfalls-index
+    - incident-seal-evidence-wrong-commit
+    - incidents-index
+  reviewed:
+    architecture-overview: { outcome: unchanged, reason: "恢复 successor 细化 Seal 边界，不改变顶层组件" }
+    moye-task-control-skill: { outcome: unchanged, reason: "继续通过 CLI、Runtime 和文档门禁操作，不直接写 Runtime 状态" }
+    durable-workflow-research: { outcome: unchanged, reason: "已接受架构上的故障处置，不回写历史调研" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "Incident/Pitfall/Task 分层遵循现有文档角色" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "Recovery 不放宽两阶段 Seal，保留原失败并追加 successor" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "历史方案不作为恢复实现权威" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "本故障不改变 Core 角色需求" }
+    task-0013-manifest: { outcome: unchanged, reason: "不改写历史 Control Kernel Task" }
+    task-0014-manifest: { outcome: unchanged, reason: "不改写历史 Role Task" }
+    task-0015-manifest: { outcome: unchanged, reason: "不改写历史 Review Task" }
+    task-0016-manifest: { outcome: unchanged, reason: "不改写历史 Recovery Task" }
+    task-0017-manifest: { outcome: unchanged, reason: "不改写历史 Observer Task" }
+    task-0018-manifest: { outcome: unchanged, reason: "不改写历史 Closure Task" }
+    task-0019-manifest: { outcome: unchanged, reason: "不改写历史产品 Task" }
+    task-0020-manifest: { outcome: unchanged, reason: "不改写历史状态机 Task" }
+    task-0021-manifest: { outcome: unchanged, reason: "不改写历史验收 Task" }
+    task-0028-manifest: { outcome: unchanged, reason: "借鉴但不改写历史 Bootstrap recovery" }
+    task-0029-manifest: { outcome: unchanged, reason: "复用 append-only successor 原则，不改写 sealed Task" }
+    task-0002-manifest: { outcome: unchanged, reason: "不改写历史 Backlog Task" }
+    task-0003-manifest: { outcome: unchanged, reason: "不改写历史协议 Task" }
+    task-0004-manifest: { outcome: unchanged, reason: "不改写历史 Git Task" }
+    task-0005-manifest: { outcome: unchanged, reason: "不改写历史 Agent Task" }
+    task-0006-manifest: { outcome: unchanged, reason: "不改写历史 Workflow Task" }
+    task-0007-manifest: { outcome: unchanged, reason: "不改写历史 Trace Task" }
+    task-0008-manifest: { outcome: unchanged, reason: "不改写历史 Demo Task" }
+    task-0009-manifest: { outcome: unchanged, reason: "不改写历史 Telemetry Task" }
+    task-0001-manifest: { outcome: unchanged, reason: "不改写历史 Runtime Task" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "继续用 TypeScript 与 argv-only Git/Ruby Adapter" }
+    adr-0004-otlp-phoenix-demo: { outcome: not_applicable, reason: "不涉及 OTLP 或 Phoenix" }

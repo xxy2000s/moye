@@ -49,7 +49,7 @@ export interface StateMachineExecution {
 export interface TaskStateMachineTrace {
   readonly schemaVersion: 1;
   readonly authority: "derived-from-runtime-projection";
-  readonly workflow: "CodingTaskWorkflow" | "TaskWorkflow" | "BootstrapFailureRecoveryWorkflow" | "SealedTaskWorkflow";
+  readonly workflow: "CodingTaskWorkflow" | "TaskWorkflow" | "BootstrapFailureRecoveryWorkflow" | "SealedTaskWorkflow" | "SealedTaskRecoveryWorkflow" | "SealRecoveryAttemptWorkflow";
   readonly definition: {
     readonly nodes: readonly StateMachineNode[];
     readonly edges: readonly StateMachineEdge[];
@@ -151,7 +151,7 @@ export function buildCodingStateMachine(projection: CodingWorkflowProjection): T
 
 export function buildTaskStateMachine(
   projection: TaskProjection,
-  workflow: "TaskWorkflow" | "BootstrapFailureRecoveryWorkflow" | "SealedTaskWorkflow" = "TaskWorkflow",
+  workflow: "TaskWorkflow" | "BootstrapFailureRecoveryWorkflow" | "SealedTaskWorkflow" | "SealedTaskRecoveryWorkflow" | "SealRecoveryAttemptWorkflow" = "TaskWorkflow",
 ): TaskStateMachineTrace {
   const history = taskHistory(projection.events);
   const overall = projection.archiveStatus === "ARCHIVED"

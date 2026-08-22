@@ -6,6 +6,8 @@ import {
   failTask,
   recordBootstrapEvidence,
   recoverFailedBootstrapTask,
+  recoverFailedSealedTask,
+  recordSealIntent,
   transitionTask,
   updateArchiveStatus,
 } from "../../src/domain/task.js";
@@ -38,6 +40,29 @@ describe("task lifecycle", () => {
       "again",
       "2026-08-19T00:00:03.000Z",
     )).toThrow(/not an unevidenced EXECUTING/);
+  });
+
+  it("creates an append-only VERIFYING successor from one failed Sealed Task", () => {
+    const created = createTaskProjection(input, "2026-08-19T00:00:00.000Z");
+    const executing = transitionTask(created, "EXECUTING", "preparing-seal", "2026-08-19T00:00:01.000Z");
+    const waiting = recordSealIntent(executing, {
+      intentDigest: `sha256:${"1".repeat(64)}`,
+      baseCommit: "a".repeat(40),
+      archivePath: "docs/delivery/tasks/archive/2026-08-19-TASK-0001",
+    }, "2026-08-19T00:00:02.000Z");
+    const verifying = transitionTask(waiting, "VERIFYING", "verifying-result-commit", "2026-08-19T00:00:03.000Z");
+    const failed = updateArchiveStatus(failTask(verifying, "bad evidence", "2026-08-19T00:00:04.000Z"), "FAILED", "2026-08-19T00:00:05.000Z", { error: "bad evidence" });
+    const recovered = recoverFailedSealedTask(
+      failed,
+      "restate://SealedTaskWorkflow/TASK-0001",
+      "b".repeat(40),
+      "2026-08-19T00:00:06.000Z",
+    );
+    expect(recovered).toMatchObject({ state: "VERIFYING", archiveStatus: "NOT_READY", currentStep: "recovering-result-commit" });
+    expect(recovered.outcome).toBeUndefined();
+    expect(recovered.events.at(-1)?.type).toBe("SealRecoveryStarted");
+    expect(() => recoverFailedSealedTask(recovered, "restate://SealedTaskWorkflow/TASK-0001", "b".repeat(40), "2026-08-19T00:00:07.000Z"))
+      .toThrow(/not a failed Sealed Task/);
   });
 
   it("keeps CLOSED separate from archive completion", () => {

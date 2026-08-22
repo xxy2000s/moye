@@ -14,6 +14,7 @@ import type { SealEvidence, SealedTaskInput } from "../../src/archive/sealed-res
 import { invoke, send } from "../../src/restate/ingress.js";
 import type {
   BootstrapFailureRecoveryInput,
+  SealedTaskRecoveryInput,
   SealedTaskStatus,
   TaskWorkflowInput,
 } from "../../src/restate/services.js";
@@ -273,6 +274,59 @@ describe("Restate process-loss recovery", () => {
       durableRuntime: { workflowService: "SealedTaskWorkflow" },
     });
   }, 60_000);
+
+  it("preserves rejected Seal Evidence and recovers through one real append-only successor", async () => {
+    const fixture = await sealedTaskRepository("TASK-E2E-SEAL-RECOVERY");
+    service?.kill("SIGKILL");
+    await waitForExit(service, 10_000);
+    service = await startService(fixture.root);
+    await registerDeployment(servicePort);
+    await send(ingressUrl(), "SealedTaskWorkflow", fixture.input.taskId, "run", fixture.input);
+    const sealStatus = await waitForSeal(fixture.input.taskId, (status) =>
+      status.projection.currentStep === "waiting-result-commit", 15_000);
+    await stageSealedTaskPackage(fixture.root, sealStatus.intent);
+    const resultCommit = commit(fixture.root, "feat(TASK-E2E-SEAL-RECOVERY): sealed result");
+    const correctedEvidence: SealEvidence = {
+      token: sealStatus.intent.token,
+      resultCommit,
+      executorId: "e2e/recovery",
+      verificationPath: sealStatus.intent.verificationPath,
+      docsImpactPath: sealStatus.intent.docsImpactPath,
+    };
+    const rejectedResultCommit = "f".repeat(40);
+    await invoke(ingressUrl(), "SealedTaskWorkflow", fixture.input.taskId, "seal", {
+      ...correctedEvidence,
+      resultCommit: rejectedResultCommit,
+    });
+    const failed = await waitForSealedTask(fixture.input.taskId, (task) => task.archiveStatus === "FAILED", 30_000);
+    expect(failed).toMatchObject({ state: "CLOSED", outcome: "FAILED_TERMINAL" });
+    const recoveryInput: SealedTaskRecoveryInput = {
+      taskId: fixture.input.taskId,
+      projectId: fixture.input.projectId,
+      specRevision: fixture.input.specRevision,
+      sourceWorkflowRef: `restate://SealedTaskWorkflow/${fixture.input.taskId}`,
+      rejectedResultCommit,
+      correctedEvidence,
+    };
+    const recovered = await invoke<TaskProjection>(
+      ingressUrl(), "SealedTaskRecoveryWorkflow", fixture.input.taskId, "run", recoveryInput,
+    );
+    expect(recovered).toMatchObject({ state: "CLOSED", outcome: "SUCCEEDED", archiveStatus: "ARCHIVED" });
+    expect(recovered.events.map((event) => event.type)).toContain("SealRecoveryStarted");
+    expect(await invoke(ingressUrl(), "SealedTaskWorkflow", fixture.input.taskId, "status")).toEqual(failed);
+    expect(await invoke(ingressUrl(), "TaskAuthority", fixture.input.taskId, "get"))
+      .toMatchObject({ recoveryWorkflowRef: expect.stringContaining("SealedTaskRecoveryWorkflow") });
+    const detailResponse = await fetch(`http://127.0.0.1:${boardPort}/api/tasks/${fixture.input.taskId}`);
+    expect(await detailResponse.json()).toEqual(recovered);
+    const traceResponse = await fetch(`http://127.0.0.1:${boardPort}/api/tasks/${fixture.input.taskId}/trace`);
+    expect(await traceResponse.json()).toMatchObject({
+      stateMachine: { workflow: "SealedTaskRecoveryWorkflow", current: { overall: "ARCHIVED" } },
+      durableRuntime: {
+        workflowService: "SealedTaskRecoveryWorkflow",
+        sourceWorkflowRef: recoveryInput.sourceWorkflowRef,
+      },
+    });
+  }, 60_000);
 });
 
 async function registerDeployment(port: number): Promise<void> {
@@ -372,7 +426,7 @@ async function bootstrapEvidenceRepository(): Promise<{
   };
 }
 
-async function sealedTaskRepository(): Promise<{ root: string; input: SealedTaskInput }> {
+async function sealedTaskRepository(taskId = "TASK-E2E-SEAL"): Promise<{ root: string; input: SealedTaskInput }> {
   const fixtureRoot = await mkdtemp(path.join(os.tmpdir(), "moye-sealed-e2e-"));
   git(fixtureRoot, ["init", "-b", "master"]);
   git(fixtureRoot, ["config", "user.email", "moye@example.invalid"]);
@@ -381,7 +435,6 @@ async function sealedTaskRepository(): Promise<{ root: string; input: SealedTask
   await writeFile(path.join(fixtureRoot, "README.md"), "sealed E2E\n");
   await writeFile(path.join(fixtureRoot, "scripts", "docs_graph.rb"), "exit 0\n");
   const baseCommit = commit(fixtureRoot, "base");
-  const taskId = "TASK-E2E-SEAL";
   const activeRoot = path.join(fixtureRoot, "docs", "delivery", "tasks", taskId);
   const archivePath = `docs/delivery/tasks/archive/2026-08-23-${taskId}`;
   await mkdir(activeRoot, { recursive: true });

@@ -255,6 +255,46 @@ export function recoverFailedBootstrapTask(
   return failTask(recovering, error, now);
 }
 
+export function recoverFailedSealedTask(
+  projection: TaskProjection,
+  sourceWorkflowRef: string,
+  resultCommit: string,
+  now: string,
+): TaskProjection {
+  if (projection.state !== "CLOSED" || projection.archiveStatus !== "FAILED" ||
+      projection.outcome !== "FAILED_TERMINAL" || projection.seal === undefined) {
+    throw new MoyeError({
+      code: "SEAL_RECOVERY_STATE_INVALID",
+      category: "CONFLICT",
+      message: `Task ${projection.taskId} is not a failed Sealed Task`,
+    });
+  }
+  if (!/^restate:\/\/(?:SealedTaskWorkflow|SealedTaskRecoveryWorkflow|SealRecoveryAttemptWorkflow)\/[A-Z0-9-]+$/.test(sourceWorkflowRef)) {
+    throw new MoyeError({
+      code: "SEAL_RECOVERY_SOURCE_INVALID",
+      category: "VALIDATION",
+      message: "Seal recovery requires the exact source Workflow reference",
+    });
+  }
+  if (!/^[0-9a-f]{40}([0-9a-f]{24})?$/.test(resultCommit)) {
+    throw new MoyeError({ code: "SEAL_RECOVERY_COMMIT_INVALID", category: "VALIDATION", message: "Recovery Result Commit is invalid" });
+  }
+  const { outcome: _outcome, error: _error, archivePath: _archivePath, ...base } = projection;
+  return {
+    ...base,
+    state: "VERIFYING",
+    currentStep: "recovering-result-commit",
+    archiveStatus: "NOT_READY",
+    lastEventAt: now,
+    events: [...projection.events, {
+      sequence: projection.events.length + 1,
+      type: "SealRecoveryStarted",
+      at: now,
+      detail: `${sourceWorkflowRef}#${resultCommit}`,
+    }],
+  };
+}
+
 export function recordBootstrapEvidence(
   projection: TaskProjection,
   evidence: TaskExecutionEvidence,

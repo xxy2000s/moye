@@ -241,6 +241,8 @@ Goal Bootstrap 使用三次同源校验：CLI 在派发前给出同步错误，`
 
 最终 Gate 要求 Result Commit 是 clean worktree 的当前 HEAD，且只有一个父提交并精确等于冻结 Base；Active package 必须消失，Archive manifest/Verification/Docs Impact 必须存在于该 Commit并绑定相同 Task、Revision 与 Intent；Verification 必须 Accepted，Docs Impact 必须覆盖 `base..result` 的全部 changed paths并通过文档图谱影响校验。成功后 Workflow 只追加 Seal Receipt、`CLOSED` 和 `ARCHIVED` Runtime Event，不再写 Git；Result SHA 因而只存在于 Runtime Receipt。Archive 目录位置本身不能证明关闭。
 
+如果调用方提交的 Evidence 本身错误，原 `SealedTaskWorkflow` 必须保留 `FAILED_TERMINAL`，不能解析第二次 Durable Promise。`SealedTaskRecoveryWorkflow`/`SealRecoveryAttemptWorkflow` 以 append-only successor 链恢复：每个失败 predecessor 只允许 TaskAuthority 登记一个下一 successor；successor 读取原 Intent 和错误 Evidence，在目标 Result Commit 的 detached worktree 中重跑 Verification/Docs Impact，并要求该 Commit 是当前 HEAD 的祖先、唯一父提交仍等于冻结 Base。CLI、Board 和 Trace 默认解析 Authority 中最后一个 successor ref，显式 source ref 保留前序失败历史。`seal-submit` 在发送不可撤销回执前先用本地 `git cat-file` 拒绝不存在的 SHA。
+
 ### 5.0.14 当前已实现 Lifecycle Artifact 协议切片
 
 `src/domain/lifecycle-artifact.ts` 将 Spec、Design、Plan、Docs Impact、Test Plan、Test Report、两次隔离 Review 和 Knowledge Disposition 建模为 discriminated schema。每个 Artifact 固定 Task、Spec Revision、Subject Commit、Producer Role/Phase、Attempt/Generation/Session、Dependency refs、Payload Content Digest 与整体 Artifact Digest；所有构造结果深冻结，跨 Worker JSON 必须通过 Parser 重建并比较 Expected Digest。

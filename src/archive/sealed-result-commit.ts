@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
-import { access, mkdir, readFile, realpath, rename, stat, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 
@@ -150,6 +151,25 @@ export async function verifySealedResultCommit(
   evidence: SealEvidence,
   verifiedAt: string,
 ): Promise<SealReceipt> {
+  return verifySealedCommit(repositoryRootInput, intent, evidence, verifiedAt, false);
+}
+
+export async function verifyHistoricalSealedResultCommit(
+  repositoryRootInput: string,
+  intent: SealIntent,
+  evidence: SealEvidence,
+  verifiedAt: string,
+): Promise<SealReceipt> {
+  return verifySealedCommit(repositoryRootInput, intent, evidence, verifiedAt, true);
+}
+
+async function verifySealedCommit(
+  repositoryRootInput: string,
+  intent: SealIntent,
+  evidence: SealEvidence,
+  verifiedAt: string,
+  historical: boolean,
+): Promise<SealReceipt> {
   const repositoryRoot = await realpath(repositoryRootInput);
   verifyIntentShape(intent);
   assertCommit(evidence.resultCommit, "resultCommit");
@@ -159,8 +179,17 @@ export async function verifySealedResultCommit(
   }
   await git(repositoryRoot, ["cat-file", "-e", `${evidence.resultCommit}^{commit}`]);
   const head = (await gitOutput(repositoryRoot, ["rev-parse", "HEAD"])).trim();
-  if (head !== evidence.resultCommit) {
+  if (!historical && head !== evidence.resultCommit) {
     throw sealError("SEAL_RESULT_NOT_HEAD", `Result Commit ${evidence.resultCommit} is not current HEAD ${head}`);
+  }
+  if (historical) {
+    try {
+      await execFileAsync("git", ["-C", repositoryRoot, "merge-base", "--is-ancestor", evidence.resultCommit, head], {
+        cwd: repositoryRoot, timeout: 30_000, maxBuffer: 8 * 1024 * 1024,
+      });
+    } catch {
+      throw sealError("SEAL_RECOVERY_COMMIT_NOT_ANCESTOR", `Recovered Result Commit ${evidence.resultCommit} is not an ancestor of HEAD ${head}`);
+    }
   }
   const parents = (await gitOutput(repositoryRoot, ["show", "-s", "--format=%P", evidence.resultCommit]))
     .trim().split(/\s+/).filter(Boolean);
@@ -170,8 +199,10 @@ export async function verifySealedResultCommit(
       `Result Commit must have exactly one parent ${intent.baseCommit}; got ${parents.join(",") || "none"}`,
     );
   }
-  const dirty = await gitOutput(repositoryRoot, ["status", "--porcelain=v1", "--untracked-files=all"]);
-  if (dirty.trim()) throw sealError("SEAL_WORKTREE_DIRTY", `Result Commit requires a clean worktree: ${dirty.trim()}`);
+  if (!historical) {
+    const dirty = await gitOutput(repositoryRoot, ["status", "--porcelain=v1", "--untracked-files=all"]);
+    if (dirty.trim()) throw sealError("SEAL_WORKTREE_DIRTY", `Result Commit requires a clean worktree: ${dirty.trim()}`);
+  }
   await assertMissing(repositoryRoot, intent.activePath);
   await assertPhysicalDirectory(repositoryRoot, intent.archivePath);
   const archiveRoot = await containedDirectory(repositoryRoot, intent.archivePath);
@@ -208,7 +239,11 @@ export async function verifySealedResultCommit(
   if (missing.length > 0) {
     throw sealError("SEAL_IMPACT_INCOMPLETE", `Docs Impact does not cover changed paths: ${missing.join(", ")}`);
   }
-  await command(repositoryRoot, "ruby", ["scripts/docs_graph.rb", "validate-impact", "--report", impactPath]);
+  if (historical) {
+    await validateHistoricalImpact(repositoryRoot, evidence.resultCommit, intent.docsImpactPath);
+  } else {
+    await command(repositoryRoot, "ruby", ["scripts/docs_graph.rb", "validate-impact", "--report", impactPath]);
+  }
   const resultTree = (await gitOutput(repositoryRoot, ["show", "-s", "--format=%T", evidence.resultCommit])).trim();
   const files = (await gitOutput(repositoryRoot, ["ls-tree", "-r", "--full-tree", evidence.resultCommit, intent.archivePath]))
     .split("\n").filter(Boolean);
@@ -222,6 +257,22 @@ export async function verifySealedResultCommit(
     packageDigest: digest(files),
     verifiedAt,
   };
+}
+
+async function validateHistoricalImpact(repositoryRoot: string, resultCommit: string, docsImpactPath: string): Promise<void> {
+  const temporaryRoot = await mkdtemp(path.join(os.tmpdir(), "moye-seal-history-"));
+  const checkoutRoot = path.join(temporaryRoot, "checkout");
+  let added = false;
+  try {
+    await git(repositoryRoot, ["worktree", "add", "--detach", checkoutRoot, resultCommit]);
+    added = true;
+    await command(checkoutRoot, "ruby", [
+      "scripts/docs_graph.rb", "validate-impact", "--report", path.join(checkoutRoot, docsImpactPath),
+    ]);
+  } finally {
+    if (added) await git(repositoryRoot, ["worktree", "remove", "--force", checkoutRoot]);
+    await rm(temporaryRoot, { recursive: true, force: true });
+  }
 }
 
 function verifyIntentShape(intent: SealIntent): void {

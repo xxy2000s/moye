@@ -132,6 +132,15 @@ npm run cli -- seal-submit TASK-EXAMPLE \
 npm run cli -- wait TASK-EXAMPLE
 ```
 
+`seal-submit` 会先在本地执行 `git cat-file -e <sha>^{commit}`；不要手工补全短 SHA。如果错误 Evidence 已经被 Runtime 消费并形成 `FAILED_TERMINAL`，保留原 Workflow，准备包含原 rejected Commit、corrected Evidence 和 source Workflow ref 的 JSON，再执行：
+
+```bash
+npm run cli -- recover-sealed-failure --file /path/to/seal-recovery.json
+npm run cli -- status TASK-EXAMPLE
+```
+
+Recovery 对旧 Result Commit 的 Docs Impact 必须在该 Commit 的 detached worktree 中验证，不能把当前 Graph Revision 写回旧 package。Recovery 自身失败时只能从 Authority 当前 recovery ref 追加一个新 `recoveryId` Attempt；禁止 purge Invocation、改写 Board 或重置 Runtime 数据卷。
+
 目录已经位于 `archive/` 但 Runtime 尚未返回 `ARCHIVED` 时，状态仍是 `WAITING_COMMIT` 或 `VERIFYING`，不能从目录扫描推导成功。错误 token 不会消费信号；相同 Evidence 可安全重复提交；不同 Commit 冲突时停止并保留证据，不能盲目 amend 或追加第二个 Result Commit。
 - `backlog sync` 在提交前校验完整 YAML 批次；重复同步按 Source Digest 收敛；运行时独有记录默认保留并报告。
 - `CodingTaskWorkflow/<task_id>` 接受冻结 Envelope 和真实 Runner 配置；产品链是 Context → Worktree → Implementation → Self Review → Verification → independent Review → Repair/Replan → Merge → Docs Gate → Closure → Archive。Blocking Finding 的 `REPAIR` 创建新 Generation，`REPLAN` 创建 Spec Revision N+1；主状态、全部 Session 与事件摘要同步到 Board。

@@ -10,6 +10,8 @@ import {
   bootstrapFailureRecoveryWorkflow,
   projectBoard,
   sealedTaskWorkflow,
+  sealedTaskRecoveryWorkflow,
+  sealedTaskRecoveryAttemptWorkflow,
   taskAuthority,
   taskWorkflow,
 } from "./restate/services.js";
@@ -24,6 +26,8 @@ const endpoint = createServer(
       taskAuthority,
       taskWorkflow,
       sealedTaskWorkflow,
+      sealedTaskRecoveryWorkflow,
+      sealedTaskRecoveryAttemptWorkflow,
       bootstrapFailureRecoveryWorkflow,
       archiveWorkflow,
       codingTaskWorkflow,

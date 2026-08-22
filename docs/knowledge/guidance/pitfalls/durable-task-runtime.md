@@ -101,3 +101,10 @@
 - 后果：Gate 正确拒绝证据，但 Workflow Invocation 已完成失败，业务 Projection 永久停在非终态；Restate Workflow 又不能 restart-as-new。
 - 检测：`sys_invocation` 为 `completed/failure`，而同 key shared status 仍是 `EXECUTING/NOT_READY`；Board 和 Invocation 结论分离。
 - 规避：CLI 与 Workflow 首次状态写入前复用同一只读 Preflight，最终 Gate 再校验；进入 Projection 后的确定性错误必须在 Workflow 内 terminalize。历史遗留只能通过核对原 Invocation 的 append-only successor recovery 收敛，不能 purge、patch state 或直接改 Board。
+
+## 15. 用当前控制面版本验证历史 Result Commit
+
+- 触发：Recovery 读取旧 Commit 的 Verification/Docs Impact，却调用当前工作区的 `docs/graph.yaml` 和脚本上下文。
+- 后果：合法旧证据因 Graph Revision 已提升而被误拒；失败 successor 需要继续 append-only 恢复。
+- 检测：Recovery 错误显示 report revision 小于 current revision，而 `git show <result>:docs/graph.yaml` 与旧 report 一致。
+- 规避：历史 Gate 必须在目标 Commit 的 detached worktree 中运行文档与内容校验，并要求目标 Commit 是当前 HEAD 的祖先；绝不修改旧 report 迎合当前版本。

@@ -15,6 +15,7 @@ import { invoke, send } from "../restate/ingress.js";
 import type { TaskWorkflowInput } from "../restate/services.js";
 import type { TaskAuthorityState } from "../restate/services.js";
 import type { BootstrapFailureRecoveryInput } from "../restate/services.js";
+import type { SealedTaskRecoveryInput } from "../restate/services.js";
 import { buildLiveCodingTask } from "../product/live-task.js";
 import type { CodingReconcileInput } from "../restate/coding-services.js";
 import { verifyBootstrapPreflight } from "../archive/bootstrap-closure.js";
@@ -124,6 +125,17 @@ try {
       ));
       break;
     }
+    case "recover-sealed-failure": {
+      const input = await loadJson<SealedTaskRecoveryInput>(requiredOption(args, "--file"));
+      print(await invoke<TaskProjection>(
+        config.restateIngressUrl,
+        input.recoveryId === undefined ? "SealedTaskRecoveryWorkflow" : "SealRecoveryAttemptWorkflow",
+        input.recoveryId ?? input.taskId,
+        "run",
+        input,
+      ));
+      break;
+    }
     case "seal-stage": {
       const intent = await loadJson<SealIntent>(requiredOption(args, "--file"));
       await stageSealedTaskPackage(resolve(process.env["MOYE_REPOSITORY_ROOT"] ?? process.cwd()), intent);
@@ -136,9 +148,11 @@ try {
         config.restateIngressUrl, "SealedTaskWorkflow", taskId, "sealStatus",
       );
       if (status === null) throw new Error(`No Seal Intent exists for ${taskId}`);
+      const resultCommit = requiredOption(args, "--commit");
+      await assertLocalGitCommit(resultCommit);
       const evidence: SealEvidence = {
         token: requiredOption(args, "--token"),
-        resultCommit: requiredOption(args, "--commit"),
+        resultCommit,
         executorId: requiredOption(args, "--executor"),
         verificationPath: status.intent.verificationPath,
         docsImpactPath: status.intent.docsImpactPath,
@@ -198,9 +212,21 @@ async function taskStatus(taskId: string): Promise<TaskProjection | CodingWorkfl
     return invoke<TaskProjection | null>(config.restateIngressUrl, "TaskWorkflow", taskId, "status");
   }
   if (authority.owner === "SEALED_TASK_WORKFLOW") {
-    return invoke<TaskProjection | null>(config.restateIngressUrl, "SealedTaskWorkflow", taskId, "status");
+    const recovery = authority.recoveryWorkflowRef === undefined ? undefined : parseWorkflowRef(authority.recoveryWorkflowRef);
+    return invoke<TaskProjection | null>(
+      config.restateIngressUrl,
+      recovery?.service ?? "SealedTaskWorkflow",
+      recovery?.key ?? taskId,
+      "status",
+    );
   }
   throw new Error(`Task ${taskId} is owned by ${authority.owner}; no unified product projection is available`);
+}
+
+function parseWorkflowRef(value: string): { service: string; key: string } {
+  const match = /^restate:\/\/([A-Za-z][A-Za-z0-9]*)\/([A-Z0-9-]+)$/.exec(value);
+  if (match === null) throw new Error(`Invalid Workflow ref: ${value}`);
+  return { service: match[1]!, key: match[2]! };
 }
 
 async function waitForTask(taskId: string, timeoutMs: number): Promise<TaskProjection | CodingWorkflowProjection> {
@@ -273,6 +299,21 @@ async function runDocsGraph(subcommand: string, args: readonly string[]): Promis
   if (exitCode !== 0) throw new Error(`docs graph command failed with exit code ${exitCode}`);
 }
 
+async function assertLocalGitCommit(commit: string): Promise<void> {
+  if (!/^[0-9a-f]{40}([0-9a-f]{24})?$/.test(commit)) throw new Error("--commit must be a full Git object id");
+  const repositoryRoot = resolve(process.env["MOYE_REPOSITORY_ROOT"] ?? process.cwd());
+  const exitCode = await new Promise<number>((resolveExit, reject) => {
+    const child = spawn("git", ["-C", repositoryRoot, "cat-file", "-e", `${commit}^{commit}`], {
+      cwd: repositoryRoot,
+      stdio: "ignore",
+      shell: false,
+    });
+    child.once("error", reject);
+    child.once("exit", (code) => resolveExit(code ?? 1));
+  });
+  if (exitCode !== 0) throw new Error(`--commit does not identify a local Git commit: ${commit}`);
+}
+
 function print(value: unknown): void {
   process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
 }
@@ -291,6 +332,7 @@ Usage:
   moye recover-bootstrap-failure --file recovery.json
   moye seal-start --file sealed-task.json
   moye seal-status TASK-ID
+  moye recover-sealed-failure --file recovery.json
   moye seal-stage --file seal-intent.json
   moye seal-submit TASK-ID --token TOKEN --commit SHA --executor ID
   moye archive --file archive.json

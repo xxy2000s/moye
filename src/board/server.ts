@@ -116,13 +116,17 @@ async function route(
       }
       const recovered = authority.recoveryWorkflowRef !== undefined;
       const sealed = authority.owner === "SEALED_TASK_WORKFLOW";
+      const recoveryTarget = !sealed || authority.recoveryWorkflowRef === undefined
+        ? undefined
+        : parseRuntimeWorkflowRef(authority.recoveryWorkflowRef);
       const workflowService = sealed
-        ? "SealedTaskWorkflow"
+        ? recoveryTarget?.service ?? "SealedTaskWorkflow"
         : recovered ? "BootstrapFailureRecoveryWorkflow" : "TaskWorkflow";
+      const workflowKey = recoveryTarget?.key ?? taskId;
       const projection = await invoke<TaskProjection | null>(
         options.ingressUrl,
         workflowService,
-        taskId,
+        workflowKey,
         "status",
       );
       writeJson(response, projection === null ? 404 : 200, projection === null ? { error: "Task trace not found" } : {
@@ -139,7 +143,7 @@ async function route(
             ? authority.recoveryWorkflowRef
             : `restate://${workflowService}/${projection.taskId}`,
           workflowService,
-          workflowKey: projection.taskId,
+          workflowKey,
           ...(authority.sourceWorkflowRef === undefined ? {} : {
             sourceWorkflowRef: authority.sourceWorkflowRef,
           }),
@@ -147,7 +151,7 @@ async function route(
           invocationsUrl: buildWorkflowInvocationsUrl(
             options.restateAdminUrl,
             workflowService,
-            projection.taskId,
+            workflowKey,
           ),
         },
       });
@@ -314,14 +318,17 @@ async function route(
       }
       return;
     }
+    const recoveryTarget = authority.owner !== "SEALED_TASK_WORKFLOW" || authority.recoveryWorkflowRef === undefined
+      ? undefined
+      : parseRuntimeWorkflowRef(authority.recoveryWorkflowRef);
     const projection = authority.owner === "CODING_WORKFLOW"
       ? await invoke<CodingWorkflowProjection | null>(options.ingressUrl, "CodingTaskWorkflow", taskId, "status")
       : await invoke<TaskProjection | null>(
         options.ingressUrl,
         authority.owner === "SEALED_TASK_WORKFLOW"
-          ? "SealedTaskWorkflow"
+          ? recoveryTarget?.service ?? "SealedTaskWorkflow"
           : authority.recoveryWorkflowRef === undefined ? "TaskWorkflow" : "BootstrapFailureRecoveryWorkflow",
-        taskId,
+        authority.owner === "SEALED_TASK_WORKFLOW" ? recoveryTarget?.key ?? taskId : taskId,
         "status",
       );
     writeJson(response, projection === null ? 404 : 200, projection ?? { error: "Task not found" });
@@ -363,6 +370,12 @@ async function route(
   }
 
   await serveStatic(url.pathname, method === "HEAD", response, options.publicRoot);
+}
+
+function parseRuntimeWorkflowRef(value: string): { service: "SealedTaskRecoveryWorkflow" | "SealRecoveryAttemptWorkflow"; key: string } {
+  const match = /^restate:\/\/(SealedTaskRecoveryWorkflow|SealRecoveryAttemptWorkflow)\/([A-Z0-9-]+)$/.exec(value);
+  if (match === null) throw new Error(`Invalid sealed recovery Workflow ref: ${value}`);
+  return { service: match[1] as "SealedTaskRecoveryWorkflow" | "SealRecoveryAttemptWorkflow", key: match[2]! };
 }
 
 type DownloadableArtifactKind = "agent-events" | "raw-model-io";

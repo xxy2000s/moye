@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 66
+graph_revision: 67
 updated_at: "2026-08-23"
 
 entrypoints:
@@ -2304,6 +2304,70 @@ documents:
     authority: accepted-decision
     read_when: [observability-selection, dependency-change, coding-task-poc]
 
+  - id: incident-seal-evidence-wrong-commit
+    path: docs/sources/incidents/2026-08-23-wrong-seal-result-commit-evidence.md
+    type: incident
+    status: resolved
+    scope: sealed-result-commit-recovery
+    authority: incident-record
+    read_when: [task-execution, task-recovery]
+
+  - id: bl-0041-seal-evidence-recovery
+    path: docs/delivery/backlog/BL-0041.yaml
+    type: backlog-item
+    status: converted_to_task
+    scope: sealed-result-commit-recovery
+    authority: delivery-input
+    read_when: [task-intake, task-execution]
+
+  - id: task-0032r1-manifest
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0032R1/task.yaml
+    type: task-manifest
+    status: archived
+    scope: sealed-result-commit-recovery
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0032r1-spec
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0032R1/spec.md
+    type: task-spec
+    status: archived
+    scope: sealed-result-commit-recovery
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0032r1-design
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0032R1/design.md
+    type: task-design
+    status: archived
+    scope: sealed-result-commit-recovery
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0032r1-plan
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0032R1/plan.md
+    type: task-plan
+    status: archived
+    scope: sealed-result-commit-recovery
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0032r1-verification
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0032R1/verification.md
+    type: verification
+    status: archived
+    scope: sealed-result-commit-recovery
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0032r1-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0032R1/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: sealed-result-commit-recovery
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
 relations:
   - from: root-readme
     to: docs-index
@@ -3712,6 +3776,50 @@ relations:
   - from: task-0032-manifest
     to: core-v2-roadmap
     type: implements_slice_of
+
+  - from: incident-seal-evidence-wrong-commit
+    to: task-0032-manifest
+    type: occurred_during
+
+  - from: bl-0041-seal-evidence-recovery
+    to: incident-seal-evidence-wrong-commit
+    type: derived_from
+
+  - from: bl-0041-seal-evidence-recovery
+    to: task-0032r1-manifest
+    type: schedules_into
+
+  - from: archived-tasks-index
+    to: task-0032r1-manifest
+    type: indexes
+
+  - from: task-0032r1-spec
+    to: task-0032r1-manifest
+    type: belongs_to
+
+  - from: task-0032r1-design
+    to: task-0032r1-spec
+    type: refines
+
+  - from: task-0032r1-plan
+    to: task-0032r1-manifest
+    type: belongs_to
+
+  - from: task-0032r1-verification
+    to: task-0032r1-manifest
+    type: verifies
+
+  - from: task-0032r1-docs-impact
+    to: task-0032r1-manifest
+    type: reports_on
+
+  - from: task-0032r1-manifest
+    to: adr-0006-sealed-result-commit
+    type: repairs_implementation_of
+
+  - from: task-0032r1-manifest
+    to: durable-runtime-pitfalls
+    type: updates
 
   - from: bl-0013-agent-events-dialog
     to: task-0012-manifest

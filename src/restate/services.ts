@@ -14,6 +14,7 @@ import {
 } from "../archive/bootstrap-closure.js";
 import {
   createSealIntent,
+  verifyHistoricalSealedResultCommit,
   verifySealedResultCommit,
 } from "../archive/sealed-result-commit.js";
 import type {
@@ -39,6 +40,7 @@ import {
   createTaskProjection,
   failTask,
   recoverFailedBootstrapTask,
+  recoverFailedSealedTask,
   recordBootstrapEvidence,
   recordSealIntent,
   recordSealReceipt,
@@ -74,10 +76,17 @@ interface SealedTaskWorkflowState {
   receipt: SealReceipt;
 }
 
+interface SealedTaskRecoveryWorkflowState {
+  projection: TaskProjection;
+  sourceStatus: SealedTaskStatus;
+  receipt: SealReceipt;
+}
+
 export interface SealedTaskStatus {
   readonly projection: TaskProjection;
   readonly intent: SealIntent;
   readonly evidenceSubmitted: boolean;
+  readonly evidence?: SealEvidence;
   readonly receipt?: SealReceipt;
 }
 
@@ -92,6 +101,16 @@ export interface BootstrapRecoveryHandoffInput {
   readonly specRevision: number;
   readonly recoveryWorkflowRef: string;
   readonly sourceWorkflowRef: string;
+}
+
+export interface SealedTaskRecoveryInput {
+  readonly taskId: string;
+  readonly projectId: string;
+  readonly specRevision: number;
+  readonly sourceWorkflowRef: string;
+  readonly recoveryId?: string;
+  readonly rejectedResultCommit: string;
+  readonly correctedEvidence: SealEvidence;
 }
 
 export interface TaskWorkflowInput {
@@ -183,6 +202,59 @@ export const taskAuthority = restate.object({
           recoveryWorkflowRef: input.recoveryWorkflowRef,
           sourceWorkflowRef: input.sourceWorkflowRef,
         };
+      },
+    ),
+
+    beginSealedRecovery: restate.handlers.object.exclusive(
+      { ingressPrivate: true },
+      async (
+        ctx: restate.ObjectContext<TaskAuthorityState>,
+        input: BootstrapRecoveryHandoffInput,
+      ): Promise<TaskAuthorityState> => {
+        const [owner, specRevision, existingRecovery, existingSource] = await Promise.all([
+          ctx.get("owner") as Promise<TaskAuthorityState["owner"] | null>,
+          ctx.get("specRevision") as Promise<number | null>,
+          ctx.get("recoveryWorkflowRef") as Promise<string | null>,
+          ctx.get("sourceWorkflowRef") as Promise<string | null>,
+        ]);
+        if (owner !== "SEALED_TASK_WORKFLOW" || specRevision !== input.specRevision) {
+          throw new restate.TerminalError(`Task ${ctx.key} is not owned by SealedTaskWorkflow revision ${input.specRevision}`, { errorCode: 409 });
+        }
+        if (existingRecovery !== null && existingRecovery === input.recoveryWorkflowRef && existingSource === input.sourceWorkflowRef) {
+          return { owner, specRevision, recoveryWorkflowRef: existingRecovery, sourceWorkflowRef: existingSource };
+        }
+        const originalSource = `restate://SealedTaskWorkflow/${ctx.key}`;
+        const validSource = existingRecovery === null
+          ? input.sourceWorkflowRef === originalSource
+          : input.sourceWorkflowRef === existingRecovery;
+        if (!validSource || input.recoveryWorkflowRef === existingRecovery) {
+          throw new restate.TerminalError(`Task ${ctx.key} recovery successor does not extend the current append-only chain`, { errorCode: 409 });
+        }
+        ctx.set("recoveryWorkflowRef", input.recoveryWorkflowRef);
+        ctx.set("sourceWorkflowRef", input.sourceWorkflowRef);
+        return { owner, specRevision, recoveryWorkflowRef: input.recoveryWorkflowRef, sourceWorkflowRef: input.sourceWorkflowRef };
+      },
+    ),
+
+    advanceSealedRecovery: restate.handlers.object.exclusive(
+      { ingressPrivate: true },
+      async (
+        ctx: restate.ObjectContext<TaskAuthorityState>,
+        input: BootstrapRecoveryHandoffInput,
+      ): Promise<TaskAuthorityState> => {
+        const [owner, specRevision, existingRecovery] = await Promise.all([
+          ctx.get("owner") as Promise<TaskAuthorityState["owner"] | null>,
+          ctx.get("specRevision") as Promise<number | null>,
+          ctx.get("recoveryWorkflowRef") as Promise<string | null>,
+        ]);
+        if (owner !== "SEALED_TASK_WORKFLOW" || specRevision !== input.specRevision ||
+            existingRecovery === null || input.sourceWorkflowRef !== existingRecovery ||
+            input.recoveryWorkflowRef === existingRecovery) {
+          throw new restate.TerminalError(`Task ${ctx.key} cannot advance its sealed recovery chain`, { errorCode: 409 });
+        }
+        ctx.set("recoveryWorkflowRef", input.recoveryWorkflowRef);
+        ctx.set("sourceWorkflowRef", input.sourceWorkflowRef);
+        return { owner, specRevision, recoveryWorkflowRef: input.recoveryWorkflowRef, sourceWorkflowRef: input.sourceWorkflowRef };
       },
     ),
 
@@ -706,6 +778,7 @@ export const sealedTaskWorkflow = restate.workflow({
         projection,
         intent,
         evidenceSubmitted: evidence !== null,
+        ...(evidence === null ? {} : { evidence }),
         ...(receipt === null ? {} : { receipt }),
       };
     }),
@@ -749,6 +822,144 @@ export const sealedTaskWorkflow = restate.workflow({
     }),
   },
 });
+
+export const sealedTaskRecoveryWorkflow = restate.workflow({
+  name: "SealedTaskRecoveryWorkflow",
+  options: { workflowRetention: { days: 30 } },
+  handlers: {
+    run: async (
+      ctx: restate.WorkflowContext<SealedTaskRecoveryWorkflowState>,
+      input: SealedTaskRecoveryInput,
+    ): Promise<TaskProjection> => {
+      const sourceWorkflowRef = `restate://SealedTaskWorkflow/${input.taskId}`;
+      if (ctx.key !== input.taskId || input.recoveryId !== undefined || input.sourceWorkflowRef !== sourceWorkflowRef) {
+        throw new restate.TerminalError("Sealed recovery key or source does not match input", { errorCode: 400 });
+      }
+      const source = await ctx.workflowClient<typeof sealedTaskWorkflow>(sealedTaskWorkflow, input.taskId).sealStatus();
+      if (source === null || source.projection.state !== "CLOSED" || source.projection.archiveStatus !== "FAILED" ||
+          source.projection.outcome !== "FAILED_TERMINAL" || source.evidence === undefined ||
+          source.evidence.resultCommit !== input.rejectedResultCommit || source.intent.token !== input.correctedEvidence.token ||
+          source.intent.verificationPath !== input.correctedEvidence.verificationPath ||
+          source.intent.docsImpactPath !== input.correctedEvidence.docsImpactPath ||
+          source.projection.projectId !== input.projectId || source.projection.specRevision !== input.specRevision) {
+        throw new restate.TerminalError("Source Sealed Task is not the exact rejected Evidence failure", { errorCode: 409 });
+      }
+      ctx.set("sourceStatus", source);
+      const recoveryWorkflowRef = `restate://SealedTaskRecoveryWorkflow/${input.taskId}`;
+      await ctx.objectClient(taskAuthority, input.taskId).beginSealedRecovery({
+        specRevision: input.specRevision,
+        recoveryWorkflowRef,
+        sourceWorkflowRef,
+      });
+      let task = recoverFailedSealedTask(
+        source.projection, sourceWorkflowRef, input.correctedEvidence.resultCommit, await durableNow(ctx),
+      );
+      ctx.set("projection", task);
+      await boardClient(ctx, input.projectId).upsertTask(task);
+      try {
+        const receipt = await ctx.run(
+          "verify-historical-sealed-result-commit",
+          () => runArchiveEffect(() => verifyHistoricalSealedResultCommit(
+            runtimeRepositoryRoot(), source.intent, input.correctedEvidence, new Date().toISOString(),
+          )),
+          { maxRetryAttempts: 5 },
+        );
+        ctx.set("receipt", receipt);
+        task = recordSealReceipt(task, receipt.resultCommit, receipt.packageDigest, await durableNow(ctx));
+        task = closeTask(task, "SUCCEEDED", await durableNow(ctx));
+        task = updateArchiveStatus(task, "ARCHIVED", await durableNow(ctx), {
+          archivePath: path.join(runtimeRepositoryRoot(), receipt.archivePath),
+        });
+      } catch (error) {
+        if (isRestateControlError(error)) throw error;
+        task = failTask(task, error instanceof Error ? error.message : String(error), await durableNow(ctx));
+        task = updateArchiveStatus(task, "FAILED", await durableNow(ctx), {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+      ctx.set("projection", task);
+      await boardClient(ctx, input.projectId).upsertTask(task);
+      return task;
+    },
+    status: restate.handlers.workflow.shared(async (
+      ctx: restate.WorkflowSharedContext<SealedTaskRecoveryWorkflowState>,
+    ): Promise<TaskProjection | null> => ctx.get("projection")),
+  },
+});
+
+export const sealedTaskRecoveryAttemptWorkflow = restate.workflow({
+  name: "SealRecoveryAttemptWorkflow",
+  options: { workflowRetention: { days: 30 } },
+  handlers: {
+    run: async (
+      ctx: restate.WorkflowContext<SealedTaskRecoveryWorkflowState>,
+      input: SealedTaskRecoveryInput,
+    ): Promise<TaskProjection> => {
+      if (input.recoveryId === undefined || ctx.key !== input.recoveryId ||
+          !/^TASK-[A-Z0-9-]+-RECOVERY-[1-9][0-9]*$/.test(input.recoveryId)) {
+        throw new restate.TerminalError("Sealed recovery Attempt key does not match input", { errorCode: 400 });
+      }
+      const rootSourceRef = `restate://SealedTaskWorkflow/${input.taskId}`;
+      const rootSource = await ctx.workflowClient<typeof sealedTaskWorkflow>(sealedTaskWorkflow, input.taskId).sealStatus();
+      const sourceRef = parseRecoveryWorkflowRef(input.sourceWorkflowRef);
+      const sourceProjection = await ctx.workflowClient<typeof sealedTaskRecoveryWorkflow>(
+        sealedTaskRecoveryWorkflow, sourceRef.key,
+      ).status();
+      if (rootSource === null || sourceProjection === null || sourceProjection.taskId !== input.taskId ||
+          sourceProjection.state !== "CLOSED" || sourceProjection.archiveStatus !== "FAILED" ||
+          rootSource.evidence === undefined || rootSource.evidence.resultCommit !== input.rejectedResultCommit ||
+          rootSource.intent.token !== input.correctedEvidence.token || rootSource.projection.projectId !== input.projectId ||
+          rootSource.projection.specRevision !== input.specRevision || input.sourceWorkflowRef === rootSourceRef) {
+        throw new restate.TerminalError("Recovery Attempt does not extend the exact failed predecessor", { errorCode: 409 });
+      }
+      ctx.set("sourceStatus", rootSource);
+      const recoveryWorkflowRef = `restate://SealRecoveryAttemptWorkflow/${input.recoveryId}`;
+      await ctx.objectClient(taskAuthority, input.taskId).advanceSealedRecovery({
+        specRevision: input.specRevision,
+        recoveryWorkflowRef,
+        sourceWorkflowRef: input.sourceWorkflowRef,
+      });
+      let task = recoverFailedSealedTask(
+        sourceProjection, input.sourceWorkflowRef, input.correctedEvidence.resultCommit, await durableNow(ctx),
+      );
+      ctx.set("projection", task);
+      await boardClient(ctx, input.projectId).upsertTask(task);
+      try {
+        const receipt = await ctx.run(
+          "verify-historical-sealed-result-commit",
+          () => runArchiveEffect(() => verifyHistoricalSealedResultCommit(
+            runtimeRepositoryRoot(), rootSource.intent, input.correctedEvidence, new Date().toISOString(),
+          )),
+          { maxRetryAttempts: 5 },
+        );
+        ctx.set("receipt", receipt);
+        task = recordSealReceipt(task, receipt.resultCommit, receipt.packageDigest, await durableNow(ctx));
+        task = closeTask(task, "SUCCEEDED", await durableNow(ctx));
+        task = updateArchiveStatus(task, "ARCHIVED", await durableNow(ctx), {
+          archivePath: path.join(runtimeRepositoryRoot(), receipt.archivePath),
+        });
+      } catch (error) {
+        if (isRestateControlError(error)) throw error;
+        task = failTask(task, error instanceof Error ? error.message : String(error), await durableNow(ctx));
+        task = updateArchiveStatus(task, "FAILED", await durableNow(ctx), {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+      ctx.set("projection", task);
+      await boardClient(ctx, input.projectId).upsertTask(task);
+      return task;
+    },
+    status: restate.handlers.workflow.shared(async (
+      ctx: restate.WorkflowSharedContext<SealedTaskRecoveryWorkflowState>,
+    ): Promise<TaskProjection | null> => ctx.get("projection")),
+  },
+});
+
+function parseRecoveryWorkflowRef(value: string): { service: "SealedTaskRecoveryWorkflow"; key: string } {
+  const match = /^restate:\/\/(SealedTaskRecoveryWorkflow)\/([A-Z0-9-]+)$/.exec(value);
+  if (match === null) throw new restate.TerminalError("Recovery source Workflow ref is invalid", { errorCode: 400 });
+  return { service: "SealedTaskRecoveryWorkflow", key: match[2]! };
+}
 
 function sealPromiseName(intent: SealIntent): string {
   return `result-commit-${intent.intentDigest.slice("sha256:".length)}`;
