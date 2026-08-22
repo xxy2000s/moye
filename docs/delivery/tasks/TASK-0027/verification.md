@@ -1,5 +1,8 @@
 # TASK-0027 Verification
 
+> 状态：Accepted
+> 验证日期：2026-08-22
+
 ## 自动化证据
 
 - `node --check public/app.js`：通过；
