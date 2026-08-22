@@ -1,0 +1,25 @@
+schema_version: 1
+id: "BL-0031"
+title: "让 Bootstrap 基线错误在派发前失败并收敛 Runtime 终态"
+kind: "bug"
+status: "captured"
+priority: "high"
+
+source_refs:
+  - incident-bootstrap-base-gate-projection-executing
+affected_areas:
+  - task-bootstrap
+  - task-workflow
+  - closure-gate
+  - project-board
+
+acceptance_outline:
+  - "Task 提交或关闭前验证 base_commit 存在且等于 Manifest 引入提交的父提交"
+  - "Bootstrap Evidence 的确定性 Validation/Conflict 不得让 Projection 永久停留 EXECUTING"
+  - "失败必须由 Workflow 形成唯一 FAILED_TERMINAL/Archive 事实，不能直接编辑 Projection"
+  - "真实 Restate E2E 覆盖错误基线、Invocation Failure 与最终 Board 一致性"
+
+resolution:
+  task_refs: []
+  duplicate_of:
+  reason: "TASK-0028 的真实关闭失败证明当前只保护了证据完整性，尚未完成业务失败收敛"

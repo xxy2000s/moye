@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 61
+graph_revision: 62
 updated_at: "2026-08-22"
 
 entrypoints:
@@ -807,6 +807,22 @@ documents:
     scope: task-detail-routing-runtime-persistence
     authority: task-evidence
     read_when: [task-close, task-archive]
+
+  - id: incident-bootstrap-base-gate-projection-executing
+    path: docs/sources/incidents/2026-08-22-bootstrap-base-commit-gate-left-projection-executing.md
+    type: incident
+    status: open-mitigated
+    scope: bootstrap-closure-failure-convergence
+    authority: incident-record
+    read_when: [incident-response, task-runtime-change, task-close]
+
+  - id: bl-0031-bootstrap-base-failure-convergence
+    path: docs/delivery/backlog/BL-0031.yaml
+    type: backlog
+    status: captured
+    scope: bootstrap-closure-failure-convergence
+    authority: backlog
+    read_when: [task-create, task-runtime-change, incident-response]
 
   - id: task-0025-manifest
     path: docs/delivery/tasks/archive/2026-08-22-TASK-0025/task.yaml
@@ -3056,6 +3072,22 @@ relations:
   - from: task-0028-manifest
     to: restate-poc-architecture
     type: implements_slice_of
+
+  - from: incidents-index
+    to: incident-bootstrap-base-gate-projection-executing
+    type: indexes
+
+  - from: incident-bootstrap-base-gate-projection-executing
+    to: bl-0031-bootstrap-base-failure-convergence
+    type: creates_backlog
+
+  - from: incident-bootstrap-base-gate-projection-executing
+    to: task-0028-manifest
+    type: informs
+
+  - from: backlog-index
+    to: bl-0031-bootstrap-base-failure-convergence
+    type: indexes
 
   - from: bl-0013-agent-events-dialog
     to: task-0012-manifest

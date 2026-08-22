@@ -23,3 +23,4 @@ YYYY-MM-DD-short-title.md
 ## 已记录 Incident
 
 - [本地 Restate 容器重建后 Board 历史投影丢失](./2026-08-22-restate-board-projection-lost-after-container-recreate.md)：Git Task Archive 未丢失，但未持久化的 Restate Journal 与 ProjectBoard Projection 随旧容器消失。
+- [Bootstrap 基线门禁失败后 Projection 停留在 EXECUTING](./2026-08-22-bootstrap-base-commit-gate-left-projection-executing.md)：关闭门禁正确拒绝事后修正的错误基线，但 owning Invocation 失败后业务 Projection 未收敛为终态。

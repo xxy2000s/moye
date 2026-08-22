@@ -43,6 +43,7 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 | [BL-0028](./BL-0028.yaml) | Converted | 优化状态机边标签与合法路径详情 | TASK-0027 |
 | [BL-0029](./BL-0029.yaml) | Converted | 将单任务审计改为全屏路由并重构 Domain Event 时间线 | TASK-0028 |
 | [BL-0030](./BL-0030.yaml) | Converted | 持久化本地 Restate 并明确历史投影恢复边界 | TASK-0028 |
+| [BL-0031](./BL-0031.yaml) | Captured | 让 Bootstrap 基线错误在派发前失败并收敛 Runtime 终态 | — |
 
 ## 本轮调度结果
 
