@@ -26,5 +26,6 @@ acceptance_outline:
 resolution:
   task_refs:
     - TASK-0017
+    - TASK-0038
   duplicate_of:
-  reason: "TASK-0017 只消费多 Agent Core Slice 5 的只读 ObserverReport/告警候选子集；生产运营平台仍保持 Triaged"
+  reason: "TASK-0017 与 TASK-0038 消费确定性 Observer/告警候选子集；生产运营平台仍保持 Triaged"

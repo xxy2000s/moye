@@ -28,5 +28,6 @@ acceptance_outline:
 resolution:
   task_refs:
     - TASK-0017
+    - TASK-0038
   duplicate_of:
-  reason: "TASK-0017 只消费内容寻址 Knowledge Candidate 与 Docs Gate 子集；自动提升和长期效果反馈仍保持 Triaged"
+  reason: "TASK-0017 与 TASK-0038 消费 Knowledge Candidate/Disposition 子集；自动提升和长期效果反馈仍保持 Triaged"

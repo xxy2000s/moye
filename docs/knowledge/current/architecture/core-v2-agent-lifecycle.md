@@ -54,6 +54,8 @@ Test/Verification 使用两个隔离只读 Attempt：`TEST_PLAN` 形成 Requirem
 
 Final Review 是第二次隔离 `REVIEW` Attempt，精确依赖 Docs Impact 和 Test Report。PASSED 之后仍需纯 Verification Gate 重建八类主流程 Artifact、完整依赖和 Task/Revision/Commit/Digest 绑定；Gate Digest 写入 Projection 后才进入 Merge。Review 的文字 verdict 不能替代 Gate。
 
+`src/domain/core-v2-observer.ts` 从 Lifecycle Projection 与 Role Attempt 重建事件、Artifact、Session、失败、Repair、Replan、UNKNOWN 和告警事实，不写主状态。Knowledge Disposition 是 append-only Lifecycle Artifact；智能 Observer 不可用时 Workflow 可记录 deferred，主流程状态保持不变。
+
 ## 5. Artifact 与 Gate
 
 每个 Artifact 绑定 Task ID、Spec Revision、Step/Attempt、Producer、Candidate Commit 和 Content Digest。旧 Revision Evidence 永远不能满足新 Gate。Agent Verdict 只是建议；Workflow 只有在确定性 Gate 校验全部绑定后才推进。

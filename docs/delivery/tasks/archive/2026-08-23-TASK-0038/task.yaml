@@ -1,0 +1,25 @@
+schema_version: 1
+id: TASK-0038
+title: 确定性 Observer 与旁路 Knowledge
+status: seal_prepared
+outcome: null
+backlog_refs:
+  - BL-0006
+  - BL-0007
+spec_revision: 1
+workflow_id: sealed-task/TASK-0038
+execution_mode: sealed-result-commit
+base_commit: 8184f32c3e7069edc5324a794ecc8845368689bf
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-23-TASK-0038
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:fbe26a17abdff38c074253b9e88e9985594278491c59dad3be6017953dc5fbaa
+  base_commit: 8184f32c3e7069edc5324a794ecc8845368689bf
+  archive_path: docs/delivery/tasks/archive/2026-08-23-TASK-0038

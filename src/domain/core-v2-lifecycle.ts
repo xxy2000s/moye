@@ -10,6 +10,7 @@ import {
 import type {
   DesignPayload,
   DocsImpactPayload,
+  KnowledgeDispositionPayload,
   LifecycleArtifact,
   LifecycleArtifactRef,
   PlanPayload,
@@ -76,6 +77,7 @@ export interface CoreV2LifecycleProjection {
   readonly implementationCheckpoints: readonly ImplementationCheckpointV2[];
   readonly trustedTestRun: { readonly runId: string; readonly manifestRef: string; readonly manifestDigest: string } | null;
   readonly verificationGateDigest: string | null;
+  readonly knowledgeDispositionDigest: string | null;
   readonly invalidatedRevisions: readonly InvalidatedRevisionV2[];
   readonly events: readonly CoreV2LifecycleEvent[];
   readonly projectionDigest: string;
@@ -109,6 +111,7 @@ export function createCoreV2Lifecycle(input: {
     implementationCheckpoints: [],
     trustedTestRun: null,
     verificationGateDigest: null,
+    knowledgeDispositionDigest: null,
     invalidatedRevisions: [],
     events: [{ sequence: 1, type: "ArchitectRequired", at, detail: `r${input.specRevision}` }],
   });
@@ -354,6 +357,21 @@ export function workflowPassVerificationGateV2(projectionInput: CoreV2LifecycleP
     events: append(projection.events, "VerificationGatePassed", instant(atInput), gate.gateDigest) });
 }
 
+export function workflowRecordKnowledgeDispositionV2(
+  projectionInput: CoreV2LifecycleProjection,
+  payload: KnowledgeDispositionPayload,
+  atInput: string,
+): CoreV2LifecycleProjection {
+  const projection = parseProjection(projectionInput);
+  if (projection.knowledgeDispositionDigest !== null) throw conflict("CORE_V2_KNOWLEDGE_ALREADY_DISPOSED", "Knowledge Disposition is append-only");
+  const artifact = createLifecycleArtifact({ taskId: projection.taskId, specRevision: projection.specRevision, kind: "KNOWLEDGE_DISPOSITION",
+    subjectCommit: projection.candidateCommit ?? projection.subjectCommit,
+    producer: { role: "WORKFLOW", phase: "KNOWLEDGE_DISPOSITION", attemptId: `${projection.taskId}.KNOWLEDGE.r${projection.specRevision}.g0`, generation: 0, sessionId: "workflow" },
+    dependencies: [], payload });
+  return seal({ ...withoutDigest(projection), artifacts: [...projection.artifacts, artifact], knowledgeDispositionDigest: artifact.artifactDigest,
+    events: append(projection.events, "KnowledgeDispositionRecorded", instant(atInput), `${payload.disposition}:${artifact.artifactDigest}`) });
+}
+
 export function workflowReplanV2(
   projectionInput: CoreV2LifecycleProjection,
   input: { readonly nextSubjectCommit: string; readonly reason: string; readonly at: string },
@@ -378,6 +396,7 @@ export function workflowReplanV2(
     implementationCheckpoints: [],
     trustedTestRun: null,
     verificationGateDigest: null,
+    knowledgeDispositionDigest: null,
     invalidatedRevisions: [...projection.invalidatedRevisions, invalidated],
     events: append(projection.events, "SpecRevisionReplanned", instant(input.at), `r${projection.specRevision + 1}:${reason}`),
   });
@@ -424,6 +443,8 @@ function parseProjection(input: CoreV2LifecycleProjection): CoreV2LifecycleProje
   if (digest(core) !== projectionDigest) throw conflict("CORE_V2_PROJECTION_INTEGRITY_FAILED", "Lifecycle Projection differs from its digest");
   return input;
 }
+
+export function parseCoreV2LifecycleV2(input: CoreV2LifecycleProjection): CoreV2LifecycleProjection { return parseProjection(input); }
 
 function seal(core: Omit<CoreV2LifecycleProjection, "projectionDigest">): CoreV2LifecycleProjection {
   return deepFreeze({ ...core, projectionDigest: digest(core) });
