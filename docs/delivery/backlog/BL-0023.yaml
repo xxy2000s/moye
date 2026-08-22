@@ -1,0 +1,27 @@
+schema_version: 1
+id: "BL-0023"
+title: "把全部 Session Events 统一为 Chatbot 弹窗"
+kind: "bug"
+status: "converted_to_task"
+priority: "high"
+
+source_refs:
+  - finding-session-events-links-bypass-viewer
+affected_areas:
+  - project-board
+  - agent-events
+  - user-experience
+  - accessibility
+
+acceptance_outline:
+  - "Context、Implementation、Self Review、Independent Review、Replan 与 Docs Gate 的 Events 入口全部在当前页面打开同一个独立 Dialog"
+  - "事件正文采用 Chatbot 消息流，清楚区分 Agent 对话、工具调用、工具结果、系统与错误"
+  - "弹窗顶部可按全部、对话、工具调用、工具结果、系统、错误筛选并显示数量"
+  - "运行中继续增量跟随，完成后仍可分页、查看原始 JSON，并把 JSONL 下载降为次要动作"
+  - "键盘焦点、关闭返回、窄屏布局和真实浏览器交互通过验证"
+
+resolution:
+  task_refs:
+    - TASK-0022
+  duplicate_of:
+  reason: "真实多角色页面验收确认具体 Session 链接绕过已有 Viewer；TASK-0022 统一入口并重做消息呈现"

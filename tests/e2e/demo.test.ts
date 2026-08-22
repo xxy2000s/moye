@@ -95,6 +95,12 @@ describe("npm run demo", () => {
     expect(app).toContain("data-agent-event-filter");
     expect(app).toContain("实时跟随中");
     expect(app).toContain("下载原始 JSONL");
+    expect(app).toContain("sessionEventsButton");
+    expect(app).toContain("在弹窗查看对话");
+    expect(app).toContain("eventSpeaker");
+    expect(app).toContain('aria-label="Agent 会话记录"');
+    expect(app).not.toContain("查看原始 Events ↗");
+    expect(app).not.toMatch(/eventsUrl\)}" target="_blank"/);
     expect(app).not.toContain("MAX_AGENT_EVENTS");
     expect(app).not.toContain("查看 Agent Events ↗");
     expect(app).toContain("打开 Trace（Phoenix）");

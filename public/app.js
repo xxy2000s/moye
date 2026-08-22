@@ -249,11 +249,26 @@ function renderCodingTrace(trace, summary) {
   const actions = trace.recovery.actions.map(action => `
     <li><strong>${escapeHtml(action.label)}</strong><span class="tag ${action.automatic ? "blue" : "yellow"}">${action.automatic ? "自动" : "人工"}</span><p>${escapeHtml(action.reason)}</p></li>`).join("");
   const roleSessions = (trace.roles || []).map(role => `
-    <li><strong>${escapeHtml(role.kind)}</strong><code>${escapeHtml(role.sessionId || "无 Session ID")}</code><span>R${role.specRevision} · #${role.attempt} · ${escapeHtml(role.verdict || role.outcome)}</span><p>${escapeHtml(role.summary)}</p><a href="${escapeAttribute(role.eventsUrl)}" target="_blank" rel="noreferrer">查看原始 Events ↗</a></li>`).join("");
+    <li><strong>${escapeHtml(role.kind)}</strong><code>${escapeHtml(role.sessionId || "无 Session ID")}</code><span>R${role.specRevision} · #${role.attempt} · ${escapeHtml(role.verdict || role.outcome)}</span><p>${escapeHtml(role.summary)}</p>${sessionEventsButton({
+      eventsUrl: role.eventsUrl,
+      kind: role.kind,
+      binding: `R${role.specRevision} · Attempt #${role.attempt} · ${role.sessionId || "等待 Session"}`,
+      runnerKind: role.runnerKind,
+    })}</li>`).join("");
   const implementationSessions = (trace.agents || []).map(agent => `
-    <li><strong>IMPLEMENTATION</strong><code>${escapeHtml(agent.sessionId || "无 Session ID")}</code><span>R${agent.specRevision} · ${escapeHtml(agent.attemptId)} · ${escapeHtml(agent.outcome)}</span><a href="${escapeAttribute(agent.eventsUrl)}" target="_blank" rel="noreferrer">查看原始 Events ↗</a></li>`).join("");
+    <li><strong>IMPLEMENTATION</strong><code>${escapeHtml(agent.sessionId || "无 Session ID")}</code><span>R${agent.specRevision} · ${escapeHtml(agent.attemptId)} · ${escapeHtml(agent.outcome)}</span>${sessionEventsButton({
+      eventsUrl: agent.eventsUrl,
+      kind: "IMPLEMENTATION",
+      binding: `R${agent.specRevision} · ${agent.attemptId} · ${agent.sessionId || "等待 Session"}`,
+      runnerKind: agent.runnerKind,
+    })}</li>`).join("");
   const reviewSessions = (trace.reviews || []).map(review => `
-    <li><strong>INDEPENDENT_REVIEW</strong><code>${escapeHtml(review.sessionId || "无 Session ID")}</code><span>#${review.attempt} · ${escapeHtml(review.verdict || review.outcome)}</span><p>${escapeHtml(review.summary)}</p><a href="${escapeAttribute(review.eventsUrl)}" target="_blank" rel="noreferrer">查看原始 Events ↗</a></li>`).join("");
+    <li><strong>INDEPENDENT_REVIEW</strong><code>${escapeHtml(review.sessionId || "无 Session ID")}</code><span>#${review.attempt} · ${escapeHtml(review.verdict || review.outcome)}</span><p>${escapeHtml(review.summary)}</p>${sessionEventsButton({
+      eventsUrl: review.eventsUrl,
+      kind: "INDEPENDENT_REVIEW",
+      binding: `Attempt #${review.attempt} · ${review.sessionId || "等待 Session"}`,
+      runnerKind: review.runnerKind,
+    })}</li>`).join("");
 
   elements.detail.innerHTML = `
     <span class="detail-id">${escapeHtml(task.taskId)} · 规格版本 R${task.specRevision}</span>
@@ -283,7 +298,7 @@ function renderCodingTrace(trace, summary) {
       ${trace.observability.enabled && trace.observability.uiBaseUrl
         ? `<a href="${escapeAttribute(trace.observability.uiBaseUrl)}" target="_blank" rel="noreferrer">打开 Trace（Phoenix）↗</a>`
         : `<span class="diagnostic-disabled">Trace 后端未启用</span>`}
-      ${agentEvents ? `<button type="button" class="diagnostic-link" data-agent-events-trigger aria-controls="agent-events-dialog" aria-haspopup="dialog" aria-expanded="false">查看 Agent Events</button>` : ""}
+      ${agentEvents ? `<button type="button" class="diagnostic-link" data-agent-events-trigger data-agent-events-url="${escapeAttribute(agentEvents.viewUrl)}" data-agent-events-download-url="${escapeAttribute(agentEvents.downloadUrl || agentEvents.viewUrl)}" data-agent-events-kind="IMPLEMENTATION" data-agent-events-binding="${escapeHtml(`${agentEvents.attemptId || "等待 Attempt"} · ${runnerLabel(agentEvents.runnerKind)}`)}" data-agent-events-runner="${escapeHtml(agentEvents.runnerKind)}" aria-controls="agent-events-dialog" aria-haspopup="dialog" aria-expanded="false">查看 Implementation 对话</button>` : ""}
       ${rawModelIo ? `<a class="sensitive-link" href="${escapeAttribute(rawModelIo.downloadUrl)}" target="_blank" rel="noreferrer">查看 Raw Model IO（敏感）↗</a>` : ""}
     </section>
     <p class="trace-note">Trace 与 JSONL 只用于诊断；任务状态以 Moye Projection / Domain Event 为准，中断恢复以 Restate Journal 为准。</p>
@@ -379,28 +394,43 @@ function executionColor(state) {
   return "blue";
 }
 
-function bindAgentEventsDialog(trace) {
-  const trigger = elements.detail.querySelector("[data-agent-events-trigger]");
-  if (!(trigger instanceof HTMLButtonElement) || trace.agentEvents === undefined) return;
-  trigger.addEventListener("click", () => openAgentEventsDialog(trigger, trace));
+function sessionEventsButton({ eventsUrl, kind, binding, runnerKind }) {
+  if (!eventsUrl) return '<span class="session-events-unavailable">Events 尚未就绪</span>';
+  return `<button type="button" class="session-events-trigger" data-agent-events-trigger data-agent-events-url="${escapeAttribute(eventsUrl)}" data-agent-events-download-url="${escapeAttribute(eventsUrl)}" data-agent-events-kind="${escapeHtml(kind)}" data-agent-events-binding="${escapeHtml(`${binding} · ${runnerLabel(runnerKind)}`)}" data-agent-events-runner="${escapeHtml(runnerKind)}" aria-controls="agent-events-dialog" aria-haspopup="dialog" aria-expanded="false">在弹窗查看对话</button>`;
 }
 
-function openAgentEventsDialog(trigger, trace) {
+function bindAgentEventsDialog(trace) {
+  elements.detail.querySelectorAll("[data-agent-events-trigger]").forEach(trigger => {
+    if (!(trigger instanceof HTMLButtonElement)) return;
+    trigger.dataset.agentEventsDefaultLabel = trigger.textContent.trim();
+    trigger.addEventListener("click", () => openAgentEventsDialog(trigger, {
+      taskId: trace.task.taskId,
+      sourceUrl: trigger.dataset.agentEventsUrl,
+      downloadUrl: trigger.dataset.agentEventsDownloadUrl,
+      kind: trigger.dataset.agentEventsKind || "AGENT",
+      binding: trigger.dataset.agentEventsBinding || "等待 Session",
+      runnerKind: trigger.dataset.agentEventsRunner || "",
+    }));
+  });
+}
+
+function openAgentEventsDialog(trigger, source) {
+  if (!source.sourceUrl) return;
   closeAgentEventsDialog(false);
   const viewer = elements.eventsViewer;
   const dialog = elements.eventsDialog;
-  const agentEvents = trace.agentEvents;
-  viewer.dataset.sourceUrl = agentEvents.viewUrl;
-  viewer.dataset.downloadUrl = agentEvents.downloadUrl || agentEvents.viewUrl.replace(/\/agent-events$/, "/artifacts/agent-events");
+  viewer.dataset.sourceUrl = source.sourceUrl;
+  viewer.dataset.downloadUrl = source.downloadUrl || source.sourceUrl;
   viewer.dataset.state = "loading";
-  viewer.querySelector("[data-agent-events-task]").textContent = trace.task.taskId;
-  viewer.querySelector("[data-agent-events-binding]").textContent = `${agentEvents.attemptId || "等待 Attempt"} · ${runnerLabel(agentEvents.runnerKind)}`;
+  viewer.querySelector("[data-agent-events-title]").textContent = `${roleLabel(source.kind)} · 交互记录`;
+  viewer.querySelector("[data-agent-events-task]").textContent = source.taskId;
+  viewer.querySelector("[data-agent-events-binding]").textContent = source.binding;
   viewer.querySelector("[data-agent-events-toolbar]").replaceChildren();
-  viewer.querySelector("[data-agent-events-content]").innerHTML = '<div class="agent-events-loading" role="status">正在加载原始 JSONL 事件…</div>';
+  viewer.querySelector("[data-agent-events-content]").innerHTML = '<div class="agent-events-loading" role="status">正在加载会话消息与工具事件…</div>';
   viewer.querySelector("[data-agent-events-footer]").replaceChildren();
   const download = viewer.querySelector("[data-agent-events-download]");
-  download.href = agentEvents.downloadUrl || "#";
-  download.hidden = !agentEvents.downloadUrl;
+  download.href = "#";
+  download.hidden = true;
   setAgentEventsStatus(viewer, "正在加载");
   agentEventsReturnFocus = trigger;
   updateAgentEventsTrigger(trigger, true, true);
@@ -490,7 +520,7 @@ function renderAgentEventsState(viewer, state, loadPage) {
   } else if (visible.length === 0) {
     target.innerHTML = '<div class="agent-events-empty">当前分类暂无事件；切换到“全部”可查看完整原始流。</div>';
   } else {
-    target.innerHTML = `<ol class="agent-events-list">${visible.map(renderAgentEvent).join("")}</ol>`;
+    target.innerHTML = `<ol class="agent-events-list" aria-label="Agent 会话记录">${visible.map(renderAgentEvent).join("")}</ol>`;
   }
   const footer = viewer.querySelector("[data-agent-events-footer]");
   footer.innerHTML = state.hasMore
@@ -503,17 +533,36 @@ function renderAgentEventsState(viewer, state, loadPage) {
 function renderAgentEvent(event) {
   const sequence = String(event.sequence).padStart(2, "0");
   if (event.parsed !== undefined) {
-    return `<li class="agent-event category-${escapeHtml(event.category)}">
-      <div class="agent-event-heading"><span>${sequence}</span><em>${escapeHtml(categoryLabel(event.category))}</em><strong>${escapeHtml(event.type)}</strong></div>
-      <p>${escapeHtml(eventSummary(event.parsed, event.type))}</p>
-      <details><summary>查看完整原始 JSON</summary><pre>${escapeHtml(JSON.stringify(event.parsed, null, 2))}</pre></details>
+    const speaker = eventSpeaker(event);
+    return `<li class="agent-event category-${escapeHtml(event.category)} speaker-${escapeHtml(speaker.id)}">
+      <span class="agent-event-avatar" aria-hidden="true">${escapeHtml(speaker.mark)}</span>
+      <article class="agent-event-bubble">
+        <div class="agent-event-heading"><strong>${escapeHtml(speaker.label)}</strong><em>${escapeHtml(categoryLabel(event.category))}</em><span>#${sequence} · ${escapeHtml(event.type)}</span></div>
+        <p>${escapeHtml(eventSummary(event.parsed, event.type))}</p>
+        <details><summary>查看原始 JSON</summary><pre>${escapeHtml(JSON.stringify(event.parsed, null, 2))}</pre></details>
+      </article>
     </li>`;
   }
-  return `<li class="agent-event malformed">
-    <div class="agent-event-heading"><span>${sequence}</span><em>错误</em><strong>无法解析的 JSON 行</strong></div>
-    <p>这一行不是有效 JSON，已按原始文本完整保留。</p>
-    <details><summary>查看完整原始文本</summary><pre>${escapeHtml(event.raw)}</pre></details>
+  return `<li class="agent-event malformed speaker-error">
+    <span class="agent-event-avatar" aria-hidden="true">!</span>
+    <article class="agent-event-bubble">
+      <div class="agent-event-heading"><strong>解析错误</strong><em>错误</em><span>#${sequence}</span></div>
+      <p>这一行不是有效 JSON，已按原始文本完整保留。</p>
+      <details><summary>查看原始文本</summary><pre>${escapeHtml(event.raw)}</pre></details>
+    </article>
   </li>`;
+}
+
+function eventSpeaker(event) {
+  if (event.category === "conversation") {
+    const role = String(event.parsed?.role || event.parsed?.message?.role || event.parsed?.item?.role || "agent").toLowerCase();
+    if (["user", "human"].includes(role)) return { id: "user", mark: "U", label: "用户" };
+    return { id: "agent", mark: "A", label: "Agent" };
+  }
+  if (event.category === "tool") return { id: "tool", mark: "T", label: "工具调用" };
+  if (event.category === "tool_result") return { id: "tool-result", mark: "R", label: "工具结果" };
+  if (event.category === "error") return { id: "error", mark: "!", label: "错误" };
+  return { id: "system", mark: "S", label: "系统" };
 }
 
 function categoryLabel(category) {
@@ -558,7 +607,7 @@ function eventSummary(event, type) {
 
 function truncateEventText(value) {
   const normalized = String(value).replace(/\s+/g, " ");
-  return normalized.length > 280 ? `${normalized.slice(0, 277)}…` : normalized;
+  return normalized.length > 900 ? `${normalized.slice(0, 897)}…` : normalized;
 }
 
 function setAgentEventsStatus(viewer, value) {
@@ -569,7 +618,8 @@ function setAgentEventsStatus(viewer, value) {
 function updateAgentEventsTrigger(trigger, expanded, loading = false) {
   trigger.disabled = loading;
   trigger.setAttribute("aria-expanded", String(expanded));
-  trigger.textContent = loading ? "正在加载 Agent Events…" : expanded ? "Agent Events 已打开" : "查看 Agent Events";
+  const label = trigger.dataset.agentEventsDefaultLabel || "查看 Agent Events";
+  trigger.textContent = loading ? "正在加载…" : expanded ? "对话弹窗已打开" : label;
 }
 
 function renderJourneyStage(trace, definition, index) {
@@ -654,6 +704,17 @@ function attemptStatusLabel(status) {
 
 function runnerLabel(kind) {
   return ({ fake: "Fake Agent（演示）", codex_exec: "Codex CLI", claude_print: "Claude CLI", process: "本地进程 Agent" })[String(kind || "").toLowerCase()] || kind || "等待分配";
+}
+
+function roleLabel(kind) {
+  return ({
+    CONTEXT: "Context",
+    IMPLEMENTATION: "Implementation",
+    SELF_REVIEW: "Self Review",
+    INDEPENDENT_REVIEW: "Independent Review",
+    REPLAN: "Replan",
+    DOCS_GATE: "Docs Gate",
+  })[String(kind || "").toUpperCase()] || kind || "Agent";
 }
 
 function agentOutcomeLabel(outcome) {

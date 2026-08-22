@@ -24,7 +24,7 @@ npm run demo
 
 Demo 使用隔离 Git Fixture 和确定性 Fake Agent，不修改 Moye 仓库。脚本只管理名为 `moye-restate-demo` 的容器，不删除其他容器；运行数据保存在 `.moye-runtime/demo`。
 
-使用真实本机 CLI 时运行 `npm run demo:codex` 或 `npm run demo:claude`。脚本仍只操作隔离 Fixture，并在 Workflow 发出请求后立即打印看板 URL；打开进行中的 Task，Agent Events 会从零开始持续增长。页面显示 Runner 类型，支持全部/对话/工具调用/工具结果/系统/错误筛选，并在完成后开放摘要校验的原始 JSONL 下载。命令复用本机已有认证，不修改用户级 Settings。
+使用真实本机 CLI 时运行 `npm run demo:codex` 或 `npm run demo:claude`。脚本仍只操作隔离 Fixture，并在 Workflow 发出请求后立即打印看板 URL；打开进行中的 Task，每条 Context、Implementation、Self Review、Review、Replan 与 Docs Gate Session 都可在同一个 Chatbot Dialog 中查看。页面显示 Role、Session、Attempt 与 Runner，支持全部/对话/工具调用/工具结果/系统/错误筛选并实时增长；完成后才开放摘要校验的原始 JSONL 导出。命令复用本机已有认证，不修改用户级 Settings。
 
 ### 带 Trace 的可选体验
 
@@ -32,7 +32,7 @@ Demo 使用隔离 Git Fixture 和确定性 Fake Agent，不修改 Moye 仓库。
 npm run demo:trace
 ```
 
-首次运行会拉取 Phoenix 镜像。命令启动可选 Phoenix Profile 后再启动同一个 Demo；终端会同时打印动态 Moye Board URL、动态 Restate URL 和固定的 Phoenix URL `http://127.0.0.1:6006`。在 Moye 已归档 Task 中复制 Trace ID，再打开 Phoenix 查询；点击 `查看 Agent Events` 后，JSONL 事件直接在同一 Task 详情内展开，不会默认下载。需要保存证据文件时再点击 `下载原始 JSONL`。检查后停止前台 Demo，并运行：
+首次运行会拉取 Phoenix 镜像。命令启动可选 Phoenix Profile 后再启动同一个 Demo；终端会同时打印动态 Moye Board URL、动态 Restate URL 和固定的 Phoenix URL `http://127.0.0.1:6006`。在 Moye 已归档 Task 中复制 Trace ID，再打开 Phoenix 查询；点击任一 Session 的“在弹窗查看对话”后，事件在独立 Chatbot Dialog 中呈现，不会打开新页面或默认下载。每条消息可下钻原始 JSON；需要保存完整证据时再导出原始 JSONL。关闭后仍停留在同一 Task Detail，焦点返回原 Session 按钮。检查后停止前台 Demo，并运行：
 
 ```bash
 npm run trace:status

@@ -91,7 +91,7 @@ Coding Task 出现在看板后，点击卡片默认先看到：
 2. 当前版本允许的 normal、Repair、failure、archive 边，与这次 Task 实际走过的边；
 3. 每条实际转换绑定的 Event sequence/type/time；
 4. 所有 Context/Implementation/Self Review/Review/Docs Gate Session、Spec Revision、StepAttempt Generation、Verification、Evidence 和 Git 结果；
-5. 每个角色会话都可打开原始 JSONL；当前正在运行的 Context、Implementation、Self Review、Review、Replan 或 Docs Gate 都支持增量跟随、分类筛选和游标读取。
+5. 每条 Context、Implementation、Self Review、Review、Replan 与 Docs Gate Session 都在同一个 Chatbot 弹窗中展示；可按对话、工具调用、工具结果、系统和错误筛选，运行中增量跟随，原始 JSON/JSONL 只作为下钻与导出证据。
 
 Restate Journal、恢复建议、技术 Artifact 与原始事件收在“高级诊断”中。进入 Restate 的链接已经按 `CodingTaskWorkflow + task_id` 过滤；Restate 负责执行排障，Moye Board 才是任务业务视图。
 

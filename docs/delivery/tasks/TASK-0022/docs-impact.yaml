@@ -1,0 +1,84 @@
+schema_version: 1
+task_id: TASK-0022
+graph_revision: 49
+intents: [task-create, coding-task-poc, docs-change]
+changed_paths:
+  - README.md
+  - docs/sources/findings/session-events-links-bypass-viewer.md
+  - docs/sources/findings/README.md
+  - docs/delivery/backlog/BL-0023.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/tasks/TASK-0022/task.yaml
+  - docs/delivery/tasks/TASK-0022/spec.md
+  - docs/delivery/tasks/TASK-0022/design.md
+  - docs/delivery/tasks/TASK-0022/plan.md
+  - docs/delivery/tasks/TASK-0022/verification.md
+  - docs/delivery/tasks/TASK-0022/docs-impact.yaml
+  - docs/delivery/tasks/README.md
+  - docs/graph.yaml
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - public/app.js
+  - public/index.html
+  - public/styles.css
+  - tests/e2e/demo.test.ts
+docs:
+  read:
+    - agent-contract
+    - root-readme
+    - docs-index
+    - codemap
+    - document-control-plane
+    - backlog-index
+    - tasks-index
+    - task-runtime-kernel
+    - overnight-multi-task-goal
+    - finding-backlog-docs-not-projected
+    - bl-0008-backlog-projection-sync
+    - bl-0002-single-agent-coding-loop
+    - restate-poc-architecture
+    - durable-runtime-pitfalls
+    - meta-index
+    - adr-0002-doc-lifecycle-roles
+    - findings-index
+    - sources-index
+    - finding-session-events-links-bypass-viewer
+    - bl-0023-chat-session-events
+    - task-0022-manifest
+    - task-0022-spec
+    - task-0022-design
+    - task-0022-plan
+    - task-0022-verification
+    - task-0022-docs-impact
+    - local-restate-poc-runbook
+    - runbooks-index
+  reviewed:
+    local-restate-poc-runbook: { outcome: updated, reason: "说明所有 Session Events 默认在 Chatbot Dialog 查看，下载仅为次要证据动作" }
+    moye-task-control-skill: { outcome: unchanged, reason: "Task 与文档门禁操作方式不变" }
+    architecture-overview: { outcome: unchanged, reason: "只调整只读审计界面，不改变系统边界或状态所有权" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "不改变 Restate 选型或 durable execution" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "不改变 Worktree、Git 或 Artifact 边界" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "已实现能力的呈现修复写入 Finding/Task，不重写需求来源" }
+    task-spec-document-closure-brainstorm: { outcome: unchanged, reason: "不改变 Task Spec 或文档关闭协议" }
+    task-0013-manifest: { outcome: unchanged, reason: "不改变 Core Control 历史事实" }
+    task-0014-manifest: { outcome: unchanged, reason: "不改变 Role Attempt 协议" }
+    task-0015-manifest: { outcome: unchanged, reason: "不改变 Review/Finding 领域语义" }
+    task-0016-manifest: { outcome: unchanged, reason: "不改变 Repair/Replan 控制语义" }
+    task-0017-manifest: { outcome: unchanged, reason: "不改变 Observer 或 Docs Impact Gate" }
+    task-0018-manifest: { outcome: unchanged, reason: "不改变 Core Closure 历史事实" }
+    task-0019-manifest: { outcome: unchanged, reason: "不改写真实页面编码闭环历史证据" }
+    task-0020-manifest: { outcome: unchanged, reason: "状态机审计事实不变" }
+    task-0021-manifest: { outcome: unchanged, reason: "本次修复其多 Session Events 入口，不改写归档证据" }
+    task-0012-manifest: { outcome: unchanged, reason: "本次补齐后来新增的多角色入口，不改写独立 Dialog 的历史交付事实" }
+    task-0002-manifest: { outcome: unchanged, reason: "不改变 Backlog Sync 历史事实" }
+    task-0003-manifest: { outcome: unchanged, reason: "不改变 TaskEnvelope 协议" }
+    task-0004-manifest: { outcome: unchanged, reason: "不改变 Git Effect" }
+    task-0005-manifest: { outcome: unchanged, reason: "不改变 Agent Adapter" }
+    task-0006-manifest: { outcome: unchanged, reason: "不改变 Coding Workflow" }
+    task-0007-manifest: { outcome: unchanged, reason: "仅改进既有 Trace Viewer 呈现" }
+    task-0008-manifest: { outcome: unchanged, reason: "不改变 Demo 历史事实" }
+    task-0009-manifest: { outcome: unchanged, reason: "不改变 OTLP/Phoenix 决策" }
+    task-0001-manifest: { outcome: unchanged, reason: "不改变 Task/Archive 生命周期" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "继续使用原生浏览器 JavaScript，无新增框架" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "不改变 Trace 后端和业务状态边界" }
+    codemap: { outcome: updated, reason: "登记全部 Session 统一进入 Chatbot Event Dialog" }
