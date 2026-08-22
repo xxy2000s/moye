@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { MoyeError } from "./errors.js";
 import {
   createLifecycleArtifact,
+  createLifecycleArtifactGate,
   lifecycleArtifactRef,
   lifecycleReviewSubjectDigest,
 } from "./lifecycle-artifact.js";
@@ -31,7 +32,9 @@ export type CoreV2LifecycleState =
   | "TEST_EXECUTION_REQUIRED"
   | "TEST_ASSESSMENT_REQUIRED"
   | "WAITING_RECONCILE"
-  | "FINAL_REVIEW_REQUIRED";
+  | "FINAL_REVIEW_REQUIRED"
+  | "VERIFICATION_GATE_REQUIRED"
+  | "MERGE_REQUIRED";
 
 export interface CoreV2LifecycleEvent {
   readonly sequence: number;
@@ -72,6 +75,7 @@ export interface CoreV2LifecycleProjection {
   readonly artifacts: readonly LifecycleArtifact[];
   readonly implementationCheckpoints: readonly ImplementationCheckpointV2[];
   readonly trustedTestRun: { readonly runId: string; readonly manifestRef: string; readonly manifestDigest: string } | null;
+  readonly verificationGateDigest: string | null;
   readonly invalidatedRevisions: readonly InvalidatedRevisionV2[];
   readonly events: readonly CoreV2LifecycleEvent[];
   readonly projectionDigest: string;
@@ -104,6 +108,7 @@ export function createCoreV2Lifecycle(input: {
     artifacts: [],
     implementationCheckpoints: [],
     trustedTestRun: null,
+    verificationGateDigest: null,
     invalidatedRevisions: [],
     events: [{ sequence: 1, type: "ArchitectRequired", at, detail: `r${input.specRevision}` }],
   });
@@ -321,6 +326,34 @@ export function workflowAcceptTestAssessmentV2(
   return next(projection, { state, artifacts: [...projection.artifacts, artifact], type: state === "FINAL_REVIEW_REQUIRED" ? "TestVerificationPassed" : state === "REPAIR_REQUIRED" ? "TestVerificationRequestedRepair" : "TestVerificationUnknown", at: instant(atInput), detail: artifact.artifactDigest });
 }
 
+export function workflowAcceptFinalReviewV2(
+  projectionInput: CoreV2LifecycleProjection,
+  attemptInput: RoleAttemptV2,
+  input: { readonly verdict: "PASSED" | "FINDINGS"; readonly findingRefs: readonly string[] },
+  atInput: string,
+): CoreV2LifecycleProjection {
+  const projection = parseProjection(projectionInput);
+  if (projection.state !== "FINAL_REVIEW_REQUIRED" || projection.candidateCommit === null) throw conflict("CORE_V2_FINAL_REVIEW_NOT_REQUIRED", "Final Review is not currently required");
+  const attempt = successfulAttempt(attemptInput, projection, "REVIEW", "FINAL_REVIEW", projection.candidateCommit);
+  const dependencies = [requiredArtifact(projection, "DOCS_IMPACT"), requiredArtifact(projection, "TEST_REPORT")].map(lifecycleArtifactRef);
+  const artifact = createLifecycleArtifact({ taskId: projection.taskId, specRevision: projection.specRevision, kind: "FINAL_REVIEW",
+    subjectCommit: projection.candidateCommit, producer: { role: "REVIEW", phase: attempt.phase, attemptId: attempt.attemptId, generation: attempt.generation, sessionId: attempt.run!.sessionId! }, dependencies,
+    payload: { type: "FINAL_REVIEW", verdict: input.verdict, subjectDigest: lifecycleReviewSubjectDigest(dependencies), findingRefs: input.findingRefs } });
+  return next(projection, { state: input.verdict === "PASSED" ? "VERIFICATION_GATE_REQUIRED" : "REPAIR_REQUIRED", artifacts: [...projection.artifacts, artifact],
+    type: input.verdict === "PASSED" ? "FinalReviewPassed" : "FinalReviewRequestedRepair", at: instant(atInput), detail: artifact.artifactDigest });
+}
+
+export function workflowPassVerificationGateV2(projectionInput: CoreV2LifecycleProjection, atInput: string): CoreV2LifecycleProjection {
+  const projection = parseProjection(projectionInput);
+  if (projection.state !== "VERIFICATION_GATE_REQUIRED") throw conflict("CORE_V2_GATE_NOT_REQUIRED", "Verification Gate is not currently required");
+  const requiredKinds = ["SPEC", "DESIGN", "PLAN", "DESIGN_REVIEW", "DOCS_IMPACT", "TEST_PLAN", "TEST_REPORT", "FINAL_REVIEW"] as const;
+  const artifacts = requiredKinds.map((kind) => requiredArtifact(projection, kind));
+  const gate = createLifecycleArtifactGate({ taskId: projection.taskId, specRevision: projection.specRevision,
+    requirements: artifacts.map((artifact) => ({ kind: artifact.kind, artifactDigest: artifact.artifactDigest, subjectCommit: artifact.subjectCommit })), artifacts });
+  return seal({ ...withoutDigest(projection), state: "MERGE_REQUIRED", verificationGateDigest: gate.gateDigest,
+    events: append(projection.events, "VerificationGatePassed", instant(atInput), gate.gateDigest) });
+}
+
 export function workflowReplanV2(
   projectionInput: CoreV2LifecycleProjection,
   input: { readonly nextSubjectCommit: string; readonly reason: string; readonly at: string },
@@ -344,6 +377,7 @@ export function workflowReplanV2(
     artifacts: [],
     implementationCheckpoints: [],
     trustedTestRun: null,
+    verificationGateDigest: null,
     invalidatedRevisions: [...projection.invalidatedRevisions, invalidated],
     events: append(projection.events, "SpecRevisionReplanned", instant(input.at), `r${projection.specRevision + 1}:${reason}`),
   });
@@ -353,7 +387,7 @@ function successfulAttempt(
   input: RoleAttemptV2,
   projection: CoreV2LifecycleProjection,
   role: "ARCHITECT" | "IMPLEMENTATION" | "DOCUMENTATION" | "TEST_VERIFICATION" | "REVIEW",
-  phase: "ARCHITECT" | "IMPLEMENTATION" | "DOCUMENTATION" | "TEST_PLAN" | "TEST_ASSESSMENT" | "DESIGN_REVIEW",
+  phase: "ARCHITECT" | "IMPLEMENTATION" | "DOCUMENTATION" | "TEST_PLAN" | "TEST_ASSESSMENT" | "DESIGN_REVIEW" | "FINAL_REVIEW",
   expectedCommit = projection.subjectCommit,
 ): RoleAttemptV2 {
   const attempt = parseRoleAttemptV2(JSON.parse(JSON.stringify(input)), input.attemptDigest);
@@ -373,7 +407,7 @@ function producerFromTest(attempt: RoleAttemptV2) {
   return { role: "TEST_VERIFICATION" as const, phase: attempt.phase, attemptId: attempt.attemptId, generation: attempt.generation, sessionId: attempt.run!.sessionId! };
 }
 
-function requiredArtifact(projection: CoreV2LifecycleProjection, kind: "SPEC" | "DESIGN" | "PLAN" | "DOCS_IMPACT" | "TEST_PLAN" | "TEST_REPORT"): LifecycleArtifact {
+function requiredArtifact(projection: CoreV2LifecycleProjection, kind: "SPEC" | "DESIGN" | "PLAN" | "DESIGN_REVIEW" | "DOCS_IMPACT" | "TEST_PLAN" | "TEST_REPORT" | "FINAL_REVIEW"): LifecycleArtifact {
   const artifact = projection.artifacts.find((item) => item.kind === kind);
   if (artifact === undefined) throw conflict("CORE_V2_ARTIFACT_MISSING", `${kind} Artifact is missing`);
   return artifact;

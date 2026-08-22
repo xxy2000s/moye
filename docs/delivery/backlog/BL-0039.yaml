@@ -2,7 +2,7 @@ schema_version: 1
 id: "BL-0039"
 title: "接入 Final Review 与确定性 Verification Gate"
 kind: "feature"
-status: "ready"
+status: "converted_to_task"
 priority: "high"
 source_refs: [core-v2-five-plus-one-agent-requirements]
 affected_areas: [review-agent, verification-gate, findings]
@@ -10,4 +10,4 @@ acceptance_outline:
   - "Final Review 使用与 Design Review、Implementation 隔离的 Attempt"
   - "Gate 绑定 Spec Revision、Candidate Commit、Test Report 和 Evidence Digest"
   - "Blocking Finding、缺失证据或 Revision 漂移不能通过"
-resolution: { task_refs: [], duplicate_of: null, reason: "形成独立审查与确定性验收边界" }
+resolution: { task_refs: ["TASK-0037"], duplicate_of: null, reason: "由 TASK-0037 接入 Final Review 与 Gate" }

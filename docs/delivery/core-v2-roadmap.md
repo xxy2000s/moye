@@ -27,7 +27,7 @@
 | TASK-0034 | BL-0036 | Sealed / Runtime authoritative | 接入 IMPLEMENTATION、代码/测试写入、Self Review、Checkpoint；实现缺陷可 REPAIR 到 Attempt N+1 | `SealedTaskWorkflow` Receipt |
 | TASK-0035 | BL-0037 | Sealed / Runtime authoritative | 接入 DOCUMENTATION，真实修改项目当前事实并完成 Context Re-route、Graph 与 Docs Impact Gate | `SealedTaskWorkflow` Receipt |
 | TASK-0036 | BL-0038 | Sealed / Runtime authoritative | 接入 TEST_PLAN、Trusted Runner、TEST_ASSESSMENT 和综合测试报告；UNKNOWN 进入 Reconcile 而非重复测试 | `SealedTaskWorkflow` Receipt |
-| TASK-0037 | BL-0039 | Planned | 接入隔离 FINAL_REVIEW 与确定性 Verification Gate，绑定 Spec Revision、Candidate Commit、报告和 Evidence Digest | — |
+| TASK-0037 | BL-0039 | Sealed / Runtime authoritative | 接入隔离 FINAL_REVIEW 与确定性 Verification Gate，绑定 Spec Revision、Candidate Commit、报告和 Evidence Digest | `SealedTaskWorkflow` Receipt |
 | TASK-0038 | BL-0006、BL-0007 | Planned | 建成确定性 Observer 投影和非阻塞 OBSERVER_KNOWLEDGE；旁路崩溃不阻塞 Closure，Knowledge Disposition 必填 | — |
 | TASK-0039 | BL-0040 | Planned | 统一 Workflow 串起 Intake→Archive、Repair/Replan/Reconcile/Merge/Closure；CLI 与真实故障矩阵完成最终验收 | — |
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createCoreV2Lifecycle, workflowAcceptArchitectV2, workflowAcceptDesignReviewV2, workflowAcceptDocumentationV2, workflowAcceptImplementationV2, workflowAcceptTestAssessmentV2, workflowAcceptTestPlanV2, workflowAuthorizeRepairV2, workflowRecordTrustedTestRunV2, workflowReplanV2 } from "../../src/domain/core-v2-lifecycle.js";
+import { createCoreV2Lifecycle, workflowAcceptArchitectV2, workflowAcceptDesignReviewV2, workflowAcceptDocumentationV2, workflowAcceptFinalReviewV2, workflowAcceptImplementationV2, workflowAcceptTestAssessmentV2, workflowAcceptTestPlanV2, workflowAuthorizeRepairV2, workflowPassVerificationGateV2, workflowRecordTrustedTestRunV2, workflowReplanV2 } from "../../src/domain/core-v2-lifecycle.js";
 import { completeRoleAttemptV2, createRoleAttemptV2, createRoleRunEvidenceV2, startRoleAttemptV2 } from "../../src/domain/role-runtime-v2.js";
 import type { AgentRoleV2, RolePhaseV2 } from "../../src/domain/role-runtime-v2.js";
 
@@ -84,6 +84,15 @@ describe("Core v2 Architect and Design Review lifecycle", () => {
     const assessed = workflowAcceptTestAssessmentV2(planned, success("TEST_VERIFICATION", "TEST_ASSESSMENT", "c".repeat(40)), report("PASS"), time(9));
     expect(assessed.state).toBe("FINAL_REVIEW_REQUIRED");
   });
+
+  it("lets only isolated Final Review plus deterministic Artifact Gate reach Merge", () => {
+    const assessed = assessedReady();
+    const reviewed = workflowAcceptFinalReviewV2(assessed, success("REVIEW", "FINAL_REVIEW", "c".repeat(40)), { verdict: "PASSED", findingRefs: [] }, time(10));
+    expect(reviewed.state).toBe("VERIFICATION_GATE_REQUIRED");
+    const gated = workflowPassVerificationGateV2(reviewed, time(11));
+    expect(gated.state).toBe("MERGE_REQUIRED");
+    expect(gated.verificationGateDigest).toMatch(/^sha256:/);
+  });
 });
 
 function implementationReady() {
@@ -98,6 +107,12 @@ function documentedReady() {
     type: "DOCS_IMPACT", routeDigest: sha("8"), reportRef: "artifact://docs-impact",
     dispositions: [{ documentId: "codemap", outcome: "updated", reason: "changed" }],
   }, time(6));
+}
+
+function assessedReady() {
+  let projection = workflowAcceptTestPlanV2(documentedReady(), success("TEST_VERIFICATION", "TEST_PLAN", "c".repeat(40)), testPlan(), time(7));
+  projection = workflowRecordTrustedTestRunV2(projection, { runId: "run-1", manifestRef: "artifact://test-manifest", manifestDigest: sha("9"), at: time(8) });
+  return workflowAcceptTestAssessmentV2(projection, success("TEST_VERIFICATION", "TEST_ASSESSMENT", "c".repeat(40)), report("PASS"), time(9));
 }
 
 function testPlan() { return { type: "TEST_PLAN" as const, cases: [{ id: "TC-1", requirementIds: ["REQ-1"], category: "NORMAL" as const, argv: ["node", "--version"] }] }; }
@@ -130,4 +145,4 @@ function deliverable() { return {
   design: { type: "DESIGN" as const, decisions: ["workflow owns state"], components: ["core-v2"], risks: ["stale revision"] },
   plan: { type: "PLAN" as const, items: [{ id: "P1", description: "implement", dependsOn: [], status: "PENDING" as const }] },
 }; }
-function time(n: number) { return `2026-08-23T00:00:0${n}.000Z`; }
+function time(n: number) { return `2026-08-23T00:00:${String(n).padStart(2, "0")}.000Z`; }

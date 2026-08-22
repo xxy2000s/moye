@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 71
+graph_revision: 72
 updated_at: "2026-08-23"
 
 entrypoints:
@@ -2560,6 +2560,54 @@ documents:
     authority: task-evidence
     read_when: [task-close, task-archive]
 
+  - id: task-0037-manifest
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0037/task.yaml
+    type: task-manifest
+    status: archived
+    scope: core-v2-final-review
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0037-spec
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0037/spec.md
+    type: task-spec
+    status: archived
+    scope: core-v2-final-review
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0037-design
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0037/design.md
+    type: task-design
+    status: archived
+    scope: core-v2-final-review
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0037-plan
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0037/plan.md
+    type: task-plan
+    status: archived
+    scope: core-v2-final-review
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0037-verification
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0037/verification.md
+    type: verification
+    status: archived
+    scope: core-v2-final-review
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0037-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0037/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: core-v2-final-review
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
 relations:
   - from: root-readme
     to: docs-index
@@ -4138,6 +4186,38 @@ relations:
     type: reports_on
 
   - from: task-0036-manifest
+    to: core-v2-agent-lifecycle
+    type: implements_slice_of
+
+  - from: bl-0039-core-v2-final-review
+    to: task-0037-manifest
+    type: schedules_into
+
+  - from: archived-tasks-index
+    to: task-0037-manifest
+    type: indexes
+
+  - from: task-0037-spec
+    to: task-0037-manifest
+    type: belongs_to
+
+  - from: task-0037-design
+    to: task-0037-spec
+    type: refines
+
+  - from: task-0037-plan
+    to: task-0037-manifest
+    type: belongs_to
+
+  - from: task-0037-verification
+    to: task-0037-manifest
+    type: verifies
+
+  - from: task-0037-docs-impact
+    to: task-0037-manifest
+    type: reports_on
+
+  - from: task-0037-manifest
     to: core-v2-agent-lifecycle
     type: implements_slice_of
 
