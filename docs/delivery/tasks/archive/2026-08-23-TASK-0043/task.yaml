@@ -1,0 +1,24 @@
+schema_version: 1
+id: TASK-0043
+title: 真实 Agent Finding 与 Replan 产品验收矩阵
+status: seal_prepared
+outcome: null
+backlog_refs:
+  - BL-0043
+spec_revision: 1
+workflow_id: sealed-task/TASK-0043
+execution_mode: sealed-result-commit
+base_commit: bf3ed72bf050d35a2655e4b3cb65a1141ea57603
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-23-TASK-0043
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:d7bfe892cd705af9d978075c019354209a4d6ff189851e6baea7ff3702c4992b
+  base_commit: bf3ed72bf050d35a2655e4b3cb65a1141ea57603
+  archive_path: docs/delivery/tasks/archive/2026-08-23-TASK-0043

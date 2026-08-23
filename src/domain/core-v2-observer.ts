@@ -18,7 +18,8 @@ export interface CoreV2ObserverReport {
 export function createCoreV2ObserverReport(projectionInput: CoreV2LifecycleProjection, attemptInputs: readonly RoleAttemptV2[]): CoreV2ObserverReport {
   const projection = parseCoreV2LifecycleV2(JSON.parse(JSON.stringify(projectionInput)) as CoreV2LifecycleProjection);
   const attempts = attemptInputs.map((item) => parseRoleAttemptV2(JSON.parse(JSON.stringify(item)), item.attemptDigest));
-  if (attempts.some((item) => item.taskId !== projection.taskId || item.specRevision !== projection.specRevision)) throw new Error("Observer Attempt scope mismatch");
+  const allowedRevisions = [projection.specRevision, ...projection.invalidatedRevisions.map((item) => item.specRevision)];
+  if (attempts.some((item) => !coreV2ObserverAttemptInScope(projection.taskId, allowedRevisions, item.taskId, item.specRevision))) throw new Error("Observer Attempt scope mismatch");
   const failures = attempts.filter((item) => item.state === "FAILED");
   const unknown = attempts.filter((item) => item.state === "WAITING_RECONCILE");
   const alerts = [
@@ -31,4 +32,8 @@ export function createCoreV2ObserverReport(projectionInput: CoreV2LifecycleProje
       artifacts: projection.artifacts.map((item) => item.kind).sort(), sessions: attempts.flatMap((item) => item.run?.sessionId === undefined ? [] : [item.run.sessionId]).sort() },
     alerts, projectionDigest: projection.projectionDigest };
   return Object.freeze({ ...core, reportDigest: `sha256:${createHash("sha256").update(JSON.stringify(core)).digest("hex")}` });
+}
+
+export function coreV2ObserverAttemptInScope(taskId: string, allowedRevisions: readonly number[], attemptTaskId: string, attemptRevision: number): boolean {
+  return attemptTaskId === taskId && allowedRevisions.includes(attemptRevision);
 }

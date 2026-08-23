@@ -81,6 +81,7 @@ describe("Core v2 Architect and Design Review lifecycle", () => {
     expect(() => workflowAcceptTestAssessmentV2(planned, success("TEST_VERIFICATION", "TEST_ASSESSMENT", "c".repeat(40)), report("PASS"), time(8)))
       .toThrow(/requires recorded/);
     planned = workflowRecordTrustedTestRunV2(planned, { runId: "run-1", manifestRef: "artifact://test-manifest", manifestDigest: sha("9"), at: time(8) });
+    expect(planned.trustedTestRuns).toEqual([planned.trustedTestRun]);
     const assessed = workflowAcceptTestAssessmentV2(planned, success("TEST_VERIFICATION", "TEST_ASSESSMENT", "c".repeat(40)), report("PASS"), time(9));
     expect(assessed.state).toBe("FINAL_REVIEW_REQUIRED");
   });
@@ -101,6 +102,17 @@ describe("Core v2 Architect and Design Review lifecycle", () => {
     const repaired = workflowAuthorizeRepairV2(projection, { reason: "test failed", at: time(10) });
     expect(repaired).toMatchObject({ state: "IMPLEMENTATION_REQUIRED", implementationGeneration: 1, trustedTestRun: null });
     expect(repaired.artifacts.map((artifact) => artifact.kind)).toEqual(["SPEC", "DESIGN", "PLAN", "DESIGN_REVIEW"]);
+    expect(repaired.trustedTestRuns).toHaveLength(1);
+    expect(repaired.invalidatedGenerations).toEqual([
+      expect.objectContaining({
+        specRevision: 1,
+        implementationGeneration: 0,
+        candidateCommit: "c".repeat(40),
+        artifactRefs: expect.arrayContaining([expect.objectContaining({ kind: "DOCS_IMPACT" }), expect.objectContaining({ kind: "TEST_REPORT" })]),
+        trustedTestRun: expect.objectContaining({ runId: "run-1", manifestDigest: sha("9") }),
+        reason: "test failed",
+      }),
+    ]);
   });
 
   it("lets only isolated Final Review plus deterministic Artifact Gate reach Merge", () => {

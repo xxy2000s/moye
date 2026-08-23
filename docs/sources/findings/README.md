@@ -31,5 +31,10 @@ Finding 与 Incident 的边界：
 - [Core v2 成功路径没有 Archive Receipt](./core-v2-success-archive-receipt-missing.md)：成功 Task 当前从 CLOSED 直接投影 ARCHIVED，尚未执行真实 Success Archive Effect。
 - [BL-0043 使用了不存在的 in_progress 状态](./bl-0043-uses-invalid-in-progress-status.md)：Backlog 同步门禁正确拒绝 Runtime 风格状态，已改为 SCHEDULED。
 - [Core v2 历史 Recovery Projection 导致 Trace 详情返回 500](./core-v2-legacy-recovery-trace-nullability.md)：旧 schema 缺失 nullable 字段时只读状态机投影错误解引用，已由 TASK-0042 纳入兼容修复。
+- [Core v2 Repair 后旧 Generation Evidence 缺少显式失效账本](./core-v2-repair-evidence-not-explicitly-invalidated.md)：旧 Artifact 文件仍在但 Projection 无法枚举所有 Trusted Test 并解释旧 Generation 失效关系，由 TASK-0043 修复。
+- [Core v2 Design Reviewer 把未来阶段尚未发生误判为 Finding](./core-v2-design-review-crosses-phase-boundary.md)：真实 Reviewer 在 Implementation 前因 Candidate/测试尚不存在触发错误 REPLAN，由 TASK-0043 收紧 Phase 边界并保留失败历史。
+- [Core v2 Observer 拒绝已失效 Revision 的合法历史 Attempt](./core-v2-observer-rejects-invalidated-revision-attempts.md)：真实失败归档 Task 因 Observer 只接受当前 Revision 而 Trace 500，由 TASK-0043 放行显式 invalidated Revision。
+- [Core v2 Documentation Agent 提前消费 Trusted Test Gate](./core-v2-documentation-agent-consumes-test-gate.md)：真实 Test Failure 场景在 Trusted Runner 前被 Docs Agent 自行运行测试并提前 Repair，由 TASK-0043 收紧验收 Phase ownership。
+- [Core v2 Fault Acceptance 默认场景选择被错误拒绝](./core-v2-acceptance-faults-default-selection-rejected.md)：未设置场景过滤器时全量入口被错误拒绝，由 TASK-0043 修复并用未筛选命令复验。
 
 不要为了演示目录创建虚构 Bug。

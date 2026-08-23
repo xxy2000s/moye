@@ -54,6 +54,7 @@ tests/
 scripts/
 ├── demo.ts            一键启动 Restate、Moye、隔离 Fake/真实 CLI Coding Task 和 Board
 ├── live_product_acceptance.ts  经统一 CLI 提交真实 Codex 多 Session Task，并验收 API Fake 拒绝、CLI wait、Merge 与 Archive
+├── core_v2_acceptance.ts  为每个 Happy/Finding/Repair/Replan 场景创建独立真实 CoreV2Workflow、Git/Artifact Root，并审计 Role/Test/Gate/Merge/Closure/Archive Evidence
 ├── trace-compose.ts   argv-only 启停可选 Phoenix Profile
 ├── codex_fixture_smoke.mjs  一次性真实 Codex Fixture（拒绝覆盖既有证据）
 └── docs_graph.rb      文档校验、Context Route、Impact Gate、Mermaid
@@ -81,10 +82,10 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 - `domain/review-finding.ts` 固定 Self Review、Candidate-bound Review Input、成功 ReviewResult、独立执行失败、Finding 稳定身份/追加处置和 Blocking Gate；Core 只接受绑定最近 Review Manifest Digest 的可信 Gate Result；
 - `core/workflow.ts` 用确定性 Scenario Adapter 贯通线性成功、Repair、Replan、UNKNOWN→Reconcile、预算终止和取消；`core/scenario-artifact.ts` 在昂贵执行前写稳定 Intent，复用已确认结果并把仅有 Intent 的情况停为 UNKNOWN；
 - `domain/role-runtime-v2.ts` 定义 Core v2 六类 Role、隔离 Phase、固定权限、Attempt/Generation/Event、Run Evidence 和 UNKNOWN/Reconcile 领域协议；`agent/role-runtime-v2.ts` 先持久化 Intent，再以 argv-only 真实 Codex/Claude 进程生成 Session、原始 Event、stderr、结构化 Output 与逐文件摘要 Manifest，完整结果可复用，Intent-only 禁止盲重跑；
-- `domain/core-v2-lifecycle.ts` 是 Core v2 Lifecycle Reducer，覆盖 Architect/Design Review/REPLAN、Implementation Checkpoint/Repair、Documentation、两阶段 Test、Final Review、Verification Gate、Knowledge Disposition，以及成功/失败 Closure 与 Archive Pending/Failed/Archived；Repair Generation 绑定上一 Candidate，旧 Attempt 不可覆盖；
+- `domain/core-v2-lifecycle.ts` 是 Core v2 Lifecycle Reducer，覆盖 Architect/Design Review/REPLAN、Implementation Checkpoint/Repair、Documentation、两阶段 Test、Final Review、Verification Gate、Knowledge Disposition，以及成功/失败 Closure 与 Archive Pending/Failed/Archived；Repair Generation 绑定上一 Candidate，append-only `trustedTestRuns` 与 `invalidatedGenerations` 保留旧 Candidate/Checkpoint/Test/Artifact 失效关系，旧 Attempt 不可覆盖；
 - `archive/core-v2-artifact-store.ts` 提供 Task namespace、content-checked pending/rename 和冲突拒绝；`core-v2-failure.ts`、`core-v2-success.ts` 分别持久化失败/成功 Closure 与 Archive Receipt。共享 Artifact Root 中的不同 Task 互不覆盖，相同 Task/Closure 只接受相同内容；
 - `testing/trusted-test-runner.ts` 是 argv-only 真实测试执行 Effect Adapter，持久化 Intent、逐 Case 退出码/stdout/stderr 与 Manifest；文件 Digest 绑定原始 Evidence 字节，Manifest 复用会重新校验文件，在 Intent-only 恢复时返回 UNKNOWN；
-- `domain/core-v2-observer.ts` 是 Core v2 确定性只读投影，汇总 Lifecycle/Attempt 的 trace、失败、恢复和 UNKNOWN 事实；
+- `domain/core-v2-observer.ts` 是 Core v2 确定性只读投影，汇总 Lifecycle/Attempt 的 trace、失败、恢复和 UNKNOWN 事实；它接受当前 Revision 与 `invalidatedRevisions` 明确登记的历史 Attempt，仍拒绝其他 Task 或未登记 Revision；
 - `restate/core-v2-services.ts` 是 keyed `CoreV2Workflow` 产品编排：只由 Workflow 推进 Task，调用真实 Role Runtime、受信任 Test Runner、幂等 Git Candidate checkpoint、Verification Gate、双父 Merge、成功/失败 Closure 与独立 Archive Effect，并同步 ProjectBoard；Merge `update-ref` 回执丢失由同一 Step 读取 Git marker/parent/target 后返回 `ALREADY_APPLIED`，Archive 失败只等待同一 token 的 archive-only retry；`restate/invocation-inspector.ts` 从 Restate Admin 核验暂停 source Invocation 和 completed failed predecessor，供 append-only Core v2 recovery successor fencing；
 - `agent/role-runner.ts` 为确定性 Core PoC 提供旧统一角色协议；`agent/live-role.ts` 为 Coding 产品 Context、Self Review、Replan、Docs Gate 提供真实只读 CLI Session、结构化 Finding、稳定 Intent/Manifest 与原始事件；
 - `agent/runner.ts` 规范请求、验证 Worktree/Git common dir、运行中 JSONL Stream 与最终 Artifact；`codex-exec.ts` 以 `workspace-write + --add-dir <validated-git-common-dir>` 允许真实 commit，`claude-print.ts` 维持自己的 argv-only 边界；两者只把 stdout chunk 交给行边界写入器，不推进 Task 状态；Claude 原生 OTel/内容采集只注入当前子进程，默认关闭；

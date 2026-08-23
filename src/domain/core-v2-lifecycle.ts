@@ -54,6 +54,16 @@ export interface InvalidatedRevisionV2 {
   readonly reason: string;
 }
 
+export interface InvalidatedGenerationV2 {
+  readonly specRevision: number;
+  readonly implementationGeneration: number;
+  readonly candidateCommit: string;
+  readonly checkpointDigest: string;
+  readonly artifactRefs: readonly LifecycleArtifactRef[];
+  readonly trustedTestRun: CoreV2LifecycleProjection["trustedTestRun"];
+  readonly reason: string;
+}
+
 export interface ImplementationCheckpointV2 {
   readonly attemptId: string;
   readonly generation: number;
@@ -136,6 +146,7 @@ export interface CoreV2LifecycleProjection {
   readonly artifacts: readonly LifecycleArtifact[];
   readonly implementationCheckpoints: readonly ImplementationCheckpointV2[];
   readonly trustedTestRun: { readonly runId: string; readonly manifestRef: string; readonly manifestDigest: string } | null;
+  readonly trustedTestRuns: readonly { readonly runId: string; readonly manifestRef: string; readonly manifestDigest: string }[];
   readonly verificationGateDigest: string | null;
   readonly knowledgeDispositionDigest: string | null;
   readonly mergeCommit: string | null;
@@ -146,6 +157,7 @@ export interface CoreV2LifecycleProjection {
   readonly archive: CoreV2ArchiveV2 | null;
   readonly outcome: "SUCCEEDED" | "FAILED_TERMINAL" | null;
   readonly invalidatedRevisions: readonly InvalidatedRevisionV2[];
+  readonly invalidatedGenerations: readonly InvalidatedGenerationV2[];
   readonly events: readonly CoreV2LifecycleEvent[];
   readonly projectionDigest: string;
 }
@@ -177,6 +189,7 @@ export function createCoreV2Lifecycle(input: {
     artifacts: [],
     implementationCheckpoints: [],
     trustedTestRun: null,
+    trustedTestRuns: [],
     verificationGateDigest: null,
     knowledgeDispositionDigest: null,
     mergeCommit: null,
@@ -187,6 +200,7 @@ export function createCoreV2Lifecycle(input: {
     archive: null,
     outcome: null,
     invalidatedRevisions: [],
+    invalidatedGenerations: [],
     events: [{ sequence: 1, type: "ArchitectRequired", at, detail: `r${input.specRevision}` }],
   });
 }
@@ -320,6 +334,19 @@ export function workflowAuthorizeRepairV2(
   const projection = parseProjection(projectionInput);
   if (projection.state !== "REPAIR_REQUIRED") throw conflict("CORE_V2_REPAIR_NOT_REQUIRED", "REPAIR requires blocking Implementation Findings");
   const reason = required(input.reason, "reason");
+  const checkpoint = projection.implementationCheckpoints.findLast((item) => item.generation === projection.implementationGeneration);
+  if (checkpoint === undefined || projection.candidateCommit === null) throw conflict("CORE_V2_REPAIR_CHECKPOINT_MISSING", "REPAIR requires the failed Generation checkpoint");
+  const invalidated: InvalidatedGenerationV2 = {
+    specRevision: projection.specRevision,
+    implementationGeneration: projection.implementationGeneration,
+    candidateCommit: projection.candidateCommit,
+    checkpointDigest: checkpoint.checkpointDigest,
+    artifactRefs: projection.artifacts
+      .filter((artifact) => !["SPEC", "DESIGN", "PLAN", "DESIGN_REVIEW"].includes(artifact.kind))
+      .map(lifecycleArtifactRef),
+    trustedTestRun: projection.trustedTestRun,
+    reason,
+  };
   return seal({
     ...withoutDigest(projection),
     state: "IMPLEMENTATION_REQUIRED",
@@ -332,6 +359,7 @@ export function workflowAuthorizeRepairV2(
     mergeReceipt: null,
     successClosure: null,
     outcome: null,
+    invalidatedGenerations: [...(projection.invalidatedGenerations ?? []), invalidated],
     events: append(projection.events, "ImplementationRepairAuthorized", instant(input.at), `g${projection.implementationGeneration + 1}:${reason}`),
   });
 }
@@ -423,6 +451,7 @@ export function workflowRecordTrustedTestRunV2(
   if (projection.state !== "TEST_EXECUTION_REQUIRED") throw conflict("CORE_V2_TEST_EXECUTION_NOT_REQUIRED", "Trusted Test execution is not currently required");
   const trustedTestRun = { runId: required(input.runId, "runId"), manifestRef: required(input.manifestRef, "manifestRef"), manifestDigest: sha(input.manifestDigest, "manifestDigest") };
   return seal({ ...withoutDigest(projection), state: "TEST_ASSESSMENT_REQUIRED", trustedTestRun,
+    trustedTestRuns: [...(projection.trustedTestRuns ?? []), trustedTestRun],
     events: append(projection.events, "TrustedTestRunRecorded", instant(input.at), trustedTestRun.manifestDigest) });
 }
 

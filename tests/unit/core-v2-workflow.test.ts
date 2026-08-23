@@ -7,7 +7,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { createCoreV2Lifecycle } from "../../src/domain/core-v2-lifecycle.js";
-import { ensureGitCheckpoint, normalizeArchitectDeliverableV2 } from "../../src/restate/core-v2-services.js";
+import { coreV2AcceptanceInstruction, coreV2AssessmentPrompt, coreV2ReviewBoundary, ensureGitCheckpoint, normalizeArchitectDeliverableV2, validateCoreV2AcceptanceControl } from "../../src/restate/core-v2-services.js";
 import type { CoreV2WorkflowProjection } from "../../src/restate/core-v2-services.js";
 import { buildCoreV2StateMachine } from "../../src/trace/state-machine.js";
 
@@ -19,6 +19,35 @@ afterEach(async () => {
 });
 
 describe("Core v2 Workflow control-plane", () => {
+  it("keeps acceptance fault control disabled unless the Service explicitly opts in", () => {
+    expect(() => validateCoreV2AcceptanceControl(undefined, false)).not.toThrow();
+    expect(() => validateCoreV2AcceptanceControl({ profile: "TEST_FAILURE" }, false)).toThrow("acceptance fault injection is disabled");
+    expect(() => validateCoreV2AcceptanceControl({ profile: "TEST_FAILURE" }, true)).not.toThrow();
+    expect(() => validateCoreV2AcceptanceControl({ profile: "NOT_REAL" } as never, true)).toThrow("acceptance profile is invalid");
+  });
+
+  it("targets acceptance conditions to one real Role phase, Revision and Generation", () => {
+    expect(coreV2AcceptanceInstruction({ profile: "IMPLEMENTATION_SELF_REVIEW" }, "IMPLEMENTATION", 1, 0)).toContain("generation-zero-defect");
+    expect(coreV2AcceptanceInstruction({ profile: "IMPLEMENTATION_SELF_REVIEW" }, "IMPLEMENTATION", 1, 1)).toBe("");
+    expect(coreV2AcceptanceInstruction({ profile: "FINAL_REVIEW" }, "FINAL_REVIEW", 1, 0)).toContain("missing-security-doc");
+    expect(coreV2AcceptanceInstruction({ profile: "DOCUMENTATION" }, "DOCUMENTATION", 1, 0)).toContain("missing-heading");
+    expect(coreV2AcceptanceInstruction({ profile: "TEST_FAILURE" }, "DOCUMENTATION", 1, 0)).toContain("Trusted Runner");
+    expect(coreV2AcceptanceInstruction({ profile: "DESIGN_REPLAN" }, "DESIGN_REVIEW", 1, 0)).toContain("missing-trusted-runner");
+    expect(coreV2AcceptanceInstruction({ profile: "DESIGN_REPLAN" }, "DESIGN_REVIEW", 2, 0)).toBe("");
+  });
+
+  it("keeps Design Review inside its pre-Implementation phase boundary", () => {
+    expect(coreV2ReviewBoundary("DESIGN_REVIEW")).toContain("Implementation has intentionally not started");
+    expect(coreV2ReviewBoundary("DESIGN_REVIEW")).toContain("absent Candidate files");
+    expect(coreV2ReviewBoundary("FINAL_REVIEW")).toContain("Review the Candidate");
+  });
+
+  it("requires a stable Finding ref when real Trusted Test evidence fails", () => {
+    const prompt = coreV2AssessmentPrompt({ outcome: "FAILED", cases: [{ exitCode: 17 }] }, "artifact://trusted-test");
+    expect(prompt).toContain("return FINDINGS");
+    expect(prompt).toContain("finding://trusted-test/nonzero-exit");
+  });
+
   it("normalizes a real Architect scalar acceptance criterion without weakening Artifact validation", () => {
     const value = normalizeArchitectDeliverableV2({
       spec: { type: "SPEC", requirements: [{ id: "REQ-1", statement: "ship", acceptanceCriteria: "real evidence" as unknown as readonly string[] }] },

@@ -31,7 +31,13 @@ export interface CoreV2WorkflowInput {
   readonly mergeFault?: { readonly loseAcknowledgementOnceAt?: string; readonly exitAfterRefUpdateOnceAt?: string };
   readonly failureArchiveFault?: { readonly failFirstAttempt?: boolean };
   readonly successArchiveFault?: { readonly failFirstAttempt?: boolean };
+  readonly acceptanceControl?: CoreV2AcceptanceControl;
 }
+export type CoreV2AcceptanceProfile = "IMPLEMENTATION_SELF_REVIEW" | "FINAL_REVIEW" | "DOCUMENTATION" | "TEST_FAILURE" | "DESIGN_REPLAN";
+export interface CoreV2AcceptanceControl { readonly profile: CoreV2AcceptanceProfile }
+const CORE_V2_ACCEPTANCE_PROFILES = new Set<CoreV2AcceptanceProfile>([
+  "IMPLEMENTATION_SELF_REVIEW", "FINAL_REVIEW", "DOCUMENTATION", "TEST_FAILURE", "DESIGN_REPLAN",
+]);
 export interface CoreV2RecoveryRecord {
   readonly sourceInvocationId: string;
   readonly invocationFactDigest: string;
@@ -71,6 +77,8 @@ export const coreV2Workflow = restate.workflow({
   name: "CoreV2Workflow", options: { workflowRetention: { days: 30 } }, handlers: {
     run: async (ctx: restate.WorkflowContext<CoreV2WorkflowState>, input: CoreV2WorkflowInput): Promise<CoreV2WorkflowProjection> => {
       if (ctx.key !== input.taskId) throw new restate.TerminalError("Workflow key must equal Task ID", { errorCode: 409 });
+      try { validateCoreV2AcceptanceControl(input.acceptanceControl, process.env["MOYE_ACCEPTANCE_FAULT_INJECTION"] === "enabled"); }
+      catch (error) { throw new restate.TerminalError(error instanceof Error ? error.message : String(error), { errorCode: 403 }); }
       await ctx.objectClient(taskAuthority, input.taskId).claim({ owner: "CORE_V2_WORKFLOW", specRevision: 1 });
       const startedAt = await durableNow(ctx, "intake-time");
       let projection: CoreV2WorkflowProjection = { schemaVersion: 1, taskId: input.taskId, projectId: input.projectId, title: input.title,
@@ -80,9 +88,9 @@ export const coreV2Workflow = restate.workflow({
       try {
         for (;;) {
           const revision = projection.lifecycle.specRevision;
-          const architect = await runRole(ctx, input, projection, "ARCHITECT", "ARCHITECT", projection.lifecycle.subjectCommit, 0, architectPrompt(input)); projection = addRun(projection, architect); projection = withLifecycle(projection,
+          const architect = await runRole(ctx, input, projection, "ARCHITECT", "ARCHITECT", projection.lifecycle.subjectCommit, 0, architectPrompt(input, revision)); projection = addRun(projection, architect); projection = withLifecycle(projection,
             workflowAcceptArchitectV2(projection.lifecycle, architect.attempt, architectDeliverable(architect.manifest), await durableNow(ctx, `architect-r${revision}-accepted`))); projection = await publish(ctx, input, projection);
-          const designReview = await runRole(ctx, input, projection, "REVIEW", "DESIGN_REVIEW", projection.lifecycle.subjectCommit, 0, reviewPrompt("DESIGN_REVIEW", projection)); projection = addRun(projection, designReview); projection = withLifecycle(projection,
+          const designReview = await runRole(ctx, input, projection, "REVIEW", "DESIGN_REVIEW", projection.lifecycle.subjectCommit, 0, reviewPrompt(input, "DESIGN_REVIEW", projection)); projection = addRun(projection, designReview); projection = withLifecycle(projection,
             workflowAcceptDesignReviewV2(projection.lifecycle, designReview.attempt, verdict(designReview.manifest), await durableNow(ctx, `design-review-r${revision}-accepted`))); projection = await publish(ctx, input, projection);
           if (projection.lifecycle.state === "IMPLEMENTATION_REQUIRED") break;
           if (revision >= 2) throw new Error("Design Review Findings exceeded Replan budget");
@@ -104,7 +112,7 @@ export const coreV2Workflow = restate.workflow({
             continue;
           }
           const candidate = projection.lifecycle.candidateCommit!;
-          const docs = await runRole(ctx, input, projection, "DOCUMENTATION", "DOCUMENTATION", candidate, generation, documentationPrompt(input)); projection = addRun(projection, docs);
+          const docs = await runRole(ctx, input, projection, "DOCUMENTATION", "DOCUMENTATION", candidate, generation, documentationPrompt(input, generation)); projection = addRun(projection, docs);
           if (docs.manifest.output?.recommendation !== "PASS") {
             projection = withLifecycle(projection, workflowRequestRepairV2(projection.lifecycle, { reason: docs.manifest.output?.findingRefs.join(", ") || "Documentation Finding", at: await durableNow(ctx, `docs-repair-g${generation}`) }));
             projection = await publish(ctx, input, projection); projection = await authorizeRepair(ctx, input, projection, generation, "blocking Documentation Finding"); continue;
@@ -130,7 +138,7 @@ export const coreV2Workflow = restate.workflow({
           const report = { type: "TEST_REPORT" as const, candidateCommit: candidate, outcomes: testManifest.cases.map((item) => ({ caseId: item.caseId, status: item.status, evidenceRefs: [manifestRef] })), recommendation: passed ? "PASS" as const : "FINDINGS" as const, findingRefs: passed ? [] : ["finding://test-verification"] };
           projection = withLifecycle(projection, workflowAcceptTestAssessmentV2(projection.lifecycle, assessment.attempt, report, await durableNow(ctx, `assessment-g${generation}-accepted`))); projection = await publish(ctx, input, projection);
           if (projection.lifecycle.state === "REPAIR_REQUIRED") { projection = await authorizeRepair(ctx, input, projection, generation, "blocking Test Verification Finding"); continue; }
-          const finalReview = await runRole(ctx, input, projection, "REVIEW", "FINAL_REVIEW", candidate, generation, reviewPrompt("FINAL_REVIEW", projection)); projection = addRun(projection, finalReview);
+          const finalReview = await runRole(ctx, input, projection, "REVIEW", "FINAL_REVIEW", candidate, generation, reviewPrompt(input, "FINAL_REVIEW", projection)); projection = addRun(projection, finalReview);
           projection = withLifecycle(projection, workflowAcceptFinalReviewV2(projection.lifecycle, finalReview.attempt, verdict(finalReview.manifest), await durableNow(ctx, `final-review-g${generation}-accepted`))); projection = await publish(ctx, input, projection);
           if (projection.lifecycle.state === "REPAIR_REQUIRED") { projection = await authorizeRepair(ctx, input, projection, generation, "blocking Final Review Finding"); continue; }
           projection = withLifecycle(projection, workflowPassVerificationGateV2(projection.lifecycle, await durableNow(ctx, "verification-gate")));
@@ -511,12 +519,73 @@ function testPlanDeliverable(manifest: RoleRunManifestV2, input: CoreV2WorkflowI
 }
 function verdict(manifest: RoleRunManifestV2) { const passed = manifest.output?.recommendation === "PASS"; const refs = manifest.output?.findingRefs ?? []; return { verdict: passed ? "PASSED" as const : "FINDINGS" as const, findingRefs: passed ? [] : refs.length ? refs : ["finding://missing-output"] }; }
 const encoded = "The deliverable field must be a JSON-encoded string (not a nested object).";
-function architectPrompt(i: CoreV2WorkflowInput) { return `Act as ARCHITECT. Read the repository. Objective: ${i.objective}. Acceptance: ${i.acceptanceCriteria.join("; ")}. Return PASS and encode {spec:{type:"SPEC",requirements:[{id,statement,acceptanceCriteria:["criterion"]}]},design:{type:"DESIGN",decisions,components,risks},plan:{type:"PLAN",items:[{id,description,dependsOn,status:"PENDING"}]}} in deliverable. acceptanceCriteria and dependsOn must always be JSON arrays. Use requirement ids REQ-1 through REQ-${i.acceptanceCriteria.length}. ${encoded}`; }
-function reviewPrompt(phase: string, p: CoreV2WorkflowProjection) { return `Act as isolated ${phase} reviewer. Inspect repository and these immutable artifacts: ${JSON.stringify(p.lifecycle.artifacts)}. Return PASS only if sound. For FINAL_REVIEW, review the Candidate plus documentation and trusted-test evidence; the owning Workflow intentionally performs the target-branch Merge only after Final Review and Verification Gate, so a not-yet-created Merge is not a Finding. If you return FINDINGS or INCONCLUSIVE, findingRefs must contain at least one stable reference; PASS requires findingRefs:[]. Encode {} in deliverable. ${encoded}`; }
-function implementationPrompt(i: CoreV2WorkflowInput, generation: number) { return `Act as IMPLEMENTATION generation ${generation}. Implement this objective in the current Git repository: ${i.objective}. Acceptance: ${i.acceptanceCriteria.join("; ")}. Run relevant checks and update required project documentation. Do not run git add or git commit: the Workflow owns the durable Candidate Commit checkpoint. Return PASS only when the workspace implementation and checks are complete; include artifact refs for test evidence. Encode {} in deliverable. ${encoded}`; }
-function documentationPrompt(i: CoreV2WorkflowInput) { return `Act as DOCUMENTATION. Audit the already committed Candidate for ${i.objective}. Do not modify files or create commits; if project facts are missing, return FINDINGS so Implementation Repair can own a new Candidate. Encode {type:"DOCS_IMPACT",routeDigest:"sha256:<actual 64 hex>",reportRef:"artifact://docs-impact",dispositions:[{documentId,outcome:"updated|unchanged|not_applicable",reason}]} in deliverable. Do not claim PASS without real evidence. ${encoded}`; }
-function testPlanPrompt(i: CoreV2WorkflowInput) { return `Act as TEST_VERIFICATION Test Planner. Return PASS and encode {type:"TEST_PLAN",cases:[{id:"TC-1",requirementIds:["REQ-1"],category:"NORMAL",argv:["command","arg"]}]} in deliverable. Use exactly these argv arrays, one case per command: ${JSON.stringify(i.testCommands)}. Cover requirement ids REQ-1 through REQ-${i.acceptanceCriteria.length}. category must be exactly NORMAL, BOUNDARY, REGRESSION, FAILURE, or RECOVERY. ${encoded}`; }
-function assessmentPrompt(manifest: unknown, ref: string) { return `Act as TEST_VERIFICATION assessor. Read this real Trusted Runner Manifest (${ref}): ${JSON.stringify(manifest)}. Return PASS only when every exit code is zero; do not invent execution. Encode {} in deliverable. ${encoded}`; }
+function architectPrompt(i: CoreV2WorkflowInput, revision: number) { return `Act as ARCHITECT for Spec Revision ${revision}. Read the repository without modifying it. Objective: ${i.objective}. Acceptance: ${i.acceptanceCriteria.join("; ")}. Return PASS and encode {spec:{type:"SPEC",requirements:[{id,statement,acceptanceCriteria:["criterion"]}]},design:{type:"DESIGN",decisions,components,risks},plan:{type:"PLAN",items:[{id,description,dependsOn,status:"PENDING"}]}} in deliverable. acceptanceCriteria and dependsOn must always be JSON arrays. Use requirement ids REQ-1 through REQ-${i.acceptanceCriteria.length}. ${acceptanceInstruction(i, "ARCHITECT", revision, 0)} ${encoded}`; }
+function reviewPrompt(i: CoreV2WorkflowInput, phase: "DESIGN_REVIEW" | "FINAL_REVIEW", p: CoreV2WorkflowProjection) { const boundary = coreV2ReviewBoundary(phase);
+  return `Act as isolated ${phase} reviewer. Do not modify the repository. ${boundary} Immutable current artifacts: ${JSON.stringify(p.lifecycle.artifacts)}. Return PASS only if the evidence in this phase is sound. If you return FINDINGS or INCONCLUSIVE, findingRefs must contain at least one stable reference; PASS requires findingRefs:[]. ${acceptanceInstruction(i, phase, p.lifecycle.specRevision, p.lifecycle.implementationGeneration)} Encode {} in deliverable. ${encoded}`; }
+function implementationPrompt(i: CoreV2WorkflowInput, generation: number) { return `Act as IMPLEMENTATION generation ${generation}. Implement this objective in the current Git repository: ${i.objective}. Acceptance: ${i.acceptanceCriteria.join("; ")}. Run relevant checks and update required project documentation. Do not run git add or git commit: the Workflow owns the durable Candidate Commit checkpoint. Return PASS only when the workspace implementation and checks are complete; include artifact refs for test evidence. ${acceptanceInstruction(i, "IMPLEMENTATION", 1, generation)} Encode {} in deliverable. ${encoded}`; }
+function documentationPrompt(i: CoreV2WorkflowInput, generation: number) { return `Act as DOCUMENTATION. Audit the already committed Candidate for ${i.objective}. Do not modify files or create commits; if project facts are missing, return FINDINGS so Implementation Repair can own a new Candidate. ${acceptanceInstruction(i, "DOCUMENTATION", 1, generation)} Encode {type:"DOCS_IMPACT",routeDigest:"sha256:<actual 64 hex>",reportRef:"artifact://docs-impact",dispositions:[{documentId,outcome:"updated|unchanged|not_applicable",reason}]} in deliverable. Do not claim PASS without real evidence. ${encoded}`; }
+function testPlanPrompt(i: CoreV2WorkflowInput) { return `Act as TEST_VERIFICATION Test Planner. Do not modify the repository. Return PASS and encode {type:"TEST_PLAN",cases:[{id:"TC-1",requirementIds:["REQ-1"],category:"NORMAL",argv:["command","arg"]}]} in deliverable. Use exactly these argv arrays, one case per command: ${JSON.stringify(i.testCommands)}. Cover requirement ids REQ-1 through REQ-${i.acceptanceCriteria.length}. category must be exactly NORMAL, BOUNDARY, REGRESSION, FAILURE, or RECOVERY. ${encoded}`; }
+function assessmentPrompt(manifest: unknown, ref: string) { return coreV2AssessmentPrompt(manifest, ref); }
+export function coreV2AssessmentPrompt(manifest: unknown, ref: string): string {
+  return `Act as TEST_VERIFICATION assessor. Do not modify the repository. Read this real Trusted Runner Manifest (${ref}): ${JSON.stringify(manifest)}. Return PASS with findingRefs:[] only when every exit code is zero; do not invent execution. If any exit code is nonzero, return FINDINGS with findingRefs:["finding://trusted-test/nonzero-exit"] so the Workflow can form a blocking Test Report and authorize Repair. Encode {} in deliverable. ${encoded}`;
+}
+export function coreV2ReviewBoundary(phase: "DESIGN_REVIEW" | "FINAL_REVIEW"): string {
+  return phase === "DESIGN_REVIEW"
+    ? "Review only the current Spec, Design, and Plan artifacts. Implementation has intentionally not started, so absent Candidate files, test execution, Final Review, Merge, Closure, and Archive are not Findings in this phase."
+    : "Review the Candidate plus documentation and trusted-test evidence. The owning Workflow intentionally performs the target-branch Merge only after Final Review and Verification Gate, so a not-yet-created Merge, Closure, or Archive is not a Finding.";
+}
+export function validateCoreV2AcceptanceControl(control: CoreV2AcceptanceControl | undefined, enabled: boolean): void {
+  if (control === undefined) return;
+  if (!enabled) throw new Error("Core v2 acceptance fault injection is disabled");
+  if (control === null || typeof control !== "object" || Array.isArray(control)) throw new Error("Core v2 acceptance control must be an object");
+  const keys = Object.keys(control);
+  if (keys.length !== 1 || keys[0] !== "profile" || !CORE_V2_ACCEPTANCE_PROFILES.has(control.profile)) {
+    throw new Error("Core v2 acceptance profile is invalid");
+  }
+}
+export function coreV2AcceptanceInstruction(
+  control: CoreV2AcceptanceControl | undefined,
+  phase: "ARCHITECT" | "DESIGN_REVIEW" | "IMPLEMENTATION" | "DOCUMENTATION" | "FINAL_REVIEW",
+  revision: number,
+  generation: number,
+): string {
+  const profile = control?.profile;
+  if (profile === undefined) return "";
+  if (profile === "IMPLEMENTATION_SELF_REVIEW" && phase === "IMPLEMENTATION" && generation === 0) {
+    return "Controlled acceptance condition: create src/value.txt with the exact text generation-zero-defect followed by a newline, intentionally leave that observable defect in the workspace, then perform a genuine self-review and return FINDINGS with findingRefs:[\"finding://acceptance/implementation-self-review/g0\"]. Do not repair it in this Attempt.";
+  }
+  if (profile === "FINAL_REVIEW" && phase === "IMPLEMENTATION" && generation === 0) {
+    return "Controlled acceptance condition: implement every requested behavior except intentionally do not create SECURITY.md; leave that blocking omission for isolated Final Review, and return PASS with no findings from this intentionally limited generation-zero self-review.";
+  }
+  if (profile === "FINAL_REVIEW" && phase === "DOCUMENTATION" && generation === 0) {
+    return "Controlled acceptance condition: SECURITY.md is assigned to the isolated Final Review in this run; do not report its absence as a Documentation Finding. Audit the other documentation facts normally.";
+  }
+  if (profile === "FINAL_REVIEW" && phase === "FINAL_REVIEW" && generation === 0) {
+    return "Controlled acceptance condition: verify SECURITY.md exists. Its absence is a real blocking Candidate defect; return FINDINGS with findingRefs:[\"finding://acceptance/final-review/missing-security-doc\"]. Do not modify the repository.";
+  }
+  if (profile === "DOCUMENTATION" && phase === "IMPLEMENTATION" && generation === 0) {
+    return "Controlled acceptance condition: implement the runtime behavior but intentionally omit the required README heading `## Accepted behavior`; return PASS so the independent Documentation Agent must detect the omission.";
+  }
+  if (profile === "DOCUMENTATION" && phase === "DOCUMENTATION" && generation === 0) {
+    return "Controlled acceptance condition: inspect README.md for the exact heading `## Accepted behavior`. Its absence is a real blocking documentation defect; return FINDINGS with findingRefs:[\"finding://acceptance/documentation/missing-heading\"]. Do not modify the repository.";
+  }
+  if (profile === "TEST_FAILURE" && phase === "IMPLEMENTATION" && generation === 0) {
+    return "Controlled acceptance condition: write src/value.txt with the exact text generation-zero-defect followed by a newline instead of the accepted value. Still create SECURITY.md and the required README heading describing the intended accepted-value behavior. Do not run or repair the authorized acceptance test in this Attempt; return PASS so the real Trusted Runner records the behavior failure.";
+  }
+  if (profile === "TEST_FAILURE" && phase === "DOCUMENTATION" && generation === 0) {
+    return "Controlled acceptance condition: do not execute npm test and do not inspect src/value.txt for behavioral conformity; that check is exclusively assigned to the real Trusted Runner in the next phase. Audit only that README has the exact `## Accepted behavior` heading and SECURITY.md has `# Security`; return PASS when those documentation structures exist even though the executable behavior is intentionally pending Trusted Runner validation.";
+  }
+  if (profile === "DESIGN_REPLAN" && phase === "ARCHITECT" && revision === 1) {
+    return "Controlled acceptance condition: produce a concrete Spec and Design but intentionally omit the Trusted Runner from design.components and return PASS, leaving this genuine design omission for isolated Design Review.";
+  }
+  if (profile === "DESIGN_REPLAN" && phase === "DESIGN_REVIEW" && revision === 1) {
+    return "Controlled acceptance condition: require a Trusted Runner component in the design. If it is absent, return FINDINGS with findingRefs:[\"finding://acceptance/design-review/missing-trusted-runner\"]. Do not modify the repository.";
+  }
+  return "";
+}
+function acceptanceInstruction(input: CoreV2WorkflowInput, phase: "ARCHITECT" | "DESIGN_REVIEW" | "IMPLEMENTATION" | "DOCUMENTATION" | "FINAL_REVIEW", revision: number, generation: number): string {
+  return coreV2AcceptanceInstruction(input.acceptanceControl, phase, revision, generation);
+}
 export async function ensureGitCheckpoint(root: string, expectedParent: string, taskId: string, generation: number): Promise<{ commit: string; tree: string }> {
   const marker = `Moye-Task: ${taskId}\nMoye-Generation: ${generation}`;
   let head = await git(root, ["rev-parse", "HEAD"]);

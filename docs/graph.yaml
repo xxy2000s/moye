@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 85
+graph_revision: 91
 updated_at: "2026-08-23"
 
 entrypoints:
@@ -2728,6 +2728,46 @@ documents:
     authority: observed-fact
     read_when: [finding-intake, task-execution]
 
+  - id: core-v2-repair-evidence-not-explicitly-invalidated
+    path: docs/sources/findings/core-v2-repair-evidence-not-explicitly-invalidated.md
+    type: finding
+    status: confirmed
+    scope: core-v2-repair-evidence
+    authority: observed-fact
+    read_when: [finding-intake, task-execution, verification]
+
+  - id: core-v2-design-review-crosses-phase-boundary
+    path: docs/sources/findings/core-v2-design-review-crosses-phase-boundary.md
+    type: finding
+    status: confirmed
+    scope: core-v2-review-boundary
+    authority: observed-fact
+    read_when: [finding-intake, task-execution, verification]
+
+  - id: core-v2-observer-rejects-invalidated-revision-attempts
+    path: docs/sources/findings/core-v2-observer-rejects-invalidated-revision-attempts.md
+    type: finding
+    status: confirmed
+    scope: core-v2-observer-replan-history
+    authority: observed-fact
+    read_when: [finding-intake, task-execution, verification]
+
+  - id: core-v2-documentation-agent-consumes-test-gate
+    path: docs/sources/findings/core-v2-documentation-agent-consumes-test-gate.md
+    type: finding
+    status: confirmed
+    scope: core-v2-documentation-test-boundary
+    authority: observed-fact
+    read_when: [finding-intake, task-execution, verification]
+
+  - id: core-v2-acceptance-faults-default-selection-rejected
+    path: docs/sources/findings/core-v2-acceptance-faults-default-selection-rejected.md
+    type: finding
+    status: confirmed
+    scope: core-v2-acceptance-harness
+    authority: observed-fact
+    read_when: [finding-intake, task-execution, verification]
+
   - id: bl-0042-core-v2-failure-closure
     path: docs/delivery/backlog/BL-0042.yaml
     type: backlog-item
@@ -3165,6 +3205,54 @@ documents:
     type: docs-impact
     status: archived
     scope: task-0042-seal-recovery
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0043-manifest
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0043/task.yaml
+    type: task-manifest
+    status: archived
+    scope: core-v2-real-findings
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0043-spec
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0043/spec.md
+    type: task-spec
+    status: archived
+    scope: core-v2-real-findings
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0043-design
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0043/design.md
+    type: task-design
+    status: archived
+    scope: core-v2-real-findings
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0043-plan
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0043/plan.md
+    type: task-plan
+    status: archived
+    scope: core-v2-real-findings
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0043-verification
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0043/verification.md
+    type: verification
+    status: archived
+    scope: core-v2-real-findings
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0043-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0043/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: core-v2-real-findings
     authority: task-evidence
     read_when: [task-close, task-archive]
 
@@ -4861,6 +4949,26 @@ relations:
     to: bl-0043-core-v2-real-fault-matrix
     type: promoted_to
 
+  - from: core-v2-repair-evidence-not-explicitly-invalidated
+    to: bl-0043-core-v2-real-fault-matrix
+    type: promoted_to
+
+  - from: core-v2-design-review-crosses-phase-boundary
+    to: bl-0043-core-v2-real-fault-matrix
+    type: promoted_to
+
+  - from: core-v2-observer-rejects-invalidated-revision-attempts
+    to: bl-0043-core-v2-real-fault-matrix
+    type: promoted_to
+
+  - from: core-v2-documentation-agent-consumes-test-gate
+    to: bl-0043-core-v2-real-fault-matrix
+    type: promoted_to
+
+  - from: core-v2-acceptance-faults-default-selection-rejected
+    to: bl-0043-core-v2-real-fault-matrix
+    type: promoted_to
+
   - from: bl-0042-core-v2-failure-closure
     to: task-0040-manifest
     type: schedules_into
@@ -5136,6 +5244,34 @@ relations:
   - from: incident-task-0042-verification-status-seal-failure
     to: durable-runtime-pitfalls
     type: documented_by
+
+  - from: bl-0043-core-v2-real-fault-matrix
+    to: task-0043-manifest
+    type: schedules_into
+
+  - from: task-0043-spec
+    to: task-0043-manifest
+    type: belongs_to
+
+  - from: task-0043-design
+    to: task-0043-spec
+    type: refines
+
+  - from: task-0043-plan
+    to: task-0043-manifest
+    type: belongs_to
+
+  - from: task-0043-verification
+    to: task-0043-manifest
+    type: verifies
+
+  - from: task-0043-docs-impact
+    to: task-0043-manifest
+    type: reports_on
+
+  - from: task-0043-manifest
+    to: core-v2-agent-lifecycle
+    type: implements_slice_of
 
   - from: bl-0043-uses-invalid-in-progress-status
     to: bl-0043-core-v2-real-fault-matrix

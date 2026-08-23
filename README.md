@@ -2,7 +2,7 @@
 
 Moye 是一个面向代码研发任务的全自动、可恢复、可追踪 Harness。它以 Task 为业务聚合根，协调 Agent、Daemon、Worktree、测试、Review、Git 合并和知识沉淀，目标是让一次研发任务从需求进入到主干合入形成可验证闭环。
 
-当前状态：**Core v2 已用真实 Codex、Restate、隔离 Git 与受信任测试完成 Happy Path；成功与失败 Task 都有独立 Closure Artifact 和可重试 Archive Receipt。历史 LIVE-001～004 已通过 append-only recovery successor 合法归档，journaled durable command 停滞任务也能在核验暂停 Invocation 与 Projection Digest 后由 successor 收敛。`TASK-CORE-V2-MERGE-UNKNOWN-005` 证明真实双父 Merge 在 ref 更新后进程终止时能对账为唯一 `ALREADY_APPLIED` 结果。Repair、Replan、Test UNKNOWN、预算、Worker 中断与 stale Attempt 仍未逐条完成同等级真实 Agent 故障矩阵，不能视为 Core 完全闭环。**
+当前状态：**Core v2 已用真实 Codex、Restate、隔离 Git 与受信任测试完成 Happy Path，并逐 Task 验收 Implementation Self Review Finding、Final Review Finding、Documentation Finding、真实 Test Failure Repair 和 Design Review Replan；成功与失败 Task 都有独立 Closure Artifact 和可重试 Archive Receipt。历史 LIVE-001～004 已通过 append-only recovery successor 合法归档，`TASK-CORE-V2-MERGE-UNKNOWN-005` 证明真实双父 Merge 在 ref 更新后进程终止时能对账为唯一 `ALREADY_APPLIED` 结果。Test UNKNOWN、更多 Worker/Agent 中断、Git Commit 回执未知、预算、Observer/Knowledge 故障与 stale Attempt 仍未逐条完成同等级真实 Agent 故障矩阵，不能视为 Core 完全闭环。**
 
 ## 当前目标
 
@@ -86,7 +86,13 @@ npm run cli -- core-v2-reconcile TASK-CORE-V2-EXAMPLE \
 
 ```bash
 npm run acceptance:live
+# Core v2 真实 Happy Path；需要已注册且 allowlist 覆盖验收根目录的 Service
+npm run acceptance:core-v2
+# Core v2 真实 Finding/Repair/Replan 场景；只允许在专用验收 Service 启用
+npm run acceptance:core-v2:faults
 ```
+
+Core v2 两个命令不会使用 Fake/Mock/Scenario Adapter：每个场景创建新的持久化运行目录和独立 Workflow key，调用真实 Codex、隔离 Git、Trusted Runner、双父 Merge、Closure 和 Archive，并从 Projection、Trace、Role Events、Manifest 与 Git DAG 生成 Evidence Summary。故障命令要求 Service 显式设置 `MOYE_ACCEPTANCE_FAULT_INJECTION=enabled`；普通 Service 会在 TaskAuthority claim 前拒绝 `acceptanceControl`。这些命令消耗真实模型额度，不能用单元测试结果替代。
 
 推荐先启动带持久化数据卷的本地 Runtime，再注册 Moye Service：
 

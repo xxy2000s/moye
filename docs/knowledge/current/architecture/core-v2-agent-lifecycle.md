@@ -44,9 +44,9 @@ INTAKE → CONTEXT_PLAN
 
 该 Runtime 是角色执行与恢复底座，不拥有 Task 主状态，也不自行调度下一阶段。`CoreV2Workflow/<task_id>` 是统一产品编排者：它逐阶段创建 Attempt，在 Restate durable journal 中调用真实 Runtime，把结果交给纯 Lifecycle Reducer，并向 ProjectBoard 发布同一 Projection。
 
-`src/domain/core-v2-lifecycle.ts` 已接入第一段 Workflow Reducer：成功 ARCHITECT Attempt 原子生成同 Revision 的 Spec/Design/Plan，随后只接受独立 `REVIEW/DESIGN_REVIEW` Attempt。Review `PASSED` 才进入 Implementation；`FINDINGS` 进入 `REPLAN_REQUIRED`，提升到 R+1 并把旧 Revision 的四个 Artifact ref 显式记录为 invalidated。Role Attempt ID 使用可嵌入 Artifact Producer 的稳定 segment；单个 Architect Attempt 的三项产物使用 `ARCHITECT` phase。
+`src/domain/core-v2-lifecycle.ts` 已接入第一段 Workflow Reducer：成功 ARCHITECT Attempt 原子生成同 Revision 的 Spec/Design/Plan，随后只接受独立 `REVIEW/DESIGN_REVIEW` Attempt。Design Review 只能判断当前 Spec/Design/Plan；Implementation 尚未发生以及 Candidate、测试、Merge、Closure、Archive 尚不存在不能成为本 Phase 的 Finding。Review `PASSED` 才进入 Implementation；`FINDINGS` 进入 `REPLAN_REQUIRED`，提升到 R+1 并把旧 Revision 的四个 Artifact ref 显式记录为 invalidated。Role Attempt ID 使用可嵌入 Artifact Producer 的稳定 segment；单个 Architect Attempt 的三项产物使用 `ARCHITECT` phase。
 
-Implementation 阶段只接受 Workflow 当前授权 Generation 的成功 `IMPLEMENTATION` Attempt。每次结果形成 append-only Checkpoint，绑定实现前基线、Candidate Commit、Git tree、测试 Evidence 与结构化 Self Review。`PASSED` 进入 Documentation；`FINDINGS` 进入 `REPAIR_REQUIRED`，只有显式 Repair 授权才能创建 Generation N+1，旧 Checkpoint 永不复活或覆盖。
+Implementation 阶段只接受 Workflow 当前授权 Generation 的成功 `IMPLEMENTATION` Attempt。每次结果形成 append-only Checkpoint，绑定实现前基线、Candidate Commit、Git tree、测试 Evidence 与结构化 Self Review。`PASSED` 进入 Documentation；`FINDINGS` 进入 `REPAIR_REQUIRED`，只有显式 Repair 授权才能创建 Generation N+1。Repair 会把旧 Candidate、Checkpoint Digest、下游 Artifact refs、Trusted Test ref 与原因写入 `invalidatedGenerations`；所有真实测试执行同时追加到 `trustedTestRuns`。活跃 Gate 只读当前 Generation Artifact，但旧 Checkpoint、失败测试和 Review Evidence 仍可查询，永不复活、覆盖或冒充新 Gate Evidence。
 
 Documentation 阶段只接受绑定当前 Candidate Commit 和 Implementation Generation 的成功 Attempt。通过 Router、Graph 与 Impact Gate 的摘要形成 `DOCS_IMPACT` Artifact，并精确依赖当前 Revision 的 Spec/Design；Agent 的自然语言声明本身不能推进到 Test Plan。
 
@@ -54,7 +54,7 @@ Test/Verification 使用两个隔离只读 Attempt：`TEST_PLAN` 形成 Requirem
 
 Final Review 是第二次隔离 `REVIEW` Attempt，精确依赖 Docs Impact 和 Test Report。它审查 Candidate 与 Merge 前证据；目标 ref 更新由其后的 Verification Gate 授权，不能因尚未执行 Merge 而形成 Finding。PASSED 之后仍需纯 Verification Gate 重建八类主流程 Artifact、完整依赖和 Task/Revision/Commit/Digest 绑定；Gate Digest 写入 Projection 后才进入真实 Merge Effect。Review 的文字 verdict 不能替代 Gate。
 
-`src/domain/core-v2-observer.ts` 从 Lifecycle Projection 与 Role Attempt 重建事件、Artifact、Session、失败、Repair、Replan、UNKNOWN 和告警事实，不写主状态。Knowledge Disposition 是 append-only Lifecycle Artifact；智能 Observer 不可用时 Workflow 可记录 deferred，主流程状态保持不变。
+`src/domain/core-v2-observer.ts` 从 Lifecycle Projection 与 Role Attempt 重建事件、Artifact、Session、失败、Repair、Replan、UNKNOWN 和告警事实，不写主状态。Replan 后它同时接受当前 Revision 和 `invalidatedRevisions` 明确登记的历史 Attempt，其他 Task、未来 Revision 或未登记 Revision 仍被拒绝。Knowledge Disposition 是 append-only Lifecycle Artifact；智能 Observer 不可用时 Workflow 可记录 deferred，主流程状态保持不变。
 
 ## 5. Artifact 与 Gate
 
@@ -82,6 +82,6 @@ Test Agent 提出 Requirement 覆盖和 Case 意图；Workflow 为每条预授�
 
 旧版本已完成在 `FAILED_TERMINAL + NOT_READY` 的 Workflow 不能改写。`CoreV2FailureRecoveryWorkflow/<task_id>` 先校验原 Projection Digest，再通过 `TaskAuthority.beginCoreV2FailureRecovery` 原子登记唯一 append-only successor；successor 复制原 Attempt、Session 与 Event 引用，只追加 Failure Closure/Archive 事实。仍停在 journaled durable Run 的 Workflow 必须先 pause；`core-v2-recovery-plan` 从 Restate Admin 核验 Invocation target/status、最后 command/index/failure digest 和 Projection digest。若 root recovery 自身在 Authority 前失败，只能以新的 `CoreV2FailureRecoveryAttemptWorkflow/<recovery_id>` 绑定前序 completed Failure Invocation 继续。Board、CLI 与 Trace 解析 Authority 指向最新 successor，直接查询原 key 仍得到摘要不变的原历史。
 
-截至 2026-08-23，真实证据分级如下：LIVE-005/006 证明真实 Agent Happy Path；LIVE-001～004 证明真实历史 Agent 失败经合法 Restate successor 归档；三个暂停 durable command 的原 Workflow 由绑定 Invocation/Projection fact 的 successor 收敛且原摘要保持不变；`TASK-CORE-V2-MERGE-UNKNOWN-005` 证明真实七 Role、Trusted Runner、Verification Gate、双父 Merge Commit 以及 ref 更新后进程终止的 `ALREADY_APPLIED` 对账；新的成功归档验收 Task 证明 Success Closure、第一次 Archive 失败与 archive-only retry。Repair/Replan/Test UNKNOWN、预算与 stale Attempt 等其余场景仍未完成同等级矩阵，不能宣称 Core 完全闭环。
+截至 2026-08-23，真实证据分级如下：LIVE-005/006 和 TASK-0043 Happy Task 证明真实 Agent Happy Path；LIVE-001～004 证明真实历史 Agent 失败经合法 Restate successor 归档；三个暂停 durable command 的原 Workflow 由绑定 Invocation/Projection fact 的 successor 收敛且原摘要保持不变；`TASK-CORE-V2-MERGE-UNKNOWN-005` 证明真实七 Role、Trusted Runner、Verification Gate、双父 Merge Commit 以及 ref 更新后进程终止的 `ALREADY_APPLIED` 对账；TASK-0043 的五个独立故障 Task 证明 Implementation Self Review、Final Review、Documentation、Test Failure 驱动 Repair，以及 Design Review 驱动 Replan，旧 Generation/Revision Evidence 保留但不能进入新 Gate。Test UNKNOWN、更多 Worker/Agent 中断、Git Commit 回执未知、预算、Observer/Knowledge 故障与 stale Attempt 仍未完成同等级矩阵，不能宣称 Core 完全闭环。
 
 Board 的 `CORE_V2` Trace 从 Lifecycle Event、Attempt、Session、Artifact 和确定性 Observer 重建主流程、成功/失败 Closure、successor Recovery Record 与 Archive 状态，以及 Happy Path、Repair/Replan/Reconcile/Failure/Archive 合法边。节点 Inspector 直接关联真实 Role Event；Event 在 Chatbot 弹窗中按对话、工具调用、工具结果、系统和错误筛选，不提供跳转下载入口。

@@ -1,7 +1,7 @@
 # TASK-0042 Verification 状态格式导致 Seal 失败
 
 > 文档类型：Incident
-> 状态：Recovering through append-only successor
+> 状态：Resolved through append-only successor
 > 发生日期：2026-08-23
 > 影响范围：TASK-0042、Sealed Result Commit、Verification Gate
 
@@ -12,6 +12,7 @@
 - Gate 读取 `verification.md`，发现状态行为 `> 状态：Accepted（Seal Pending）`，不符合只接受规范化 `> 状态：Accepted` 的协议；
 - 原 Workflow 正确形成 `FAILED_TERMINAL + ArchiveFailed`，rejected Commit、Intent、Evidence 与 Event 均保留；
 - 创建 BL-0049 / TASK-0042R1，准备 corrected sibling Result Commit，并在其进入主线 ancestry 后通过 `SealedTaskRecoveryWorkflow/TASK-0042` 重验原 Intent。
+- TASK-0042R1 Result Commit `56f1d18…` 独立 Seal 为 `SUCCEEDED + ARCHIVED`；corrected sibling `a1942f3…` 进入主线 ancestry 后，原 TASK-0042 successor 形成 `SealCommitVerified → SUCCEEDED → ArchiveArchived`，package digest 为 `sha256:d29089…a2ff`。
 
 ## 根因与处置
 
