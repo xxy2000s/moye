@@ -136,3 +136,17 @@
 - 后果：测试和 Docs Impact 可以全部通过，但 Sealed Result Commit Gate 按精确协议拒绝，Task 进入 `FAILED_TERMINAL + ArchiveFailed`。
 - 检测：Seal stage 后直接运行与 `verifySealedResultCommit` 相同的 Verification 状态解析，确认存在独立、精确的 `> 状态：Accepted` 行。
 - 规避：机器字段只写规范枚举，证据边界和 Seal 阶段说明另起普通段落；失败后保留 rejected Commit，通过 corrected sibling Commit 与 append-only successor 恢复，禁止 amend 或重交同一 Evidence。
+
+## 20. 让 durable command 吞掉 UNKNOWN 业务结果
+
+- 触发：Agent/Test/Git Effect 在 Intent 已落盘、回执未知时从 `ctx.run` 抛错，期望外层 Workflow catch 推进状态。
+- 后果：Restate 重放同一 command，Task 无法发布 `WAITING_RECONCILE`，Board 只看到执行停滞；盲目热修可能重复昂贵副作用。
+- 检测：Artifact 只有 execution Intent 没有 Manifest，Invocation 重试同一 command，Projection 没有 pending token/operation/attempt/phase。
+- 规避：command 内把 `CONFIRMED | INTENT_ONLY` 返回为持久化业务值；Workflow 在 command 外发布正式等待状态，只接受绑定 token 的真实 ledger/manifest 对账，NOT_APPLIED 不自动重跑 Role。
+
+## 21. 真实矩阵复用 Workflow probe 或无界轮询
+
+- 触发：多个临时 Deployment 复用同一 Workflow key 做注册探针，或 Harness 每 250ms 创建 status invocation。
+- 后果：探针被已停止的 Deployment URI 钉住；长矩阵产生大量只读 Invocation 并放大共享 Docker 内存压力。
+- 检测：业务 suite 已结束但 orchestrator 等待旧端口，Restate 日志持续 RT0010；Task 未变但 status Invocation 数持续增长。
+- 规避：每次注册使用唯一 probe Task ID；状态轮询使用有界、低频间隔；真实矩阵串行并保留失败根，补跑通过显式场景根组合审计，不扫描或覆盖历史。

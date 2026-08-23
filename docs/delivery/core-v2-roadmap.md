@@ -1,7 +1,7 @@
 # Core v2 Delivery Roadmap
 
 > 文档类型：Delivery Plan  
-> 状态：In Progress（真实 Happy Path 已完成；产品级故障矩阵未完成）
+> 状态：Core v2 PoC 关键矩阵已验收；生产能力继续演进
 > 基线日期：2026-08-23  
 > 需求来源：[Core v2：5+1 Agent 研发闭环需求基线](../sources/brainstorm/core-v2-five-plus-one-agent-requirements.md)  
 > 当前实现事实仍以 Architecture、代码、测试和已归档 Task 为准。
@@ -41,7 +41,7 @@
 | TASK-0045 | BL-0043 | Seal Prepared / Runtime authoritative | 三个独立真实 Task 完成 Repair/Replan 预算失败归档、Observer 超时非阻塞和旧 Generation/Revision Manifest fencing | `SealedTaskWorkflow` Receipt |
 | TASK-0046 | BL-0043、BL-0050 | Archived / Succeeded | Board outcome/workflow/history 筛选、验收历史标识、失败详情与实际路径语义；57 个持久化 Runtime Task 与真实 Role Events 完成桌面/移动验收 | `3cedfa5` / `sha256:3e5df1…c6a44` |
 | TASK-0047 | BL-0043、BL-0051 | Seal Prepared / Runtime authoritative | 显式矩阵 Manifest、实时 Restate/Board/Git/Artifact/Graph 交叉审计；旧 14 场景以 25 个缺失声明/绑定 Finding 正确 fail closed，不能冒充新矩阵通过 | `SealedTaskWorkflow` Receipt |
-| TASK-0048 | BL-0043 | Planned | 全矩阵复跑、文档证据审计、最终部署与验收报告 | — |
+| TASK-0048 | BL-0043、BL-0052～BL-0058 | Verification Accepted / Seal Pending | 16 个真实 Task、Role UNKNOWN 正式对账、统一零 Finding 审计、验收编排恢复与最终部署 | Audit `sha256:96ad9fc9…de86` |
 
 本轮真实运行发现的 Closure/Recovery 缺口已进入 [BL-0046](./backlog/BL-0046.yaml) 与 [BL-0047](./backlog/BL-0047.yaml)，并由 TASK-0042 实现：journaled durable command 使用核验 Invocation/Projection 的合法 successor recovery；成功路径使用内容寻址 Closure 与独立 Archive Receipt。真实 `TASK-CORE-V2-SUCCESS-ARCHIVE-001` 已证明一次受控 Archive 失败后只重试 Archive 并唯一归档；LIVE 历史详情验收发现的旧 schema nullable Trace 缺陷登记为 BL-0048 并完成修复。TASK-0042 与恢复 Task TASK-0042R1 均已 append-only Seal/Archive，仍不代表后续完整故障矩阵已经通过。
 
@@ -69,7 +69,7 @@ TASK-0029 Bootstrap correctness
 
 ## 4. 最终真实验收矩阵
 
-TASK-0039 只完成了真实 Happy Path 基线。以下矩阵由 TASK-0041～TASK-0047 逐条运行并保存真实证据；在全部通过前不得声明完整故障矩阵已完成：
+TASK-0039 只完成了真实 Happy Path 基线。TASK-0048 使用全新 Workflow key 逐项执行下列矩阵，并以显式 Manifest 完成实时交叉审计：
 
 | 场景 | 唯一预期结果 |
 |---|---|
@@ -86,6 +86,6 @@ TASK-0039 只完成了真实 Happy Path 基线。以下矩阵由 TASK-0041～TAS
 
 ## 5. 明确延后
 
-当前真实 Agent 产品证据已经逐项覆盖 Happy Path、Implementation Self Review Finding、Final Review Finding、Documentation Finding、Test Failure Repair、Design Review Replan、Test UNKNOWN 两分支、Architect/Implementation/Final Review Worker 中断、Git Candidate Checkpoint/Merge 回执未知、Repair/Replan 预算耗尽、Observer/Knowledge 超时非阻塞，以及当前 owning Workflow 下的旧 Generation/Revision fencing，并保留运行中暴露的失败历史。TASK-0046 已在持久化 Runtime 的 57 个历史 Task 上完成 Board 语义和真实 Agent Events 浏览器验收；TASK-0047 已建立统一 fail-closed 审计，并确认旧 14 场景因证据声明/绑定不足不能被当作最终矩阵。TASK-0048 仍需创建全新 Task 统一复跑、取得零 Finding 报告并完成最终部署，在此之前不使用“完整故障矩阵已完成”。单元测试和确定性 Adapter E2E 只能补充协议证明，不能替代真实产品验收。
+TASK-0048 的最终审计包含 16 个独立 Task：Happy、五类 Finding/Repair/Replan、六类 UNKNOWN/Recovery、两个预算终止、Observer timeout 与 stale fencing。报告重新查询实时 Workflow、Authority、Board、Git、Artifact 和 Document Graph，得到 `passed=true`、`findingCount=0`、`reportDigest=sha256:96ad9fc920bf960767bb519de19007691b87fde9955d50b525f38eaf3a40de86`。首轮 OOM、Role Intent-only、探针钉住、过短/过长 Observer timeout 和 Harness 误判均作为失败历史与 Finding 保留；补跑使用新 Task，stale 只读重审计没有重跑副作用。单元测试和确定性 Adapter E2E 仍只能补充协议证明，不能替代这份真实产品证据。
 
 完整多 Daemon Lease/Fencing、远程 PR、权限、多租户、生产级观测或长期知识效果反馈仍属于生产阶段能力；本路线只对当前可实现的 Attempt/Generation/Revision fencing 做真实验收，并明确剩余限制。

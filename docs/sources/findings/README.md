@@ -42,5 +42,11 @@ Finding 与 Incident 的边界：
 - [Core v2 Workflow 未实际执行智能 Observer/Knowledge](./core-v2-workflow-omits-intelligent-observer-execution.md)：Role 协议已有旁路角色但产品 Workflow 只写 `none`，由 TASK-0045 接入真实可超时且非阻塞的只读 Agent。
 - [Core v2 Board 混淆 Runtime Outcome、归档处置与验收历史](./core-v2-board-obscures-runtime-outcome-and-acceptance-history.md)：Core 运行态被通用 Projection 压缩，缺少 Workflow/历史筛选和最新成功入口，由 TASK-0046 修复。
 - [Seal Stage 后文档图仍把 Task 标成 Active](./seal-stage-leaves-document-graph-task-status-active.md)：Task Package 已归档但 Document Graph status/index relation 未同步，由 TASK-0047 纳入一致性审计。
+- [Core v2 Role Intent-only 没有投影为 WAITING_RECONCILE](./core-v2-role-intent-only-not-projected-for-reconcile.md)：真实 OOM 中断后底层正确拒绝盲重试，但 Workflow/Board 缺少 Role 级业务对账状态，由 TASK-0048 修复。
+- [Core v2 Reconcile 验收把不同时点 Projection 相等误当成幂等](./core-v2-reconcile-harness-compares-temporal-projections.md)：真实 Role NOT_APPLIED 已归档但 harness 误报，改为审计重放前后最终副作用与 Projection Digest 不变。
+- [并行 E2E Restate 容器会耗尽共享 Docker 内存](./parallel-e2e-restate-containers-exhaust-docker-memory.md)：Vitest 文件级并发会同时启动多个 Restate，改为单 worker 串行门禁并保留完整覆盖。
+- [Core v2 矩阵复用 Workflow 探针 key 后被旧 Deployment 钉住](./core-v2-matrix-reuses-stale-workflow-probe-key.md)：suite 重注册复用同一 Workflow identity 后路由到已停止的临时 Service，改为每次注册使用唯一探针 Task ID。
+- [Core v2 Observer 验收超时早于 Session 证据产生](./core-v2-observer-timeout-precedes-session-evidence.md)：1 秒受控超时在 Codex 建立 Session 前发生，失败事实保留并用新 Task 覆盖 Session 建立后的超时边界。
+- [Core v2 stale-fence 验收错误比较 Closure 对象引用](./core-v2-stale-fence-harness-compares-closure-object-identity.md)：跨 HTTP 响应比较对象 identity 误报 Projection mutation，改为比较内容寻址 Closure Digest 并附着原 Task 重审计。
 
 不要为了演示目录创建虚构 Bug。

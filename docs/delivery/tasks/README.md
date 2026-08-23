@@ -21,7 +21,9 @@ tasks/
 
 ## 当前 Active Task
 
-当前没有 Active Task。TASK-0048 将在 TASK-0047 的 Result Commit Seal 完成后独立创建。
+| Task | 状态 | 目标 |
+|---|---|---|
+| — | — | 当前没有 Git Active Task package；TASK-0048 已 Seal Prepared |
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 

@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 96
+graph_revision: 97
 updated_at: "2026-08-24"
 
 entrypoints:
@@ -3511,6 +3511,166 @@ documents:
     authority: task-evidence
     read_when: [task-close, task-archive]
 
+  - id: task-0048-manifest
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0048/task.yaml
+    type: task-manifest
+    status: archived
+    scope: core-v2-final-matrix-acceptance
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0048-spec
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0048/spec.md
+    type: task-spec
+    status: archived
+    scope: core-v2-final-matrix-acceptance
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0048-design
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0048/design.md
+    type: task-design
+    status: archived
+    scope: core-v2-final-matrix-acceptance
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0048-plan
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0048/plan.md
+    type: task-plan
+    status: archived
+    scope: core-v2-final-matrix-acceptance
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0048-verification
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0048/verification.md
+    type: verification
+    status: archived
+    scope: core-v2-final-matrix-acceptance
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0048-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0048/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: core-v2-final-matrix-acceptance
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: incident-core-v2-matrix-oom-role-unknown
+    path: docs/sources/incidents/2026-08-23-core-v2-matrix-restate-oom-and-role-result-unknown.md
+    type: incident
+    status: resolved
+    scope: core-v2-final-matrix-acceptance
+    authority: observed-fact
+    read_when: [incident-response, task-execution, task-close]
+
+  - id: core-v2-role-intent-only-not-projected-for-reconcile
+    path: docs/sources/findings/core-v2-role-intent-only-not-projected-for-reconcile.md
+    type: finding
+    status: confirmed
+    scope: core-v2-role-reconcile
+    authority: observed-fact
+    read_when: [finding-intake, task-execution, task-close]
+
+  - id: bl-0052-core-v2-role-reconcile
+    path: docs/delivery/backlog/BL-0052.yaml
+    type: backlog-item
+    status: converted-to-task
+    scope: core-v2-role-reconcile
+    authority: delivery-control
+    read_when: [task-create, task-execution]
+
+  - id: bl-0053-core-v2-matrix-runtime-isolation
+    path: docs/delivery/backlog/BL-0053.yaml
+    type: backlog-item
+    status: converted-to-task
+    scope: core-v2-final-matrix-acceptance
+    authority: delivery-control
+    read_when: [task-create, task-execution]
+
+  - id: core-v2-reconcile-harness-compares-temporal-projections
+    path: docs/sources/findings/core-v2-reconcile-harness-compares-temporal-projections.md
+    type: finding
+    status: confirmed
+    scope: core-v2-reconcile-acceptance
+    authority: observed-fact
+    read_when: [finding-intake, task-execution, task-close]
+
+  - id: bl-0054-core-v2-reconcile-idempotence-audit
+    path: docs/delivery/backlog/BL-0054.yaml
+    type: backlog-item
+    status: converted-to-task
+    scope: core-v2-reconcile-acceptance
+    authority: delivery-control
+    read_when: [task-create, task-execution]
+
+  - id: parallel-e2e-restate-containers-exhaust-docker-memory
+    path: docs/sources/findings/parallel-e2e-restate-containers-exhaust-docker-memory.md
+    type: finding
+    status: confirmed
+    scope: restate-e2e-runtime-capacity
+    authority: observed-fact
+    read_when: [finding-intake, task-execution, task-close]
+
+  - id: bl-0055-serialize-restate-e2e
+    path: docs/delivery/backlog/BL-0055.yaml
+    type: backlog-item
+    status: converted-to-task
+    scope: restate-e2e-runtime-capacity
+    authority: delivery-control
+    read_when: [task-create, task-execution]
+
+  - id: core-v2-matrix-reuses-stale-workflow-probe-key
+    path: docs/sources/findings/core-v2-matrix-reuses-stale-workflow-probe-key.md
+    type: finding
+    status: confirmed
+    scope: core-v2-acceptance-orchestration
+    authority: observed-fact
+    read_when: [finding-intake, task-execution, task-close]
+
+  - id: bl-0056-unique-matrix-workflow-probe
+    path: docs/delivery/backlog/BL-0056.yaml
+    type: backlog-item
+    status: converted-to-task
+    scope: core-v2-acceptance-orchestration
+    authority: delivery-control
+    read_when: [task-create, task-execution]
+
+  - id: core-v2-observer-timeout-precedes-session-evidence
+    path: docs/sources/findings/core-v2-observer-timeout-precedes-session-evidence.md
+    type: finding
+    status: confirmed
+    scope: core-v2-observer-acceptance
+    authority: observed-fact
+    read_when: [finding-intake, task-execution, task-close]
+
+  - id: bl-0057-observer-timeout-session-evidence
+    path: docs/delivery/backlog/BL-0057.yaml
+    type: backlog-item
+    status: converted-to-task
+    scope: core-v2-observer-acceptance
+    authority: delivery-control
+    read_when: [task-create, task-execution]
+
+  - id: core-v2-stale-fence-harness-compares-closure-object-identity
+    path: docs/sources/findings/core-v2-stale-fence-harness-compares-closure-object-identity.md
+    type: finding
+    status: confirmed
+    scope: core-v2-stale-fencing-acceptance
+    authority: observed-fact
+    read_when: [finding-intake, task-execution, task-close]
+
+  - id: bl-0058-stale-fence-closure-digest-audit
+    path: docs/delivery/backlog/BL-0058.yaml
+    type: backlog-item
+    status: converted-to-task
+    scope: core-v2-stale-fencing-acceptance
+    authority: delivery-control
+    read_when: [task-create, task-execution]
+
 relations:
   - from: root-readme
     to: docs-index
@@ -5685,6 +5845,98 @@ relations:
     type: reports_on
 
   - from: task-0047-manifest
+    to: core-v2-agent-lifecycle
+    type: verifies
+
+  - from: bl-0043-core-v2-real-fault-matrix
+    to: task-0048-manifest
+    type: schedules_into
+
+  - from: incident-core-v2-matrix-oom-role-unknown
+    to: core-v2-role-intent-only-not-projected-for-reconcile
+    type: reveals
+
+  - from: incident-core-v2-matrix-oom-role-unknown
+    to: bl-0053-core-v2-matrix-runtime-isolation
+    type: promoted_to
+
+  - from: core-v2-role-intent-only-not-projected-for-reconcile
+    to: bl-0052-core-v2-role-reconcile
+    type: promoted_to
+
+  - from: bl-0052-core-v2-role-reconcile
+    to: task-0048-manifest
+    type: schedules_into
+
+  - from: bl-0053-core-v2-matrix-runtime-isolation
+    to: task-0048-manifest
+    type: schedules_into
+
+  - from: core-v2-reconcile-harness-compares-temporal-projections
+    to: bl-0054-core-v2-reconcile-idempotence-audit
+    type: promoted_to
+
+  - from: bl-0054-core-v2-reconcile-idempotence-audit
+    to: task-0048-manifest
+    type: schedules_into
+
+  - from: parallel-e2e-restate-containers-exhaust-docker-memory
+    to: bl-0055-serialize-restate-e2e
+    type: promoted_to
+
+  - from: bl-0055-serialize-restate-e2e
+    to: task-0048-manifest
+    type: schedules_into
+
+  - from: core-v2-matrix-reuses-stale-workflow-probe-key
+    to: bl-0056-unique-matrix-workflow-probe
+    type: promoted_to
+
+  - from: bl-0056-unique-matrix-workflow-probe
+    to: task-0048-manifest
+    type: schedules_into
+
+  - from: core-v2-observer-timeout-precedes-session-evidence
+    to: bl-0057-observer-timeout-session-evidence
+    type: promoted_to
+
+  - from: bl-0057-observer-timeout-session-evidence
+    to: task-0048-manifest
+    type: schedules_into
+
+  - from: core-v2-stale-fence-harness-compares-closure-object-identity
+    to: bl-0058-stale-fence-closure-digest-audit
+    type: promoted_to
+
+  - from: bl-0058-stale-fence-closure-digest-audit
+    to: task-0048-manifest
+    type: schedules_into
+
+  - from: archived-tasks-index
+    to: task-0048-manifest
+    type: indexes
+
+  - from: task-0048-spec
+    to: task-0048-manifest
+    type: belongs_to
+
+  - from: task-0048-design
+    to: task-0048-spec
+    type: refines
+
+  - from: task-0048-plan
+    to: task-0048-manifest
+    type: belongs_to
+
+  - from: task-0048-verification
+    to: task-0048-manifest
+    type: verifies
+
+  - from: task-0048-docs-impact
+    to: task-0048-manifest
+    type: reports_on
+
+  - from: task-0048-manifest
     to: core-v2-agent-lifecycle
     type: verifies
 

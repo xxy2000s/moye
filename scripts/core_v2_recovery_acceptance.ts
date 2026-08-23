@@ -8,18 +8,20 @@ import path from "node:path";
 import type { CoreV2WorkflowInput, CoreV2WorkflowProjection } from "../src/restate/core-v2-services.js";
 import { IngressError, invoke, send } from "../src/restate/ingress.js";
 
-type Scenario = "TEST_CONFIRMED" | "TEST_NOT_APPLIED" | "ROLE_WORKER_RECOVERY" | "CHECKPOINT_UNKNOWN" | "MERGE_UNKNOWN";
+type Scenario = "TEST_CONFIRMED" | "TEST_NOT_APPLIED" | "ROLE_WORKER_RECOVERY" | "CHECKPOINT_UNKNOWN" | "MERGE_UNKNOWN" | "ROLE_NOT_APPLIED";
 const ingressUrl = process.env["MOYE_CORE_V2_ACCEPTANCE_INGRESS"] ?? "http://127.0.0.1:50889";
 const adminUrl = process.env["MOYE_CORE_V2_ACCEPTANCE_ADMIN"] ?? "http://127.0.0.1:50890";
 const projectId = process.env["MOYE_CORE_V2_ACCEPTANCE_PROJECT"] ?? "moye";
 const acceptanceRoot = path.resolve(process.env["MOYE_CORE_V2_ACCEPTANCE_ROOT"] ?? ".moye-runtime/acceptance/core-v2");
 const cleanupSmoke = process.env["MOYE_CORE_V2_RECOVERY_CLEANUP_SMOKE"] === "enabled";
+const requestedScenarios = (process.env["MOYE_CORE_V2_RECOVERY_SCENARIOS"] ?? "").split(",").map((item) => item.trim()).filter(Boolean);
 const stamp = new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14);
-const runRoot = path.join(acceptanceRoot, `recovery-${stamp}-${process.pid}`);
+const runRoot = path.resolve(process.env["MOYE_CORE_V2_ACCEPTANCE_RUN_ROOT"] ?? path.join(acceptanceRoot, `recovery-${stamp}-${process.pid}`));
 const servicePort = await freePort();
 let boardPort = await freePort();
 while (boardPort === servicePort) boardPort = await freePort();
 const boardUrl = `http://127.0.0.1:${boardPort}`;
+const pageBoardUrl = process.env["MOYE_CORE_V2_ACCEPTANCE_PAGE_BOARD"] ?? boardUrl;
 let service: ChildProcess | undefined;
 let logs = "";
 
@@ -28,7 +30,12 @@ await startService();
 await registerService();
 const summaries: unknown[] = [];
 try {
-  const selectedScenarios = cleanupSmoke ? [] : ["TEST_CONFIRMED", "TEST_NOT_APPLIED", "ROLE_WORKER_RECOVERY", "CHECKPOINT_UNKNOWN", "MERGE_UNKNOWN"] as const;
+  const allScenarios = ["TEST_CONFIRMED", "TEST_NOT_APPLIED", "ROLE_WORKER_RECOVERY", "CHECKPOINT_UNKNOWN", "MERGE_UNKNOWN", "ROLE_NOT_APPLIED"] as const;
+  const selectedScenarios = cleanupSmoke ? [] : requestedScenarios.length === 0 ? [...allScenarios]
+    : allScenarios.filter((scenario) => requestedScenarios.includes(scenario));
+  if (!cleanupSmoke && requestedScenarios.length > 0 && (selectedScenarios.length === 0 || selectedScenarios.length !== requestedScenarios.length)) {
+    throw new Error("MOYE_CORE_V2_RECOVERY_SCENARIOS contains an unknown or duplicate scenario");
+  }
   for (const [index, scenario] of selectedScenarios.entries()) {
     const summary = await executeScenario(scenario, index);
     summaries.push(summary);
@@ -49,6 +56,7 @@ async function executeScenario(scenario: Scenario, index: number) {
     ROLE_WORKER_RECOVERY: "ROLE-RECOVERY",
     CHECKPOINT_UNKNOWN: "CHECKPOINT-UNKNOWN",
     MERGE_UNKNOWN: "MERGE-UNKNOWN",
+    ROLE_NOT_APPLIED: "ROLE-NOT-APPLIED",
   };
   const taskId = `TASK-RCV-${stamp}-${String(index + 1).padStart(2, "0")}-${scenarioCode[scenario]}`;
   assert(/^TASK-[A-Z0-9][A-Z0-9-]{0,63}$/.test(taskId), `invalid generated Task ID: ${taskId}`);
@@ -70,6 +78,7 @@ async function executeScenario(scenario: Scenario, index: number) {
     ...(scenario === "ROLE_WORKER_RECOVERY" ? { recoveryControl: { roleExitAfterManifestOnceAt: {
       ARCHITECT: marker("role-architect"), IMPLEMENTATION: marker("role-implementation"), FINAL_REVIEW: marker("role-final-review"),
     } } } : {}),
+    ...(scenario === "ROLE_NOT_APPLIED" ? { recoveryControl: { roleExitAfterIntentOnceAt: { FINAL_REVIEW: marker("role-final-review-intent") } } } : {}),
     ...(scenario === "CHECKPOINT_UNKNOWN" ? { recoveryControl: { checkpointExitAfterCommitOnceAt: marker("checkpoint") } } : {}),
     acceptanceMetadata: { kind: "PRODUCT_ACCEPTANCE" as const, suite: "core-v2-recovery", scenario },
     ...(scenario === "MERGE_UNKNOWN" ? { mergeFault: { exitAfterRefUpdateOnceAt: marker("merge") } } : {}),
@@ -82,27 +91,46 @@ async function executeScenario(scenario: Scenario, index: number) {
   for (let i = 0; i < exitCount; i += 1) { await waitForExit(15 * 60_000); await startService(); await registerService(); }
 
   let pending: CoreV2WorkflowProjection | undefined;
-  if (scenario === "TEST_CONFIRMED" || scenario === "TEST_NOT_APPLIED") {
+  if (scenario === "TEST_CONFIRMED" || scenario === "TEST_NOT_APPLIED" || scenario === "ROLE_NOT_APPLIED") {
     pending = await waitForProjection(taskId, (value) => value.state === "WAITING_RECONCILE", 10 * 60_000);
     const token = required(pending.error, "reconcile token");
     await expectConflict(() => invoke(ingressUrl, "CoreV2Workflow", taskId, "reconcile", { token: "sha256:invalid", action: scenario === "TEST_CONFIRMED" ? "CONFIRMED" : "NOT_APPLIED", evidence: "wrong token" }));
     const reconciliation = { token, action: scenario === "TEST_CONFIRMED" ? "CONFIRMED" as const : "NOT_APPLIED" as const, evidence: `real ledger evidence for ${scenario}` };
     await invoke(ingressUrl, "CoreV2Workflow", taskId, "reconcile", reconciliation);
     const final = await waitForProjection(taskId, (value) => value.state === "CLOSED", 15 * 60_000);
-    await invoke(ingressUrl, "CoreV2Workflow", taskId, "reconcile", reconciliation);
+    const replayReconcile = await invoke<CoreV2WorkflowProjection>(ingressUrl, "CoreV2Workflow", taskId, "reconcile", reconciliation);
+    const afterReplay = required(await invoke<CoreV2WorkflowProjection | null>(ingressUrl, "CoreV2Workflow", taskId, "status"), "projection after reconcile replay");
+    assert(replayReconcile.lifecycle.projectionDigest === final.lifecycle.projectionDigest
+      && afterReplay.lifecycle.projectionDigest === final.lifecycle.projectionDigest
+      && afterReplay.lifecycle.events.length === final.lifecycle.events.length
+      && afterReplay.attempts.length === final.attempts.length
+      && afterReplay.roleRuns.length === final.roleRuns.length,
+    `${taskId} identical reconciliation changed final Projection or started duplicate work`);
     await expectConflict(() => invoke(ingressUrl, "CoreV2Workflow", taskId, "reconcile", { ...reconciliation, evidence: "conflicting evidence" }));
-    return persistSummary(scenarioRoot, scenario, final, receipt.invocationId, executionLedger, pending);
+    return persistSummary(scenarioRoot, scenario, final, receipt.invocationId, executionLedger, pending, {
+      wrongTokenRejected: true,
+      replayIdempotent: true,
+      conflictEvidenceRejected: true,
+      action: reconciliation.action,
+    });
   }
   const final = await waitForProjection(taskId, (value) => value.state === "CLOSED", 15 * 60_000);
   return persistSummary(scenarioRoot, scenario, final, receipt.invocationId, executionLedger);
 }
 
-async function persistSummary(root: string, scenario: Scenario, projection: CoreV2WorkflowProjection, invocationId: string, ledger: string, pending?: CoreV2WorkflowProjection) {
+async function persistSummary(root: string, scenario: Scenario, projection: CoreV2WorkflowProjection, invocationId: string, ledger: string, pending?: CoreV2WorkflowProjection, reconciliationAudit?: { wrongTokenRejected: boolean; replayIdempotent: boolean; conflictEvidenceRejected: boolean; action: "CONFIRMED" | "NOT_APPLIED" }) {
   const trace = await fetchJson<Record<string, unknown>>(`${boardUrl}/api/tasks/${encodeURIComponent(projection.taskId)}/trace`);
   await writeJson(path.join(root, "final-projection.json"), projection); await writeJson(path.join(root, "final-trace.json"), trace);
-  assert(projection.state === "CLOSED" && projection.outcome === "SUCCEEDED" && projection.lifecycle.archive?.status === "ARCHIVED", `${projection.taskId} terminal mismatch`);
+  const expectedOutcome = scenario === "ROLE_NOT_APPLIED" ? "FAILED_TERMINAL" : "SUCCEEDED";
+  assert(projection.state === "CLOSED" && projection.outcome === expectedOutcome && projection.lifecycle.archive?.status === "ARCHIVED", `${projection.taskId} terminal mismatch`);
   const expectedPhases = ["ARCHITECT", "DESIGN_REVIEW", "IMPLEMENTATION", "DOCUMENTATION", "TEST_PLAN", "TEST_ASSESSMENT", "FINAL_REVIEW"];
-  for (const phase of expectedPhases) assert(projection.roleRuns.some((run) => run.phase === phase), `${projection.taskId} missing ${phase} Role Run`);
+  for (const phase of expectedPhases.filter((phase) => scenario !== "ROLE_NOT_APPLIED" || phase !== "FINAL_REVIEW")) assert(projection.roleRuns.some((run) => run.phase === phase), `${projection.taskId} missing ${phase} Role Run`);
+  if (scenario === "ROLE_NOT_APPLIED") {
+    assert(!projection.roleRuns.some((run) => run.phase === "FINAL_REVIEW"), `${projection.taskId} must not claim a Final Review Manifest`);
+    const failedFinal = projection.attempts.find((attempt) => attempt.phase === "FINAL_REVIEW");
+    assert(failedFinal?.state === "FAILED" && failedFinal.retryAuthorized === true, `${projection.taskId} must preserve the reconciled NOT_APPLIED Final Review Attempt`);
+    assert(projection.lifecycle.failure?.originalStage === "FINAL_REVIEW_REQUIRED" && projection.lifecycle.mergeCommit === null, `${projection.taskId} failure stage or Merge boundary mismatch`);
+  }
   assert(new Set(projection.roleRuns.map((run) => run.attemptId)).size === projection.roleRuns.length, `${projection.taskId} duplicate logical Attempt`);
   assert(new Set(projection.roleRuns.map((run) => run.runId)).size === projection.roleRuns.length, `${projection.taskId} duplicate Role Run`);
   assert(new Set(projection.roleRuns.map((run) => run.sessionId)).size === projection.roleRuns.length, `${projection.taskId} duplicate Session`);
@@ -112,9 +140,12 @@ async function persistSummary(root: string, scenario: Scenario, projection: Core
   const candidates = git(repositoryRoot, "log", "--all", "--fixed-strings", "--grep", `Moye-Task: ${projection.taskId}`, "--format=%H").split("\n").filter(Boolean);
   assert(candidates.length === projection.lifecycle.invalidatedGenerations.length + 1, `${projection.taskId} Candidate Commit count ${candidates.length} does not match valid plus invalidated generations`);
   assert(new Set(projection.lifecycle.implementationCheckpoints.map((item) => item.generation)).size === projection.lifecycle.implementationCheckpoints.length, `${projection.taskId} duplicate Checkpoint generation`);
-  const mergeCommit = required(projection.lifecycle.mergeCommit, "mergeCommit");
-  assert(git(repositoryRoot, "rev-list", "--parents", "-n", "1", mergeCommit).split(/\s+/).length === 3, `${projection.taskId} Merge is not two-parent`);
-  assert(git(repositoryRoot, "rev-parse", "refs/heads/release") === mergeCommit, `${projection.taskId} target ref does not equal Merge Commit`);
+  const mergeCommit = projection.lifecycle.mergeCommit;
+  if (scenario !== "ROLE_NOT_APPLIED") {
+    assert(mergeCommit !== null, `${projection.taskId} mergeCommit missing`);
+    assert(git(repositoryRoot, "rev-list", "--parents", "-n", "1", mergeCommit).split(/\s+/).length === 3, `${projection.taskId} Merge is not two-parent`);
+    assert(git(repositoryRoot, "rev-parse", "refs/heads/release") === mergeCommit, `${projection.taskId} target ref does not equal Merge Commit`);
+  }
   assert(projection.lifecycle.implementationCheckpoints.filter((item) => item.generation === projection.lifecycle.implementationGeneration && item.candidateCommit === projection.lifecycle.candidateCommit).length === 1, `${projection.taskId} expected exactly one current Candidate Checkpoint`);
   if (scenario === "MERGE_UNKNOWN") assert(projection.lifecycle.mergeReceipt?.outcome === "ALREADY_APPLIED" && projection.lifecycle.mergeReceipt.reconciledAfterUnknown, `${projection.taskId} Merge UNKNOWN did not reconcile an already-applied ref update`);
   const artifactRoot = path.join(root, "artifacts");
@@ -122,13 +153,16 @@ async function persistSummary(root: string, scenario: Scenario, projection: Core
   const expectedFaultMarkers = scenario === "ROLE_WORKER_RECOVERY" ? 3 : 1;
   assert(faultMarkers.length === expectedFaultMarkers, `${projection.taskId} expected ${expectedFaultMarkers} fault markers, received ${faultMarkers.length}`);
   const summary = { schemaVersion: 1, scenario, taskId: projection.taskId, workflowRef: `restate://CoreV2Workflow/${projection.taskId}`, invocationId,
-    waitingReconcile: pending === undefined ? null : { token: pending.error, eventCount: pending.lifecycle.events.length }, state: projection.state, outcome: projection.outcome,
+    waitingReconcile: pending === undefined ? null : { token: pending.error, kind: pending.pendingReconcile?.kind,
+      phase: pending.pendingReconcile?.phase, attemptId: pending.pendingReconcile?.attemptId, runId: pending.pendingReconcile?.runId,
+      operationId: pending.pendingReconcile?.operationId, eventCount: pending.lifecycle.events.length }, state: projection.state, outcome: projection.outcome,
     archiveStatus: projection.lifecycle.archive?.status, roleRuns: projection.roleRuns.map((run) => ({ phase: run.phase, attemptId: run.attemptId, sessionId: run.sessionId, runId: run.runId, manifestDigest: run.manifestDigest })),
     testRun: projection.lifecycle.trustedTestRuns[0], candidateCommit: projection.lifecycle.candidateCommit, mergeCommit,
     mergeReceipt: projection.lifecycle.mergeReceipt, verificationGateDigest: projection.lifecycle.verificationGateDigest,
     closureDigest: projection.lifecycle.successClosure?.closureDigest, archiveReceiptDigest: projection.lifecycle.archive?.receiptDigest,
     projectionDigest: projection.lifecycle.projectionDigest, eventCount: projection.lifecycle.events.length, faultMarkers,
-    pageUrl: `${boardUrl}/tasks/${encodeURIComponent(projection.taskId)}` };
+    reconciliationAudit: reconciliationAudit === undefined ? null : { ...reconciliationAudit, trustedTestExecutionCount: executions.length },
+    pageUrl: `${pageBoardUrl}/tasks/${encodeURIComponent(projection.taskId)}` };
   await writeJson(path.join(root, "evidence-summary.json"), summary); return summary;
 }
 

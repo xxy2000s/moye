@@ -1,0 +1,13 @@
+schema_version: 1
+id: "BL-0058"
+title: "修正 stale-fence 验收的 Closure 内容身份比较"
+kind: "debt"
+status: "converted_to_task"
+priority: "high"
+source_refs: [core-v2-stale-fence-harness-compares-closure-object-identity]
+affected_areas: [core-v2-guards-acceptance, stale-attempt-fencing]
+acceptance_outline:
+  - "比较内容寻址 Closure Digest 而不是反序列化对象引用"
+  - "re-audit 不提交 Workflow 或重跑任何副作用"
+  - "相同 stale Evidence 重放幂等且 Projection Digest 不变"
+resolution: { task_refs: [TASK-0048], duplicate_of: null, reason: "由 TASK-0048 修复 Harness 并附着原 Runtime Task 重新审计" }

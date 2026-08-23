@@ -1,0 +1,13 @@
+schema_version: 1
+id: "BL-0055"
+title: "限制 Restate E2E 并发以避免共享 Docker OOM"
+kind: "debt"
+status: "converted_to_task"
+priority: "critical"
+source_refs: [parallel-e2e-restate-containers-exhaust-docker-memory, incident-core-v2-matrix-oom-role-unknown]
+affected_areas: [test-e2e, local-restate-runbook, ci-capacity]
+acceptance_outline:
+  - "npm run test:e2e 同时最多启动一个测试 Restate"
+  - "全部 E2E 文件仍执行且通过"
+  - "真实矩阵与 E2E 不并行运行"
+resolution: { task_refs: [TASK-0048], duplicate_of: null, reason: "由 TASK-0048 修正稳定门禁并重跑全部 E2E" }

@@ -170,6 +170,8 @@ const CORE_V2_EDGES: readonly Omit<StateMachineEdge, "traversed">[] = [
   edge("TEST_PLAN_REQUIRED", "TEST_EXECUTION_REQUIRED", "NORMAL", "Requirement → Test Case 计划通过"),
   edge("TEST_EXECUTION_REQUIRED", "TEST_ASSESSMENT_REQUIRED", "NORMAL", "Trusted Runner Evidence 已记录"),
   edge("TEST_EXECUTION_REQUIRED", "WAITING_RECONCILE", "FAILURE", "测试外部结果未知"),
+  ...["ARCHITECT_REQUIRED", "DESIGN_REVIEW_REQUIRED", "IMPLEMENTATION_REQUIRED", "DOCUMENTATION_REQUIRED", "TEST_PLAN_REQUIRED", "TEST_ASSESSMENT_REQUIRED", "FINAL_REVIEW_REQUIRED"]
+    .map((from) => edge(from, "WAITING_RECONCILE", "FAILURE", "Agent 执行回执未知")),
   edge("TEST_ASSESSMENT_REQUIRED", "FINAL_REVIEW_REQUIRED", "NORMAL", "综合测试建议 PASS"),
   edge("TEST_ASSESSMENT_REQUIRED", "REPAIR_REQUIRED", "REPAIR", "测试发现实现缺陷"),
   edge("TEST_ASSESSMENT_REQUIRED", "WAITING_RECONCILE", "FAILURE", "测试结论 INCONCLUSIVE"),
@@ -177,6 +179,8 @@ const CORE_V2_EDGES: readonly Omit<StateMachineEdge, "traversed">[] = [
   edge("FINAL_REVIEW_REQUIRED", "REPAIR_REQUIRED", "REPAIR", "最终 Review Finding"),
   edge("REPAIR_REQUIRED", "IMPLEMENTATION_REQUIRED", "REPAIR", "授权新 Implementation Generation"),
   edge("WAITING_RECONCILE", "TEST_EXECUTION_REQUIRED", "REPAIR", "对账后恢复原测试"),
+  ...["ARCHITECT_REQUIRED", "DESIGN_REVIEW_REQUIRED", "IMPLEMENTATION_REQUIRED", "DOCUMENTATION_REQUIRED", "TEST_PLAN_REQUIRED", "TEST_ASSESSMENT_REQUIRED", "FINAL_REVIEW_REQUIRED"]
+    .map((to) => edge("WAITING_RECONCILE", to, "REPAIR", "Agent Manifest 确认后恢复原阶段")),
   edge("VERIFICATION_GATE_REQUIRED", "MERGE_REQUIRED", "NORMAL", "确定性 Artifact Gate 通过"),
   edge("MERGE_REQUIRED", "ARCHIVE_PENDING", "ARCHIVE", "Merge 与 Success Closure 已冻结，等待 Archive Receipt"),
   edge("CLOSED", "ARCHIVED", "ARCHIVE", "Archive Receipt 确认"),
@@ -267,6 +271,8 @@ export function buildCoreV2StateMachine(projection: CoreV2WorkflowProjection): T
     TestPlanAccepted: "TEST_EXECUTION_REQUIRED",
     TrustedTestReconcileRequired: "WAITING_RECONCILE",
     TrustedTestReconcileResumed: "TEST_EXECUTION_REQUIRED",
+    RoleRunReconcileRequired: "WAITING_RECONCILE",
+    RoleRunReconciledNotApplied: "WAITING_RECONCILE",
     TrustedTestRunRecorded: "TEST_ASSESSMENT_REQUIRED",
     TestVerificationPassed: "FINAL_REVIEW_REQUIRED",
     TestVerificationRequestedRepair: "REPAIR_REQUIRED",
@@ -285,7 +291,7 @@ export function buildCoreV2StateMachine(projection: CoreV2WorkflowProjection): T
     ArchiveArchived: "ARCHIVED",
   };
   for (const event of projection.lifecycle.events) {
-    const target = targets[event.type];
+    const target = event.type === "RoleRunReconcileResumed" ? event.detail.split(":", 1)[0] : targets[event.type];
     if (target === undefined || target === current) continue;
     if (event.type === "TaskClosed" && current === "ARCHIVED") continue;
     history.push(transition(event, current, target, target.startsWith("ARCHIVE") ? "ARCHIVE" : "BUSINESS"));

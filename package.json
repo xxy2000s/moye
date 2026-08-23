@@ -22,6 +22,7 @@
     "acceptance:core-v2:recovery": "tsx scripts/core_v2_recovery_acceptance.ts",
     "acceptance:core-v2:guards": "tsx scripts/core_v2_guards_acceptance.ts",
     "acceptance:core-v2:audit": "tsx scripts/core_v2_matrix_audit.ts",
+    "acceptance:core-v2:matrix": "tsx scripts/core_v2_full_acceptance.ts",
     "demo:trace": "npm run trace:up && MOYE_OBSERVABILITY_ENABLED=true MOYE_TRACE_PROJECT_NAME=moye-demo exec tsx scripts/demo.ts",
     "runtime:up": "tsx scripts/runtime-compose.ts up",
     "runtime:down": "tsx scripts/runtime-compose.ts down",
@@ -33,7 +34,7 @@
     "start": "node dist/src/index.js",
     "cli": "tsx src/cli/index.ts",
     "test": "vitest run --exclude 'tests/e2e/**'",
-    "test:e2e": "vitest run tests/e2e",
+    "test:e2e": "vitest run tests/e2e --maxWorkers=1 --no-file-parallelism",
     "check:docs": "ruby scripts/docs_graph.rb validate",
     "check": "npm run typecheck && npm test && npm run check:docs"
   },

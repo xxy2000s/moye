@@ -305,8 +305,10 @@ function auditScenarioSemantics(
     if (revision !== 2 || invalidatedRevisions.length !== 1 || phaseCount("ARCHITECT") !== 2 || phaseCount("DESIGN_REVIEW") !== 2 || generation !== 0) add("REPLAN_LEDGER", "lifecycle.invalidatedRevisions", "Design Replan must preserve invalidated R1 and complete R2/G0");
   } else if (["TEST_CONFIRMED", "TEST_NOT_APPLIED"].includes(scenario)) {
     const waiting = asRecord(evidence?.["waitingReconcile"]);
+    const reconciliation = asRecord(evidence?.["reconciliationAudit"]);
     if (waiting === null || typeof waiting["token"] !== "string") add("RECONCILE_EVIDENCE", "evidence.waitingReconcile", `${scenario} must preserve WAITING_RECONCILE token evidence`);
     if (!Array.isArray(evidence?.["faultMarkers"]) || (evidence?.["faultMarkers"] as unknown[]).length !== 1 || trustedTests.length !== 1) add("TEST_RECONCILE_CARDINALITY", "evidence", `${scenario} must have one fault marker and one Trusted Test execution`);
+    if (reconciliation?.["wrongTokenRejected"] !== true || reconciliation["replayIdempotent"] !== true || reconciliation["conflictEvidenceRejected"] !== true || reconciliation["trustedTestExecutionCount"] !== 1 || reconciliation["action"] !== (scenario === "TEST_CONFIRMED" ? "CONFIRMED" : "NOT_APPLIED")) add("RECONCILE_GUARDS", "evidence.reconciliationAudit", `${scenario} must prove wrong-token rejection, idempotent replay, conflict rejection and one test execution`);
   } else if (scenario === "ROLE_WORKER_RECOVERY") {
     if (!Array.isArray(evidence?.["faultMarkers"]) || (evidence?.["faultMarkers"] as unknown[]).length !== 3 || roleRuns.length !== 7) add("ROLE_RECOVERY_CARDINALITY", "evidence", "Role Worker recovery must preserve three kill markers without duplicate Role Runs");
   } else if (scenario === "CHECKPOINT_UNKNOWN") {
@@ -314,6 +316,7 @@ function auditScenarioSemantics(
   } else if (scenario === "MERGE_UNKNOWN") {
     const mergeReceipt = asRecord(lifecycle?.["mergeReceipt"]);
     if (mergeReceipt?.["outcome"] !== "ALREADY_APPLIED" || mergeReceipt["reconciledAfterUnknown"] !== true) add("MERGE_RECONCILE_EVIDENCE", "lifecycle.mergeReceipt", "Merge UNKNOWN must reconcile one already-applied ref update");
+    if (!Array.isArray(evidence?.["faultMarkers"]) || (evidence?.["faultMarkers"] as unknown[]).length !== 1) add("MERGE_FAULT_CARDINALITY", "evidence.faultMarkers", "Merge UNKNOWN must preserve exactly one post-ref-update fault marker");
   } else if (["REPAIR_BUDGET", "REPLAN_BUDGET"].includes(scenario)) {
     const fence = asRecord(evidence?.["fenceAudit"]);
     const first = asRecord(fence?.["first"]);
@@ -325,6 +328,20 @@ function auditScenarioSemantics(
   } else if (scenario === "OBSERVER_TIMEOUT") {
     const disposition = asRecord(evidence?.["knowledgeDisposition"]);
     if (phaseCount("OBSERVER_KNOWLEDGE") !== 1 || disposition?.["disposition"] !== "deferred") add("OBSERVER_NON_BLOCKING", "evidence.knowledgeDisposition", "Observer timeout must preserve one failed sidecar and deferred disposition");
+  } else if (scenario === "STALE_FENCING") {
+    const fence = asRecord(evidence?.["fenceAudit"]);
+    const first = asRecord(fence?.["first"]);
+    const replay = asRecord(fence?.["replay"]);
+    if (generation !== 1 || invalidatedGenerations.length !== 1 || phaseCount("IMPLEMENTATION") !== 2) add("STALE_GENERATION_SETUP", "lifecycle", "Stale fencing requires a completed G0 to be invalidated by G1");
+    if (fence?.["wrongDigestRejected"] !== true || first?.["decision"] !== "STALE_GENERATION" || first["accepted"] !== false || JSON.stringify(first) !== JSON.stringify(replay)) add("STALE_FENCE_AUDIT", "evidence.fenceAudit", "Stale fencing must reject wrong digest and the valid late G0 result without mutating Projection");
+  } else if (scenario === "ROLE_NOT_APPLIED") {
+    const waiting = asRecord(evidence?.["waitingReconcile"]);
+    const reconciliation = asRecord(evidence?.["reconciliationAudit"]);
+    const failure = asRecord(lifecycle?.["failure"]);
+    if (waiting === null || waiting["kind"] !== "ROLE" || waiting["phase"] !== "FINAL_REVIEW" || typeof waiting["token"] !== "string") add("ROLE_RECONCILE_EVIDENCE", "evidence.waitingReconcile", "Role NOT_APPLIED must preserve the Final Review pending identity and token");
+    if (reconciliation?.["wrongTokenRejected"] !== true || reconciliation["replayIdempotent"] !== true || reconciliation["conflictEvidenceRejected"] !== true || reconciliation["action"] !== "NOT_APPLIED") add("ROLE_RECONCILE_GUARDS", "evidence.reconciliationAudit", "Role NOT_APPLIED must prove wrong-token rejection, idempotent replay and conflict rejection");
+    if (phaseCount("FINAL_REVIEW") !== 0 || roleRuns.length !== 6 || trustedTests.length !== 1 || lifecycle?.["mergeCommit"] !== null) add("ROLE_NOT_APPLIED_BOUNDARY", "lifecycle", "Role NOT_APPLIED must preserve six prior Role Runs, one Trusted Test, no Final Review Manifest and no Merge");
+    if (failure?.["originalStage"] !== "FINAL_REVIEW_REQUIRED") add("ROLE_FAILURE_STAGE", "lifecycle.failure.originalStage", "Role NOT_APPLIED must fail at FINAL_REVIEW_REQUIRED");
   } else {
     add("UNKNOWN_SCENARIO_PROFILE", "scenario", `no deterministic audit profile exists for ${scenario}`);
   }

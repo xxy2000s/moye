@@ -8,17 +8,21 @@ import path from "node:path";
 import type { CoreV2AttemptFenceResult, CoreV2WorkflowInput, CoreV2WorkflowProjection } from "../src/restate/core-v2-services.js";
 import { IngressError, invoke, send } from "../src/restate/ingress.js";
 
-type Scenario = "REPAIR_BUDGET" | "REPLAN_BUDGET" | "OBSERVER_TIMEOUT";
+type Scenario = "REPAIR_BUDGET" | "REPLAN_BUDGET" | "OBSERVER_TIMEOUT" | "STALE_FENCING";
 const ingressUrl = process.env["MOYE_CORE_V2_ACCEPTANCE_INGRESS"] ?? "http://127.0.0.1:50889";
 const adminUrl = process.env["MOYE_CORE_V2_ACCEPTANCE_ADMIN"] ?? "http://127.0.0.1:50890";
 const projectId = process.env["MOYE_CORE_V2_ACCEPTANCE_PROJECT"] ?? "moye";
 const acceptanceRoot = path.resolve(process.env["MOYE_CORE_V2_ACCEPTANCE_ROOT"] ?? ".moye-runtime/acceptance/core-v2");
 const stamp = new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14);
-const runRoot = path.join(acceptanceRoot, `guards-${stamp}-${process.pid}`);
+const runRoot = path.resolve(process.env["MOYE_CORE_V2_ACCEPTANCE_RUN_ROOT"] ?? path.join(acceptanceRoot, `guards-${stamp}-${process.pid}`));
 const servicePort = await freePort();
 let boardPort = await freePort();
 while (boardPort === servicePort) boardPort = await freePort();
 const boardUrl = `http://127.0.0.1:${boardPort}`;
+const pageBoardUrl = process.env["MOYE_CORE_V2_ACCEPTANCE_PAGE_BOARD"] ?? boardUrl;
+const reauditRoot = process.env["MOYE_CORE_V2_GUARD_REAUDIT_ROOT"];
+const allScenarios = ["REPAIR_BUDGET", "REPLAN_BUDGET", "OBSERVER_TIMEOUT", "STALE_FENCING"] as const;
+const selectedScenarios = selectScenarios(process.env["MOYE_CORE_V2_GUARD_SCENARIOS"]);
 let service: ChildProcess | undefined;
 let logs = "";
 
@@ -27,7 +31,8 @@ await startService();
 await registerService();
 const summaries: unknown[] = [];
 try {
-  for (const [index, scenario] of (["REPAIR_BUDGET", "REPLAN_BUDGET", "OBSERVER_TIMEOUT"] as const).entries()) {
+  for (const scenario of selectedScenarios) {
+    const index = allScenarios.indexOf(scenario);
     const summary = await executeScenario(scenario, index);
     summaries.push(summary);
     process.stdout.write(`${scenario}: ${summary.taskId} ${summary.outcome}/${summary.archiveStatus}\n`);
@@ -41,29 +46,39 @@ try {
 process.exit(0);
 
 async function executeScenario(scenario: Scenario, index: number) {
-  const code: Readonly<Record<Scenario, string>> = { REPAIR_BUDGET: "REPAIR-BUDGET", REPLAN_BUDGET: "REPLAN-BUDGET", OBSERVER_TIMEOUT: "OBSERVER-TIMEOUT" };
-  const taskId = `TASK-GRD-${stamp}-${String(index + 1).padStart(2, "0")}-${code[scenario]}`;
+  const code: Readonly<Record<Scenario, string>> = { REPAIR_BUDGET: "REPAIR-BUDGET", REPLAN_BUDGET: "REPLAN-BUDGET", OBSERVER_TIMEOUT: "OBSERVER-TIMEOUT", STALE_FENCING: "STALE-FENCING" };
+  let taskId = `TASK-GRD-${stamp}-${String(index + 1).padStart(2, "0")}-${code[scenario]}`;
   assert(/^TASK-[A-Z0-9][A-Z0-9-]{0,63}$/.test(taskId), `invalid Task ID ${taskId}`);
-  const root = path.join(runRoot, scenario.toLowerCase());
+  const root = reauditRoot === undefined ? path.join(runRoot, scenario.toLowerCase()) : path.resolve(reauditRoot);
   const repositoryRoot = path.join(root, "repository");
   const artifactRoot = path.join(root, "artifacts");
   const executionLedger = path.join(root, "trusted-test-executions.log");
-  await mkdir(artifactRoot, { recursive: true });
-  await createFixture(repositoryRoot, executionLedger);
-  const baseCommit = git(repositoryRoot, "rev-parse", "HEAD");
-  const input: CoreV2WorkflowInput = {
-    taskId, projectId, title: `Core v2 real guard acceptance: ${scenario}`,
-    objective: "Create src/value.txt whose complete content is exactly `accepted-value\\n`; add a README line exactly `## Accepted behavior`; create SECURITY.md whose complete content is exactly `# Security\\n`.",
-    acceptanceCriteria: ["src/value.txt contains accepted-value", "README contains ## Accepted behavior", "SECURITY.md contains # Security", "Trusted Runner executes npm test"],
-    repositoryRoot, artifactRoot, runnerKind: "CODEX_EXEC", baseCommit, targetRef: "refs/heads/release", testCommands: [["npm", "test"]],
-    ...(scenario === "REPAIR_BUDGET" ? { acceptanceControl: { profile: "REPAIR_BUDGET" as const } } : {}),
-    ...(scenario === "REPLAN_BUDGET" ? { acceptanceControl: { profile: "REPLAN_BUDGET" as const } } : {}),
-    acceptanceMetadata: { kind: "PRODUCT_ACCEPTANCE" as const, suite: "core-v2-guards", scenario },
-    ...(scenario === "OBSERVER_TIMEOUT" ? { observerKnowledge: { enabled: true, timeoutMs: 1_000 } } : {}),
-  };
-  await writeJson(path.join(root, "task-input.json"), input);
-  const receipt = await send(ingressUrl, "CoreV2Workflow", taskId, "run", input);
-  await writeJson(path.join(root, "submission-receipt.json"), receipt);
+  let input: CoreV2WorkflowInput;
+  let receipt: Awaited<ReturnType<typeof send>>;
+  if (reauditRoot !== undefined) {
+    input = JSON.parse(await readFile(path.join(root, "task-input.json"), "utf8")) as CoreV2WorkflowInput;
+    receipt = JSON.parse(await readFile(path.join(root, "submission-receipt.json"), "utf8")) as Awaited<ReturnType<typeof send>>;
+    taskId = input.taskId;
+    assert(input.acceptanceMetadata?.scenario === scenario, `${taskId} re-audit scenario binding mismatch`);
+  } else {
+    await mkdir(artifactRoot, { recursive: true });
+    await createFixture(repositoryRoot, executionLedger);
+    const baseCommit = git(repositoryRoot, "rev-parse", "HEAD");
+    input = {
+      taskId, projectId, title: `Core v2 real guard acceptance: ${scenario}`,
+      objective: "Create src/value.txt whose complete content is exactly `accepted-value\\n`; add a README line exactly `## Accepted behavior`; create SECURITY.md whose complete content is exactly `# Security\\n`.",
+      acceptanceCriteria: ["src/value.txt contains accepted-value", "README contains ## Accepted behavior", "SECURITY.md contains # Security", "Trusted Runner executes npm test"],
+      repositoryRoot, artifactRoot, runnerKind: "CODEX_EXEC", baseCommit, targetRef: "refs/heads/release", testCommands: [["npm", "test"]],
+      ...(scenario === "REPAIR_BUDGET" ? { acceptanceControl: { profile: "REPAIR_BUDGET" as const } } : {}),
+      ...(scenario === "REPLAN_BUDGET" ? { acceptanceControl: { profile: "REPLAN_BUDGET" as const } } : {}),
+      ...(scenario === "STALE_FENCING" ? { acceptanceControl: { profile: "IMPLEMENTATION_SELF_REVIEW" as const } } : {}),
+      acceptanceMetadata: { kind: "PRODUCT_ACCEPTANCE" as const, suite: "core-v2-guards", scenario },
+      ...(scenario === "OBSERVER_TIMEOUT" ? { observerKnowledge: { enabled: true, timeoutMs: 4_000 } } : {}),
+    };
+    await writeJson(path.join(root, "task-input.json"), input);
+    receipt = await send(ingressUrl, "CoreV2Workflow", taskId, "run", input);
+    await writeJson(path.join(root, "submission-receipt.json"), receipt);
+  }
   const final = await waitForProjection(taskId, (value) => value.state === "CLOSED", 20 * 60_000);
   const trace = await fetchJson<Record<string, unknown>>(`${boardUrl}/api/tasks/${encodeURIComponent(taskId)}/trace`);
   await writeJson(path.join(root, "final-projection.json"), final);
@@ -72,7 +87,7 @@ async function executeScenario(scenario: Scenario, index: number) {
 
   let fence: { wrongDigestRejected: boolean; first: CoreV2AttemptFenceResult; replay: CoreV2AttemptFenceResult } | null = null;
   if (scenario !== "OBSERVER_TIMEOUT") {
-    const stale = required(final.roleRuns.find((run) => scenario === "REPAIR_BUDGET"
+    const stale = required(final.roleRuns.find((run) => scenario === "REPAIR_BUDGET" || scenario === "STALE_FENCING"
       ? run.phase === "IMPLEMENTATION" && run.generation === 0
       : run.phase === "DESIGN_REVIEW" && run.specRevision === 1), "stale Role Manifest");
     await expectConflict(() => invoke(ingressUrl, "CoreV2Workflow", taskId, "auditAttemptFence", { attemptId: stale.attemptId, manifestDigest: `sha256:${"0".repeat(64)}` }));
@@ -81,9 +96,11 @@ async function executeScenario(scenario: Scenario, index: number) {
     const first = await invoke<CoreV2AttemptFenceResult>(ingressUrl, "CoreV2Workflow", taskId, "auditAttemptFence", request);
     const replay = await invoke<CoreV2AttemptFenceResult>(ingressUrl, "CoreV2Workflow", taskId, "auditAttemptFence", request);
     const after = required(await invoke<CoreV2WorkflowProjection | null>(ingressUrl, "CoreV2Workflow", taskId, "status"), "projection after fence audit");
-    assert(!first.accepted && first.decision === (scenario === "REPAIR_BUDGET" ? "STALE_GENERATION" : "STALE_REVISION"), `${taskId} stale decision mismatch`);
+    assert(!first.accepted && first.decision === (scenario === "REPAIR_BUDGET" || scenario === "STALE_FENCING" ? "STALE_GENERATION" : "STALE_REVISION"), `${taskId} stale decision mismatch`);
     assert(JSON.stringify(first) === JSON.stringify(replay), `${taskId} repeated fence audit was not idempotent`);
-    assert(before.lifecycle.projectionDigest === after.lifecycle.projectionDigest && before.lifecycle.successClosure === after.lifecycle.successClosure && before.lifecycle.failureClosure?.closureDigest === after.lifecycle.failureClosure?.closureDigest, `${taskId} fence audit mutated Projection`);
+    assert(before.lifecycle.projectionDigest === after.lifecycle.projectionDigest
+      && before.lifecycle.successClosure?.closureDigest === after.lifecycle.successClosure?.closureDigest
+      && before.lifecycle.failureClosure?.closureDigest === after.lifecycle.failureClosure?.closureDigest, `${taskId} fence audit mutated Projection`);
     fence = { wrongDigestRejected: true, first, replay };
   }
 
@@ -103,7 +120,7 @@ async function executeScenario(scenario: Scenario, index: number) {
     assert(final.roleRuns.filter((run) => run.phase === "ARCHITECT").length === 2 && final.roleRuns.filter((run) => run.phase === "DESIGN_REVIEW").length === 2, `${taskId} expected two Architect/Design Review pairs`);
     assert(!final.roleRuns.some((run) => run.phase === "IMPLEMENTATION") && final.lifecycle.implementationCheckpoints.length === 0 && executions.length === 0 && final.lifecycle.mergeCommit === null, `${taskId} crossed Replan budget boundary`);
     assert(disposition?.disposition === "none", `${taskId} failure Knowledge Disposition missing`);
-  } else {
+  } else if (scenario === "OBSERVER_TIMEOUT") {
     assert(final.outcome === "SUCCEEDED" && final.lifecycle.archive?.status === "ARCHIVED", `${taskId} Observer timeout blocked main closure`);
     const observer = required(final.roleRuns.find((run) => run.phase === "OBSERVER_KNOWLEDGE"), "Observer Role Manifest");
     const observerAttempt = required(final.attempts.find((attempt) => attempt.attemptId === observer.attemptId), "Observer Attempt");
@@ -113,6 +130,12 @@ async function executeScenario(scenario: Scenario, index: number) {
     assert(final.lifecycle.mergeCommit !== null && final.lifecycle.successClosure !== null && executions.length === 1, `${taskId} main flow did not continue after Observer timeout`);
     const observerTrace = (trace["observer"] ?? {}) as { facts?: { attempts?: number; failures?: number }; reportDigest?: string };
     assert(observerTrace.reportDigest?.startsWith("sha256:") && (observerTrace.facts?.failures ?? 0) >= 1, `${taskId} deterministic Observer unavailable after intelligent sidecar failure`);
+  } else {
+    assert(final.outcome === "SUCCEEDED" && final.lifecycle.archive?.status === "ARCHIVED", `${taskId} stale fencing task did not close successfully`);
+    assert(final.lifecycle.implementationGeneration === 1 && final.lifecycle.invalidatedGenerations.length === 1, `${taskId} stale Generation history missing`);
+    assert(final.roleRuns.filter((run) => run.phase === "IMPLEMENTATION").length === 2, `${taskId} expected G0/G1 Implementation runs`);
+    assert(fence?.first.decision === "STALE_GENERATION" && fence.first.accepted === false, `${taskId} stale G0 result was not rejected`);
+    assert(final.lifecycle.successClosure !== null && final.lifecycle.mergeCommit !== null && executions.length === 1, `${taskId} current Generation did not complete uniquely`);
   }
 
   const summary = {
@@ -126,7 +149,7 @@ async function executeScenario(scenario: Scenario, index: number) {
     verificationGateDigest: final.lifecycle.verificationGateDigest, knowledgeDispositionDigest: final.lifecycle.knowledgeDispositionDigest,
     knowledgeDisposition: disposition, failure: final.lifecycle.failure, failureClosureDigest: final.lifecycle.failureClosure?.closureDigest,
     successClosureDigest: final.lifecycle.successClosure?.closureDigest, archiveReceiptDigest: final.lifecycle.archive?.receiptDigest,
-    projectionDigest: final.lifecycle.projectionDigest, fenceAudit: fence, pageUrl: `${boardUrl}/tasks/${encodeURIComponent(taskId)}`,
+    projectionDigest: final.lifecycle.projectionDigest, fenceAudit: fence, pageUrl: `${pageBoardUrl}/tasks/${encodeURIComponent(taskId)}`,
   };
   await writeJson(path.join(root, "evidence-summary.json"), summary);
   return summary;
@@ -164,7 +187,7 @@ async function stopService() {
 }
 async function waitForProjection(taskId: string, predicate: (value: CoreV2WorkflowProjection) => boolean, timeout: number) { let latest: CoreV2WorkflowProjection | null = null; await waitUntil(async () => { latest = await invoke(ingressUrl, "CoreV2Workflow", taskId, "status"); return latest !== null && predicate(latest); }, timeout); return latest as unknown as CoreV2WorkflowProjection; }
 async function expectConflict(fn: () => Promise<unknown>) { try { await fn(); throw new Error("expected conflict"); } catch (error) { if (!(error instanceof IngressError) || error.status !== 409) throw error; } }
-async function waitUntil(check: () => boolean | Promise<boolean>, timeout: number) { const deadline = Date.now() + timeout; let error: unknown; while (Date.now() < deadline) { try { if (await check()) return; } catch (value) { error = value; } await delay(250); } throw new Error(`timeout${error instanceof Error ? `: ${error.message}` : ""}`); }
+async function waitUntil(check: () => boolean | Promise<boolean>, timeout: number) { const deadline = Date.now() + timeout; let error: unknown; while (Date.now() < deadline) { try { if (await check()) return; } catch (value) { error = value; } await delay(1_000); } throw new Error(`timeout${error instanceof Error ? `: ${error.message}` : ""}`); }
 async function canConnect(port: number) { return new Promise<boolean>((resolveResult) => { const socket = net.createConnection({ host: "127.0.0.1", port }); socket.once("connect", () => { socket.destroy(); resolveResult(true); }); socket.once("error", () => resolveResult(false)); }); }
 function processExists(pid: number) { try { process.kill(pid, 0); return true; } catch (error) { if ((error as NodeJS.ErrnoException).code === "ESRCH") return false; throw error; } }
 async function freePort() { return new Promise<number>((resolvePort, reject) => { const server = net.createServer(); server.once("error", reject); server.listen(0, "127.0.0.1", () => { const address = server.address(); if (address === null || typeof address === "string") return reject(new Error("port unavailable")); server.close(() => resolvePort(address.port)); }); }); }
@@ -176,3 +199,11 @@ async function writeJson(file: string, value: unknown) { await mkdir(path.dirnam
 async function delay(ms: number) { await new Promise((resolveDelay) => setTimeout(resolveDelay, ms)); }
 function required<T>(value: T | null | undefined, name: string): T { if (value === null || value === undefined) throw new Error(`${name} missing`); return value; }
 function assert(value: unknown, message: string): asserts value { if (!value) throw new Error(message); }
+function selectScenarios(value: string | undefined): readonly Scenario[] {
+  if (value === undefined || value.trim() === "") return allScenarios;
+  const selected = [...new Set(value.split(",").map((item) => item.trim()).filter(Boolean))];
+  for (const scenario of selected) if (!allScenarios.includes(scenario as Scenario)) throw new Error(`unknown guard scenario ${scenario}`);
+  if (selected.length === 0) throw new Error("MOYE_CORE_V2_GUARD_SCENARIOS selected no scenarios");
+  if (reauditRoot !== undefined && selected.length !== 1) throw new Error("MOYE_CORE_V2_GUARD_REAUDIT_ROOT requires exactly one selected scenario");
+  return allScenarios.filter((scenario) => selected.includes(scenario));
+}

@@ -1,0 +1,31 @@
+schema_version: 1
+id: TASK-0048
+title: Core v2 全矩阵真实复跑、最终证据与部署验收
+status: seal_prepared
+outcome: null
+backlog_refs:
+  - BL-0043
+  - BL-0052
+  - BL-0053
+  - BL-0054
+  - BL-0055
+  - BL-0056
+  - BL-0057
+  - BL-0058
+spec_revision: 1
+workflow_id: sealed-task/TASK-0048
+execution_mode: sealed-result-commit
+base_commit: 3887c1a6aeb9cc6460f4460741794fc9c2c25c91
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-24-TASK-0048
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:821cbb37385dc1fe3079dc18b2962a7f0149af77fced4eb01f9e65e4f9752e64
+  base_commit: 3887c1a6aeb9cc6460f4460741794fc9c2c25c91
+  archive_path: docs/delivery/tasks/archive/2026-08-24-TASK-0048

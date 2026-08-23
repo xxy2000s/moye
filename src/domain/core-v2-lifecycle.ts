@@ -384,6 +384,41 @@ export function workflowWaitForTestReconcileV2(
     events: append(projection.events, "TrustedTestReconcileRequired", instant(input.at), `${required(input.token, "token")}:${required(input.reason, "reason")}`) });
 }
 
+export function workflowWaitForRoleReconcileV2(
+  projectionInput: CoreV2LifecycleProjection,
+  input: { readonly phase: string; readonly token: string; readonly reason: string; readonly at: string },
+): CoreV2LifecycleProjection {
+  const projection = parseProjection(projectionInput);
+  if (["WAITING_RECONCILE", "FAILED_TERMINAL", "ARCHIVE_PENDING", "ARCHIVE_FAILED", "CLOSED"].includes(projection.state)) {
+    throw conflict("CORE_V2_ROLE_RECONCILE_NOT_REQUIRED", "Only an active Role effect can wait for reconcile");
+  }
+  return seal({ ...withoutDigest(projection), state: "WAITING_RECONCILE",
+    events: append(projection.events, "RoleRunReconcileRequired", instant(input.at), `${required(input.phase, "phase")}:${required(input.token, "token")}:${required(input.reason, "reason")}`) });
+}
+
+export function workflowResumeRoleReconcileV2(
+  projectionInput: CoreV2LifecycleProjection,
+  input: { readonly resumeState: CoreV2LifecycleState; readonly phase: string; readonly token: string; readonly evidence: string; readonly at: string },
+): CoreV2LifecycleProjection {
+  const projection = parseProjection(projectionInput);
+  if (projection.state !== "WAITING_RECONCILE" || input.resumeState === "WAITING_RECONCILE" ||
+      ["FAILED_TERMINAL", "ARCHIVE_PENDING", "ARCHIVE_FAILED", "CLOSED"].includes(input.resumeState)) {
+    throw conflict("CORE_V2_ROLE_RECONCILE_NOT_WAITING", "Role Run is not waiting for a valid active-state reconcile");
+  }
+  return seal({ ...withoutDigest(projection), state: input.resumeState,
+    events: append(projection.events, "RoleRunReconcileResumed", instant(input.at), `${input.resumeState}:${required(input.phase, "phase")}:${required(input.token, "token")}:${required(input.evidence, "evidence")}`) });
+}
+
+export function workflowRecordRoleNotAppliedV2(
+  projectionInput: CoreV2LifecycleProjection,
+  input: { readonly phase: string; readonly token: string; readonly evidence: string; readonly at: string },
+): CoreV2LifecycleProjection {
+  const projection = parseProjection(projectionInput);
+  if (projection.state !== "WAITING_RECONCILE") throw conflict("CORE_V2_ROLE_RECONCILE_NOT_WAITING", "Role Run is not waiting for reconcile");
+  return seal({ ...withoutDigest(projection), events: append(projection.events, "RoleRunReconciledNotApplied", instant(input.at),
+    `${required(input.phase, "phase")}:${required(input.token, "token")}:${required(input.evidence, "evidence")}`) });
+}
+
 export function workflowResumeTestReconcileV2(
   projectionInput: CoreV2LifecycleProjection,
   input: { readonly token: string; readonly evidence: string; readonly at: string },

@@ -40,6 +40,7 @@ describe("Core v2 Workflow control-plane", () => {
     expect(() => validateCoreV2RecoveryControl(undefined, undefined, root, false)).not.toThrow();
     expect(() => validateCoreV2RecoveryControl(control, undefined, root, false)).toThrow("recovery fault injection is disabled");
     expect(() => validateCoreV2RecoveryControl(control, undefined, root, true)).not.toThrow();
+    expect(() => validateCoreV2RecoveryControl({ roleExitAfterIntentOnceAt: { FINAL_REVIEW: `${root}/role-intent.marker` } }, undefined, root, true)).not.toThrow();
     expect(() => validateCoreV2RecoveryControl({ testExitAfterIntentOnceAt: "/tmp/outside.marker" }, undefined, root, true)).toThrow("inside artifactRoot");
   });
 

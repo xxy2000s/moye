@@ -65,5 +65,6 @@ YYYY-MM-DD-TASK-NNNN
 | [TASK-0045](./2026-08-23-TASK-0045/spec.md) | Seal Prepared；业务终态见 Runtime | 2026-08-23 | Repair/Replan 预算、Observer/Knowledge 超时与 stale fencing 真实验收 |
 | [TASK-0046](./2026-08-23-TASK-0046/spec.md) | Seal Prepared；业务终态见 Runtime | 2026-08-23 | Board 运行语义、验收历史筛选、最新成功入口与状态机实际路径 UX |
 | [TASK-0047](./2026-08-24-TASK-0047/spec.md) | Seal Prepared；业务终态见 Runtime | 2026-08-24 | Core v2 显式矩阵证据完整性、实时交叉校验与 Document Graph 归档审计 |
+| [TASK-0048](./2026-08-24-TASK-0048/spec.md) | Seal Prepared；业务终态见 Runtime | 2026-08-24 | Core v2 16 场景真实矩阵、Role Reconcile、零 Finding 审计与最终部署 |
 
 Bootstrap Task 的 `task.yaml` 冻结在 Archive 开始前，因此其中 `archive.status: pending` 描述的是冻结点；最终 `ARCHIVED` 事实由目录位置、`archive-manifest.json` 和 ProjectBoard Projection 共同证明。TASK-0002 归档后文档图门禁曾发现 Spec 的 Active 相对链接因目录层级变化而失效，控制面只修正了该链接；修正前内容仍由 Result Commit `ff1954f4e4360e85276cf22aa30d6f5e8e396f84` 保存。后续 Task 使用不随 Active/Archive 深度变化的稳定引用。

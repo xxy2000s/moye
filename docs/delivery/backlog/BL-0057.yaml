@@ -1,0 +1,13 @@
+schema_version: 1
+id: "BL-0057"
+title: "校准 Observer 超时验收以保留真实 Session/Event"
+kind: "debt"
+status: "converted_to_task"
+priority: "high"
+source_refs: [core-v2-observer-timeout-precedes-session-evidence, incident-core-v2-matrix-oom-role-unknown]
+affected_areas: [core-v2-observer-knowledge, core-v2-guards-acceptance]
+acceptance_outline:
+  - "启动真实 Observer/Knowledge Agent 并在 Session 建立后受控超时"
+  - "失败 Attempt、Manifest、Session/Event 与 deferred disposition 可查询"
+  - "主流程继续 Merge、Closure 和 Archive"
+resolution: { task_refs: [TASK-0048], duplicate_of: null, reason: "由 TASK-0048 以新 Runtime Task 重跑 Observer 故障场景" }

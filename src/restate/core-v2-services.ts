@@ -5,15 +5,15 @@ import { relative, resolve } from "node:path";
 import * as restate from "@restatedev/restate-sdk";
 
 import { SpawnAgentProcessRunner } from "../agent/codex-exec.js";
-import { RealRoleRuntimeV2 } from "../agent/role-runtime-v2.js";
+import { RealRoleRuntimeV2, inspectRealRoleRunV2, prepareRealRoleRunV2, writeRealRoleRunIntentV2 } from "../agent/role-runtime-v2.js";
 import type { RoleRunManifestV2 } from "../agent/role-runtime-v2.js";
 import { persistCoreV2FailureArchiveReceipt, persistCoreV2FailureArtifact, persistCoreV2FailureClosure } from "../archive/core-v2-failure.js";
 import { persistCoreV2SuccessArchiveReceipt, persistCoreV2SuccessClosure } from "../archive/core-v2-success.js";
 import { loadConfig } from "../config.js";
-import { createCoreV2Lifecycle, workflowAcceptArchitectV2, workflowAcceptDesignReviewV2, workflowAcceptDocumentationV2, workflowAcceptFinalReviewV2, workflowAcceptImplementationV2, workflowAcceptTestAssessmentV2, workflowAcceptTestPlanV2, workflowArchiveFailureV2, workflowArchiveSuccessV2, workflowAuthorizeRepairV2, workflowCloseCoreV2, workflowCloseFailureV2, workflowEnterFailureTerminalV2, workflowFailFailureArchiveV2, workflowPassVerificationGateV2, workflowRecordFailureArtifactV2, workflowRecordKnowledgeDispositionV2, workflowRecordTrustedTestRunV2, workflowReplanV2, workflowRequestRepairV2, workflowResumeTestReconcileV2, workflowRetryFailureArchiveV2, workflowWaitForTestReconcileV2 } from "../domain/core-v2-lifecycle.js";
-import type { ArchitectDeliverableV2, CoreV2LifecycleProjection } from "../domain/core-v2-lifecycle.js";
+import { createCoreV2Lifecycle, workflowAcceptArchitectV2, workflowAcceptDesignReviewV2, workflowAcceptDocumentationV2, workflowAcceptFinalReviewV2, workflowAcceptImplementationV2, workflowAcceptTestAssessmentV2, workflowAcceptTestPlanV2, workflowArchiveFailureV2, workflowArchiveSuccessV2, workflowAuthorizeRepairV2, workflowCloseCoreV2, workflowCloseFailureV2, workflowEnterFailureTerminalV2, workflowFailFailureArchiveV2, workflowPassVerificationGateV2, workflowRecordFailureArtifactV2, workflowRecordKnowledgeDispositionV2, workflowRecordRoleNotAppliedV2, workflowRecordTrustedTestRunV2, workflowReplanV2, workflowRequestRepairV2, workflowResumeRoleReconcileV2, workflowResumeTestReconcileV2, workflowRetryFailureArchiveV2, workflowWaitForRoleReconcileV2, workflowWaitForTestReconcileV2 } from "../domain/core-v2-lifecycle.js";
+import type { ArchitectDeliverableV2, CoreV2LifecycleProjection, CoreV2LifecycleState } from "../domain/core-v2-lifecycle.js";
 import { createCoreV2ObserverReport } from "../domain/core-v2-observer.js";
-import { completeRoleAttemptV2, createRoleAttemptV2, startRoleAttemptV2 } from "../domain/role-runtime-v2.js";
+import { completeRoleAttemptV2, createRoleAttemptV2, markRoleAttemptUnknownV2, reconcileRoleAttemptV2, startRoleAttemptV2 } from "../domain/role-runtime-v2.js";
 import type { AgentRoleV2, RealRoleRunnerKind, RoleAttemptV2, RolePhaseV2 } from "../domain/role-runtime-v2.js";
 import type { DocsImpactPayload, KnowledgeDispositionPayload, TestPlanPayload } from "../domain/lifecycle-artifact.js";
 import { applyLocalMerge, createCoreV2LocalMergeRequest } from "../git/merge-effect.js";
@@ -41,6 +41,7 @@ export interface CoreV2WorkflowInput {
   readonly acceptanceMetadata?: { readonly kind: "PRODUCT_ACCEPTANCE"; readonly suite: string; readonly scenario: string };
 }
 export interface CoreV2RecoveryControl {
+  readonly roleExitAfterIntentOnceAt?: Partial<Record<"ARCHITECT" | "IMPLEMENTATION" | "FINAL_REVIEW", string>>;
   readonly roleExitAfterManifestOnceAt?: Partial<Record<"ARCHITECT" | "IMPLEMENTATION" | "FINAL_REVIEW", string>>;
   readonly testExitAfterIntentOnceAt?: string;
   readonly testExitAfterManifestOnceAt?: string;
@@ -71,6 +72,10 @@ export interface CoreV2WorkflowProjection {
   readonly sourceWorkflowRef?: string; readonly workflowRef?: string;
   readonly recovery?: CoreV2RecoveryRecord;
   readonly historyKind?: TaskHistoryKind; readonly historyKindSource?: TaskHistoryKindSource;
+  readonly pendingReconcile?: {
+    readonly kind: "ROLE" | "TRUSTED_TEST"; readonly token: string; readonly operationId: string;
+    readonly attemptId?: string; readonly phase?: RolePhaseV2; readonly runId?: string; readonly resumeState?: CoreV2LifecycleState;
+  };
   readonly lastReconciliation?: CoreV2ReconcileInput;
   readonly startedAt: string; readonly completedAt: string | null; readonly outcome: "SUCCEEDED" | "FAILED_TERMINAL" | null; readonly error: string | null;
 }
@@ -160,10 +165,12 @@ export const coreV2Workflow = restate.workflow({
           let testManifest: TrustedTestRunManifest;
           if (initialTest.state === "UNKNOWN") {
             projection = withLifecycle(projection, workflowWaitForTestReconcileV2(projection.lifecycle, { token: initialTest.reconcileToken, reason: initialTest.reason, at: await durableNow(ctx, `tests-g${generation}-unknown`) }));
-            projection = await publish(ctx, input, { ...projection, state: "WAITING_RECONCILE", currentStep: "WAITING_RECONCILE", error: initialTest.reconcileToken });
+            projection = await publish(ctx, input, { ...projection, state: "WAITING_RECONCILE", currentStep: "WAITING_RECONCILE", error: initialTest.reconcileToken,
+              pendingReconcile: { kind: "TRUSTED_TEST", token: initialTest.reconcileToken, operationId: initialTest.runId } });
             const reconciliation = await ctx.promise<CoreV2ReconcileInput>(reconcilePromiseName(initialTest.reconcileToken)).get();
             testManifest = await ctx.run(`trusted-test-reconcile-g${generation}`, () => reconcileTrustedTestPlan(testInput, reconciliation));
-            projection = withLifecycle({ ...projection, state: "EXECUTING", error: null, lastReconciliation: reconciliation }, workflowResumeTestReconcileV2(projection.lifecycle, { token: reconciliation.token, evidence: reconciliation.evidence, at: await durableNow(ctx, `tests-g${generation}-resumed`) }));
+            const { pendingReconcile: _pending, ...resumedProjection } = projection;
+            projection = withLifecycle({ ...resumedProjection, state: "EXECUTING", error: null, lastReconciliation: reconciliation }, workflowResumeTestReconcileV2(projection.lifecycle, { token: reconciliation.token, evidence: reconciliation.evidence, at: await durableNow(ctx, `tests-g${generation}-resumed`) }));
             projection = await publish(ctx, input, projection);
           } else testManifest = initialTest.manifest;
           const manifestRef = `${input.artifactRoot}/trusted-tests/${testManifest.runId.replace(":", "-")}/manifest.json`;
@@ -232,7 +239,11 @@ export const coreV2Workflow = restate.workflow({
           return archiveSuccessfulCoreV2Workflow(ctx, input, projection, closedAt);
         }
       } catch (error) {
-        return closeFailedCoreV2Workflow(ctx, input, projection, error, `restate://CoreV2Workflow/${input.taskId}`);
+        const persisted = await ctx.get("projection");
+        const latest = persisted ?? projection;
+        return closeFailedCoreV2Workflow(ctx, input, latest, error, `restate://CoreV2Workflow/${input.taskId}`,
+          latest.pendingReconcile?.kind === "ROLE" && latest.pendingReconcile.resumeState !== undefined
+            ? { originalStage: latest.pendingReconcile.resumeState, sourceProjectionDigest: projectionDigest(latest) } : undefined);
       }
     },
     status: restate.handlers.workflow.shared(async (ctx: restate.WorkflowSharedContext<CoreV2WorkflowState>) => ctx.get("projection") as Promise<CoreV2WorkflowProjection | null>),
@@ -259,11 +270,11 @@ export const coreV2Workflow = restate.workflow({
         if (projection.lastReconciliation !== undefined && JSON.stringify(projection.lastReconciliation) === JSON.stringify(normalized)) return projection;
         throw new restate.TerminalError("Core v2 Task is not waiting for reconcile", { errorCode: 409 });
       }
-      if (input.token !== projection.error || !["CONFIRMED", "NOT_APPLIED"].includes(input.action) || !normalized.evidence) throw new restate.TerminalError("Reconcile token/action/evidence does not match pending Trusted Test", { errorCode: 409 });
+      if (input.token !== projection.error || (projection.pendingReconcile !== undefined && input.token !== projection.pendingReconcile.token) || !["CONFIRMED", "NOT_APPLIED"].includes(input.action) || !normalized.evidence) throw new restate.TerminalError("Reconcile token/action/evidence does not match the pending Core v2 Effect", { errorCode: 409 });
       const promise = ctx.promise<CoreV2ReconcileInput>(reconcilePromiseName(input.token));
       const existing = await promise.peek();
       if (existing === undefined) await promise.resolve(normalized);
-      else if (JSON.stringify(existing) !== JSON.stringify(normalized)) throw new restate.TerminalError("Conflicting Trusted Test reconcile evidence", { errorCode: 409 });
+      else if (JSON.stringify(existing) !== JSON.stringify(normalized)) throw new restate.TerminalError("Conflicting Core v2 reconcile evidence", { errorCode: 409 });
       return projection;
     }),
     retryArchive: restate.handlers.workflow.shared(async (ctx: restate.WorkflowSharedContext<CoreV2WorkflowState>, input: CoreV2ArchiveRetryInput): Promise<CoreV2WorkflowProjection> => {
@@ -570,18 +581,76 @@ async function runRole(ctx: restate.WorkflowContext<CoreV2WorkflowState>, input:
   const scheduled = createRoleAttemptV2({ taskId: input.taskId, specRevision: projection.lifecycle.specRevision, role, phase, generation, runnerKind: input.runnerKind,
     inputDigest: projection.lifecycle.projectionDigest, subjectCommit, inputArtifactRefs: projection.lifecycle.artifacts.map((item) => item.artifactDigest), scheduledAt: await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-scheduled-g${generation}`) });
   const running = startRoleAttemptV2(scheduled, await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-started-g${generation}`));
+  const roleInput = { attempt: running, scopeRoot: await realpath(input.repositoryRoot), artifactRoot: `${input.artifactRoot}/roles`, instructions };
   const result = await ctx.run(`role-${phase.toLowerCase()}-r${projection.lifecycle.specRevision}-g${generation}`, async () => {
-    const executed = await new RealRoleRuntimeV2({
-      ...(options.timeoutMs === undefined ? {} : { processRunner: new SpawnAgentProcessRunner({ timeoutMs: options.timeoutMs }) }),
-    }).run({ attempt: running, scopeRoot: await realpath(input.repositoryRoot), artifactRoot: `${input.artifactRoot}/roles`, instructions });
-    const marker = phase === "ARCHITECT" || phase === "IMPLEMENTATION" || phase === "FINAL_REVIEW"
-      ? input.recoveryControl?.roleExitAfterManifestOnceAt?.[phase] : undefined;
-    await exitOnce(marker, `${phase} manifest ${executed.manifest.manifestDigest}`);
-    return executed;
+    try {
+      const intentMarker = phase === "ARCHITECT" || phase === "IMPLEMENTATION" || phase === "FINAL_REVIEW"
+        ? input.recoveryControl?.roleExitAfterIntentOnceAt?.[phase] : undefined;
+      if (intentMarker !== undefined) {
+        const request = await prepareRealRoleRunV2(roleInput);
+        await writeRealRoleRunIntentV2(request);
+        await exitOnce(intentMarker, `${phase} intent ${request.requestDigest}`);
+      }
+      const executed = await new RealRoleRuntimeV2({
+        ...(options.timeoutMs === undefined ? {} : { processRunner: new SpawnAgentProcessRunner({ timeoutMs: options.timeoutMs }) }),
+      }).run(roleInput);
+      const marker = phase === "ARCHITECT" || phase === "IMPLEMENTATION" || phase === "FINAL_REVIEW"
+        ? input.recoveryControl?.roleExitAfterManifestOnceAt?.[phase] : undefined;
+      await exitOnce(marker, `${phase} manifest ${executed.manifest.manifestDigest}`);
+      return { state: "COMPLETED" as const, executed };
+    } catch (error) {
+      if (!isUnknownRoleResult(error)) throw error;
+      const request = await prepareRealRoleRunV2(roleInput);
+      const inspection = await inspectRealRoleRunV2(request);
+      if (inspection.state === "CONFIRMED") return { state: "COMPLETED" as const, executed: inspection.result };
+      if (inspection.state !== "INTENT_ONLY") throw error;
+      return { state: "UNKNOWN" as const, runId: inspection.runId, operationId: inspection.operationId,
+        reconcileToken: inspection.reconcileToken, reason: error instanceof Error ? error.message : String(error) };
+    }
   });
-  return { attempt: completeRoleAttemptV2(running, result.evidence, await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-completed-g${generation}`)), manifest: result.manifest };
+  if (result.state === "COMPLETED") {
+    return { attempt: completeRoleAttemptV2(running, result.executed.evidence, await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-completed-g${generation}`)), manifest: result.executed.manifest };
+  }
+  const unknownAt = await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-unknown-g${generation}`);
+  const waiting = markRoleAttemptUnknownV2(running, { runId: result.runId, operationId: result.operationId, reason: result.reason }, unknownAt);
+  const waitingLifecycle = workflowWaitForRoleReconcileV2(projection.lifecycle, { phase, token: result.reconcileToken, reason: result.reason, at: unknownAt });
+  await publish(ctx, input, { ...projection, lifecycle: waitingLifecycle, attempts: upsertAttempt(projection.attempts, waiting), state: "WAITING_RECONCILE", currentStep: "WAITING_RECONCILE",
+    error: result.reconcileToken, pendingReconcile: { kind: "ROLE", token: result.reconcileToken, operationId: result.operationId,
+      attemptId: waiting.attemptId, phase, runId: result.runId, resumeState: projection.lifecycle.state } });
+  const reconciliation = await ctx.promise<CoreV2ReconcileInput>(reconcilePromiseName(result.reconcileToken)).get();
+  if (reconciliation.action === "NOT_APPLIED") {
+    const notAppliedAt = await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-not-applied-g${generation}`);
+    const failed = reconcileRoleAttemptV2(waiting, { token: reconciliation.token, action: "NOT_APPLIED", externalEvidence: reconciliation.evidence }, notAppliedAt);
+    const failedLifecycle = workflowRecordRoleNotAppliedV2(waitingLifecycle, { phase, token: reconciliation.token, evidence: reconciliation.evidence, at: notAppliedAt });
+    await publish(ctx, input, { ...projection, lifecycle: failedLifecycle, attempts: upsertAttempt(projection.attempts, failed), state: "WAITING_RECONCILE", currentStep: "WAITING_RECONCILE",
+      error: result.reconcileToken, pendingReconcile: { kind: "ROLE", token: result.reconcileToken, operationId: result.operationId,
+        attemptId: waiting.attemptId, phase, runId: result.runId, resumeState: projection.lifecycle.state }, lastReconciliation: reconciliation });
+    throw new restate.TerminalError(`${phase} Role effect reconciled NOT_APPLIED; automatic Role replay is not authorized`, { errorCode: 409 });
+  }
+  const confirmed = await ctx.run(`role-${phase.toLowerCase()}-reconcile-r${projection.lifecycle.specRevision}-g${generation}`, async () => {
+    const request = await prepareRealRoleRunV2(roleInput);
+    const inspection = await inspectRealRoleRunV2(request);
+    if (inspection.state !== "CONFIRMED") throw new restate.TerminalError("CONFIRMED Role reconciliation requires a verified persisted Manifest", { errorCode: 409 });
+    return inspection.result;
+  });
+  const reconciled = reconcileRoleAttemptV2(waiting, { token: reconciliation.token, action: "CONFIRMED", externalEvidence: reconciliation.evidence,
+    runEvidence: confirmed.evidence }, await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-reconciled-g${generation}`));
+  const resumedLifecycle = workflowResumeRoleReconcileV2(waitingLifecycle, { resumeState: projection.lifecycle.state, phase,
+    token: reconciliation.token, evidence: reconciliation.evidence, at: await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-resumed-g${generation}`) });
+  return { attempt: reconciled, manifest: confirmed.manifest, lifecycle: resumedLifecycle };
 }
-function addRun(p: CoreV2WorkflowProjection, result: { attempt: RoleAttemptV2; manifest: RoleRunManifestV2 }): CoreV2WorkflowProjection { return { ...p, attempts: [...p.attempts, result.attempt], roleRuns: [...p.roleRuns, result.manifest] }; }
+function addRun(p: CoreV2WorkflowProjection, result: { attempt: RoleAttemptV2; manifest: RoleRunManifestV2; lifecycle?: CoreV2LifecycleProjection }): CoreV2WorkflowProjection {
+  const { pendingReconcile: _pending, ...rest } = p;
+  return { ...rest, state: "EXECUTING", error: null, lifecycle: result.lifecycle ?? p.lifecycle, attempts: upsertAttempt(p.attempts, result.attempt),
+    roleRuns: [...p.roleRuns.filter((item) => item.attemptId !== result.manifest.attemptId), result.manifest] };
+}
+function upsertAttempt(attempts: readonly RoleAttemptV2[], attempt: RoleAttemptV2): readonly RoleAttemptV2[] {
+  return [...attempts.filter((item) => item.attemptId !== attempt.attemptId), attempt];
+}
+function isUnknownRoleResult(error: unknown): boolean {
+  return typeof error === "object" && error !== null && (error as { code?: unknown }).code === "REAL_ROLE_RESULT_UNKNOWN"
+    && (error as { category?: unknown }).category === "UNKNOWN_SIDE_EFFECT";
+}
 function withLifecycle(p: CoreV2WorkflowProjection, lifecycle: CoreV2LifecycleProjection): CoreV2WorkflowProjection { return { ...p, lifecycle, currentStep: lifecycle.state }; }
 async function publish(ctx: restate.WorkflowContext<CoreV2WorkflowState>, input: Pick<CoreV2WorkflowInput, "projectId">, p: CoreV2WorkflowProjection): Promise<CoreV2WorkflowProjection> { ctx.set("projection", p); await ctx.objectClient(projectBoard, input.projectId).upsertTask(boardTask(p)); return p; }
 function boardTask(p: CoreV2WorkflowProjection): TaskProjection { const archiveStatus = p.lifecycle.archive?.status ?? "NOT_READY"; return { taskId: p.taskId, projectId: p.projectId, title: p.title, state: p.outcome === "FAILED_TERMINAL" || p.state === "CLOSED" ? "CLOSED" : "EXECUTING", currentStep: p.currentStep,
@@ -661,6 +730,7 @@ export function validateCoreV2RecoveryControl(
     control?.testExitAfterIntentOnceAt,
     control?.testExitAfterManifestOnceAt,
     control?.checkpointExitAfterCommitOnceAt,
+    ...Object.values(control?.roleExitAfterIntentOnceAt ?? {}),
     ...Object.values(control?.roleExitAfterManifestOnceAt ?? {}),
     mergeFault?.loseAcknowledgementOnceAt,
     mergeFault?.exitAfterRefUpdateOnceAt,

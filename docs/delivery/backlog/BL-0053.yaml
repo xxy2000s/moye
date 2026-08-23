@@ -1,0 +1,13 @@
+schema_version: 1
+id: "BL-0053"
+title: "隔离 Core v2 真实矩阵运行容量并冻结 harness 失败证据"
+kind: "debt"
+status: "converted_to_task"
+priority: "high"
+source_refs: [incident-core-v2-matrix-oom-role-unknown]
+affected_areas: [core-v2-acceptance-harness, local-restate-runbook, runtime-diagnostics]
+acceptance_outline:
+  - "真实矩阵启动前检查 Restate Admin 与专用 Service，并避免并行 Moye Runtime 干扰"
+  - "suite 失败时保存运行根、Task/Invocation 与服务日志，不把失败当成产品通过"
+  - "Runbook 明确 OOM、固定 deployment URI、持久化 socket 与恢复步骤"
+resolution: { task_refs: [TASK-0048], duplicate_of: null, reason: "由 TASK-0048 的 orchestrator 和 Runbook 修正" }

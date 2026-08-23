@@ -15,10 +15,11 @@ const mode = option("--mode") ?? "happy";
 if (mode !== "happy" && mode !== "faults") throw new Error("--mode must be happy or faults");
 const ingressUrl = process.env["MOYE_CORE_V2_ACCEPTANCE_INGRESS"] ?? process.env["RESTATE_INGRESS_URL"] ?? "http://127.0.0.1:8080";
 const boardUrl = process.env["MOYE_CORE_V2_ACCEPTANCE_BOARD"] ?? "http://127.0.0.1:3000";
+const pageBoardUrl = process.env["MOYE_CORE_V2_ACCEPTANCE_PAGE_BOARD"] ?? boardUrl;
 const projectId = process.env["MOYE_CORE_V2_ACCEPTANCE_PROJECT"] ?? process.env["MOYE_PROJECT_ID"] ?? "moye";
 const acceptanceRoot = path.resolve(process.env["MOYE_CORE_V2_ACCEPTANCE_ROOT"] ?? ".moye-runtime/acceptance/core-v2");
 const stamp = new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14);
-const runRoot = path.join(acceptanceRoot, `${mode}-${stamp}-${process.pid}`);
+const runRoot = path.resolve(process.env["MOYE_CORE_V2_ACCEPTANCE_RUN_ROOT"] ?? path.join(acceptanceRoot, `${mode}-${stamp}-${process.pid}`));
 const allFaultScenarios: readonly Scenario[] = [
       { name: "IMPLEMENTATION_SELF_REVIEW", profile: "IMPLEMENTATION_SELF_REVIEW" },
       { name: "FINAL_REVIEW", profile: "FINAL_REVIEW" },
@@ -140,7 +141,7 @@ async function executeScenario(scenario: Scenario, index: number) {
     archiveReceiptDigest: lifecycle.archive?.receiptDigest,
     projectionDigest: lifecycle.projectionDigest,
     eventCount: lifecycle.events.length,
-    pageUrl: `${boardUrl}/tasks/${encodeURIComponent(taskId)}`,
+    pageUrl: `${pageBoardUrl}/tasks/${encodeURIComponent(taskId)}`,
   };
   await writeJson(path.join(scenarioRoot, "evidence-summary.json"), summary);
   return summary;

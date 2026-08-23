@@ -64,6 +64,13 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 | [BL-0049](./BL-0049.yaml) | Converted to Task | 以规范 Verification 状态恢复 TASK-0042 Seal 失败 | TASK-0042R1（Active） |
 | [BL-0050](./BL-0050.yaml) | Converted to Task | 修复 Core v2 Board 运行状态语义与验收历史筛选 | TASK-0046（Seal Prepared） |
 | [BL-0051](./BL-0051.yaml) | Converted to Task | 防止 Sealed Task 归档后文档图仍保留 Active 状态 | TASK-0047（Active） |
+| [BL-0052](./BL-0052.yaml) | Converted to Task | 将 Core v2 Role Intent-only 提升为正式 WAITING_RECONCILE | TASK-0048（Seal Prepared） |
+| [BL-0053](./BL-0053.yaml) | Converted to Task | 隔离 Core v2 真实矩阵运行容量并冻结 harness 失败证据 | TASK-0048（Seal Prepared） |
+| [BL-0054](./BL-0054.yaml) | Converted to Task | 修正 Core v2 Reconcile 验收的幂等判定 | TASK-0048（Seal Prepared） |
+| [BL-0055](./BL-0055.yaml) | Converted to Task | 限制 Restate E2E 并发以避免共享 Docker OOM | TASK-0048（Seal Prepared） |
+| [BL-0056](./BL-0056.yaml) | Converted to Task | 为 Core v2 矩阵注册使用唯一 Workflow 探针 identity | TASK-0048（Seal Prepared） |
+| [BL-0057](./BL-0057.yaml) | Converted to Task | 校准 Observer 超时验收以保留真实 Session/Event | TASK-0048（Seal Prepared） |
+| [BL-0058](./BL-0058.yaml) | Converted to Task | 修正 stale-fence 验收的 Closure 内容身份比较 | TASK-0048（Seal Prepared） |
 
 ## 本轮调度结果
 

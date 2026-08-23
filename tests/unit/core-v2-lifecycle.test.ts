@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createCoreV2Lifecycle, workflowAcceptArchitectV2, workflowAcceptDesignReviewV2, workflowAcceptDocumentationV2, workflowAcceptFinalReviewV2, workflowAcceptImplementationV2, workflowAcceptTestAssessmentV2, workflowAcceptTestPlanV2, workflowArchiveFailureV2, workflowArchiveSuccessV2, workflowAuthorizeRepairV2, workflowCloseCoreV2, workflowCloseFailureV2, workflowEnterFailureTerminalV2, workflowFailFailureArchiveV2, workflowPassVerificationGateV2, workflowRecordFailureArtifactV2, workflowRecordKnowledgeDispositionV2, workflowRecordTrustedTestRunV2, workflowReplanV2, workflowResumeTestReconcileV2, workflowRetryFailureArchiveV2, workflowWaitForTestReconcileV2 } from "../../src/domain/core-v2-lifecycle.js";
+import { createCoreV2Lifecycle, workflowAcceptArchitectV2, workflowAcceptDesignReviewV2, workflowAcceptDocumentationV2, workflowAcceptFinalReviewV2, workflowAcceptImplementationV2, workflowAcceptTestAssessmentV2, workflowAcceptTestPlanV2, workflowArchiveFailureV2, workflowArchiveSuccessV2, workflowAuthorizeRepairV2, workflowCloseCoreV2, workflowCloseFailureV2, workflowEnterFailureTerminalV2, workflowFailFailureArchiveV2, workflowPassVerificationGateV2, workflowRecordFailureArtifactV2, workflowRecordKnowledgeDispositionV2, workflowRecordRoleNotAppliedV2, workflowRecordTrustedTestRunV2, workflowReplanV2, workflowResumeRoleReconcileV2, workflowResumeTestReconcileV2, workflowRetryFailureArchiveV2, workflowWaitForRoleReconcileV2, workflowWaitForTestReconcileV2 } from "../../src/domain/core-v2-lifecycle.js";
 import { completeRoleAttemptV2, createRoleAttemptV2, createRoleRunEvidenceV2, startRoleAttemptV2 } from "../../src/domain/role-runtime-v2.js";
 import type { AgentRoleV2, RolePhaseV2 } from "../../src/domain/role-runtime-v2.js";
 
@@ -8,6 +8,18 @@ const base = "a".repeat(40);
 const sha = (c: string) => `sha256:${c.repeat(64)}`;
 
 describe("Core v2 Architect and Design Review lifecycle", () => {
+  it("records Role UNKNOWN, confirmed resume and NOT_APPLIED as append-only lifecycle events", () => {
+    const initial = createCoreV2Lifecycle({ taskId: "TASK-LIFECYCLE", specRevision: 1, subjectCommit: base, at: time(0) });
+    const waiting = workflowWaitForRoleReconcileV2(initial, { phase: "ARCHITECT", token: sha("1"), reason: "intent only", at: time(1) });
+    expect(waiting).toMatchObject({ state: "WAITING_RECONCILE" });
+    const resumed = workflowResumeRoleReconcileV2(waiting, { resumeState: "ARCHITECT_REQUIRED", phase: "ARCHITECT", token: sha("1"), evidence: "manifest verified", at: time(2) });
+    expect(resumed.state).toBe("ARCHITECT_REQUIRED");
+    expect(resumed.events.map((event) => event.type)).toEqual(["ArchitectRequired", "RoleRunReconcileRequired", "RoleRunReconcileResumed"]);
+    const notApplied = workflowRecordRoleNotAppliedV2(waiting, { phase: "ARCHITECT", token: sha("1"), evidence: "process absent", at: time(2) });
+    expect(notApplied.state).toBe("WAITING_RECONCILE");
+    expect(notApplied.events.at(-1)?.type).toBe("RoleRunReconciledNotApplied");
+  });
+
   it("accepts revision-bound Architect artifacts and isolated Design Review", () => {
     const initial = createCoreV2Lifecycle({ taskId: "TASK-LIFECYCLE", specRevision: 1, subjectCommit: base, at: time(0) });
     const architect = workflowAcceptArchitectV2(initial, success("ARCHITECT", "ARCHITECT"), deliverable(), time(3));
