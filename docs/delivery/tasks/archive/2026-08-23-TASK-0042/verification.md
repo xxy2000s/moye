@@ -1,6 +1,6 @@
 # TASK-0042 Verification
 
-> 状态：Accepted（Seal Pending）
+> 状态：Accepted
 > 证据边界：本 Task 验收成功 Closure/Archive-only retry、停滞 Workflow successor 和历史 Trace 兼容；不代表完整真实 Agent 故障矩阵已完成。
 
 ## Requirement → Scenario → Execution → Evidence
