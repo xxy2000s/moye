@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { access, realpath, writeFile } from "node:fs/promises";
+import { relative, resolve } from "node:path";
 import * as restate from "@restatedev/restate-sdk";
 
 import { RealRoleRuntimeV2 } from "../agent/role-runtime-v2.js";
@@ -32,6 +33,13 @@ export interface CoreV2WorkflowInput {
   readonly failureArchiveFault?: { readonly failFirstAttempt?: boolean };
   readonly successArchiveFault?: { readonly failFirstAttempt?: boolean };
   readonly acceptanceControl?: CoreV2AcceptanceControl;
+  readonly recoveryControl?: CoreV2RecoveryControl;
+}
+export interface CoreV2RecoveryControl {
+  readonly roleExitAfterManifestOnceAt?: Partial<Record<"ARCHITECT" | "IMPLEMENTATION" | "FINAL_REVIEW", string>>;
+  readonly testExitAfterIntentOnceAt?: string;
+  readonly testExitAfterManifestOnceAt?: string;
+  readonly checkpointExitAfterCommitOnceAt?: string;
 }
 export type CoreV2AcceptanceProfile = "IMPLEMENTATION_SELF_REVIEW" | "FINAL_REVIEW" | "DOCUMENTATION" | "TEST_FAILURE" | "DESIGN_REPLAN";
 export interface CoreV2AcceptanceControl { readonly profile: CoreV2AcceptanceProfile }
@@ -57,6 +65,7 @@ export interface CoreV2WorkflowProjection {
   readonly artifactRoot: string;
   readonly sourceWorkflowRef?: string; readonly workflowRef?: string;
   readonly recovery?: CoreV2RecoveryRecord;
+  readonly lastReconciliation?: CoreV2ReconcileInput;
   readonly startedAt: string; readonly completedAt: string | null; readonly outcome: "SUCCEEDED" | "FAILED_TERMINAL" | null; readonly error: string | null;
 }
 export interface CoreV2ReconcileInput extends TrustedTestReconcileInput {}
@@ -77,7 +86,11 @@ export const coreV2Workflow = restate.workflow({
   name: "CoreV2Workflow", options: { workflowRetention: { days: 30 } }, handlers: {
     run: async (ctx: restate.WorkflowContext<CoreV2WorkflowState>, input: CoreV2WorkflowInput): Promise<CoreV2WorkflowProjection> => {
       if (ctx.key !== input.taskId) throw new restate.TerminalError("Workflow key must equal Task ID", { errorCode: 409 });
-      try { validateCoreV2AcceptanceControl(input.acceptanceControl, process.env["MOYE_ACCEPTANCE_FAULT_INJECTION"] === "enabled"); }
+      try {
+        const enabled = process.env["MOYE_ACCEPTANCE_FAULT_INJECTION"] === "enabled";
+        validateCoreV2AcceptanceControl(input.acceptanceControl, enabled);
+        validateCoreV2RecoveryControl(input.recoveryControl, input.mergeFault, input.artifactRoot, enabled);
+      }
       catch (error) { throw new restate.TerminalError(error instanceof Error ? error.message : String(error), { errorCode: 403 }); }
       await ctx.objectClient(taskAuthority, input.taskId).claim({ owner: "CORE_V2_WORKFLOW", specRevision: 1 });
       const startedAt = await durableNow(ctx, "intake-time");
@@ -103,7 +116,7 @@ export const coreV2Workflow = restate.workflow({
           const generation = projection.lifecycle.implementationGeneration;
           const implementationBase = projection.lifecycle.candidateCommit ?? input.baseCommit;
           const implementation = await runRole(ctx, input, projection, "IMPLEMENTATION", "IMPLEMENTATION", implementationBase, generation, implementationPrompt(input, generation)); projection = addRun(projection, implementation);
-          const git = await ctx.run(`git-checkpoint-g${generation}`, () => ensureGitCheckpoint(input.repositoryRoot, implementationBase, input.taskId, generation));
+          const git = await ctx.run(`git-checkpoint-g${generation}`, () => ensureGitCheckpoint(input.repositoryRoot, implementationBase, input.taskId, generation, input.recoveryControl?.checkpointExitAfterCommitOnceAt));
           projection = withLifecycle(projection, workflowAcceptImplementationV2(projection.lifecycle, implementation.attempt, { candidateCommit: git.commit, treeDigest: git.tree,
             checkpointRef: `git-commit://${git.commit}`, testEvidenceRefs: implementation.manifest.output?.artifactRefs ?? [], selfReview: verdict(implementation.manifest) }, await durableNow(ctx, `implementation-g${generation}-accepted`)));
           projection = await publish(ctx, input, projection);
@@ -121,7 +134,11 @@ export const coreV2Workflow = restate.workflow({
           const testPlanRun = await runRole(ctx, input, projection, "TEST_VERIFICATION", "TEST_PLAN", candidate, generation, testPlanPrompt(input)); projection = addRun(projection, testPlanRun);
           projection = withLifecycle(projection, workflowAcceptTestPlanV2(projection.lifecycle, testPlanRun.attempt, testPlanDeliverable(testPlanRun.manifest, input), await durableNow(ctx, `test-plan-g${generation}-accepted`))); projection = await publish(ctx, input, projection);
           const plan = projection.lifecycle.artifacts.findLast((item) => item.kind === "TEST_PLAN")!;
-          const testInput = { plan, candidateCommit: candidate, repositoryRoot: input.repositoryRoot, allowedRepositoryRoots: [input.repositoryRoot], artifactRoot: `${input.artifactRoot}/trusted-tests` };
+          const testInput = { plan, candidateCommit: candidate, repositoryRoot: input.repositoryRoot, allowedRepositoryRoots: [input.repositoryRoot], artifactRoot: `${input.artifactRoot}/trusted-tests`,
+            ...((input.recoveryControl?.testExitAfterIntentOnceAt === undefined && input.recoveryControl?.testExitAfterManifestOnceAt === undefined) ? {} : { fault: {
+              ...(input.recoveryControl.testExitAfterIntentOnceAt === undefined ? {} : { exitAfterIntentOnceAt: input.recoveryControl.testExitAfterIntentOnceAt }),
+              ...(input.recoveryControl.testExitAfterManifestOnceAt === undefined ? {} : { exitAfterManifestOnceAt: input.recoveryControl.testExitAfterManifestOnceAt }),
+            } }) };
           const initialTest = await ctx.run(`trusted-test-run-g${generation}`, () => runTrustedTestPlan(testInput));
           let testManifest: TrustedTestRunManifest;
           if (initialTest.state === "UNKNOWN") {
@@ -129,7 +146,8 @@ export const coreV2Workflow = restate.workflow({
             projection = await publish(ctx, input, { ...projection, state: "WAITING_RECONCILE", currentStep: "WAITING_RECONCILE", error: initialTest.reconcileToken });
             const reconciliation = await ctx.promise<CoreV2ReconcileInput>(reconcilePromiseName(initialTest.reconcileToken)).get();
             testManifest = await ctx.run(`trusted-test-reconcile-g${generation}`, () => reconcileTrustedTestPlan(testInput, reconciliation));
-            projection = withLifecycle({ ...projection, state: "EXECUTING", error: null }, workflowResumeTestReconcileV2(projection.lifecycle, { token: reconciliation.token, evidence: reconciliation.evidence, at: await durableNow(ctx, `tests-g${generation}-resumed`) }));
+            projection = withLifecycle({ ...projection, state: "EXECUTING", error: null, lastReconciliation: reconciliation }, workflowResumeTestReconcileV2(projection.lifecycle, { token: reconciliation.token, evidence: reconciliation.evidence, at: await durableNow(ctx, `tests-g${generation}-resumed`) }));
+            projection = await publish(ctx, input, projection);
           } else testManifest = initialTest.manifest;
           const manifestRef = `${input.artifactRoot}/trusted-tests/${testManifest.runId.replace(":", "-")}/manifest.json`;
           projection = withLifecycle(projection, workflowRecordTrustedTestRunV2(projection.lifecycle, { runId: testManifest.runId, manifestRef, manifestDigest: testManifest.manifestDigest, at: await durableNow(ctx, `tests-g${generation}-recorded`) }));
@@ -201,10 +219,17 @@ export const coreV2Workflow = restate.workflow({
     status: restate.handlers.workflow.shared(async (ctx: restate.WorkflowSharedContext<CoreV2WorkflowState>) => ctx.get("projection") as Promise<CoreV2WorkflowProjection | null>),
     reconcile: restate.handlers.workflow.shared(async (ctx: restate.WorkflowSharedContext<CoreV2WorkflowState>, input: CoreV2ReconcileInput): Promise<CoreV2WorkflowProjection> => {
       const projection = await ctx.get("projection");
-      if (projection === null || projection.state !== "WAITING_RECONCILE" || projection.error === null) throw new restate.TerminalError("Core v2 Task is not waiting for reconcile", { errorCode: 409 });
-      if (input.token !== projection.error || !["CONFIRMED", "NOT_APPLIED"].includes(input.action) || !input.evidence.trim()) throw new restate.TerminalError("Reconcile token/action/evidence does not match pending Trusted Test", { errorCode: 409 });
+      const normalized = { ...input, evidence: input.evidence.trim() };
+      if (projection === null) throw new restate.TerminalError("Core v2 Task does not exist", { errorCode: 404 });
+      if (projection.state !== "WAITING_RECONCILE" || projection.error === null) {
+        if (projection.lastReconciliation !== undefined && JSON.stringify(projection.lastReconciliation) === JSON.stringify(normalized)) return projection;
+        throw new restate.TerminalError("Core v2 Task is not waiting for reconcile", { errorCode: 409 });
+      }
+      if (input.token !== projection.error || !["CONFIRMED", "NOT_APPLIED"].includes(input.action) || !normalized.evidence) throw new restate.TerminalError("Reconcile token/action/evidence does not match pending Trusted Test", { errorCode: 409 });
       const promise = ctx.promise<CoreV2ReconcileInput>(reconcilePromiseName(input.token));
-      if (await promise.peek() === undefined) await promise.resolve({ ...input, evidence: input.evidence.trim() });
+      const existing = await promise.peek();
+      if (existing === undefined) await promise.resolve(normalized);
+      else if (JSON.stringify(existing) !== JSON.stringify(normalized)) throw new restate.TerminalError("Conflicting Trusted Test reconcile evidence", { errorCode: 409 });
       return projection;
     }),
     retryArchive: restate.handlers.workflow.shared(async (ctx: restate.WorkflowSharedContext<CoreV2WorkflowState>, input: CoreV2ArchiveRetryInput): Promise<CoreV2WorkflowProjection> => {
@@ -480,12 +505,13 @@ async function runRole(ctx: restate.WorkflowContext<CoreV2WorkflowState>, input:
   const scheduled = createRoleAttemptV2({ taskId: input.taskId, specRevision: projection.lifecycle.specRevision, role, phase, generation, runnerKind: input.runnerKind,
     inputDigest: projection.lifecycle.projectionDigest, subjectCommit, inputArtifactRefs: projection.lifecycle.artifacts.map((item) => item.artifactDigest), scheduledAt: await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-scheduled-g${generation}`) });
   const running = startRoleAttemptV2(scheduled, await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-started-g${generation}`));
-  const result = await ctx.run(`role-${phase.toLowerCase()}-r${projection.lifecycle.specRevision}-g${generation}`, async () => new RealRoleRuntimeV2().run({
-    attempt: running,
-    scopeRoot: await realpath(input.repositoryRoot),
-    artifactRoot: `${input.artifactRoot}/roles`,
-    instructions,
-  }));
+  const result = await ctx.run(`role-${phase.toLowerCase()}-r${projection.lifecycle.specRevision}-g${generation}`, async () => {
+    const executed = await new RealRoleRuntimeV2().run({ attempt: running, scopeRoot: await realpath(input.repositoryRoot), artifactRoot: `${input.artifactRoot}/roles`, instructions });
+    const marker = phase === "ARCHITECT" || phase === "IMPLEMENTATION" || phase === "FINAL_REVIEW"
+      ? input.recoveryControl?.roleExitAfterManifestOnceAt?.[phase] : undefined;
+    await exitOnce(marker, `${phase} manifest ${executed.manifest.manifestDigest}`);
+    return executed;
+  });
   return { attempt: completeRoleAttemptV2(running, result.evidence, await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-completed-g${generation}`)), manifest: result.manifest };
 }
 function addRun(p: CoreV2WorkflowProjection, result: { attempt: RoleAttemptV2; manifest: RoleRunManifestV2 }): CoreV2WorkflowProjection { return { ...p, attempts: [...p.attempts, result.attempt], roleRuns: [...p.roleRuns, result.manifest] }; }
@@ -543,6 +569,28 @@ export function validateCoreV2AcceptanceControl(control: CoreV2AcceptanceControl
     throw new Error("Core v2 acceptance profile is invalid");
   }
 }
+export function validateCoreV2RecoveryControl(
+  control: CoreV2RecoveryControl | undefined,
+  mergeFault: CoreV2WorkflowInput["mergeFault"],
+  artifactRoot: string,
+  enabled: boolean,
+): void {
+  if (control === undefined && mergeFault === undefined) return;
+  if (!enabled) throw new Error("Core v2 recovery fault injection is disabled");
+  const root = resolve(artifactRoot);
+  const markers = [
+    control?.testExitAfterIntentOnceAt,
+    control?.testExitAfterManifestOnceAt,
+    control?.checkpointExitAfterCommitOnceAt,
+    ...Object.values(control?.roleExitAfterManifestOnceAt ?? {}),
+    mergeFault?.loseAcknowledgementOnceAt,
+    mergeFault?.exitAfterRefUpdateOnceAt,
+  ].filter((value): value is string => typeof value === "string");
+  if (markers.length === 0) throw new Error("Core v2 recovery control requires a fault marker");
+  if (markers.some((value) => !value.trim() || relative(root, resolve(value)).startsWith("..") || relative(root, resolve(value)) === "")) {
+    throw new Error("Core v2 recovery fault markers must be inside artifactRoot");
+  }
+}
 export function coreV2AcceptanceInstruction(
   control: CoreV2AcceptanceControl | undefined,
   phase: "ARCHITECT" | "DESIGN_REVIEW" | "IMPLEMENTATION" | "DOCUMENTATION" | "FINAL_REVIEW",
@@ -586,7 +634,7 @@ export function coreV2AcceptanceInstruction(
 function acceptanceInstruction(input: CoreV2WorkflowInput, phase: "ARCHITECT" | "DESIGN_REVIEW" | "IMPLEMENTATION" | "DOCUMENTATION" | "FINAL_REVIEW", revision: number, generation: number): string {
   return coreV2AcceptanceInstruction(input.acceptanceControl, phase, revision, generation);
 }
-export async function ensureGitCheckpoint(root: string, expectedParent: string, taskId: string, generation: number): Promise<{ commit: string; tree: string }> {
+export async function ensureGitCheckpoint(root: string, expectedParent: string, taskId: string, generation: number, exitAfterCommitOnceAt?: string): Promise<{ commit: string; tree: string }> {
   const marker = `Moye-Task: ${taskId}\nMoye-Generation: ${generation}`;
   let head = await git(root, ["rev-parse", "HEAD"]);
   if (head !== expectedParent) {
@@ -600,6 +648,7 @@ export async function ensureGitCheckpoint(root: string, expectedParent: string, 
   await git(root, ["add", "--all"]);
   await git(root, ["-c", "user.name=Moye Workflow", "-c", "user.email=moye@localhost", "commit", "-m", `feat: complete ${taskId} generation ${generation}\n\n${marker}`]);
   head = await git(root, ["rev-parse", "HEAD"]);
+  await exitOnce(exitAfterCommitOnceAt, `candidate commit ${head}`);
   return { commit: head, tree: await git(root, ["rev-parse", `${head}^{tree}`]) };
 }
 async function git(cwd: string, argv: readonly string[]): Promise<string> { return new Promise((resolve, reject) => { const child = spawn("git", argv, { cwd, shell: false, stdio: ["ignore", "pipe", "pipe"] }); let out = "", err = ""; child.stdout.setEncoding("utf8").on("data", (v: string) => out += v); child.stderr.setEncoding("utf8").on("data", (v: string) => err += v); child.on("error", reject); child.on("close", (code) => code === 0 ? resolve(out.trim()) : reject(new Error(err.trim() || `git ${argv[0]} exited ${code}`))); }); }
@@ -635,6 +684,15 @@ function createCoreV2GitRunner(input: CoreV2WorkflowInput): GitCommandRunner {
   };
 }
 async function exists(value: string): Promise<boolean> { try { await access(value); return true; } catch { return false; } }
+async function exitOnce(markerPath: string | undefined, detail: string): Promise<void> {
+  if (markerPath === undefined) return;
+  try {
+    await writeFile(markerPath, `${detail}\n`, { flag: "wx" });
+    process.exit(76);
+  } catch (error) {
+    if (!isAlreadyExists(error)) throw error;
+  }
+}
 function isAlreadyExists(error: unknown): boolean { return (error as NodeJS.ErrnoException).code === "EEXIST"; }
 async function authorizeRepair(ctx: restate.WorkflowContext<CoreV2WorkflowState>, input: CoreV2WorkflowInput, projection: CoreV2WorkflowProjection, generation: number, reason: string): Promise<CoreV2WorkflowProjection> {
   if (generation >= 1) throw new Error(`${reason} exceeded Repair budget`);

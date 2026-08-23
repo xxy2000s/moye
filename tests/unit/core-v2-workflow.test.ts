@@ -7,7 +7,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { createCoreV2Lifecycle } from "../../src/domain/core-v2-lifecycle.js";
-import { coreV2AcceptanceInstruction, coreV2AssessmentPrompt, coreV2ReviewBoundary, ensureGitCheckpoint, normalizeArchitectDeliverableV2, validateCoreV2AcceptanceControl } from "../../src/restate/core-v2-services.js";
+import { coreV2AcceptanceInstruction, coreV2AssessmentPrompt, coreV2ReviewBoundary, ensureGitCheckpoint, normalizeArchitectDeliverableV2, validateCoreV2AcceptanceControl, validateCoreV2RecoveryControl } from "../../src/restate/core-v2-services.js";
 import type { CoreV2WorkflowProjection } from "../../src/restate/core-v2-services.js";
 import { buildCoreV2StateMachine } from "../../src/trace/state-machine.js";
 
@@ -24,6 +24,15 @@ describe("Core v2 Workflow control-plane", () => {
     expect(() => validateCoreV2AcceptanceControl({ profile: "TEST_FAILURE" }, false)).toThrow("acceptance fault injection is disabled");
     expect(() => validateCoreV2AcceptanceControl({ profile: "TEST_FAILURE" }, true)).not.toThrow();
     expect(() => validateCoreV2AcceptanceControl({ profile: "NOT_REAL" } as never, true)).toThrow("acceptance profile is invalid");
+  });
+
+  it("rejects recovery process exits before TaskAuthority claim unless explicitly enabled and scoped", () => {
+    const root = "/tmp/moye-core-v2-recovery";
+    const control = { testExitAfterIntentOnceAt: `${root}/intent.marker` };
+    expect(() => validateCoreV2RecoveryControl(undefined, undefined, root, false)).not.toThrow();
+    expect(() => validateCoreV2RecoveryControl(control, undefined, root, false)).toThrow("recovery fault injection is disabled");
+    expect(() => validateCoreV2RecoveryControl(control, undefined, root, true)).not.toThrow();
+    expect(() => validateCoreV2RecoveryControl({ testExitAfterIntentOnceAt: "/tmp/outside.marker" }, undefined, root, true)).toThrow("inside artifactRoot");
   });
 
   it("targets acceptance conditions to one real Role phase, Revision and Generation", () => {

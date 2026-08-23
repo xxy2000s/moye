@@ -19,6 +19,7 @@
     "acceptance:live": "tsx scripts/live_product_acceptance.ts",
     "acceptance:core-v2": "tsx scripts/core_v2_acceptance.ts --mode happy",
     "acceptance:core-v2:faults": "tsx scripts/core_v2_acceptance.ts --mode faults",
+    "acceptance:core-v2:recovery": "tsx scripts/core_v2_recovery_acceptance.ts",
     "demo:trace": "npm run trace:up && MOYE_OBSERVABILITY_ENABLED=true MOYE_TRACE_PROJECT_NAME=moye-demo exec tsx scripts/demo.ts",
     "runtime:up": "tsx scripts/runtime-compose.ts up",
     "runtime:down": "tsx scripts/runtime-compose.ts down",

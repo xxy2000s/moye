@@ -36,5 +36,8 @@ Finding 与 Incident 的边界：
 - [Core v2 Observer 拒绝已失效 Revision 的合法历史 Attempt](./core-v2-observer-rejects-invalidated-revision-attempts.md)：真实失败归档 Task 因 Observer 只接受当前 Revision 而 Trace 500，由 TASK-0043 放行显式 invalidated Revision。
 - [Core v2 Documentation Agent 提前消费 Trusted Test Gate](./core-v2-documentation-agent-consumes-test-gate.md)：真实 Test Failure 场景在 Trusted Runner 前被 Docs Agent 自行运行测试并提前 Repair，由 TASK-0043 收紧验收 Phase ownership。
 - [Core v2 Fault Acceptance 默认场景选择被错误拒绝](./core-v2-acceptance-faults-default-selection-rejected.md)：未设置场景过滤器时全量入口被错误拒绝，由 TASK-0043 修复并用未筛选命令复验。
+- [Core v2 Recovery Acceptance 生成了非法 Task ID](./core-v2-recovery-acceptance-generated-invalid-task-id.md)：完整场景名导致首个真实恢复调用违反 Task ID 领域约束，由 TASK-0044 改为提交前校验的短场景码。
+- [Core v2 Recovery Acceptance 清理 Service 时可能不返回](./core-v2-recovery-acceptance-service-stop-race.md)：矩阵业务完成后 SIGTERM 和 exit listener 存在竞态，由 TASK-0044 改为精确 Child PID 的有界清理。
+- [Core v2 Recovery Fixture 污染了真实 Agent Verdict](./core-v2-recovery-fixture-contaminates-agent-verdict.md)：仓库外测试 ledger 与可歧义标点触发非目标 Repair/Final Review Finding，由 TASK-0044 隔离 Agent 自测和 Trusted Runner 计数并收紧精确验收内容。
 
 不要为了演示目录创建虚构 Bug。

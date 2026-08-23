@@ -47,6 +47,10 @@ export async function runTrustedTestPlan(input: {
   readonly repositoryRoot: string;
   readonly allowedRepositoryRoots: readonly string[];
   readonly artifactRoot: string;
+  readonly fault?: {
+    readonly exitAfterIntentOnceAt?: string;
+    readonly exitAfterManifestOnceAt?: string;
+  };
 }): Promise<TrustedTestRunResult> {
   const plan = parseLifecycleArtifact(JSON.parse(JSON.stringify(input.plan)), input.plan.artifactDigest);
   if (plan.payload.type !== "TEST_PLAN") throw validation("TRUSTED_TEST_PLAN_REQUIRED", "Trusted Runner requires a TEST_PLAN Artifact");
@@ -57,9 +61,15 @@ export async function runTrustedTestPlan(input: {
   const intentPath = resolve(runRoot, "execution-intent.json");
   const manifestPath = resolve(runRoot, "manifest.json");
   await mkdir(runRoot, { recursive: true });
-  const existingManifest = await optionalJson<TrustedTestRunManifest>(manifestPath);
-  if (existingManifest !== undefined) return { state: "COMPLETE", manifest: await verifyManifest(existingManifest, runId) };
   const intent = { schemaVersion: 1, runId, taskId: plan.taskId, specRevision: plan.specRevision, candidateCommit: input.candidateCommit, planDigest: plan.artifactDigest, repositoryRoot };
+  const existingManifest = await optionalJson<TrustedTestRunManifest>(manifestPath);
+  if (existingManifest !== undefined) {
+    if (input.fault?.exitAfterManifestOnceAt !== undefined && await exists(input.fault.exitAfterManifestOnceAt)
+        && !await exists(resolve(runRoot, "reconciliation.json"))) {
+      return { state: "UNKNOWN", runId, reconcileToken: digest("trusted-test-reconcile", intent), reason: "complete manifest exists but its Workflow receipt is unknown" };
+    }
+    return { state: "COMPLETE", manifest: await verifyManifest(existingManifest, runId) };
+  }
   try {
     await writeFile(intentPath, `${JSON.stringify(intent, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
   } catch (error) {
@@ -68,6 +78,7 @@ export async function runTrustedTestPlan(input: {
     }
     throw error;
   }
+  await exitOnce(input.fault?.exitAfterIntentOnceAt, "trusted test intent persisted before execution");
   const cases: TrustedTestCaseEvidence[] = [];
   for (const testCase of (plan.payload as TestPlanPayload).cases) {
     const result = await execute(testCase.argv, repositoryRoot);
@@ -82,6 +93,7 @@ export async function runTrustedTestPlan(input: {
     planDigest: plan.artifactDigest, repositoryRoot, cases, outcome: cases.every((item) => item.status === "PASSED") ? "PASSED" as const : "FAILED" as const };
   const manifest = Object.freeze({ ...core, manifestDigest: digest("trusted-test-manifest", core) });
   await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
+  await exitOnce(input.fault?.exitAfterManifestOnceAt, "trusted test manifest persisted before Workflow receipt");
   return { state: "COMPLETE", manifest };
 }
 
@@ -119,7 +131,12 @@ async function execute(argv: readonly string[], cwd: string): Promise<{ exitCode
   const [executable, ...args] = argv;
   if (executable === undefined || executable.startsWith("-") || argv.some((item) => item.includes("\0"))) throw validation("TRUSTED_TEST_ARGV_INVALID", "argv is invalid");
   return new Promise((resolveResult, reject) => {
-    const child = spawn(executable, args, { cwd, shell: false, stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(executable, args, {
+      cwd,
+      shell: false,
+      stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env, MOYE_TRUSTED_RUNNER_EXECUTION: "1" },
+    });
     let stdout = ""; let stderr = "";
     child.stdout.setEncoding("utf8").on("data", (chunk: string) => { stdout += chunk; });
     child.stderr.setEncoding("utf8").on("data", (chunk: string) => { stderr += chunk; });
@@ -134,6 +151,16 @@ function trustedRoot(value: string, allowed: readonly string[]): string {
   return root;
 }
 async function optionalJson<T>(path: string): Promise<T | undefined> { try { return JSON.parse(await readFile(path, "utf8")) as T; } catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined; throw error; } }
+async function exists(path: string): Promise<boolean> { try { await readFile(path); return true; } catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return false; throw error; } }
+async function exitOnce(markerPath: string | undefined, detail: string): Promise<void> {
+  if (markerPath === undefined) return;
+  try {
+    await writeFile(markerPath, `${detail}\n`, { encoding: "utf8", flag: "wx" });
+    process.exit(75);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+  }
+}
 async function verifyManifest(value: TrustedTestRunManifest, runId: string): Promise<TrustedTestRunManifest> {
   const { manifestDigest, ...core } = value;
   if (value.runId !== runId || digest("trusted-test-manifest", core) !== manifestDigest) throw conflict("TRUSTED_TEST_MANIFEST_INVALID", "manifest integrity failed");

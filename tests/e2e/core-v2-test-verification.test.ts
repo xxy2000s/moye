@@ -19,7 +19,7 @@ describe("Core v2 real Trusted Test Runner", () => {
     const plan = createLifecycleArtifact({ taskId: "TASK-E2E-TEST", specRevision: 1, kind: "TEST_PLAN", subjectCommit: candidate,
       producer: { role: "TEST_VERIFICATION", phase: "TEST_PLAN", attemptId: "TASK.TEST_PLAN.r1.g0", generation: 0, sessionId: "tester" },
       dependencies: [lifecycleArtifactRef(spec), lifecycleArtifactRef(design)], payload: { type: "TEST_PLAN", cases: [{ id: "TC-1", requirementIds: ["REQ-1"], category: "RECOVERY",
-        argv: [process.execPath, "-e", `require('fs').appendFileSync(${JSON.stringify(marker)}, 'x')`] }] } });
+        argv: [process.execPath, "-e", `if(process.env.MOYE_TRUSTED_RUNNER_EXECUTION!=='1')process.exit(19);require('fs').appendFileSync(${JSON.stringify(marker)}, 'x')`] }] } });
     const first = await runTrustedTestPlan({ plan, candidateCommit: candidate, repositoryRoot: root, allowedRepositoryRoots: [root], artifactRoot });
     expect(first.state).toBe("COMPLETE"); if (first.state !== "COMPLETE") return;
     expect(first.manifest.cases[0]).toMatchObject({ exitCode: 0, status: "PASSED" });
