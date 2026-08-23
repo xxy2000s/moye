@@ -1,0 +1,25 @@
+schema_version: 1
+id: TASK-0047
+title: Core v2 真实矩阵证据完整性与可重复性审计
+status: seal_prepared
+outcome: null
+backlog_refs:
+  - BL-0043
+  - BL-0051
+spec_revision: 1
+workflow_id: sealed-task/TASK-0047
+execution_mode: sealed-result-commit
+base_commit: 3cedfa58e6ebe75dedcab06409a5948751e1829d
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-24-TASK-0047
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:603ae2e1e1445c88b38c465dc74b01d7882d298136f035220d951d11ecba29a0
+  base_commit: 3cedfa58e6ebe75dedcab06409a5948751e1829d
+  archive_path: docs/delivery/tasks/archive/2026-08-24-TASK-0047

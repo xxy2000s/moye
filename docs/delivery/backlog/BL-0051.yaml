@@ -1,0 +1,13 @@
+schema_version: 1
+id: "BL-0051"
+title: "防止 Sealed Task 归档后文档图仍保留 Active 状态"
+kind: "bug"
+status: "converted_to_task"
+priority: "high"
+source_refs: [seal-stage-leaves-document-graph-task-status-active]
+affected_areas: [sealed-result-commit, document-graph, context-route, evidence-audit]
+acceptance_outline:
+  - "当前已归档 Task 的图谱 path/status/index relation 与 Archive Index 一致"
+  - "真实矩阵 Evidence Audit 拒绝 Active/Archive 图谱状态漂移"
+  - "不改写已封存 Task Package 或 Runtime Projection"
+resolution: { task_refs: [TASK-0047], duplicate_of: null, reason: "由 TASK-0047 纳入证据与归档一致性审计" }

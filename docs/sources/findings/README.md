@@ -41,5 +41,6 @@ Finding 与 Incident 的边界：
 - [Core v2 Recovery Fixture 污染了真实 Agent Verdict](./core-v2-recovery-fixture-contaminates-agent-verdict.md)：仓库外测试 ledger 与可歧义标点触发非目标 Repair/Final Review Finding，由 TASK-0044 隔离 Agent 自测和 Trusted Runner 计数并收紧精确验收内容。
 - [Core v2 Workflow 未实际执行智能 Observer/Knowledge](./core-v2-workflow-omits-intelligent-observer-execution.md)：Role 协议已有旁路角色但产品 Workflow 只写 `none`，由 TASK-0045 接入真实可超时且非阻塞的只读 Agent。
 - [Core v2 Board 混淆 Runtime Outcome、归档处置与验收历史](./core-v2-board-obscures-runtime-outcome-and-acceptance-history.md)：Core 运行态被通用 Projection 压缩，缺少 Workflow/历史筛选和最新成功入口，由 TASK-0046 修复。
+- [Seal Stage 后文档图仍把 Task 标成 Active](./seal-stage-leaves-document-graph-task-status-active.md)：Task Package 已归档但 Document Graph status/index relation 未同步，由 TASK-0047 纳入一致性审计。
 
 不要为了演示目录创建虚构 Bug。

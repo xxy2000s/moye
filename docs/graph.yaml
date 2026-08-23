@@ -1,6 +1,6 @@
 schema_version: 1
-graph_revision: 95
-updated_at: "2026-08-23"
+graph_revision: 96
+updated_at: "2026-08-24"
 
 entrypoints:
   human: root-readme
@@ -3403,7 +3403,7 @@ documents:
   - id: task-0046-manifest
     path: docs/delivery/tasks/archive/2026-08-23-TASK-0046/task.yaml
     type: task-manifest
-    status: active
+    status: archived
     scope: core-v2-board-runtime-semantics
     authority: task-artifact
     read_when: [task-execution, task-close]
@@ -3411,7 +3411,7 @@ documents:
   - id: task-0046-spec
     path: docs/delivery/tasks/archive/2026-08-23-TASK-0046/spec.md
     type: task-spec
-    status: active
+    status: archived
     scope: core-v2-board-runtime-semantics
     authority: task-artifact
     read_when: [task-execution, task-close]
@@ -3419,7 +3419,7 @@ documents:
   - id: task-0046-design
     path: docs/delivery/tasks/archive/2026-08-23-TASK-0046/design.md
     type: task-design
-    status: active
+    status: archived
     scope: core-v2-board-runtime-semantics
     authority: task-artifact
     read_when: [task-execution]
@@ -3427,7 +3427,7 @@ documents:
   - id: task-0046-plan
     path: docs/delivery/tasks/archive/2026-08-23-TASK-0046/plan.md
     type: task-plan
-    status: active
+    status: archived
     scope: core-v2-board-runtime-semantics
     authority: task-artifact
     read_when: [task-execution]
@@ -3435,7 +3435,7 @@ documents:
   - id: task-0046-verification
     path: docs/delivery/tasks/archive/2026-08-23-TASK-0046/verification.md
     type: verification
-    status: active
+    status: archived
     scope: core-v2-board-runtime-semantics
     authority: task-evidence
     read_when: [task-close, task-archive]
@@ -3443,8 +3443,71 @@ documents:
   - id: task-0046-docs-impact
     path: docs/delivery/tasks/archive/2026-08-23-TASK-0046/docs-impact.yaml
     type: docs-impact
-    status: active
+    status: archived
     scope: core-v2-board-runtime-semantics
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+  - id: seal-stage-leaves-document-graph-task-status-active
+    path: docs/sources/findings/seal-stage-leaves-document-graph-task-status-active.md
+    type: finding
+    status: confirmed
+    scope: sealed-task-document-graph
+    authority: observed-fact
+    read_when: [finding-intake, task-create, task-close]
+
+  - id: bl-0051-seal-stage-graph-status
+    path: docs/delivery/backlog/BL-0051.yaml
+    type: backlog-item
+    status: converted-to-task
+    scope: sealed-task-document-graph
+    authority: delivery-control
+    read_when: [task-create, task-execution]
+
+  - id: task-0047-manifest
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0047/task.yaml
+    type: task-manifest
+    status: archived
+    scope: core-v2-matrix-evidence-audit
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0047-spec
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0047/spec.md
+    type: task-spec
+    status: archived
+    scope: core-v2-matrix-evidence-audit
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0047-design
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0047/design.md
+    type: task-design
+    status: archived
+    scope: core-v2-matrix-evidence-audit
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0047-plan
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0047/plan.md
+    type: task-plan
+    status: archived
+    scope: core-v2-matrix-evidence-audit
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0047-verification
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0047/verification.md
+    type: verification
+    status: archived
+    scope: core-v2-matrix-evidence-audit
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0047-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0047/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: core-v2-matrix-evidence-audit
     authority: task-evidence
     read_when: [task-close, task-archive]
 
@@ -5557,7 +5620,7 @@ relations:
     to: task-0046-manifest
     type: schedules_into
 
-  - from: tasks-index
+  - from: archived-tasks-index
     to: task-0046-manifest
     type: indexes
 
@@ -5584,6 +5647,46 @@ relations:
   - from: task-0046-manifest
     to: core-v2-agent-lifecycle
     type: implements_slice_of
+
+  - from: seal-stage-leaves-document-graph-task-status-active
+    to: bl-0051-seal-stage-graph-status
+    type: promoted_to
+
+  - from: bl-0051-seal-stage-graph-status
+    to: task-0047-manifest
+    type: schedules_into
+
+  - from: bl-0043-core-v2-real-fault-matrix
+    to: task-0047-manifest
+    type: schedules_into
+
+  - from: archived-tasks-index
+    to: task-0047-manifest
+    type: indexes
+
+  - from: task-0047-spec
+    to: task-0047-manifest
+    type: belongs_to
+
+  - from: task-0047-design
+    to: task-0047-spec
+    type: refines
+
+  - from: task-0047-plan
+    to: task-0047-manifest
+    type: belongs_to
+
+  - from: task-0047-verification
+    to: task-0047-manifest
+    type: verifies
+
+  - from: task-0047-docs-impact
+    to: task-0047-manifest
+    type: reports_on
+
+  - from: task-0047-manifest
+    to: core-v2-agent-lifecycle
+    type: verifies
 
   - from: bl-0043-uses-invalid-in-progress-status
     to: bl-0043-core-v2-real-fault-matrix

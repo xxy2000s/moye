@@ -49,7 +49,7 @@ for (const [index, scenario] of scenarios.entries()) {
     process.stderr.write(`${scenario.name}: FAILED ${failure.error}\n`);
   }
 }
-const matrix = { schemaVersion: 1, executedAt: new Date().toISOString(), mode, ingressUrl, boardUrl, projectId, runRoot, scenarios: summaries };
+const matrix = { schemaVersion: 1, validationKind: "PRODUCT_ACCEPTANCE", executedAt: new Date().toISOString(), mode, ingressUrl, boardUrl, projectId, runRoot, scenarios: summaries };
 await writeJson(path.join(runRoot, "matrix-summary.json"), matrix);
 process.stdout.write(`${JSON.stringify(matrix, null, 2)}\n`);
 if (failures > 0) throw new Error(`${failures} Core v2 acceptance scenario(s) failed; evidence was preserved under ${runRoot}`);

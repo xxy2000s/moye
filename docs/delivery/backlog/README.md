@@ -63,6 +63,7 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 | [BL-0048](./BL-0048.yaml) | Scheduled | 兼容 Core v2 历史 Recovery Projection 的 Trace nullable 字段 | TASK-0042（Active） |
 | [BL-0049](./BL-0049.yaml) | Converted to Task | 以规范 Verification 状态恢复 TASK-0042 Seal 失败 | TASK-0042R1（Active） |
 | [BL-0050](./BL-0050.yaml) | Converted to Task | 修复 Core v2 Board 运行状态语义与验收历史筛选 | TASK-0046（Seal Prepared） |
+| [BL-0051](./BL-0051.yaml) | Converted to Task | 防止 Sealed Task 归档后文档图仍保留 Active 状态 | TASK-0047（Active） |
 
 ## 本轮调度结果
 

@@ -94,9 +94,11 @@ npm run acceptance:core-v2:faults
 npm run acceptance:core-v2:recovery
 # Core v2 真实预算、Observer/Knowledge 超时与 stale fencing 矩阵
 npm run acceptance:core-v2:guards
+# 对调用方显式列出的 suite/scenario 做实时 Runtime、Board、Git、Artifact 与文档图 fail-closed 审计
+npm run acceptance:core-v2:audit -- --file /absolute/path/to/audit-input.json --output /absolute/path/to/audit-report.json
 ```
 
-Core v2 四个命令不会使用 Fake/Mock/Scenario Adapter：每个场景创建新的持久化运行目录和独立 Workflow key，调用真实 Codex、隔离 Git、Trusted Runner、双父 Merge、Closure 和 Archive，并从 Projection、Trace、Role Events、Manifest 与 Git DAG 生成 Evidence Summary。故障、恢复和预算命令要求 Service 显式设置 `MOYE_ACCEPTANCE_FAULT_INJECTION=enabled`；普通 Service 会在 TaskAuthority claim 前拒绝 `acceptanceControl` 或 `recoveryControl`。这些命令消耗真实模型额度，不能用单元测试结果替代。
+Core v2 四个执行命令不会使用 Fake/Mock/Scenario Adapter：每个场景创建新的持久化运行目录和独立 Workflow key，调用真实 Codex、隔离 Git、Trusted Runner、双父 Merge、Closure 和 Archive，并从 Projection、Trace、Role Events、Manifest 与 Git DAG 生成 Evidence Summary。故障、恢复和预算命令要求 Service 显式设置 `MOYE_ACCEPTANCE_FAULT_INJECTION=enabled`；普通 Service 会在 TaskAuthority claim 前拒绝 `acceptanceControl` 或 `recoveryControl`。审计命令不扫描目录挑选“最新成功”，只接受显式 Manifest，并重新查询 Restate、TaskAuthority、Board、Git 对象、Artifact 摘要和 Document Graph；任何缺失、重复或实时漂移都会非零退出。这些命令消耗真实模型额度，不能用单元测试结果替代。
 
 推荐先启动带持久化数据卷的本地 Runtime，再注册 Moye Service：
 

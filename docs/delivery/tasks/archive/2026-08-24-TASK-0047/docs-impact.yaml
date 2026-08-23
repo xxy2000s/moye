@@ -1,0 +1,82 @@
+schema_version: 1
+task_id: TASK-0047
+graph_revision: 96
+intents: [acceptance-change, docs-change, task-close, finding-intake]
+changed_paths:
+  - README.md
+  - docs/delivery/backlog/BL-0051.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/core-v2-roadmap.md
+  - docs/delivery/tasks/README.md
+  - docs/delivery/tasks/archive/2026-08-24-TASK-0047/design.md
+  - docs/delivery/tasks/archive/2026-08-24-TASK-0047/docs-impact.yaml
+  - docs/delivery/tasks/archive/2026-08-24-TASK-0047/plan.md
+  - docs/delivery/tasks/archive/2026-08-24-TASK-0047/spec.md
+  - docs/delivery/tasks/archive/2026-08-24-TASK-0047/task.yaml
+  - docs/delivery/tasks/archive/2026-08-24-TASK-0047/verification.md
+  - docs/delivery/tasks/archive/README.md
+  - docs/graph.yaml
+  - docs/knowledge/current/architecture/core-v2-agent-lifecycle.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - docs/sources/findings/README.md
+  - docs/sources/findings/seal-stage-leaves-document-graph-task-status-active.md
+  - package.json
+  - scripts/core_v2_acceptance.ts
+  - scripts/core_v2_matrix_audit.ts
+  - src/acceptance/core-v2-matrix-audit.ts
+  - tests/unit/core-v2-matrix-audit.test.ts
+docs:
+  read: [agent-contract, root-readme, docs-index, sources-index, backlog-index, tasks-index, archived-tasks-index, findings-index, meta-index, architecture-index, runbooks-index, codemap, document-control-plane, task-runtime-kernel, core-v2-agent-lifecycle, local-restate-poc-runbook, adr-0002-doc-lifecycle-roles, core-v2-roadmap, bl-0051-seal-stage-graph-status, seal-stage-leaves-document-graph-task-status-active, task-0047-manifest, task-0047-spec, task-0047-design, task-0047-plan, task-0047-verification, task-0047-docs-impact]
+  reviewed:
+    root-readme: { outcome: updated, reason: "增加显式矩阵审计命令、实时交叉校验和 fail-closed 证据口径" }
+    codemap: { outcome: updated, reason: "登记 acceptance 领域模块、CLI 入口及高风险证据自证边界" }
+    core-v2-agent-lifecycle: { outcome: updated, reason: "登记旧 14 场景审计的 25 个预期 Finding，不扩大产品完成度" }
+    local-restate-poc-runbook: { outcome: updated, reason: "增加 Audit Manifest、执行方式、通过标准及禁止手改历史证据规则" }
+    core-v2-roadmap: { outcome: updated, reason: "TASK-0047 门禁完成；TASK-0048 仍需新 Task 全矩阵复跑和部署" }
+    tasks-index: { outcome: updated, reason: "TASK-0047 从 Active 进入 Seal Prepared Archive package" }
+    archived-tasks-index: { outcome: updated, reason: "登记 TASK-0047 Seal Prepared package；最终业务终态由 Runtime Receipt 证明" }
+    backlog-index: { outcome: updated, reason: "登记 BL-0051 并调度至 TASK-0047" }
+    findings-index: { outcome: updated, reason: "登记 Seal Stage 后 Graph 状态漂移的真实 Finding" }
+    architecture-overview: { outcome: unchanged, reason: "审计器是只读验收控制面，不改变 Task/Workflow 系统边界" }
+    moye-task-control-skill: { outcome: unchanged, reason: "继续使用 Context Route、Docs Impact 和两阶段 Seal，不改变 Skill 协议" }
+    restate-poc-architecture: { outcome: unchanged, reason: "只读查询现有 Restate 服务，不改变 PoC 部署或恢复架构" }
+    adr-0005-core-v2-agent-model: { outcome: unchanged, reason: "不改变五类主流程 Agent 与旁路 Observer/Knowledge 权限" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "继续使用冻结 Base 和唯一 Result Commit" }
+    core-v2-five-plus-one-agent-requirements: { outcome: unchanged, reason: "需求基线保持；执行证据写入 Task Verification" }
+    task-spec-document-closure-brainstorm: { outcome: unchanged, reason: "历史 Brainstorm 不作为审计器产品事实" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "审计遵守 UNKNOWN 对账、append-only 和禁止 summary 自证规则" }
+    task-0013-manifest: { outcome: unchanged, reason: "历史 Core 控制 Task 已封存" }
+    task-0014-manifest: { outcome: unchanged, reason: "历史 Role 协议 Task 已封存" }
+    task-0015-manifest: { outcome: unchanged, reason: "历史 Review/Finding Task 已封存" }
+    task-0016-manifest: { outcome: unchanged, reason: "历史 Repair/Replan Task 已封存" }
+    task-0017-manifest: { outcome: unchanged, reason: "历史 Documentation/Observer Task 已封存" }
+    task-0018-manifest: { outcome: unchanged, reason: "历史 Closure Task 已封存" }
+    task-0019-manifest: { outcome: unchanged, reason: "历史真实 Agent Task 已封存" }
+    task-0020-manifest: { outcome: unchanged, reason: "历史状态机展示 Task 已封存" }
+    task-0021-manifest: { outcome: unchanged, reason: "历史多角色闭环 Task 已封存" }
+    task-0029-manifest: { outcome: unchanged, reason: "历史 Bootstrap Task 已封存" }
+    task-0030-manifest: { outcome: unchanged, reason: "历史 Core v2/Seal 架构 Task 已封存" }
+    task-0031-manifest: { outcome: unchanged, reason: "历史 Lifecycle Artifact Task 已封存" }
+    task-0032-manifest: { outcome: unchanged, reason: "历史 Role Runtime v2 Task 已封存" }
+    task-0033-manifest: { outcome: unchanged, reason: "历史 Architect/Replan Task 已封存" }
+    task-0034-manifest: { outcome: unchanged, reason: "历史 Implementation/Repair Task 已封存" }
+    task-0035-manifest: { outcome: unchanged, reason: "历史 Documentation Task 已封存" }
+    task-0036-manifest: { outcome: unchanged, reason: "历史 Test Verification Task 已封存" }
+    task-0037-manifest: { outcome: unchanged, reason: "历史 Final Review/Gate Task 已封存" }
+    task-0038-manifest: { outcome: unchanged, reason: "历史 Observer/Knowledge Task 已封存" }
+    task-0039-manifest: { outcome: unchanged, reason: "保留已封存 Happy Path，不扩大其验收范围" }
+    task-0040-manifest: { outcome: unchanged, reason: "保留失败 Closure/Archive 与历史收敛事实" }
+    task-0041-manifest: { outcome: unchanged, reason: "保留真实 Merge UNKNOWN 证据" }
+    task-0042-manifest: { outcome: unchanged, reason: "保留成功/失败 Closure、Archive 与 successor 事实" }
+    task-0043-manifest: { outcome: unchanged, reason: "旧 Finding/Repair/Replan 分项证据由审计读取但不改写" }
+    task-0044-manifest: { outcome: unchanged, reason: "旧 UNKNOWN/Worker/Checkpoint/Merge 证据由审计读取但不改写" }
+    task-0045-manifest: { outcome: unchanged, reason: "旧预算/Observer/fencing 证据由审计读取但不改写" }
+    task-0046-manifest: { outcome: updated, reason: "仅修正 Document Graph path/status/index 漂移，不改封存 Task package" }
+    task-0002-manifest: { outcome: unchanged, reason: "历史 Backlog 同步 Task 已封存" }
+    task-0003-manifest: { outcome: unchanged, reason: "历史 Coding Task 已封存" }
+    task-0004-manifest: { outcome: unchanged, reason: "历史 Git Task 已封存" }
+    task-0005-manifest: { outcome: unchanged, reason: "历史 Agent Task 已封存" }
+    task-0006-manifest: { outcome: unchanged, reason: "历史 Workflow Task 已封存" }
+    task-0007-manifest: { outcome: unchanged, reason: "历史 Trace Task 已封存" }
+    task-0001-manifest: { outcome: unchanged, reason: "历史 PoC 基线 Task 已封存" }

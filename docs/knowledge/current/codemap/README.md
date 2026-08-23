@@ -1,7 +1,7 @@
 # CodeMap
 
 > 状态：Current  
-> 更新日期：2026-08-23
+> 更新日期：2026-08-24
 
 本文件映射当前已经存在并通过测试的代码，不描述未来平台。
 
@@ -25,6 +25,7 @@
 
 ```text
 src/
+├── acceptance/        Core v2 产品矩阵显式 Manifest、场景专属 Evidence 与 Document Graph fail-closed 审计
 ├── agent/             Coding AgentRunner、真实 Live Role Runner、Core Role 协议、Fake/Codex/Claude Print 与 Artifact Bundle
 ├── backlog/           Git Backlog 文档加载、严格转换与批次摘要
 ├── coding/            真实多角色编码、Repair/Replan/Reconcile、成功/失败归档的 Workflow 编排与 Projection
@@ -57,6 +58,7 @@ scripts/
 ├── core_v2_acceptance.ts  为每个 Happy/Finding/Repair/Replan 场景创建独立真实 CoreV2Workflow、Git/Artifact Root，并审计 Role/Test/Gate/Merge/Closure/Archive Evidence
 ├── core_v2_recovery_acceptance.ts  为 Test UNKNOWN、Role Worker 中断、Checkpoint/Merge 回执未知创建独立真实 Task，控制 Service 重启并审计唯一副作用
 ├── core_v2_guards_acceptance.ts  为 Repair/Replan 预算、智能 Observer 超时和旧 Generation/Revision fencing 创建独立真实 Task并审计终态
+├── core_v2_matrix_audit.ts  只读取显式 suite/scenario，实时交叉检查 Restate、Board、Git、Artifact 与文档归档图并输出内容寻址报告
 ├── trace-compose.ts   argv-only 启停可选 Phoenix Profile
 ├── codex_fixture_smoke.mjs  一次性真实 Codex Fixture（拒绝覆盖既有证据）
 └── docs_graph.rb      文档校验、Context Route、Impact Gate、Mermaid
@@ -88,6 +90,7 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 - `archive/core-v2-artifact-store.ts` 提供 Task namespace、content-checked pending/rename 和冲突拒绝；`core-v2-failure.ts`、`core-v2-success.ts` 分别持久化失败/成功 Closure 与 Archive Receipt。共享 Artifact Root 中的不同 Task 互不覆盖，相同 Task/Closure 只接受相同内容；
 - `testing/trusted-test-runner.ts` 是 argv-only 真实测试执行 Effect Adapter，持久化 Intent、逐 Case 退出码/stdout/stderr 与 Manifest；文件 Digest 绑定原始 Evidence 字节，Manifest 复用会重新校验文件，在 Intent-only 恢复时返回 UNKNOWN；专用验收故障点可在 Intent 或 Manifest 边界终止进程，Trusted Runner 子进程以显式环境标识支持执行账本审计；
 - `domain/core-v2-observer.ts` 是 Core v2 确定性只读投影，汇总 Lifecycle/Attempt 的 trace、失败、恢复和 UNKNOWN 事实；它接受当前 Revision 与 `invalidatedRevisions` 明确登记的历史 Attempt，仍拒绝其他 Task 或未登记 Revision；
+- `acceptance/core-v2-matrix-audit.ts` 定义产品矩阵 Audit Manifest 与十四个执行场景 profile（预算场景同时覆盖 stale fencing）：Task/Workflow/Invocation、Revision/Generation、Role Attempt/Session/Event/Manifest、Trusted Test、Checkpoint/Merge、Gate/Knowledge/Closure/Archive 必须与实时 Restate/Board、真实 Git 与 Artifact 一致；脚本不发现目录，旧 summary、无显式 acceptance metadata、重复副作用、旧证据漂移或 Document Graph Active/Archive 漂移均 fail closed；
 - `restate/core-v2-services.ts` 是 keyed `CoreV2Workflow` 产品编排：只由 Workflow 推进 Task，调用真实 Role Runtime、受信任 Test Runner、幂等 Git Candidate checkpoint、Verification Gate、可选只读 Observer/Knowledge、双父 Merge、成功/失败 Closure 与独立 Archive Effect，并同步 ProjectBoard；旁路 Agent 超时/失败映射为 `deferred` 且不阻塞，`auditAttemptFence` 只读比较已持久化 Manifest 的 Revision/Generation；窄化 `CoreV2RecoveryControl` 在 TaskAuthority claim 前校验且只允许专用验收环境，Role Manifest、Candidate Commit、Test Intent/Manifest 与 Merge `update-ref` 回执丢失均由同一 durable command 对账；Archive 失败只等待同一 token 的 archive-only retry；`restate/invocation-inspector.ts` 从 Restate Admin 核验暂停 source Invocation 和 completed failed predecessor，供 append-only Core v2 recovery successor fencing；
 - `agent/role-runner.ts` 为确定性 Core PoC 提供旧统一角色协议；`agent/live-role.ts` 为 Coding 产品 Context、Self Review、Replan、Docs Gate 提供真实只读 CLI Session、结构化 Finding、稳定 Intent/Manifest 与原始事件；
 - `agent/runner.ts` 规范请求、验证 Worktree/Git common dir、运行中 JSONL Stream 与最终 Artifact；`codex-exec.ts` 以 `workspace-write + --add-dir <validated-git-common-dir>` 允许真实 commit，`claude-print.ts` 维持自己的 argv-only 边界；两者只把 stdout chunk 交给行边界写入器，不推进 Task 状态；Claude 原生 OTel/内容采集只注入当前子进程，默认关闭；
@@ -119,6 +122,7 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 | `src/domain/lifecycle-artifact.ts` | 聊天文本冒充产物、旧 Revision/Commit 证据复用、Digest 篡改、依赖 ref 伪造、Test Report 漏项 | Lifecycle Artifact unit + 完整九类交接链 E2E |
 | `src/domain/role-runtime-v2.ts`、`src/agent/role-runtime-v2.ts` | Role/Phase 越权、Fake 混入产品协议、跨 Attempt Evidence、完整结果重复执行、Intent-only 盲重跑、Artifact 篡改 | Role Runtime v2 unit + 六类角色真实 OS 子进程/复用/UNKNOWN/Reconcile/篡改 E2E |
 | `src/domain/core-v2-lifecycle.ts` | 角色越权、旧 Revision Artifact 复用、Finding 绕过 REPLAN/REPAIR、旧 Generation 覆盖、Projection 篡改 | Core v2 Lifecycle unit + 序列化 Architect/Review/Implementation/Repair E2E |
+| `src/acceptance/core-v2-matrix-audit.ts`、`scripts/core_v2_matrix_audit.ts` | 目录扫描误选历史结果、summary 自证、实时 Projection 漂移、重复 Session/Test/Commit/Merge、归档图谱漂移 | Matrix Audit unit + 显式旧 14 场景实时 fail-closed 审计；新矩阵通过由 TASK-0048 证明 |
 | `src/core/workflow.ts`、`src/core/scenario-artifact.ts`、`src/restate/core-services.ts` | 已确认昂贵场景重复、Intent-only 盲重试、Worker 退出后重复结果、回执丢失产生第二个 Closure | Core Workflow unit + 真实 Restate 六场景/异步回执/SIGKILL E2E |
 | `src/git/workspace-effect.ts` | 路径/符号链接逃逸、Base 漂移、分支冲突、未知 Git 结果重复写 | `tests/unit/workspace-effect.test.ts` |
 | `src/product/live-task.ts`、`src/review/live-review.ts`、`src/agent/live-role.ts` | Fake 混入产品入口、仓库越界、ref 冲突、角色 Session 混用、Finding 未触发 Repair/Replan、未知结果盲重跑 | Live Task/Role unit + `npm run acceptance:live` 真实 Codex Context/Implementation/Self Review/Review/Docs Gate 验收 |
