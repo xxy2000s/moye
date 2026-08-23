@@ -1,0 +1,13 @@
+schema_version: 1
+id: "BL-0044"
+title: "以 append-only successor 恢复 TASK-0040 Docs Impact Seal 失败"
+kind: "incident_recovery"
+status: "converted_to_task"
+priority: "critical"
+source_refs: [incident-task-0040-docs-impact-seal-failure]
+affected_areas: [sealed-result-commit, docs-impact, task-authority, recovery]
+acceptance_outline:
+  - "保留 TASK-0040 原 Result Commit、FAILED_TERMINAL Projection 和错误 Evidence"
+  - "新 Result Commit 只追加缺失 Docs Impact 与 Recovery Task 证据"
+  - "SealedTaskRecoveryWorkflow 重验同一 Intent 并使 TASK-0040 收敛为 SUCCEEDED + ARCHIVED"
+resolution: { task_refs: [TASK-0040R1], duplicate_of: null, reason: "由 TASK-0040R1 执行 append-only Seal recovery" }

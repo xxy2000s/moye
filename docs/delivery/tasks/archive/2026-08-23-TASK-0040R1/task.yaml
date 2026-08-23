@@ -1,0 +1,17 @@
+schema_version: 1
+id: TASK-0040R1
+title: 恢复 TASK-0040 Docs Impact Seal 失败
+status: seal_prepared
+outcome: null
+backlog_refs: [BL-0044]
+spec_revision: 1
+workflow_id: sealed-task/TASK-0040R1
+execution_mode: sealed-result-commit
+base_commit: 9c68901e89e3fe378dbc5c84396eee2d005b19fe
+archive: { status: prepared, archived_at: null, archived_path: docs/delivery/tasks/archive/2026-08-23-TASK-0040R1 }
+result: { pull_request: null, merge_commit: null, closure_report: null }
+seal:
+  status: prepared
+  intent_digest: sha256:954c7888aad357f8f78ace60f8326865d7a2749f4615558a95bce522c6645ae9
+  base_commit: 9c68901e89e3fe378dbc5c84396eee2d005b19fe
+  archive_path: docs/delivery/tasks/archive/2026-08-23-TASK-0040R1

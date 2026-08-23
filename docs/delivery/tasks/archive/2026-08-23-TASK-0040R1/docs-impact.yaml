@@ -1,0 +1,75 @@
+schema_version: 1
+task_id: TASK-0040R1
+graph_revision: 77
+intents: [incident-intake, finding-intake, task-create, recovery-change, task-archive, docs-change]
+changed_paths:
+  - docs/delivery/backlog/BL-0044.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/core-v2-roadmap.md
+  - docs/delivery/tasks/README.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0040/docs-impact.yaml
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0040R1/design.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0040R1/docs-impact.yaml
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0040R1/plan.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0040R1/spec.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0040R1/task.yaml
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0040R1/verification.md
+  - docs/delivery/tasks/archive/README.md
+  - docs/graph.yaml
+  - docs/sources/incidents/2026-08-23-task-0040-docs-impact-seal-failure.md
+  - docs/sources/incidents/README.md
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - findings-index
+    - meta-index
+    - adr-0002-doc-lifecycle-roles
+    - incident-task-0040-docs-impact-seal-failure
+    - incidents-index
+    - bl-0044-task-0040-seal-recovery
+    - backlog-index
+    - sources-index
+    - tasks-index
+    - archived-tasks-index
+    - task-runtime-kernel
+    - task-0040-docs-impact
+    - core-v2-roadmap
+    - task-0040r1-manifest
+    - task-0040r1-spec
+    - task-0040r1-design
+    - task-0040r1-plan
+    - task-0040r1-verification
+    - task-0040r1-docs-impact
+  reviewed:
+    pitfalls-index: { outcome: unchanged, reason: "一次真实 Seal 漏项已记录 Incident；既有 Durable Runtime Pitfall 已覆盖最终 changed-path 对账原则" }
+    runbooks-index: { outcome: unchanged, reason: "本次按现有 Seal recovery Runbook 执行，不改变操作入口" }
+    moye-task-control-skill: { outcome: unchanged, reason: "继续只通过 CLI、Runtime 与文档门禁操作，不直接写 Projection" }
+    architecture-overview: { outcome: unchanged, reason: "append-only recovery 不改变顶层系统边界" }
+    restate-poc-architecture: { outcome: unchanged, reason: "复用既有 Authority/successor 设计，无新 Runtime 结构" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "Incident、Backlog、Task 与 Archive 分层遵循既有决策" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "不 amend 原提交；以新 Result Commit 和 successor 恢复，严格遵循 ADR" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "现有 Seal changed-path 陷阱已覆盖本事故，Incident 提供本次真实实例" }
+    task-spec-document-closure-brainstorm: { outcome: unchanged, reason: "历史任务文档需求不改写；本恢复沿用既有 Task package 与 Seal 结构" }
+    task-0013-manifest: { outcome: unchanged, reason: "历史 Control Kernel Task 已封存" }
+    task-0014-manifest: { outcome: unchanged, reason: "历史 Role Task 已封存" }
+    task-0015-manifest: { outcome: unchanged, reason: "历史 Review/Finding Task 已封存" }
+    task-0016-manifest: { outcome: unchanged, reason: "历史 Recovery Task 已封存" }
+    task-0017-manifest: { outcome: unchanged, reason: "历史 Observer/Docs Task 已封存" }
+    task-0018-manifest: { outcome: unchanged, reason: "历史 Closure Task 已封存" }
+    task-0019-manifest: { outcome: unchanged, reason: "历史真实 Agent Task 已封存" }
+    task-0020-manifest: { outcome: unchanged, reason: "历史状态机展示 Task 已封存" }
+    task-0021-manifest: { outcome: unchanged, reason: "历史 Web 审计 Task 已封存" }
+    task-0029-manifest: { outcome: unchanged, reason: "历史 Bootstrap recovery Task 已封存" }
+    task-0030-manifest: { outcome: unchanged, reason: "历史 Core v2/Seal Task 已封存" }
+    task-0031-manifest: { outcome: unchanged, reason: "历史 Lifecycle Artifact Task 已封存" }
+    task-0032-manifest: { outcome: unchanged, reason: "历史 Role Runtime Task 已封存" }
+    task-0002-manifest: { outcome: unchanged, reason: "历史 Backlog Task 已封存" }
+    task-0003-manifest: { outcome: unchanged, reason: "历史协议 Task 已封存" }
+    task-0004-manifest: { outcome: unchanged, reason: "历史 Git Task 已封存" }
+    task-0005-manifest: { outcome: unchanged, reason: "历史 Agent Task 已封存" }
+    task-0006-manifest: { outcome: unchanged, reason: "历史 Workflow Task 已封存" }
+    task-0007-manifest: { outcome: unchanged, reason: "历史 Trace Task 已封存" }
+    task-0001-manifest: { outcome: unchanged, reason: "历史 Runtime Task 已封存" }
