@@ -245,7 +245,7 @@ async function assertProductService(): Promise<void> {
 }
 
 function requirementFor(name: Exclude<ScenarioName, "HAPPY">): string {
-  return ({ IMPLEMENTATION_SELF_REVIEW: "REQ-0043-03", FINAL_REVIEW: "REQ-0043-04", DOCUMENTATION: "REQ-0043-05", TEST_FAILURE: "REQ-0043-05", DESIGN_REPLAN: "REQ-0043-06" })[name];
+  return ({ IMPLEMENTATION_SELF_REVIEW: "REQ-0043-03", FINAL_REVIEW: "REQ-0043-04", DOCUMENTATION: "REQ-0043-05", TEST_FAILURE: "REQ-0043-05", DESIGN_REPLAN: "REQ-0043-06", REPAIR_BUDGET: "REQ-0045-01", REPLAN_BUDGET: "REQ-0045-02" })[name];
 }
 function required<T>(value: T | null | undefined, label: string): T { if (value === null || value === undefined || value === "") throw new Error(`${label} is required`); return value; }
 function unique(values: readonly string[]): boolean { return new Set(values).size === values.length; }

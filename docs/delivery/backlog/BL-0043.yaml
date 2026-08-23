@@ -4,11 +4,11 @@ title: "完成 Core v2 真实 Agent 产品级故障矩阵"
 kind: "feature"
 status: "scheduled"
 priority: "critical"
-source_refs: [core-v2-real-fault-matrix-evidence-incomplete, core-v2-test-assessment-finding-can-bypass-repair, core-v2-role-scope-symlink-path-retry-loop, core-v2-shared-failure-artifact-root-collides, trusted-test-file-digest-does-not-bind-evidence-bytes, bl-0043-uses-invalid-in-progress-status, core-v2-repair-evidence-not-explicitly-invalidated, core-v2-design-review-crosses-phase-boundary, core-v2-observer-rejects-invalidated-revision-attempts, core-v2-documentation-agent-consumes-test-gate, core-v2-acceptance-faults-default-selection-rejected, core-v2-recovery-acceptance-generated-invalid-task-id, core-v2-recovery-acceptance-service-stop-race, core-v2-recovery-fixture-contaminates-agent-verdict]
+source_refs: [core-v2-real-fault-matrix-evidence-incomplete, core-v2-test-assessment-finding-can-bypass-repair, core-v2-role-scope-symlink-path-retry-loop, core-v2-shared-failure-artifact-root-collides, trusted-test-file-digest-does-not-bind-evidence-bytes, bl-0043-uses-invalid-in-progress-status, core-v2-repair-evidence-not-explicitly-invalidated, core-v2-design-review-crosses-phase-boundary, core-v2-observer-rejects-invalidated-revision-attempts, core-v2-documentation-agent-consumes-test-gate, core-v2-acceptance-faults-default-selection-rejected, core-v2-recovery-acceptance-generated-invalid-task-id, core-v2-recovery-acceptance-service-stop-race, core-v2-recovery-fixture-contaminates-agent-verdict, core-v2-workflow-omits-intelligent-observer-execution]
 affected_areas: [core-v2-workflow, role-runtime, trusted-runner, git, merge, reconcile, observer, acceptance, board]
 acceptance_outline:
   - "十五个场景各有独立真实 Core v2 Runtime Task 与完整 Evidence"
   - "真实 Merge Effect、Checkpoint/Test/Merge UNKNOWN 对账和 stale Attempt fencing 可重复验证"
   - "提供非交互 acceptance:core-v2 与 acceptance:core-v2:faults 命令"
   - "成功与失败任务均形成唯一归档终态，文档严格区分不同证据等级"
-resolution: { task_refs: [TASK-0041, TASK-0043, TASK-0044], duplicate_of: null, reason: "TASK-0041 完成真实 Merge UNKNOWN；TASK-0043 完成真实 Happy/Finding/Repair/Replan；TASK-0044 执行 UNKNOWN 与 Worker 恢复矩阵" }
+resolution: { task_refs: [TASK-0041, TASK-0043, TASK-0044, TASK-0045], duplicate_of: null, reason: "TASK-0041 完成真实 Merge UNKNOWN；TASK-0043 完成真实 Happy/Finding/Repair/Replan；TASK-0044 完成 UNKNOWN 与 Worker 恢复矩阵；TASK-0045 执行预算、Observer 与 stale fencing 矩阵" }

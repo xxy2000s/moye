@@ -1,0 +1,24 @@
+schema_version: 1
+id: TASK-0045
+title: Core v2 预算、Observer/Knowledge 与 stale fencing 真实验收
+status: seal_prepared
+outcome: null
+backlog_refs:
+  - BL-0043
+spec_revision: 1
+workflow_id: sealed-task/TASK-0045
+execution_mode: sealed-result-commit
+base_commit: aa9473e3c0062af6741c4536813aec73c9056354
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-23-TASK-0045
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:24139320794504d1f8902998b81e6c9c60bc713dd1bdd9246e39d0f3ffefb290
+  base_commit: aa9473e3c0062af6741c4536813aec73c9056354
+  archive_path: docs/delivery/tasks/archive/2026-08-23-TASK-0045

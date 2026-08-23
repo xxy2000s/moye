@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 92
+graph_revision: 93
 updated_at: "2026-08-23"
 
 entrypoints:
@@ -2792,6 +2792,14 @@ documents:
     authority: observed-fact
     read_when: [finding-intake, task-execution, verification]
 
+  - id: core-v2-workflow-omits-intelligent-observer-execution
+    path: docs/sources/findings/core-v2-workflow-omits-intelligent-observer-execution.md
+    type: finding
+    status: confirmed
+    scope: core-v2-observer-knowledge-sidecar
+    authority: observed-fact
+    read_when: [finding-intake, task-execution, verification]
+
   - id: bl-0042-core-v2-failure-closure
     path: docs/delivery/backlog/BL-0042.yaml
     type: backlog-item
@@ -3325,6 +3333,54 @@ documents:
     type: docs-impact
     status: archived
     scope: core-v2-real-recovery
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0045-manifest
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0045/task.yaml
+    type: task-manifest
+    status: archived
+    scope: core-v2-budget-observer-fencing
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0045-spec
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0045/spec.md
+    type: task-spec
+    status: archived
+    scope: core-v2-budget-observer-fencing
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0045-design
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0045/design.md
+    type: task-design
+    status: archived
+    scope: core-v2-budget-observer-fencing
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0045-plan
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0045/plan.md
+    type: task-plan
+    status: archived
+    scope: core-v2-budget-observer-fencing
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0045-verification
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0045/verification.md
+    type: verification
+    status: archived
+    scope: core-v2-budget-observer-fencing
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0045-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0045/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: core-v2-budget-observer-fencing
     authority: task-evidence
     read_when: [task-close, task-archive]
 
@@ -5386,6 +5442,42 @@ relations:
     type: reports_on
 
   - from: task-0044-manifest
+    to: core-v2-agent-lifecycle
+    type: implements_slice_of
+
+  - from: core-v2-workflow-omits-intelligent-observer-execution
+    to: bl-0043-core-v2-real-fault-matrix
+    type: promoted_to
+
+  - from: bl-0043-core-v2-real-fault-matrix
+    to: task-0045-manifest
+    type: schedules_into
+
+  - from: archived-tasks-index
+    to: task-0045-manifest
+    type: indexes
+
+  - from: task-0045-spec
+    to: task-0045-manifest
+    type: belongs_to
+
+  - from: task-0045-design
+    to: task-0045-spec
+    type: refines
+
+  - from: task-0045-plan
+    to: task-0045-manifest
+    type: belongs_to
+
+  - from: task-0045-verification
+    to: task-0045-manifest
+    type: verifies
+
+  - from: task-0045-docs-impact
+    to: task-0045-manifest
+    type: reports_on
+
+  - from: task-0045-manifest
     to: core-v2-agent-lifecycle
     type: implements_slice_of
 

@@ -4,6 +4,7 @@ import { access, realpath, writeFile } from "node:fs/promises";
 import { relative, resolve } from "node:path";
 import * as restate from "@restatedev/restate-sdk";
 
+import { SpawnAgentProcessRunner } from "../agent/codex-exec.js";
 import { RealRoleRuntimeV2 } from "../agent/role-runtime-v2.js";
 import type { RoleRunManifestV2 } from "../agent/role-runtime-v2.js";
 import { persistCoreV2FailureArchiveReceipt, persistCoreV2FailureArtifact, persistCoreV2FailureClosure } from "../archive/core-v2-failure.js";
@@ -11,9 +12,10 @@ import { persistCoreV2SuccessArchiveReceipt, persistCoreV2SuccessClosure } from 
 import { loadConfig } from "../config.js";
 import { createCoreV2Lifecycle, workflowAcceptArchitectV2, workflowAcceptDesignReviewV2, workflowAcceptDocumentationV2, workflowAcceptFinalReviewV2, workflowAcceptImplementationV2, workflowAcceptTestAssessmentV2, workflowAcceptTestPlanV2, workflowArchiveFailureV2, workflowArchiveSuccessV2, workflowAuthorizeRepairV2, workflowCloseCoreV2, workflowCloseFailureV2, workflowEnterFailureTerminalV2, workflowFailFailureArchiveV2, workflowPassVerificationGateV2, workflowRecordFailureArtifactV2, workflowRecordKnowledgeDispositionV2, workflowRecordTrustedTestRunV2, workflowReplanV2, workflowRequestRepairV2, workflowResumeTestReconcileV2, workflowRetryFailureArchiveV2, workflowWaitForTestReconcileV2 } from "../domain/core-v2-lifecycle.js";
 import type { ArchitectDeliverableV2, CoreV2LifecycleProjection } from "../domain/core-v2-lifecycle.js";
+import { createCoreV2ObserverReport } from "../domain/core-v2-observer.js";
 import { completeRoleAttemptV2, createRoleAttemptV2, startRoleAttemptV2 } from "../domain/role-runtime-v2.js";
 import type { AgentRoleV2, RealRoleRunnerKind, RoleAttemptV2, RolePhaseV2 } from "../domain/role-runtime-v2.js";
-import type { DocsImpactPayload, TestPlanPayload } from "../domain/lifecycle-artifact.js";
+import type { DocsImpactPayload, KnowledgeDispositionPayload, TestPlanPayload } from "../domain/lifecycle-artifact.js";
 import { applyLocalMerge, createCoreV2LocalMergeRequest } from "../git/merge-effect.js";
 import type { GitCommandRunner } from "../git/workspace-effect.js";
 import { nodeGitCommandRunner } from "../git/workspace-effect.js";
@@ -34,6 +36,7 @@ export interface CoreV2WorkflowInput {
   readonly successArchiveFault?: { readonly failFirstAttempt?: boolean };
   readonly acceptanceControl?: CoreV2AcceptanceControl;
   readonly recoveryControl?: CoreV2RecoveryControl;
+  readonly observerKnowledge?: { readonly enabled: boolean; readonly timeoutMs?: number };
 }
 export interface CoreV2RecoveryControl {
   readonly roleExitAfterManifestOnceAt?: Partial<Record<"ARCHITECT" | "IMPLEMENTATION" | "FINAL_REVIEW", string>>;
@@ -41,10 +44,10 @@ export interface CoreV2RecoveryControl {
   readonly testExitAfterManifestOnceAt?: string;
   readonly checkpointExitAfterCommitOnceAt?: string;
 }
-export type CoreV2AcceptanceProfile = "IMPLEMENTATION_SELF_REVIEW" | "FINAL_REVIEW" | "DOCUMENTATION" | "TEST_FAILURE" | "DESIGN_REPLAN";
+export type CoreV2AcceptanceProfile = "IMPLEMENTATION_SELF_REVIEW" | "FINAL_REVIEW" | "DOCUMENTATION" | "TEST_FAILURE" | "DESIGN_REPLAN" | "REPAIR_BUDGET" | "REPLAN_BUDGET";
 export interface CoreV2AcceptanceControl { readonly profile: CoreV2AcceptanceProfile }
 const CORE_V2_ACCEPTANCE_PROFILES = new Set<CoreV2AcceptanceProfile>([
-  "IMPLEMENTATION_SELF_REVIEW", "FINAL_REVIEW", "DOCUMENTATION", "TEST_FAILURE", "DESIGN_REPLAN",
+  "IMPLEMENTATION_SELF_REVIEW", "FINAL_REVIEW", "DOCUMENTATION", "TEST_FAILURE", "DESIGN_REPLAN", "REPAIR_BUDGET", "REPLAN_BUDGET",
 ]);
 export interface CoreV2RecoveryRecord {
   readonly sourceInvocationId: string;
@@ -70,6 +73,13 @@ export interface CoreV2WorkflowProjection {
 }
 export interface CoreV2ReconcileInput extends TrustedTestReconcileInput {}
 export interface CoreV2ArchiveRetryInput { readonly token: string; readonly evidence: string }
+export interface CoreV2AttemptFenceInput { readonly attemptId: string; readonly manifestDigest: string }
+export interface CoreV2AttemptFenceResult {
+  readonly taskId: string; readonly attemptId: string; readonly manifestDigest: string;
+  readonly decision: "STALE_REVISION" | "STALE_GENERATION" | "CURRENT";
+  readonly accepted: boolean; readonly currentSpecRevision: number; readonly currentGeneration: number;
+  readonly projectionDigest: string;
+}
 export interface CoreV2FailureRecoveryInput {
   readonly taskId: string; readonly projectId: string; readonly artifactRoot: string;
   readonly sourceWorkflowRef: string; readonly expectedSourceProjectionDigest: string;
@@ -90,6 +100,7 @@ export const coreV2Workflow = restate.workflow({
         const enabled = process.env["MOYE_ACCEPTANCE_FAULT_INJECTION"] === "enabled";
         validateCoreV2AcceptanceControl(input.acceptanceControl, enabled);
         validateCoreV2RecoveryControl(input.recoveryControl, input.mergeFault, input.artifactRoot, enabled);
+        validateCoreV2ObserverKnowledge(input.observerKnowledge);
       }
       catch (error) { throw new restate.TerminalError(error instanceof Error ? error.message : String(error), { errorCode: 403 }); }
       await ctx.objectClient(taskAuthority, input.taskId).claim({ owner: "CORE_V2_WORKFLOW", specRevision: 1 });
@@ -160,7 +171,9 @@ export const coreV2Workflow = restate.workflow({
           projection = withLifecycle(projection, workflowAcceptFinalReviewV2(projection.lifecycle, finalReview.attempt, verdict(finalReview.manifest), await durableNow(ctx, `final-review-g${generation}-accepted`))); projection = await publish(ctx, input, projection);
           if (projection.lifecycle.state === "REPAIR_REQUIRED") { projection = await authorizeRepair(ctx, input, projection, generation, "blocking Final Review Finding"); continue; }
           projection = withLifecycle(projection, workflowPassVerificationGateV2(projection.lifecycle, await durableNow(ctx, "verification-gate")));
-          projection = withLifecycle(projection, workflowRecordKnowledgeDispositionV2(projection.lifecycle, { type: "KNOWLEDGE_DISPOSITION", disposition: "none", candidateRefs: [], rationale: "No reusable knowledge candidate proposed" }, await durableNow(ctx, "knowledge-disposition")));
+          const observation = await runObserverKnowledge(ctx, input, projection, generation);
+          projection = observation.projection;
+          projection = withLifecycle(projection, workflowRecordKnowledgeDispositionV2(projection.lifecycle, observation.disposition, await durableNow(ctx, "knowledge-disposition")));
           const merge = await ctx.run(`local-merge-effect-r${projection.lifecycle.specRevision}-g${generation}`, async () => {
             const request = await createCoreV2LocalMergeRequest({
               repositoryRoot: input.repositoryRoot,
@@ -217,6 +230,21 @@ export const coreV2Workflow = restate.workflow({
       }
     },
     status: restate.handlers.workflow.shared(async (ctx: restate.WorkflowSharedContext<CoreV2WorkflowState>) => ctx.get("projection") as Promise<CoreV2WorkflowProjection | null>),
+    auditAttemptFence: restate.handlers.workflow.shared(async (ctx: restate.WorkflowSharedContext<CoreV2WorkflowState>, input: CoreV2AttemptFenceInput): Promise<CoreV2AttemptFenceResult> => {
+      const projection = await ctx.get("projection");
+      if (projection === null) throw new restate.TerminalError("Core v2 Task does not exist", { errorCode: 404 });
+      const attempt = projection.attempts.find((item) => item.attemptId === input.attemptId);
+      const manifest = projection.roleRuns.find((item) => item.attemptId === input.attemptId);
+      if (attempt === undefined || manifest === undefined) throw new restate.TerminalError("Attempt and Role Manifest are not persisted by this Workflow", { errorCode: 404 });
+      if (manifest.manifestDigest !== input.manifestDigest) throw new restate.TerminalError("Role Manifest digest does not match persisted Attempt evidence", { errorCode: 409 });
+      const decision = attempt.specRevision < projection.lifecycle.specRevision ? "STALE_REVISION"
+        : attempt.generation < projection.lifecycle.implementationGeneration ? "STALE_GENERATION" : "CURRENT";
+      return {
+        taskId: projection.taskId, attemptId: attempt.attemptId, manifestDigest: manifest.manifestDigest, decision,
+        accepted: decision === "CURRENT", currentSpecRevision: projection.lifecycle.specRevision,
+        currentGeneration: projection.lifecycle.implementationGeneration, projectionDigest: projectionDigest(projection),
+      };
+    }),
     reconcile: restate.handlers.workflow.shared(async (ctx: restate.WorkflowSharedContext<CoreV2WorkflowState>, input: CoreV2ReconcileInput): Promise<CoreV2WorkflowProjection> => {
       const projection = await ctx.get("projection");
       const normalized = { ...input, evidence: input.evidence.trim() };
@@ -500,13 +528,46 @@ async function archiveSuccessfulCoreV2Workflow(
   }
 }
 
+async function runObserverKnowledge(
+  ctx: restate.WorkflowContext<CoreV2WorkflowState>,
+  input: CoreV2WorkflowInput,
+  projection: CoreV2WorkflowProjection,
+  generation: number,
+): Promise<{ projection: CoreV2WorkflowProjection; disposition: KnowledgeDispositionPayload }> {
+  if (input.observerKnowledge?.enabled !== true) {
+    return { projection, disposition: { type: "KNOWLEDGE_DISPOSITION", disposition: "none", candidateRefs: [], rationale: "Optional intelligent Observer/Knowledge sidecar was not requested" } };
+  }
+  const deterministic = createCoreV2ObserverReport(projection.lifecycle, projection.attempts);
+  const observed = await runRole(
+    ctx, input, projection, "OBSERVER_KNOWLEDGE", "OBSERVER_KNOWLEDGE",
+    projection.lifecycle.candidateCommit ?? projection.lifecycle.subjectCommit, generation,
+    `Act as the optional read-only OBSERVER_KNOWLEDGE sidecar. Analyze this deterministic Observer report without modifying files or Task state: ${JSON.stringify(deterministic)}. Return PASS with reusable candidate refs only when a concrete Finding, Pitfall, Runbook or Backlog candidate is warranted; otherwise return PASS with no refs. Never claim an ADR is Accepted. Encode {} in deliverable.`,
+    input.observerKnowledge.timeoutMs === undefined ? {} : { timeoutMs: input.observerKnowledge.timeoutMs },
+  );
+  const next = addRun(projection, observed);
+  if (observed.attempt.state !== "SUCCEEDED" || observed.manifest.output === null || observed.manifest.output.recommendation === "INCONCLUSIVE") {
+    return { projection: next, disposition: {
+      type: "KNOWLEDGE_DISPOSITION", disposition: "deferred",
+      candidateRefs: [`knowledge-candidate://observer-unavailable/${observed.attempt.attemptId}`],
+      rationale: `Observer/Knowledge sidecar did not produce a trusted successful result (${observed.manifest.outcome})`,
+    } };
+  }
+  const candidates = [...new Set([...observed.manifest.output.findingRefs, ...observed.manifest.output.artifactRefs])].sort();
+  return { projection: next, disposition: candidates.length === 0
+    ? { type: "KNOWLEDGE_DISPOSITION", disposition: "none", candidateRefs: [], rationale: "Observer/Knowledge sidecar proposed no reusable candidate" }
+    : { type: "KNOWLEDGE_DISPOSITION", disposition: "proposed", candidateRefs: candidates, rationale: "Observer/Knowledge sidecar proposed candidates for later governance" } };
+}
+
 async function runRole(ctx: restate.WorkflowContext<CoreV2WorkflowState>, input: CoreV2WorkflowInput, projection: CoreV2WorkflowProjection,
-  role: AgentRoleV2, phase: RolePhaseV2, subjectCommit: string, generation: number, instructions: string) {
+  role: AgentRoleV2, phase: RolePhaseV2, subjectCommit: string, generation: number, instructions: string,
+  options: { readonly timeoutMs?: number } = {}) {
   const scheduled = createRoleAttemptV2({ taskId: input.taskId, specRevision: projection.lifecycle.specRevision, role, phase, generation, runnerKind: input.runnerKind,
     inputDigest: projection.lifecycle.projectionDigest, subjectCommit, inputArtifactRefs: projection.lifecycle.artifacts.map((item) => item.artifactDigest), scheduledAt: await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-scheduled-g${generation}`) });
   const running = startRoleAttemptV2(scheduled, await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-started-g${generation}`));
   const result = await ctx.run(`role-${phase.toLowerCase()}-r${projection.lifecycle.specRevision}-g${generation}`, async () => {
-    const executed = await new RealRoleRuntimeV2().run({ attempt: running, scopeRoot: await realpath(input.repositoryRoot), artifactRoot: `${input.artifactRoot}/roles`, instructions });
+    const executed = await new RealRoleRuntimeV2({
+      ...(options.timeoutMs === undefined ? {} : { processRunner: new SpawnAgentProcessRunner({ timeoutMs: options.timeoutMs }) }),
+    }).run({ attempt: running, scopeRoot: await realpath(input.repositoryRoot), artifactRoot: `${input.artifactRoot}/roles`, instructions });
     const marker = phase === "ARCHITECT" || phase === "IMPLEMENTATION" || phase === "FINAL_REVIEW"
       ? input.recoveryControl?.roleExitAfterManifestOnceAt?.[phase] : undefined;
     await exitOnce(marker, `${phase} manifest ${executed.manifest.manifestDigest}`);
@@ -591,6 +652,13 @@ export function validateCoreV2RecoveryControl(
     throw new Error("Core v2 recovery fault markers must be inside artifactRoot");
   }
 }
+export function validateCoreV2ObserverKnowledge(input: CoreV2WorkflowInput["observerKnowledge"]): void {
+  if (input === undefined) return;
+  if (input.enabled !== true) throw new Error("Core v2 Observer/Knowledge config must be omitted or explicitly enabled");
+  if (input.timeoutMs !== undefined && (!Number.isSafeInteger(input.timeoutMs) || input.timeoutMs < 1 || input.timeoutMs > 60 * 60 * 1000)) {
+    throw new Error("Core v2 Observer/Knowledge timeoutMs must be between 1 and 3600000");
+  }
+}
 export function coreV2AcceptanceInstruction(
   control: CoreV2AcceptanceControl | undefined,
   phase: "ARCHITECT" | "DESIGN_REVIEW" | "IMPLEMENTATION" | "DOCUMENTATION" | "FINAL_REVIEW",
@@ -599,6 +667,9 @@ export function coreV2AcceptanceInstruction(
 ): string {
   const profile = control?.profile;
   if (profile === undefined) return "";
+  if (profile === "REPAIR_BUDGET" && phase === "IMPLEMENTATION") {
+    return `Controlled acceptance condition: write src/value.txt with the exact text repair-budget-defect-${generation} followed by a newline, so this Generation contains a real observable defect. Perform a genuine self-review and return FINDINGS with findingRefs:["finding://acceptance/repair-budget/g${generation}"]. Do not repair the defect in this Attempt.`;
+  }
   if (profile === "IMPLEMENTATION_SELF_REVIEW" && phase === "IMPLEMENTATION" && generation === 0) {
     return "Controlled acceptance condition: create src/value.txt with the exact text generation-zero-defect followed by a newline, intentionally leave that observable defect in the workspace, then perform a genuine self-review and return FINDINGS with findingRefs:[\"finding://acceptance/implementation-self-review/g0\"]. Do not repair it in this Attempt.";
   }
@@ -623,11 +694,11 @@ export function coreV2AcceptanceInstruction(
   if (profile === "TEST_FAILURE" && phase === "DOCUMENTATION" && generation === 0) {
     return "Controlled acceptance condition: do not execute npm test and do not inspect src/value.txt for behavioral conformity; that check is exclusively assigned to the real Trusted Runner in the next phase. Audit only that README has the exact `## Accepted behavior` heading and SECURITY.md has `# Security`; return PASS when those documentation structures exist even though the executable behavior is intentionally pending Trusted Runner validation.";
   }
-  if (profile === "DESIGN_REPLAN" && phase === "ARCHITECT" && revision === 1) {
+  if ((profile === "DESIGN_REPLAN" && revision === 1 || profile === "REPLAN_BUDGET") && phase === "ARCHITECT") {
     return "Controlled acceptance condition: produce a concrete Spec and Design but intentionally omit the Trusted Runner from design.components and return PASS, leaving this genuine design omission for isolated Design Review.";
   }
-  if (profile === "DESIGN_REPLAN" && phase === "DESIGN_REVIEW" && revision === 1) {
-    return "Controlled acceptance condition: require a Trusted Runner component in the design. If it is absent, return FINDINGS with findingRefs:[\"finding://acceptance/design-review/missing-trusted-runner\"]. Do not modify the repository.";
+  if ((profile === "DESIGN_REPLAN" && revision === 1 || profile === "REPLAN_BUDGET") && phase === "DESIGN_REVIEW") {
+    return `Controlled acceptance condition: require a Trusted Runner component in the design. If it is absent, return FINDINGS with findingRefs:["finding://acceptance/design-review/missing-trusted-runner/r${revision}"]. Do not modify the repository.`;
   }
   return "";
 }

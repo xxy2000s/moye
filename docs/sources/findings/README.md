@@ -39,5 +39,6 @@ Finding 与 Incident 的边界：
 - [Core v2 Recovery Acceptance 生成了非法 Task ID](./core-v2-recovery-acceptance-generated-invalid-task-id.md)：完整场景名导致首个真实恢复调用违反 Task ID 领域约束，由 TASK-0044 改为提交前校验的短场景码。
 - [Core v2 Recovery Acceptance 清理 Service 时可能不返回](./core-v2-recovery-acceptance-service-stop-race.md)：矩阵业务完成后 SIGTERM 和 exit listener 存在竞态，由 TASK-0044 改为精确 Child PID 的有界清理。
 - [Core v2 Recovery Fixture 污染了真实 Agent Verdict](./core-v2-recovery-fixture-contaminates-agent-verdict.md)：仓库外测试 ledger 与可歧义标点触发非目标 Repair/Final Review Finding，由 TASK-0044 隔离 Agent 自测和 Trusted Runner 计数并收紧精确验收内容。
+- [Core v2 Workflow 未实际执行智能 Observer/Knowledge](./core-v2-workflow-omits-intelligent-observer-execution.md)：Role 协议已有旁路角色但产品 Workflow 只写 `none`，由 TASK-0045 接入真实可超时且非阻塞的只读 Agent。
 
 不要为了演示目录创建虚构 Bug。

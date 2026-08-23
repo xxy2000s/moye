@@ -7,7 +7,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { createCoreV2Lifecycle } from "../../src/domain/core-v2-lifecycle.js";
-import { coreV2AcceptanceInstruction, coreV2AssessmentPrompt, coreV2ReviewBoundary, ensureGitCheckpoint, normalizeArchitectDeliverableV2, validateCoreV2AcceptanceControl, validateCoreV2RecoveryControl } from "../../src/restate/core-v2-services.js";
+import { coreV2AcceptanceInstruction, coreV2AssessmentPrompt, coreV2ReviewBoundary, ensureGitCheckpoint, normalizeArchitectDeliverableV2, validateCoreV2AcceptanceControl, validateCoreV2ObserverKnowledge, validateCoreV2RecoveryControl } from "../../src/restate/core-v2-services.js";
 import type { CoreV2WorkflowProjection } from "../../src/restate/core-v2-services.js";
 import { buildCoreV2StateMachine } from "../../src/trace/state-machine.js";
 
@@ -35,6 +35,13 @@ describe("Core v2 Workflow control-plane", () => {
     expect(() => validateCoreV2RecoveryControl({ testExitAfterIntentOnceAt: "/tmp/outside.marker" }, undefined, root, true)).toThrow("inside artifactRoot");
   });
 
+  it("bounds the optional intelligent Observer timeout independently of the deterministic Observer", () => {
+    expect(() => validateCoreV2ObserverKnowledge(undefined)).not.toThrow();
+    expect(() => validateCoreV2ObserverKnowledge({ enabled: true, timeoutMs: 250 })).not.toThrow();
+    expect(() => validateCoreV2ObserverKnowledge({ enabled: false })).toThrow("explicitly enabled");
+    expect(() => validateCoreV2ObserverKnowledge({ enabled: true, timeoutMs: 0 })).toThrow("between 1 and 3600000");
+  });
+
   it("targets acceptance conditions to one real Role phase, Revision and Generation", () => {
     expect(coreV2AcceptanceInstruction({ profile: "IMPLEMENTATION_SELF_REVIEW" }, "IMPLEMENTATION", 1, 0)).toContain("generation-zero-defect");
     expect(coreV2AcceptanceInstruction({ profile: "IMPLEMENTATION_SELF_REVIEW" }, "IMPLEMENTATION", 1, 1)).toBe("");
@@ -43,6 +50,8 @@ describe("Core v2 Workflow control-plane", () => {
     expect(coreV2AcceptanceInstruction({ profile: "TEST_FAILURE" }, "DOCUMENTATION", 1, 0)).toContain("Trusted Runner");
     expect(coreV2AcceptanceInstruction({ profile: "DESIGN_REPLAN" }, "DESIGN_REVIEW", 1, 0)).toContain("missing-trusted-runner");
     expect(coreV2AcceptanceInstruction({ profile: "DESIGN_REPLAN" }, "DESIGN_REVIEW", 2, 0)).toBe("");
+    expect(coreV2AcceptanceInstruction({ profile: "REPAIR_BUDGET" }, "IMPLEMENTATION", 1, 1)).toContain("repair-budget-defect-1");
+    expect(coreV2AcceptanceInstruction({ profile: "REPLAN_BUDGET" }, "DESIGN_REVIEW", 2, 0)).toContain("missing-trusted-runner/r2");
   });
 
   it("keeps Design Review inside its pre-Implementation phase boundary", () => {

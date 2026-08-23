@@ -174,11 +174,14 @@ export MOYE_ACCEPTANCE_FAULT_INJECTION=enabled
 npm run acceptance:core-v2
 npm run acceptance:core-v2:faults
 npm run acceptance:core-v2:recovery
+npm run acceptance:core-v2:guards
 ```
 
 Harness 只通过真实 `CoreV2Workflow` 输入改变指定 Revision/Generation/Phase 的 Agent 指令或开启窄化回执故障点，不替换 Role Runtime、Codex、Restate、Git、Trusted Runner、Gate、Merge、Closure 或 Archive。每次运行保留 `task-input.json`、submission receipt、最终 Projection/Trace、每个 Role Event/Manifest 引用、Trusted Test argv/exit code、Git DAG 和 `evidence-summary.json`。恢复矩阵还保存 WAITING_RECONCILE token、故障 marker、测试执行账本和 Service 日志，并断言 Attempt/Run/Session、测试命令、Candidate 和 Merge 没有重复。若真实 Reviewer 发现验收条件之外的缺陷，让该 Task 按正式状态机失败并归档；修复后必须使用新 key 重跑，不得覆盖原 Session 或 Projection。
 
 `acceptance:core-v2:recovery` 会自己启动并注册专用 Service，在 Test Intent/Manifest、Role Manifest、Candidate Commit 和 Merge ref update 后实施受控进程终止，再以同一 deployment URI 恢复。Test `NOT_APPLIED` 场景会先证明错误 token 被拒绝，再验证相同 Evidence 幂等和冲突 Evidence 拒绝；`CONFIRMED` 场景只能使用已落盘且摘要匹配的真实 Manifest。不要删除 marker、Journal 或执行账本来让重跑通过。
+
+`acceptance:core-v2:guards` 创建 Repair budget、Replan budget 和 Observer timeout 三个独立真实 Task。两个预算 Task 必须完成 Failure Closure/Archive，且预算后不能出现下游 Agent、Trusted Test 或 Merge；Harness 使用旧 Generation/Revision 的真实 Attempt ID 与 Manifest Digest 调用 `auditAttemptFence`，先验证错误 Digest 拒绝，再验证 stale 结果与幂等重放，最后比较审计前后 Projection Digest。Observer Task 必须保存真实超时 Session/Event/Manifest、`deferred` Knowledge Disposition，同时主流程继续到成功 Archive。
 
 若只需验证 Harness 的进程清理，可设置 `MOYE_CORE_V2_RECOVERY_CLEANUP_SMOKE=enabled npm run acceptance:core-v2:recovery`。该模式执行零个产品场景，摘要标记为 `HARNESS_CLEANUP_SMOKE`，不得作为 Core v2 产品验收证据。
 
@@ -192,7 +195,7 @@ npm run cli -- core-v2-retry-archive TASK-ID --token 'sha256:...' --evidence 'ar
 
 该命令创建唯一 `CoreV2FailureRecoveryWorkflow/<task_id>` successor，不会重跑 Agent、Test 或 Merge，也不改写原 Workflow。恢复后应核对 Authority 的 source/recovery ref、Failure/Closure/Archive Digest、Board `FAILED_TERMINAL + ARCHIVED` 和 Trace `Projection = Event History`。不要再次提交同一 Workflow key；Archive 若处于 `ARCHIVE_FAILED`，只使用页面给出的 Effect token 调用 `core-v2-retry-archive`。
 
-证据口径必须分开记录：单元测试证明纯 Reducer/校验；确定性 Adapter E2E 证明协议组合；真实 Restate 证明 Journal/Workflow/Recovery；真实 Agent 产品验收还必须包含 Codex/Claude Session、真实 Git/Runner/Artifact。当前真实证据包括 Happy Path、LIVE-001～004 失败恢复、暂停 durable command 的 append-only successor、成功 Archive-only retry、`TASK-CORE-V2-MERGE-UNKNOWN-005` 的 Merge ref 更新回执丢失、TASK-0043 已通过场景，以及 TASK-0044 的 Test UNKNOWN、Role Worker 中断、Checkpoint 与 Merge UNKNOWN；逐场景 Task ID 和 Digest 以对应 Verification Artifact 为准。预算、Observer/Knowledge 故障与 stale Attempt 等尚未完成的场景不得写成“完整故障矩阵已完成”。
+证据口径必须分开记录：单元测试证明纯 Reducer/校验；确定性 Adapter E2E 证明协议组合；真实 Restate 证明 Journal/Workflow/Recovery；真实 Agent 产品验收还必须包含 Codex/Claude Session、真实 Git/Runner/Artifact。当前分项真实证据包括 Happy Path、LIVE-001～004 失败恢复、暂停 durable command 的 append-only successor、Archive-only retry、Finding/Repair/Replan、Test UNKNOWN、Role Worker/Checkpoint/Merge UNKNOWN，以及 TASK-0045 的预算、Observer timeout 和 stale fencing；逐场景 Task ID 和 Digest 以对应 Verification Artifact 为准。在 Board 修复、全矩阵统一复跑和最终证据审计完成前仍不得写成“完整故障矩阵已完成”。
 
 Core Workflow 的只读状态可直接从 Restate Ingress 查询：
 

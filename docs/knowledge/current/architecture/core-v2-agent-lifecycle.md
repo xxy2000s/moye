@@ -56,7 +56,11 @@ Test/Verification 使用两个隔离只读 Attempt：`TEST_PLAN` 形成 Requirem
 
 Final Review 是第二次隔离 `REVIEW` Attempt，精确依赖 Docs Impact 和 Test Report。它审查 Candidate 与 Merge 前证据；目标 ref 更新由其后的 Verification Gate 授权，不能因尚未执行 Merge 而形成 Finding。PASSED 之后仍需纯 Verification Gate 重建八类主流程 Artifact、完整依赖和 Task/Revision/Commit/Digest 绑定；Gate Digest 写入 Projection 后才进入真实 Merge Effect。Review 的文字 verdict 不能替代 Gate。
 
-`src/domain/core-v2-observer.ts` 从 Lifecycle Projection 与 Role Attempt 重建事件、Artifact、Session、失败、Repair、Replan、UNKNOWN 和告警事实，不写主状态。Replan 后它同时接受当前 Revision 和 `invalidatedRevisions` 明确登记的历史 Attempt，其他 Task、未来 Revision 或未登记 Revision 仍被拒绝。Knowledge Disposition 是 append-only Lifecycle Artifact；智能 Observer 不可用时 Workflow 可记录 deferred，主流程状态保持不变。
+`src/domain/core-v2-observer.ts` 从 Lifecycle Projection 与 Role Attempt 重建事件、Artifact、Session、失败、Repair、Replan、UNKNOWN 和告警事实，不写主状态。Replan 后它同时接受当前 Revision 和 `invalidatedRevisions` 明确登记的历史 Attempt，其他 Task、未来 Revision 或未登记 Revision 仍被拒绝。
+
+`CoreV2Workflow` 可在 Verification Gate 后显式启用真实、只读 `OBSERVER_KNOWLEDGE` 旁路。Workflow 先生成确定性 Observer Report，再把它作为真实 Agent 输入；旁路 Attempt 使用统一 Intent/Session/Event/Manifest 协议和独立超时。成功结果只能形成 `none | proposed`，失败、超时或无效输出形成带候选引用的 `deferred`；它不能改变 Gate、决定 Merge、自动关闭 Task 或把候选升级为 Accepted ADR。Knowledge Disposition 仍是 append-only Lifecycle Artifact，未启用旁路时明确记录 `none`。
+
+`auditAttemptFence` 是 owning Workflow 的只读审计 handler：它只接受 Workflow 已持久化的 Attempt ID 与准确 Manifest Digest，比较当前 Spec Revision/Implementation Generation 后返回 `STALE_REVISION | STALE_GENERATION | CURRENT`。错误 Digest 拒绝，重复查询幂等，查询不调用 Reducer也不写 Projection。外部执行者没有提交 Role 结果或推进 Task 的接口；实际状态推进仍只发生在原 journaled `run` handler。
 
 ## 5. Artifact 与 Gate
 
@@ -84,6 +88,6 @@ Test Agent 提出 Requirement 覆盖和 Case 意图；Workflow 为每条预授�
 
 旧版本已完成在 `FAILED_TERMINAL + NOT_READY` 的 Workflow 不能改写。`CoreV2FailureRecoveryWorkflow/<task_id>` 先校验原 Projection Digest，再通过 `TaskAuthority.beginCoreV2FailureRecovery` 原子登记唯一 append-only successor；successor 复制原 Attempt、Session 与 Event 引用，只追加 Failure Closure/Archive 事实。仍停在 journaled durable Run 的 Workflow 必须先 pause；`core-v2-recovery-plan` 从 Restate Admin 核验 Invocation target/status、最后 command/index/failure digest 和 Projection digest。若 root recovery 自身在 Authority 前失败，只能以新的 `CoreV2FailureRecoveryAttemptWorkflow/<recovery_id>` 绑定前序 completed Failure Invocation 继续。Board、CLI 与 Trace 解析 Authority 指向最新 successor，直接查询原 key 仍得到摘要不变的原历史。
 
-截至 2026-08-23，真实证据分级如下：LIVE-005/006 和 TASK-0043 Happy Task 证明真实 Agent Happy Path；LIVE-001～004 证明真实历史 Agent 失败经合法 Restate successor 归档；三个暂停 durable command 的原 Workflow 由绑定 Invocation/Projection fact 的 successor 收敛且原摘要保持不变；`TASK-CORE-V2-MERGE-UNKNOWN-005` 证明真实七 Role、Trusted Runner、Verification Gate、双父 Merge Commit 以及 ref 更新后进程终止的 `ALREADY_APPLIED` 对账；TASK-0043 的五个独立故障 Task 证明 Implementation Self Review、Final Review、Documentation、Test Failure 驱动 Repair，以及 Design Review 驱动 Replan，旧 Generation/Revision Evidence 保留但不能进入新 Gate；TASK-0044 的五个独立恢复 Task 证明 Test `UNKNOWN → CONFIRMED | NOT_APPLIED`、Architect/Implementation/Final Review Manifest 后 Worker 中断、Candidate Commit 回执未知和 Merge ref 更新回执未知均能恢复为唯一结果。Repair/Replan 预算耗尽、Observer/Knowledge 故障与 stale Attempt 仍未完成同等级矩阵，不能宣称 Core 完全闭环。
+截至 2026-08-23，真实证据分级如下：LIVE-005/006 和 TASK-0043 Happy Task 证明真实 Agent Happy Path；LIVE-001～004 证明真实历史 Agent 失败经合法 Restate successor 归档；三个暂停 durable command 的原 Workflow 由绑定 Invocation/Projection fact 的 successor 收敛且原摘要保持不变；`TASK-CORE-V2-MERGE-UNKNOWN-005` 证明真实七 Role、Trusted Runner、Verification Gate、双父 Merge Commit 以及 ref 更新后进程终止的 `ALREADY_APPLIED` 对账；TASK-0043 的五个独立故障 Task 证明 Finding 驱动 Repair/Replan；TASK-0044 的五个独立恢复 Task 证明 Test UNKNOWN、Role Worker、Candidate 和 Merge 回执未知；TASK-0045 的三个独立真实 Task 证明 Repair/Replan 预算耗尽都唯一失败归档、智能 Observer 超时不阻塞主流程，以及实际旧 Generation/Revision Manifest 被只读 fencing audit 拒绝且 Projection 不变。当前各关键分支已有分项真实证据，但 Board 验收语义、统一全矩阵复跑与最终完整性审计尚未完成，仍不能宣称 Core 完全闭环或完整故障矩阵完成。
 
 Board 的 `CORE_V2` Trace 从 Lifecycle Event、Attempt、Session、Artifact 和确定性 Observer 重建主流程、成功/失败 Closure、successor Recovery Record 与 Archive 状态，以及 Happy Path、Repair/Replan/Reconcile/Failure/Archive 合法边。节点 Inspector 直接关联真实 Role Event；Event 在 Chatbot 弹窗中按对话、工具调用、工具结果、系统和错误筛选，不提供跳转下载入口。

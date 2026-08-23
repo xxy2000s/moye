@@ -21,7 +21,7 @@ tasks/
 
 ## 当前 Active Task
 
-当前没有 Active Task。TASK-0044 已通过 Seal Stage 移入 Archived Tasks；业务关闭仍以 Runtime Receipt 为准。
+当前没有 Active Task。TASK-0045 已通过 Seal Stage 移入 Archived Tasks；业务关闭仍以 Runtime Receipt 为准。
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 

@@ -2,7 +2,7 @@
 
 Moye 是一个面向代码研发任务的全自动、可恢复、可追踪 Harness。它以 Task 为业务聚合根，协调 Agent、Daemon、Worktree、测试、Review、Git 合并和知识沉淀，目标是让一次研发任务从需求进入到主干合入形成可验证闭环。
 
-当前状态：**Core v2 已用真实 Codex、Restate、隔离 Git 与受信任测试完成 Happy Path，并逐 Task 验收 Implementation Self Review Finding、Final Review Finding、Documentation Finding、真实 Test Failure Repair、Design Review Replan、Test `UNKNOWN → CONFIRMED | NOT_APPLIED`、Architect/Implementation/Final Review Worker 中断、Git Candidate Commit 回执未知和真实 Merge 回执未知；成功与失败 Task 都有独立 Closure Artifact 和可重试 Archive Receipt。历史 LIVE-001～004 已通过 append-only recovery successor 合法归档。Repair/Replan 预算耗尽、Observer/Knowledge 故障与 stale Attempt 尚未完成同等级真实 Agent 故障矩阵，不能视为 Core 完全闭环。**
+当前状态：**Core v2 已用真实 Codex、Restate、隔离 Git 与受信任测试逐 Task 验收 Happy Path、Finding 驱动 Repair/Replan、Test `UNKNOWN → CONFIRMED | NOT_APPLIED`、Role Worker 中断、Git Candidate/Merge 回执未知、Repair/Replan 预算耗尽、智能 Observer 超时非阻塞及旧 Generation/Revision fencing；成功与失败 Task 都有独立 Closure Artifact 和 Archive Receipt，历史 LIVE-001～004 也已通过 append-only recovery successor 合法归档。当前仍需完成 Board 验收语义、全矩阵统一复跑和最终证据审计，不能提前宣称 Core 完全闭环或完整故障矩阵已经完成。**
 
 ## 当前目标
 
@@ -92,9 +92,11 @@ npm run acceptance:core-v2
 npm run acceptance:core-v2:faults
 # Core v2 真实 Test UNKNOWN、Worker 中断与 Git/Merge 回执未知矩阵
 npm run acceptance:core-v2:recovery
+# Core v2 真实预算、Observer/Knowledge 超时与 stale fencing 矩阵
+npm run acceptance:core-v2:guards
 ```
 
-Core v2 三个命令不会使用 Fake/Mock/Scenario Adapter：每个场景创建新的持久化运行目录和独立 Workflow key，调用真实 Codex、隔离 Git、Trusted Runner、双父 Merge、Closure 和 Archive，并从 Projection、Trace、Role Events、Manifest 与 Git DAG 生成 Evidence Summary。故障和恢复命令要求 Service 显式设置 `MOYE_ACCEPTANCE_FAULT_INJECTION=enabled`；普通 Service 会在 TaskAuthority claim 前拒绝 `acceptanceControl` 或 `recoveryControl`。这些命令消耗真实模型额度，不能用单元测试结果替代。
+Core v2 四个命令不会使用 Fake/Mock/Scenario Adapter：每个场景创建新的持久化运行目录和独立 Workflow key，调用真实 Codex、隔离 Git、Trusted Runner、双父 Merge、Closure 和 Archive，并从 Projection、Trace、Role Events、Manifest 与 Git DAG 生成 Evidence Summary。故障、恢复和预算命令要求 Service 显式设置 `MOYE_ACCEPTANCE_FAULT_INJECTION=enabled`；普通 Service 会在 TaskAuthority claim 前拒绝 `acceptanceControl` 或 `recoveryControl`。这些命令消耗真实模型额度，不能用单元测试结果替代。
 
 推荐先启动带持久化数据卷的本地 Runtime，再注册 Moye Service：
 
@@ -174,4 +176,4 @@ Moye 使用自己定义的 Task、证据和知识治理原则建设自身：
 
 ## 当前边界
 
-本轮已经实现 Task/Archive Workflow、Core v2 真实多角色 Happy Path、两阶段 Sealed Result Commit 自举协议、真实 Codex 与 Claude Print Adapter、Self Review、两次隔离 Review、Repair/Replan/Reconcile 领域协议、成功/失败 Closure 与独立 Archive Effect、真实本地双父 Merge/Reconcile、停滞 Workflow 的窄化 successor、全部 Session Event 下钻、实际路径点亮的只读状态机 Graph、确定性 Observer、Board Projection、三层 Trace、OTLP 和统一 CLI。当前真实产品证据还覆盖 Finding 驱动 Repair/Replan、Test `UNKNOWN → CONFIRMED | NOT_APPLIED`、Role Worker 中断、Git Candidate Checkpoint 回执丢失与 Merge 回执丢失；预算、旁路 Observer/Knowledge 故障和 stale Attempt 等异常分支仍按 [Core v2 Roadmap](./docs/delivery/core-v2-roadmap.md) 逐条补齐。多 Daemon/Lease/Fencing、远程 Git Provider/PR、鉴权、多租户，以及 Metrics/Logs/告警/SLO 等仍未完成。
+本轮已经实现 Task/Archive Workflow、Core v2 真实多角色 Happy Path、两阶段 Sealed Result Commit 自举协议、真实 Codex 与 Claude Print Adapter、Self Review、两次隔离 Review、Repair/Replan/Reconcile 领域协议、成功/失败 Closure 与独立 Archive Effect、真实本地双父 Merge/Reconcile、停滞 Workflow 的窄化 successor、全部 Session Event 下钻、实际路径点亮的只读状态机 Graph、确定性 Observer、可选智能 Observer/Knowledge 旁路、Board Projection、三层 Trace、OTLP 和统一 CLI。当前关键异常分支已分别取得真实产品证据；仍需按 [Core v2 Roadmap](./docs/delivery/core-v2-roadmap.md) 完成 Board 语义修复、统一矩阵复跑和最终证据审计。完整多 Daemon Lease/Fencing、远程 Git Provider/PR、鉴权、多租户，以及 Metrics/Logs/告警/SLO 等仍未完成。
