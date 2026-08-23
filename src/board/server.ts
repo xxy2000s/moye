@@ -102,7 +102,8 @@ async function route(
     }
     if (traceRequest) {
       if (authority.owner === "CORE_V2_WORKFLOW") {
-        const projection = await invoke<CoreV2WorkflowProjection | null>(options.ingressUrl, "CoreV2Workflow", taskId, "status");
+        const target = coreV2WorkflowTarget(authority, taskId);
+        const projection = await invoke<CoreV2WorkflowProjection | null>(options.ingressUrl, target.service, target.key, "status");
         writeJson(response, projection === null ? 404 : 200, projection === null ? { error: "Task trace not found" } : buildCoreV2Trace(projection, options.restateAdminUrl));
         return;
       }
@@ -209,7 +210,8 @@ async function route(
       if (authority.owner === "CORE_V2_WORKFLOW") {
         let runId: string;
         try { runId = decodeURIComponent(segments[2] ?? ""); } catch { writeJson(response, 400, { error: "Malformed Role Run ID" }); return; }
-        const projection = await invoke<CoreV2WorkflowProjection | null>(options.ingressUrl, "CoreV2Workflow", taskId, "status");
+        const target = coreV2WorkflowTarget(authority, taskId);
+        const projection = await invoke<CoreV2WorkflowProjection | null>(options.ingressUrl, target.service, target.key, "status");
         const run = projection?.roleRuns.find((item) => item.runId === runId);
         if (projection === null || run === undefined) { writeJson(response, 404, { error: "Role Event stream not found" }); return; }
         const cursor = readBoundedInteger(url.searchParams.get("cursor"), 0, 0, Number.MAX_SAFE_INTEGER);
@@ -346,7 +348,7 @@ async function route(
       ? undefined
       : parseRuntimeWorkflowRef(authority.recoveryWorkflowRef);
     const projection = authority.owner === "CORE_V2_WORKFLOW"
-      ? await invoke<CoreV2WorkflowProjection | null>(options.ingressUrl, "CoreV2Workflow", taskId, "status")
+      ? await (() => { const target = coreV2WorkflowTarget(authority, taskId); return invoke<CoreV2WorkflowProjection | null>(options.ingressUrl, target.service, target.key, "status"); })()
       : authority.owner === "CODING_WORKFLOW"
       ? await invoke<CodingWorkflowProjection | null>(options.ingressUrl, "CodingTaskWorkflow", taskId, "status")
       : await invoke<TaskProjection | null>(
@@ -399,16 +401,18 @@ async function route(
 }
 
 export function buildCoreV2Trace(projection: CoreV2WorkflowProjection, restateAdminUrl: string) {
+  const workflowRef = projection.workflowRef ?? `restate://CoreV2Workflow/${projection.taskId}`;
+  const workflowTarget = parseCoreV2WorkflowRef(workflowRef);
   const task: TaskProjection = {
     taskId: projection.taskId,
     projectId: projection.projectId,
     title: projection.title,
-    state: projection.state === "CLOSED" || projection.state === "FAILED_TERMINAL" ? "CLOSED" : "EXECUTING",
+    state: projection.outcome === "FAILED_TERMINAL" || projection.state === "CLOSED" ? "CLOSED" : "EXECUTING",
     currentStep: projection.currentStep,
     attempt: projection.attempts.length,
     specRevision: projection.lifecycle.specRevision,
     backlogRefs: [],
-    archiveStatus: projection.state === "CLOSED" ? "ARCHIVED" : "NOT_READY",
+    archiveStatus: projection.lifecycle.archive?.status ?? (projection.state === "CLOSED" ? "ARCHIVED" : "NOT_READY"),
     ...(projection.outcome === null ? {} : { outcome: projection.outcome }),
     ...(projection.error === null ? {} : { error: projection.error }),
     lastEventAt: projection.lifecycle.events.at(-1)?.at ?? projection.startedAt,
@@ -439,13 +443,26 @@ export function buildCoreV2Trace(projection: CoreV2WorkflowProjection, restateAd
     stateMachine: buildCoreV2StateMachine(projection),
     durableRuntime: {
       authority: "Restate Journal" as const,
-      workflowRef: `restate://CoreV2Workflow/${projection.taskId}`,
-      workflowService: "CoreV2Workflow" as const,
-      workflowKey: projection.taskId,
+      workflowRef,
+      workflowService: workflowTarget.service,
+      workflowKey: workflowTarget.key,
+      ...(projection.sourceWorkflowRef === undefined ? {} : { sourceWorkflowRef: projection.sourceWorkflowRef }),
       adminBaseUrl: restateAdminUrl,
-      invocationsUrl: buildWorkflowInvocationsUrl(restateAdminUrl, "CoreV2Workflow", projection.taskId),
+      invocationsUrl: buildWorkflowInvocationsUrl(restateAdminUrl, workflowTarget.service, workflowTarget.key),
     },
   };
+}
+
+function coreV2WorkflowTarget(authority: TaskAuthorityState, taskId: string): { service: "CoreV2Workflow" | "CoreV2FailureRecoveryWorkflow"; key: string } {
+  return authority.recoveryWorkflowRef === undefined
+    ? { service: "CoreV2Workflow", key: taskId }
+    : parseCoreV2WorkflowRef(authority.recoveryWorkflowRef);
+}
+
+function parseCoreV2WorkflowRef(value: string): { service: "CoreV2Workflow" | "CoreV2FailureRecoveryWorkflow"; key: string } {
+  const match = /^restate:\/\/(CoreV2Workflow|CoreV2FailureRecoveryWorkflow)\/([A-Z0-9-]+)$/.exec(value);
+  if (match === null) throw new Error(`Invalid Core v2 Workflow ref: ${value}`);
+  return { service: match[1] as "CoreV2Workflow" | "CoreV2FailureRecoveryWorkflow", key: match[2]! };
 }
 
 function parseRuntimeWorkflowRef(value: string): { service: "SealedTaskRecoveryWorkflow" | "SealRecoveryAttemptWorkflow"; key: string } {

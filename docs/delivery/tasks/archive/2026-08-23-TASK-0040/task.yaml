@@ -1,0 +1,24 @@
+schema_version: 1
+id: TASK-0040
+title: 补齐 Core v2 失败 Closure、Archive 与历史失败收敛
+status: seal_prepared
+outcome: null
+backlog_refs:
+  - BL-0042
+spec_revision: 1
+workflow_id: sealed-task/TASK-0040
+execution_mode: sealed-result-commit
+base_commit: fb4165a5c5c2aa562d9a1c36d49cb934cf5c6b00
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-23-TASK-0040
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:4181be066366beeb8fc8a12ffe67de9c6a16987cdebdde82580490e57c49543c
+  base_commit: fb4165a5c5c2aa562d9a1c36d49cb934cf5c6b00
+  archive_path: docs/delivery/tasks/archive/2026-08-23-TASK-0040

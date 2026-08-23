@@ -36,6 +36,9 @@ export type CoreV2LifecycleState =
   | "FINAL_REVIEW_REQUIRED"
   | "VERIFICATION_GATE_REQUIRED"
   | "MERGE_REQUIRED"
+  | "FAILED_TERMINAL"
+  | "ARCHIVE_PENDING"
+  | "ARCHIVE_FAILED"
   | "CLOSED";
 
 export interface CoreV2LifecycleEvent {
@@ -66,6 +69,38 @@ export interface ImplementationCheckpointV2 {
   readonly checkpointDigest: string;
 }
 
+export interface FailureArtifactV2 {
+  readonly originalStage: string;
+  readonly reason: string;
+  readonly failedAt: string;
+  readonly sourceWorkflowRef: string;
+  readonly sourceProjectionDigest: string;
+  readonly attemptIds: readonly string[];
+  readonly sessionIds: readonly string[];
+  readonly artifactRef: string | null;
+  readonly artifactContentDigest: string | null;
+  readonly failureDigest: string;
+}
+
+export interface FailureClosureV2 {
+  readonly outcome: "FAILED_TERMINAL";
+  readonly failureDigest: string;
+  readonly knowledgeDispositionDigest: string;
+  readonly closureArtifactRef: string;
+  readonly closureContentDigest: string;
+  readonly closedAt: string;
+  readonly closureDigest: string;
+}
+
+export interface CoreV2ArchiveV2 {
+  readonly status: "PENDING" | "ARCHIVED" | "FAILED";
+  readonly effectId: string;
+  readonly attempts: number;
+  readonly receiptRef: string | null;
+  readonly receiptDigest: string | null;
+  readonly error: string | null;
+}
+
 export interface CoreV2LifecycleProjection {
   readonly schemaVersion: 1;
   readonly taskId: string;
@@ -80,7 +115,10 @@ export interface CoreV2LifecycleProjection {
   readonly verificationGateDigest: string | null;
   readonly knowledgeDispositionDigest: string | null;
   readonly mergeCommit: string | null;
-  readonly outcome: "SUCCEEDED" | null;
+  readonly failure: FailureArtifactV2 | null;
+  readonly failureClosure: FailureClosureV2 | null;
+  readonly archive: CoreV2ArchiveV2 | null;
+  readonly outcome: "SUCCEEDED" | "FAILED_TERMINAL" | null;
   readonly invalidatedRevisions: readonly InvalidatedRevisionV2[];
   readonly events: readonly CoreV2LifecycleEvent[];
   readonly projectionDigest: string;
@@ -116,6 +154,9 @@ export function createCoreV2Lifecycle(input: {
     verificationGateDigest: null,
     knowledgeDispositionDigest: null,
     mergeCommit: null,
+    failure: null,
+    failureClosure: null,
+    archive: null,
     outcome: null,
     invalidatedRevisions: [],
     events: [{ sequence: 1, type: "ArchitectRequired", at, detail: `r${input.specRevision}` }],
@@ -419,6 +460,157 @@ export function workflowRecordKnowledgeDispositionV2(
     events: append(projection.events, "KnowledgeDispositionRecorded", instant(atInput), `${payload.disposition}:${artifact.artifactDigest}`) });
 }
 
+export function workflowEnterFailureTerminalV2(
+  projectionInput: CoreV2LifecycleProjection,
+  input: {
+    readonly originalStage: string;
+    readonly reason: string;
+    readonly failedAt: string;
+    readonly sourceWorkflowRef: string;
+    readonly sourceProjectionDigest: string;
+    readonly attemptIds: readonly string[];
+    readonly sessionIds: readonly string[];
+  },
+): CoreV2LifecycleProjection {
+  const projection = parseProjection(projectionInput);
+  if (["FAILED_TERMINAL", "ARCHIVE_PENDING", "ARCHIVE_FAILED", "CLOSED"].includes(projection.state)) {
+    throw conflict("CORE_V2_FAILURE_TERMINAL_ALREADY_ENTERED", "Failure terminal facts are append-only");
+  }
+  const failedAt = instant(input.failedAt);
+  const core = {
+    originalStage: required(input.originalStage, "originalStage"),
+    reason: required(input.reason, "reason"),
+    failedAt,
+    sourceWorkflowRef: required(input.sourceWorkflowRef, "sourceWorkflowRef"),
+    sourceProjectionDigest: sha(input.sourceProjectionDigest, "sourceProjectionDigest"),
+    attemptIds: stableRefs(input.attemptIds, "attemptIds"),
+    sessionIds: stableRefs(input.sessionIds, "sessionIds"),
+    artifactRef: null,
+    artifactContentDigest: null,
+  };
+  const failure = deepFreeze({ ...core, failureDigest: digest(core) });
+  return seal({
+    ...withoutDigest(projection),
+    state: "FAILED_TERMINAL",
+    failure,
+    outcome: "FAILED_TERMINAL",
+    events: append(
+      append(projection.events, "WorkflowFailedTerminal", failedAt, `${failure.originalStage}:${failure.reason}`),
+      "FailureClosureStarted",
+      failedAt,
+      failure.failureDigest,
+    ),
+  });
+}
+
+export function workflowRecordFailureArtifactV2(
+  projectionInput: CoreV2LifecycleProjection,
+  input: { readonly artifactRef: string; readonly contentDigest: string; readonly at: string },
+): CoreV2LifecycleProjection {
+  const projection = parseProjection(projectionInput);
+  if (projection.state !== "FAILED_TERMINAL" || projection.failure === null || projection.failure.artifactRef !== null) {
+    throw conflict("CORE_V2_FAILURE_ARTIFACT_NOT_REQUIRED", "Failure Artifact is not currently required");
+  }
+  const failure = deepFreeze({
+    ...projection.failure,
+    artifactRef: required(input.artifactRef, "artifactRef"),
+    artifactContentDigest: sha(input.contentDigest, "contentDigest"),
+  });
+  return seal({
+    ...withoutDigest(projection),
+    failure,
+    events: append(projection.events, "FailureArtifactRecorded", instant(input.at), failure.artifactContentDigest!),
+  });
+}
+
+export function workflowCloseFailureV2(
+  projectionInput: CoreV2LifecycleProjection,
+  input: {
+    readonly closureArtifactRef: string;
+    readonly closureContentDigest: string;
+    readonly closedAt: string;
+  },
+): CoreV2LifecycleProjection {
+  const projection = parseProjection(projectionInput);
+  if (projection.state !== "FAILED_TERMINAL" || projection.failure?.artifactRef === null ||
+      projection.failure === null || projection.knowledgeDispositionDigest === null) {
+    throw conflict("CORE_V2_FAILURE_CLOSURE_GATE_FAILED", "Failure Closure requires frozen Failure Artifact and Knowledge Disposition");
+  }
+  const closedAt = instant(input.closedAt);
+  const closureCore = {
+    outcome: "FAILED_TERMINAL" as const,
+    failureDigest: projection.failure.failureDigest,
+    knowledgeDispositionDigest: projection.knowledgeDispositionDigest,
+    closureArtifactRef: required(input.closureArtifactRef, "closureArtifactRef"),
+    closureContentDigest: sha(input.closureContentDigest, "closureContentDigest"),
+    closedAt,
+  };
+  const failureClosure = deepFreeze({ ...closureCore, closureDigest: digest(closureCore) });
+  const effectId = digest({ namespace: "core-v2-failure-archive", taskId: projection.taskId, specRevision: projection.specRevision, closureDigest: failureClosure.closureDigest });
+  return seal({
+    ...withoutDigest(projection),
+    state: "ARCHIVE_PENDING",
+    failureClosure,
+    archive: { status: "PENDING", effectId, attempts: 1, receiptRef: null, receiptDigest: null, error: null },
+    events: append(
+      append(projection.events, "FailureClosureCompleted", closedAt, failureClosure.closureDigest),
+      "ArchivePending",
+      closedAt,
+      effectId,
+    ),
+  });
+}
+
+export function workflowArchiveFailureV2(
+  projectionInput: CoreV2LifecycleProjection,
+  input: { readonly receiptRef: string; readonly receiptDigest: string; readonly at: string },
+): CoreV2LifecycleProjection {
+  const projection = parseProjection(projectionInput);
+  if (projection.state !== "ARCHIVE_PENDING" || projection.archive?.status !== "PENDING" || projection.failureClosure === null) {
+    throw conflict("CORE_V2_FAILURE_ARCHIVE_NOT_PENDING", "Failure Archive is not pending");
+  }
+  const at = instant(input.at);
+  const archive: CoreV2ArchiveV2 = deepFreeze({
+    ...projection.archive,
+    status: "ARCHIVED",
+    receiptRef: required(input.receiptRef, "receiptRef"),
+    receiptDigest: sha(input.receiptDigest, "receiptDigest"),
+    error: null,
+  });
+  return seal({
+    ...withoutDigest(projection),
+    state: "CLOSED",
+    archive,
+    events: append(append(projection.events, "TaskClosed", at, "FAILED_TERMINAL"), "ArchiveArchived", at, archive.receiptDigest!),
+  });
+}
+
+export function workflowFailFailureArchiveV2(
+  projectionInput: CoreV2LifecycleProjection,
+  input: { readonly error: string; readonly at: string },
+): CoreV2LifecycleProjection {
+  const projection = parseProjection(projectionInput);
+  if (projection.state !== "ARCHIVE_PENDING" || projection.archive?.status !== "PENDING") {
+    throw conflict("CORE_V2_FAILURE_ARCHIVE_NOT_PENDING", "Failure Archive is not pending");
+  }
+  const archive: CoreV2ArchiveV2 = deepFreeze({ ...projection.archive, status: "FAILED", error: required(input.error, "error") });
+  return seal({ ...withoutDigest(projection), state: "ARCHIVE_FAILED", archive,
+    events: append(projection.events, "ArchiveFailed", instant(input.at), archive.error!) });
+}
+
+export function workflowRetryFailureArchiveV2(
+  projectionInput: CoreV2LifecycleProjection,
+  input: { readonly at: string },
+): CoreV2LifecycleProjection {
+  const projection = parseProjection(projectionInput);
+  if (projection.state !== "ARCHIVE_FAILED" || projection.archive?.status !== "FAILED") {
+    throw conflict("CORE_V2_FAILURE_ARCHIVE_RETRY_INVALID", "Only a failed Failure Archive can be retried");
+  }
+  const archive: CoreV2ArchiveV2 = deepFreeze({ ...projection.archive, status: "PENDING", attempts: projection.archive.attempts + 1, error: null });
+  return seal({ ...withoutDigest(projection), state: "ARCHIVE_PENDING", archive,
+    events: append(projection.events, "ArchiveRetryStarted", instant(input.at), archive.effectId) });
+}
+
 export function workflowCloseCoreV2(
   projectionInput: CoreV2LifecycleProjection,
   input: { readonly mergeCommit: string; readonly at: string },
@@ -459,6 +651,9 @@ export function workflowReplanV2(
     verificationGateDigest: null,
     knowledgeDispositionDigest: null,
     mergeCommit: null,
+    failure: null,
+    failureClosure: null,
+    archive: null,
     outcome: null,
     invalidatedRevisions: [...projection.invalidatedRevisions, invalidated],
     events: append(projection.events, "SpecRevisionReplanned", instant(input.at), `r${projection.specRevision + 1}:${reason}`),

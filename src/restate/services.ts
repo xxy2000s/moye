@@ -205,6 +205,31 @@ export const taskAuthority = restate.object({
       },
     ),
 
+    beginCoreV2FailureRecovery: restate.handlers.object.exclusive(
+      { ingressPrivate: true },
+      async (
+        ctx: restate.ObjectContext<TaskAuthorityState>,
+        input: BootstrapRecoveryHandoffInput,
+      ): Promise<TaskAuthorityState> => {
+        const [owner, specRevision, existingRecovery, existingSource] = await Promise.all([
+          ctx.get("owner") as Promise<TaskAuthorityState["owner"] | null>,
+          ctx.get("specRevision") as Promise<number | null>,
+          ctx.get("recoveryWorkflowRef") as Promise<string | null>,
+          ctx.get("sourceWorkflowRef") as Promise<string | null>,
+        ]);
+        const originalSource = `restate://CoreV2Workflow/${ctx.key}`;
+        if (owner !== "CORE_V2_WORKFLOW" || specRevision !== input.specRevision || input.sourceWorkflowRef !== originalSource) {
+          throw new restate.TerminalError(`Task ${ctx.key} is not an eligible CoreV2Workflow failure`, { errorCode: 409 });
+        }
+        if (existingRecovery !== null && (existingRecovery !== input.recoveryWorkflowRef || existingSource !== input.sourceWorkflowRef)) {
+          throw new restate.TerminalError(`Task ${ctx.key} already has a different Core v2 failure successor`, { errorCode: 409 });
+        }
+        ctx.set("recoveryWorkflowRef", input.recoveryWorkflowRef);
+        ctx.set("sourceWorkflowRef", input.sourceWorkflowRef);
+        return { owner, specRevision, recoveryWorkflowRef: input.recoveryWorkflowRef, sourceWorkflowRef: input.sourceWorkflowRef };
+      },
+    ),
+
     beginSealedRecovery: restate.handlers.object.exclusive(
       { ingressPrivate: true },
       async (

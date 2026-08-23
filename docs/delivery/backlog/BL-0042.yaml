@@ -1,0 +1,14 @@
+schema_version: 1
+id: "BL-0042"
+title: "补齐 Core v2 失败 Closure、Archive 与历史失败收敛"
+kind: "bug"
+status: "converted_to_task"
+priority: "critical"
+source_refs: [core-v2-failed-terminal-does-not-close-or-archive]
+affected_areas: [core-v2-workflow, lifecycle, closure, archive, task-authority, board, trace]
+acceptance_outline:
+  - "新失败任务形成 Failure Artifact、Knowledge Disposition、Closure Outcome 和 Archive Receipt"
+  - "Archive 失败只重试 Archive，不重新执行 Agent、Test 或 Merge"
+  - "LIVE-001～004 通过 owning Workflow 或 append-only recovery successor 合法收敛且保留原历史"
+  - "Board 区分失败已归档、归档待处理与归档失败"
+resolution: { task_refs: [TASK-0040], duplicate_of: null, reason: "由 TASK-0040 实现失败终态闭环与历史恢复" }
