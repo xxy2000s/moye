@@ -1,0 +1,97 @@
+schema_version: 1
+task_id: TASK-0041
+graph_revision: 82
+intents: [task-create, workflow-change, git-effect, merge-effect, reconcile-change, finding-intake, incident-response, docs-change]
+changed_paths:
+  - README.md
+  - docs/delivery/backlog/BL-0043.yaml
+  - docs/delivery/backlog/BL-0044.yaml
+  - docs/delivery/backlog/BL-0045.yaml
+  - docs/delivery/backlog/BL-0046.yaml
+  - docs/delivery/backlog/BL-0047.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/core-v2-roadmap.md
+  - docs/delivery/tasks/README.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0041/design.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0041/docs-impact.yaml
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0041/plan.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0041/spec.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0041/task.yaml
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0041/verification.md
+  - docs/delivery/tasks/archive/README.md
+  - docs/graph.yaml
+  - docs/knowledge/current/architecture/core-v2-agent-lifecycle.md
+  - docs/knowledge/current/architecture/task-runtime-kernel.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/pitfalls/durable-task-runtime.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - docs/sources/findings/README.md
+  - docs/sources/findings/bl-0043-uses-invalid-in-progress-status.md
+  - docs/sources/findings/core-v2-durable-command-failure-needs-successor-recovery.md
+  - docs/sources/findings/core-v2-role-scope-symlink-path-retry-loop.md
+  - docs/sources/findings/core-v2-shared-failure-artifact-root-collides.md
+  - docs/sources/findings/core-v2-success-archive-receipt-missing.md
+  - docs/sources/findings/trusted-test-file-digest-does-not-bind-evidence-bytes.md
+  - docs/sources/incidents/2026-08-23-core-v2-real-merge-acceptance-exposed-recovery-gaps.md
+  - docs/sources/incidents/README.md
+  - public/app.js
+  - src/agent/role-runtime-v2.ts
+  - src/archive/core-v2-failure.ts
+  - src/domain/core-v2-lifecycle.ts
+  - src/git/merge-effect.ts
+  - src/restate/core-v2-services.ts
+  - src/testing/trusted-test-runner.ts
+  - src/trace/state-machine.ts
+  - tests/e2e/core-v2-test-verification.test.ts
+  - tests/e2e/role-runtime-v2.test.ts
+  - tests/unit/core-v2-failure-artifact.test.ts
+  - tests/unit/core-v2-lifecycle.test.ts
+  - tests/unit/core-v2-workflow.test.ts
+  - tests/unit/verification-merge.test.ts
+docs:
+  read: [agent-contract, docs-index, root-readme, sources-index, codemap, document-control-plane, meta-index, adr-0002-doc-lifecycle-roles, task-runtime-kernel, restate-poc-architecture, adr-0001-restate-poc, durable-runtime-pitfalls, pitfalls-index, findings-index, incidents-index, backlog-index, tasks-index, archived-tasks-index, architecture-index, runbooks-index, local-restate-poc-runbook, core-v2-agent-lifecycle, core-v2-roadmap, bl-0043-core-v2-real-fault-matrix, bl-0044-task-0040-seal-recovery, bl-0045-sealed-recovery-chain, bl-0046-core-v2-stalled-command-recovery, bl-0047-core-v2-success-archive, task-0041-manifest, task-0041-spec, task-0041-design, task-0041-plan, task-0041-verification, task-0041-docs-impact, bl-0043-uses-invalid-in-progress-status, core-v2-durable-command-failure-needs-successor-recovery, core-v2-role-scope-symlink-path-retry-loop, core-v2-shared-failure-artifact-root-collides, core-v2-success-archive-receipt-missing, trusted-test-file-digest-does-not-bind-evidence-bytes, incident-core-v2-real-merge-recovery-gaps]
+  reviewed:
+    architecture-overview: { outcome: unchanged, reason: "总体 Workflow/Effect/Projection 边界不变，Core v2 细节写入专属 Architecture" }
+    local-restate-poc-runbook: { outcome: updated, reason: "增加真实 Merge UNKNOWN、文件 Digest 和 journaled command 故障操作口径" }
+    moye-task-control-skill: { outcome: unchanged, reason: "继续使用既有 Route、Docs Impact、Result Commit 与 Seal 门禁" }
+    durable-workflow-research: { outcome: unchanged, reason: "历史选型分析不改写，本次实现遵循既有 Restate 决策" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "TASK-0041 继续使用两阶段单 Result Commit Seal" }
+    adr-0005-core-v2-agent-model: { outcome: unchanged, reason: "5+1 Agent 角色与权限未改变" }
+    core-v2-five-plus-one-agent-requirements: { outcome: unchanged, reason: "需求来源不改写，真实证据边界更新到 Architecture/Roadmap" }
+    tasks-index: { outcome: updated, reason: "Active Task 示例修正为 TASK-0041" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "历史 Brainstorm 不构成当前实现事实" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "历史需求输入不改写，缺口进入 Finding/Backlog" }
+    task-spec-document-closure-brainstorm: { outcome: unchanged, reason: "历史需求输入不改写" }
+    task-0013-manifest: { outcome: unchanged, reason: "历史 Core 控制 Task 已封存" }
+    task-0014-manifest: { outcome: unchanged, reason: "历史 Role 协议 Task 已封存" }
+    task-0015-manifest: { outcome: unchanged, reason: "历史 Review/Finding Task 已封存" }
+    task-0016-manifest: { outcome: unchanged, reason: "历史 Repair/Replan Task 已封存" }
+    task-0017-manifest: { outcome: unchanged, reason: "历史 Docs/Observer Task 已封存" }
+    task-0018-manifest: { outcome: unchanged, reason: "历史 Closure Task 已封存" }
+    task-0019-manifest: { outcome: unchanged, reason: "历史真实 Agent 产品 Task 已封存" }
+    task-0020-manifest: { outcome: unchanged, reason: "历史状态机展示 Task 已封存" }
+    task-0021-manifest: { outcome: unchanged, reason: "历史多角色闭环 Task 已封存" }
+    task-0028-manifest: { outcome: unchanged, reason: "保留历史失败与 UI 实现事实" }
+    task-0029-manifest: { outcome: unchanged, reason: "历史 Bootstrap recovery Task 已封存" }
+    task-0030-manifest: { outcome: unchanged, reason: "历史 Core v2/Seal 架构 Task 已封存" }
+    task-0031-manifest: { outcome: unchanged, reason: "历史 Lifecycle Artifact Task 已封存" }
+    task-0032-manifest: { outcome: unchanged, reason: "历史 Role Runtime v2 Task 已封存" }
+    task-0033-manifest: { outcome: unchanged, reason: "历史 Architect/Replan Task 已封存" }
+    task-0034-manifest: { outcome: unchanged, reason: "历史 Implementation/Repair Task 已封存" }
+    task-0035-manifest: { outcome: unchanged, reason: "历史 Documentation Task 已封存" }
+    task-0036-manifest: { outcome: unchanged, reason: "历史 Test Verification Task 已封存" }
+    task-0037-manifest: { outcome: unchanged, reason: "历史 Final Review/Gate Task 已封存" }
+    task-0038-manifest: { outcome: unchanged, reason: "历史 Observer/Knowledge Task 已封存" }
+    task-0039-manifest: { outcome: unchanged, reason: "保留已封存 Happy Path 证据，不改写历史范围" }
+    task-0040-manifest: { outcome: unchanged, reason: "失败 Closure/Archive 历史 Task 已封存" }
+    task-0002-manifest: { outcome: unchanged, reason: "历史 Backlog 同步 Task 已封存" }
+    task-0003-manifest: { outcome: unchanged, reason: "历史 Coding Task 已封存" }
+    task-0004-manifest: { outcome: unchanged, reason: "历史 Coding Task 已封存" }
+    task-0005-manifest: { outcome: unchanged, reason: "历史 Coding Task 已封存" }
+    task-0006-manifest: { outcome: unchanged, reason: "历史 Coding Task 已封存" }
+    task-0007-manifest: { outcome: unchanged, reason: "历史 Coding Task 已封存" }
+    task-0008-manifest: { outcome: unchanged, reason: "历史 Demo Task 已封存" }
+    task-0009-manifest: { outcome: unchanged, reason: "历史 Trace Task 已封存" }
+    task-0001-manifest: { outcome: unchanged, reason: "历史 PoC 基线 Task 已封存" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "语言和工具链未改变" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "Trace 技术选型未改变" }

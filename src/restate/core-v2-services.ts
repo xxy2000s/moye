@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
+import { access, realpath, writeFile } from "node:fs/promises";
 import * as restate from "@restatedev/restate-sdk";
 
 import { RealRoleRuntimeV2 } from "../agent/role-runtime-v2.js";
@@ -10,6 +11,9 @@ import type { ArchitectDeliverableV2, CoreV2LifecycleProjection } from "../domai
 import { completeRoleAttemptV2, createRoleAttemptV2, startRoleAttemptV2 } from "../domain/role-runtime-v2.js";
 import type { AgentRoleV2, RealRoleRunnerKind, RoleAttemptV2, RolePhaseV2 } from "../domain/role-runtime-v2.js";
 import type { DocsImpactPayload, TestPlanPayload } from "../domain/lifecycle-artifact.js";
+import { applyLocalMerge, createCoreV2LocalMergeRequest } from "../git/merge-effect.js";
+import type { GitCommandRunner } from "../git/workspace-effect.js";
+import { nodeGitCommandRunner } from "../git/workspace-effect.js";
 import { reconcileTrustedTestPlan, runTrustedTestPlan } from "../testing/trusted-test-runner.js";
 import type { TrustedTestReconcileInput, TrustedTestRunManifest } from "../testing/trusted-test-runner.js";
 import { projectBoard, taskAuthority } from "./services.js";
@@ -19,6 +23,8 @@ export interface CoreV2WorkflowInput {
   readonly taskId: string; readonly projectId: string; readonly title: string; readonly objective: string;
   readonly acceptanceCriteria: readonly string[]; readonly repositoryRoot: string; readonly artifactRoot: string;
   readonly runnerKind: RealRoleRunnerKind; readonly baseCommit: string; readonly testCommands: readonly (readonly string[])[];
+  readonly targetRef?: string;
+  readonly mergeFault?: { readonly loseAcknowledgementOnceAt?: string; readonly exitAfterRefUpdateOnceAt?: string };
   readonly failureArchiveFault?: { readonly failFirstAttempt?: boolean };
 }
 export interface CoreV2WorkflowProjection {
@@ -106,7 +112,32 @@ export const coreV2Workflow = restate.workflow({
           if (projection.lifecycle.state === "REPAIR_REQUIRED") { projection = await authorizeRepair(ctx, input, projection, generation, "blocking Final Review Finding"); continue; }
           projection = withLifecycle(projection, workflowPassVerificationGateV2(projection.lifecycle, await durableNow(ctx, "verification-gate")));
           projection = withLifecycle(projection, workflowRecordKnowledgeDispositionV2(projection.lifecycle, { type: "KNOWLEDGE_DISPOSITION", disposition: "none", candidateRefs: [], rationale: "No reusable knowledge candidate proposed" }, await durableNow(ctx, "knowledge-disposition")));
-          projection = withLifecycle(projection, workflowCloseCoreV2(projection.lifecycle, { mergeCommit: candidate, at: await durableNow(ctx, "closure") }));
+          const merge = await ctx.run(`local-merge-effect-r${projection.lifecycle.specRevision}-g${generation}`, async () => {
+            const request = await createCoreV2LocalMergeRequest({
+              repositoryRoot: input.repositoryRoot,
+              targetRef: input.targetRef ?? "refs/heads/master",
+              expectedBase: input.baseCommit,
+              taskId: input.taskId,
+              specRevision: projection.lifecycle.specRevision,
+              verifiedCommit: candidate,
+              verificationGateDigest: projection.lifecycle.verificationGateDigest!,
+            });
+            const result = await applyLocalMerge(request, createCoreV2GitRunner(input));
+            const recoveredAfterExit = input.mergeFault?.exitAfterRefUpdateOnceAt !== undefined
+              && await exists(input.mergeFault.exitAfterRefUpdateOnceAt);
+            return recoveredAfterExit && result.outcome === "ALREADY_APPLIED"
+              ? { ...result, reconciledAfterUnknown: true }
+              : result;
+          });
+          if (merge.outcome === "CONFLICT" || merge.mergeCommit === undefined) throw new Error(`Core v2 Merge Effect failed: ${merge.code}`);
+          projection = withLifecycle(projection, workflowCloseCoreV2(projection.lifecycle, {
+            effectId: merge.effectId,
+            outcome: merge.outcome,
+            targetRef: merge.targetRef,
+            mergeCommit: merge.mergeCommit,
+            reconciledAfterUnknown: merge.reconciledAfterUnknown,
+            at: await durableNow(ctx, "closure"),
+          }));
           projection = { ...projection, state: "CLOSED", currentStep: "ARCHIVED", completedAt: await durableNow(ctx, "completed"), outcome: "SUCCEEDED" };
           return publish(ctx, input, projection);
         }
@@ -251,7 +282,12 @@ async function runRole(ctx: restate.WorkflowContext<CoreV2WorkflowState>, input:
   const scheduled = createRoleAttemptV2({ taskId: input.taskId, specRevision: projection.lifecycle.specRevision, role, phase, generation, runnerKind: input.runnerKind,
     inputDigest: projection.lifecycle.projectionDigest, subjectCommit, inputArtifactRefs: projection.lifecycle.artifacts.map((item) => item.artifactDigest), scheduledAt: await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-scheduled-g${generation}`) });
   const running = startRoleAttemptV2(scheduled, await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-started-g${generation}`));
-  const result = await ctx.run(`role-${phase.toLowerCase()}-r${projection.lifecycle.specRevision}-g${generation}`, () => new RealRoleRuntimeV2().run({ attempt: running, scopeRoot: input.repositoryRoot, artifactRoot: `${input.artifactRoot}/roles`, instructions }));
+  const result = await ctx.run(`role-${phase.toLowerCase()}-r${projection.lifecycle.specRevision}-g${generation}`, async () => new RealRoleRuntimeV2().run({
+    attempt: running,
+    scopeRoot: await realpath(input.repositoryRoot),
+    artifactRoot: `${input.artifactRoot}/roles`,
+    instructions,
+  }));
   return { attempt: completeRoleAttemptV2(running, result.evidence, await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-completed-g${generation}`)), manifest: result.manifest };
 }
 function addRun(p: CoreV2WorkflowProjection, result: { attempt: RoleAttemptV2; manifest: RoleRunManifestV2 }): CoreV2WorkflowProjection { return { ...p, attempts: [...p.attempts, result.attempt], roleRuns: [...p.roleRuns, result.manifest] }; }
@@ -262,7 +298,15 @@ function boardTask(p: CoreV2WorkflowProjection): TaskProjection { const archiveS
   ...(p.error === null ? {} : { error: p.error }), lastEventAt: p.lifecycle.events.at(-1)?.at ?? p.startedAt, events: p.lifecycle.events.map((event) => ({ sequence: event.sequence, type: event.type, at: event.at, detail: event.detail })) }; }
 async function durableNow(ctx: restate.WorkflowContext<CoreV2WorkflowState>, name: string): Promise<string> { return ctx.run(name, () => Promise.resolve(new Date().toISOString())); }
 function deliverable<T>(manifest: RoleRunManifestV2): T { if (manifest.output?.deliverable === undefined) throw new Error(`${manifest.phase} did not return deliverable`); return manifest.output.deliverable as T; }
-function architectDeliverable(manifest: RoleRunManifestV2): ArchitectDeliverableV2 { const value = deliverable<ArchitectDeliverableV2>(manifest); const strings = (items: readonly unknown[]) => items.map((item) => typeof item === "string" ? item : JSON.stringify(item)); return { spec: value.spec, design: { ...value.design, decisions: strings(value.design.decisions), components: strings(value.design.components), risks: strings(value.design.risks) }, plan: value.plan }; }
+function architectDeliverable(manifest: RoleRunManifestV2): ArchitectDeliverableV2 { return normalizeArchitectDeliverableV2(deliverable<ArchitectDeliverableV2>(manifest)); }
+export function normalizeArchitectDeliverableV2(value: ArchitectDeliverableV2): ArchitectDeliverableV2 {
+  const strings = (items: readonly unknown[]) => items.map((item) => typeof item === "string" ? item : JSON.stringify(item));
+  const requirements = Array.isArray(value.spec.requirements) ? value.spec.requirements.map((item) => {
+    const acceptanceCriteria = item.acceptanceCriteria as unknown;
+    return { ...item, acceptanceCriteria: typeof acceptanceCriteria === "string" ? [acceptanceCriteria] : acceptanceCriteria as readonly string[] };
+  }) : value.spec.requirements;
+  return { spec: { ...value.spec, requirements }, design: { ...value.design, decisions: strings(value.design.decisions), components: strings(value.design.components), risks: strings(value.design.risks) }, plan: value.plan };
+}
 function testPlanDeliverable(manifest: RoleRunManifestV2, input: CoreV2WorkflowInput): TestPlanPayload {
   const proposed = deliverable<{ readonly type?: unknown; readonly cases?: readonly Record<string, unknown>[] }>(manifest);
   if (proposed.type !== "TEST_PLAN" || !Array.isArray(proposed.cases) || proposed.cases.length !== input.testCommands.length) throw new Error("TEST_PLAN must contain exactly one case per authorized command");
@@ -277,8 +321,8 @@ function testPlanDeliverable(manifest: RoleRunManifestV2, input: CoreV2WorkflowI
 }
 function verdict(manifest: RoleRunManifestV2) { const passed = manifest.output?.recommendation === "PASS"; const refs = manifest.output?.findingRefs ?? []; return { verdict: passed ? "PASSED" as const : "FINDINGS" as const, findingRefs: passed ? [] : refs.length ? refs : ["finding://missing-output"] }; }
 const encoded = "The deliverable field must be a JSON-encoded string (not a nested object).";
-function architectPrompt(i: CoreV2WorkflowInput) { return `Act as ARCHITECT. Read the repository. Objective: ${i.objective}. Acceptance: ${i.acceptanceCriteria.join("; ")}. Return PASS and encode {spec:{type:"SPEC",requirements:[{id,statement,acceptanceCriteria}]},design:{type:"DESIGN",decisions,components,risks},plan:{type:"PLAN",items:[{id,description,dependsOn,status:"PENDING"}]}} in deliverable. Use requirement ids REQ-1 through REQ-${i.acceptanceCriteria.length}. ${encoded}`; }
-function reviewPrompt(phase: string, p: CoreV2WorkflowProjection) { return `Act as isolated ${phase} reviewer. Inspect repository and these immutable artifacts: ${JSON.stringify(p.lifecycle.artifacts)}. Return PASS only if sound. Encode {} in deliverable. ${encoded}`; }
+function architectPrompt(i: CoreV2WorkflowInput) { return `Act as ARCHITECT. Read the repository. Objective: ${i.objective}. Acceptance: ${i.acceptanceCriteria.join("; ")}. Return PASS and encode {spec:{type:"SPEC",requirements:[{id,statement,acceptanceCriteria:["criterion"]}]},design:{type:"DESIGN",decisions,components,risks},plan:{type:"PLAN",items:[{id,description,dependsOn,status:"PENDING"}]}} in deliverable. acceptanceCriteria and dependsOn must always be JSON arrays. Use requirement ids REQ-1 through REQ-${i.acceptanceCriteria.length}. ${encoded}`; }
+function reviewPrompt(phase: string, p: CoreV2WorkflowProjection) { return `Act as isolated ${phase} reviewer. Inspect repository and these immutable artifacts: ${JSON.stringify(p.lifecycle.artifacts)}. Return PASS only if sound. For FINAL_REVIEW, review the Candidate plus documentation and trusted-test evidence; the owning Workflow intentionally performs the target-branch Merge only after Final Review and Verification Gate, so a not-yet-created Merge is not a Finding. If you return FINDINGS or INCONCLUSIVE, findingRefs must contain at least one stable reference; PASS requires findingRefs:[]. Encode {} in deliverable. ${encoded}`; }
 function implementationPrompt(i: CoreV2WorkflowInput, generation: number) { return `Act as IMPLEMENTATION generation ${generation}. Implement this objective in the current Git repository: ${i.objective}. Acceptance: ${i.acceptanceCriteria.join("; ")}. Run relevant checks and update required project documentation. Do not run git add or git commit: the Workflow owns the durable Candidate Commit checkpoint. Return PASS only when the workspace implementation and checks are complete; include artifact refs for test evidence. Encode {} in deliverable. ${encoded}`; }
 function documentationPrompt(i: CoreV2WorkflowInput) { return `Act as DOCUMENTATION. Audit the already committed Candidate for ${i.objective}. Do not modify files or create commits; if project facts are missing, return FINDINGS so Implementation Repair can own a new Candidate. Encode {type:"DOCS_IMPACT",routeDigest:"sha256:<actual 64 hex>",reportRef:"artifact://docs-impact",dispositions:[{documentId,outcome:"updated|unchanged|not_applicable",reason}]} in deliverable. Do not claim PASS without real evidence. ${encoded}`; }
 function testPlanPrompt(i: CoreV2WorkflowInput) { return `Act as TEST_VERIFICATION Test Planner. Return PASS and encode {type:"TEST_PLAN",cases:[{id:"TC-1",requirementIds:["REQ-1"],category:"NORMAL",argv:["command","arg"]}]} in deliverable. Use exactly these argv arrays, one case per command: ${JSON.stringify(i.testCommands)}. Cover requirement ids REQ-1 through REQ-${i.acceptanceCriteria.length}. category must be exactly NORMAL, BOUNDARY, REGRESSION, FAILURE, or RECOVERY. ${encoded}`; }
@@ -300,6 +344,39 @@ export async function ensureGitCheckpoint(root: string, expectedParent: string, 
   return { commit: head, tree: await git(root, ["rev-parse", `${head}^{tree}`]) };
 }
 async function git(cwd: string, argv: readonly string[]): Promise<string> { return new Promise((resolve, reject) => { const child = spawn("git", argv, { cwd, shell: false, stdio: ["ignore", "pipe", "pipe"] }); let out = "", err = ""; child.stdout.setEncoding("utf8").on("data", (v: string) => out += v); child.stderr.setEncoding("utf8").on("data", (v: string) => err += v); child.on("error", reject); child.on("close", (code) => code === 0 ? resolve(out.trim()) : reject(new Error(err.trim() || `git ${argv[0]} exited ${code}`))); }); }
+function createCoreV2GitRunner(input: CoreV2WorkflowInput): GitCommandRunner {
+  const lostAcknowledgementMarker = input.mergeFault?.loseAcknowledgementOnceAt;
+  const exitMarker = input.mergeFault?.exitAfterRefUpdateOnceAt;
+  if (lostAcknowledgementMarker === undefined && exitMarker === undefined) return nodeGitCommandRunner;
+  if (process.env["MOYE_TEST_FAULT_INJECTION"] !== "enabled") {
+    throw new restate.TerminalError("Core v2 Merge fault injection is disabled outside explicit test processes", { errorCode: 403 });
+  }
+  return {
+    async run(invocation) {
+      const result = await nodeGitCommandRunner.run(invocation);
+      if (invocation.argv[0] !== "update-ref" || result.exitCode !== 0) return result;
+      if (exitMarker !== undefined) {
+        try {
+          await writeFile(exitMarker, `${invocation.argv.join(" ")}\n`, { flag: "wx" });
+          process.exit(76);
+        } catch (error) {
+          if (!isAlreadyExists(error)) throw error;
+        }
+      }
+      if (lostAcknowledgementMarker !== undefined) {
+        try {
+          await writeFile(lostAcknowledgementMarker, `${invocation.argv.join(" ")}\n`, { flag: "wx" });
+          throw new Error("simulated lost Core v2 Merge acknowledgement");
+        } catch (error) {
+          if (!isAlreadyExists(error)) throw error;
+        }
+      }
+      return result;
+    },
+  };
+}
+async function exists(value: string): Promise<boolean> { try { await access(value); return true; } catch { return false; } }
+function isAlreadyExists(error: unknown): boolean { return (error as NodeJS.ErrnoException).code === "EEXIST"; }
 async function authorizeRepair(ctx: restate.WorkflowContext<CoreV2WorkflowState>, input: CoreV2WorkflowInput, projection: CoreV2WorkflowProjection, generation: number, reason: string): Promise<CoreV2WorkflowProjection> {
   if (generation >= 1) throw new Error(`${reason} exceeded Repair budget`);
   const repaired = withLifecycle(projection, workflowAuthorizeRepairV2(projection.lifecycle, { reason, at: await durableNow(ctx, `repair-g${generation + 1}-authorized`) }));

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdtemp, readFile, unlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -22,6 +23,9 @@ describe("Core v2 real Trusted Test Runner", () => {
     const first = await runTrustedTestPlan({ plan, candidateCommit: candidate, repositoryRoot: root, allowedRepositoryRoots: [root], artifactRoot });
     expect(first.state).toBe("COMPLETE"); if (first.state !== "COMPLETE") return;
     expect(first.manifest.cases[0]).toMatchObject({ exitCode: 0, status: "PASSED" });
+    const evidence = first.manifest.cases[0]!;
+    expect(evidence.stdoutDigest).toBe(`sha256:${createHash("sha256").update(await readFile(evidence.stdoutRef)).digest("hex")}`);
+    expect(evidence.stderrDigest).toBe(`sha256:${createHash("sha256").update(await readFile(evidence.stderrRef)).digest("hex")}`);
     await unlink(join(artifactRoot, first.manifest.runId.replace(":", "-"), "manifest.json"));
     const recovered = await runTrustedTestPlan({ plan, candidateCommit: candidate, repositoryRoot: root, allowedRepositoryRoots: [root], artifactRoot });
     expect(recovered.state).toBe("UNKNOWN");

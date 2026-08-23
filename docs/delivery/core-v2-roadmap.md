@@ -33,13 +33,15 @@
 | TASK-0040 | BL-0042 | Archived / Succeeded via Recovery | 失败 Closure/Artifact/Knowledge/Archive、Archive-only retry 与 LIVE-001～004 append-only 合法收敛；原失败与两段失败 successor 均保留 | `ac213a5` / `sha256:3e2627…c1ce` |
 | TASK-0040R1 | BL-0044 | Archived / Succeeded via Recovery | 保留原 Seal 与两段 recovery 失败，以 corrected Evidence append-only 收敛 | `692981d` / `sha256:95d8b2…bdc2` |
 | TASK-0040R2 | BL-0045 | Seal Prepared | 修复 numbered recovery 无法从已失败 Attempt 继续追加的问题；真实 Restate 与历史 Task 均已通过 | Intent `sha256:d0b1…3f10` |
-| TASK-0041 | BL-0043 | Planned | 真实、幂等、可对账的 Merge Effect；Git Checkpoint/Merge UNKNOWN 与 stale result 基础设施 | — |
+| TASK-0041 | BL-0043 | Seal Prepared | 真实、幂等、可对账的 Merge Effect；真实 Agent Task 证明 ref 更新后进程终止、唯一双父 Merge 与 `ALREADY_APPLIED`；同时修复 Role 物理路径、Failure Artifact 命名空间和 Trusted Test 文件 Digest | Intent `sha256:de6e…d8e` |
 | TASK-0042 | BL-0043 | Planned | 非交互真实故障矩阵 Harness、Requirement/Evidence Registry 与受控 fault injection | — |
 | TASK-0043 | BL-0043 | Planned | 真实 Agent Happy/Implementation/Final Review/Documentation/Test/Design Replan 场景 | — |
 | TASK-0044 | BL-0043 | Planned | Test UNKNOWN 两分支、Worker 中断、Git 与 Merge 回执未知场景 | — |
 | TASK-0045 | BL-0043 | Planned | Repair/Replan 预算、Observer/Knowledge 故障与 stale Attempt 场景 | — |
 | TASK-0046 | BL-0043 | Planned | Board outcome/workflow/history 筛选、失败详情与实际路径语义 | — |
 | TASK-0047 | BL-0043 | Planned | 全矩阵复跑、文档证据审计、最终部署与验收报告 | — |
+
+本轮真实运行另发现两项阻塞闭环，已进入 [BL-0046](./backlog/BL-0046.yaml) 与 [BL-0047](./backlog/BL-0047.yaml)：journaled durable command failure 需要合法 successor recovery；成功路径需要真实 Closure/Archive Receipt。它们完成前，`TASK-CORE-V2-MERGE-UNKNOWN-005` 只证明 Merge/Reconcile，不证明完整成功 Archive。
 
 ## 3. 依赖图
 

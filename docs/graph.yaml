@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 78
+graph_revision: 82
 updated_at: "2026-08-23"
 
 entrypoints:
@@ -2920,6 +2920,126 @@ documents:
     authority: task-evidence
     read_when: [task-close, task-archive]
 
+  - id: task-0041-manifest
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0041/task.yaml
+    type: task-manifest
+    status: archived
+    scope: core-v2-real-merge
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0041-spec
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0041/spec.md
+    type: task-spec
+    status: archived
+    scope: core-v2-real-merge
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0041-design
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0041/design.md
+    type: task-design
+    status: archived
+    scope: core-v2-real-merge
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0041-plan
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0041/plan.md
+    type: task-plan
+    status: archived
+    scope: core-v2-real-merge
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0041-verification
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0041/verification.md
+    type: verification
+    status: archived
+    scope: core-v2-real-merge
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0041-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0041/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: core-v2-real-merge
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: core-v2-role-scope-symlink-path-retry-loop
+    path: docs/sources/findings/core-v2-role-scope-symlink-path-retry-loop.md
+    type: finding
+    status: confirmed
+    scope: core-v2-real-merge
+    authority: observed-fact
+    read_when: [finding-intake, task-execution]
+
+  - id: core-v2-shared-failure-artifact-root-collides
+    path: docs/sources/findings/core-v2-shared-failure-artifact-root-collides.md
+    type: finding
+    status: confirmed
+    scope: core-v2-failure-artifacts
+    authority: observed-fact
+    read_when: [finding-intake, task-execution]
+
+  - id: trusted-test-file-digest-does-not-bind-evidence-bytes
+    path: docs/sources/findings/trusted-test-file-digest-does-not-bind-evidence-bytes.md
+    type: finding
+    status: confirmed
+    scope: core-v2-trusted-test
+    authority: observed-fact
+    read_when: [finding-intake, task-execution]
+
+  - id: core-v2-durable-command-failure-needs-successor-recovery
+    path: docs/sources/findings/core-v2-durable-command-failure-needs-successor-recovery.md
+    type: finding
+    status: confirmed
+    scope: core-v2-recovery
+    authority: observed-fact
+    read_when: [finding-intake, incident-response]
+
+  - id: core-v2-success-archive-receipt-missing
+    path: docs/sources/findings/core-v2-success-archive-receipt-missing.md
+    type: finding
+    status: confirmed
+    scope: core-v2-success-archive
+    authority: observed-fact
+    read_when: [finding-intake, task-execution]
+
+  - id: incident-core-v2-real-merge-recovery-gaps
+    path: docs/sources/incidents/2026-08-23-core-v2-real-merge-acceptance-exposed-recovery-gaps.md
+    type: incident
+    status: mitigated
+    scope: core-v2-real-acceptance
+    authority: incident-record
+    read_when: [incident-response, task-execution]
+
+  - id: bl-0046-core-v2-stalled-command-recovery
+    path: docs/delivery/backlog/BL-0046.yaml
+    type: backlog-item
+    status: ready
+    scope: core-v2-recovery
+    authority: delivery-control
+    read_when: [backlog-triage, task-create]
+
+  - id: bl-0047-core-v2-success-archive
+    path: docs/delivery/backlog/BL-0047.yaml
+    type: backlog-item
+    status: ready
+    scope: core-v2-success-archive
+    authority: delivery-control
+    read_when: [backlog-triage, task-create]
+
+  - id: bl-0043-uses-invalid-in-progress-status
+    path: docs/sources/findings/bl-0043-uses-invalid-in-progress-status.md
+    type: finding
+    status: confirmed
+    scope: backlog-control
+    authority: observed-fact
+    read_when: [finding-intake, backlog-triage]
+
 relations:
   - from: root-readme
     to: docs-index
@@ -4736,6 +4856,78 @@ relations:
   - from: sealed-recovery-attempt-cannot-chain
     to: durable-runtime-pitfalls
     type: documented_by
+
+  - from: bl-0043-core-v2-real-fault-matrix
+    to: task-0041-manifest
+    type: schedules_into
+
+  - from: tasks-index
+    to: task-0041-manifest
+    type: indexes
+
+  - from: task-0041-spec
+    to: task-0041-manifest
+    type: belongs_to
+
+  - from: task-0041-design
+    to: task-0041-spec
+    type: refines
+
+  - from: task-0041-plan
+    to: task-0041-manifest
+    type: belongs_to
+
+  - from: task-0041-verification
+    to: task-0041-manifest
+    type: verifies
+
+  - from: task-0041-docs-impact
+    to: task-0041-manifest
+    type: reports_on
+
+  - from: task-0041-manifest
+    to: core-v2-agent-lifecycle
+    type: implements_slice_of
+
+  - from: core-v2-role-scope-symlink-path-retry-loop
+    to: bl-0043-core-v2-real-fault-matrix
+    type: promoted_to
+
+  - from: core-v2-shared-failure-artifact-root-collides
+    to: bl-0043-core-v2-real-fault-matrix
+    type: promoted_to
+
+  - from: trusted-test-file-digest-does-not-bind-evidence-bytes
+    to: bl-0043-core-v2-real-fault-matrix
+    type: promoted_to
+
+  - from: core-v2-durable-command-failure-needs-successor-recovery
+    to: bl-0046-core-v2-stalled-command-recovery
+    type: promoted_to
+
+  - from: core-v2-success-archive-receipt-missing
+    to: bl-0047-core-v2-success-archive
+    type: promoted_to
+
+  - from: incident-core-v2-real-merge-recovery-gaps
+    to: core-v2-durable-command-failure-needs-successor-recovery
+    type: produced
+
+  - from: incident-core-v2-real-merge-recovery-gaps
+    to: core-v2-success-archive-receipt-missing
+    type: produced
+
+  - from: bl-0046-core-v2-stalled-command-recovery
+    to: task-runtime-kernel
+    type: tracks_requirement_from
+
+  - from: bl-0047-core-v2-success-archive
+    to: core-v2-agent-lifecycle
+    type: tracks_requirement_from
+
+  - from: bl-0043-uses-invalid-in-progress-status
+    to: bl-0043-core-v2-real-fault-matrix
+    type: corrected_in
 
   - from: bl-0013-agent-events-dialog
     to: task-0012-manifest

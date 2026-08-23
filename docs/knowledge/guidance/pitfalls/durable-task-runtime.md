@@ -115,3 +115,17 @@
 - 后果：第二次 recovery 失败后 append-only chain 断裂；复用旧 key 会发生 Input 冲突，只能通过非法清状态或改 Projection 才能继续。
 - 检测：Authority 的 `recoveryWorkflowRef` 指向 numbered Attempt，但下一次 `recover-sealed-failure` 返回 source ref invalid 或 cannot advance chain。
 - 规避：source ref 使用带 service 判别的 parser，同时支持第一层与 numbered Attempt；按对应 Workflow shared status 读取 Projection，再由 Authority 原子校验 source 等于当前 chain head。真实 E2E 至少覆盖 root failure → recovery failure → attempt failure → new attempt success。
+
+## 17. 多个 Task 在共享 Artifact Root 写固定文件名
+
+- 触发：Failure/Closure/Receipt 都写 `<artifactRoot>/failure.json` 一类固定路径，却允许多个 Task 共用 Artifact Root。
+- 后果：第二个 Task 的 append-only 内容检查与第一个 Task 冲突，失败 Closure 自身卡死；覆盖文件又会破坏第一条历史。
+- 检测：Artifact Ref 含 Task ID，但物理路径不含 Task namespace；两个真实 Task 的同类 Artifact 指向同一文件。
+- 规避：物理路径固定为 `<artifactRoot>/<taskId>/<kind>/<file>`，逻辑 Ref 同时包含 Task ID；稳定写入只允许同 Task 相同内容复用。
+
+## 18. 假设外层 catch 一定能捕获 durable command failure
+
+- 触发：把 Role、Git、Archive 等 `ctx.run` command 错误交给普通 TypeScript `try/catch`，期望随后执行 Failure Closure。
+- 后果：错误可能先被写入 Restate Journal，Invocation 反复重放同一失败 command，业务 Projection 停在 EXECUTING/FAILED_TERMINAL 且 Closure 永远不执行；热修不会删除旧 command result。
+- 检测：`sys_invocation.last_failure_related_command_*` 指向 Run command，retry_count 增长，但 Projection/Event sequence 不再前进。
+- 规避：把可预见校验移到首个 Projection 前；Effect 内返回显式结果而不是抛出可恢复业务错误；遗留历史只用校验 Invocation/Projection Digest 的 append-only successor recovery 收敛，禁止 purge、复用 key 或改 Board。

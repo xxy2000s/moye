@@ -7,7 +7,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { createCoreV2Lifecycle } from "../../src/domain/core-v2-lifecycle.js";
-import { ensureGitCheckpoint } from "../../src/restate/core-v2-services.js";
+import { ensureGitCheckpoint, normalizeArchitectDeliverableV2 } from "../../src/restate/core-v2-services.js";
 import type { CoreV2WorkflowProjection } from "../../src/restate/core-v2-services.js";
 import { buildCoreV2StateMachine } from "../../src/trace/state-machine.js";
 
@@ -19,6 +19,15 @@ afterEach(async () => {
 });
 
 describe("Core v2 Workflow control-plane", () => {
+  it("normalizes a real Architect scalar acceptance criterion without weakening Artifact validation", () => {
+    const value = normalizeArchitectDeliverableV2({
+      spec: { type: "SPEC", requirements: [{ id: "REQ-1", statement: "ship", acceptanceCriteria: "real evidence" as unknown as readonly string[] }] },
+      design: { type: "DESIGN", decisions: ["one"], components: ["core"], risks: ["drift"] },
+      plan: { type: "PLAN", items: [{ id: "P1", description: "implement", dependsOn: [], status: "PENDING" }] },
+    });
+    expect(value.spec.requirements[0]?.acceptanceCriteria).toEqual(["real evidence"]);
+  });
+
   it("creates and reconciles the Workflow-owned Candidate Commit", async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), "moye-core-v2-git-"));
     roots.push(root);

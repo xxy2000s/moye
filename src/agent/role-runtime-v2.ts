@@ -576,7 +576,8 @@ function reconcileToken(request: PreparedRealRoleRunV2): string {
 async function physicalDirectory(value: string, field: string): Promise<string> {
   const logical = path.resolve(requiredString(value, field));
   const physical = await realpath(logical);
-  if (logical !== physical || !(await stat(physical)).isDirectory()) throw validation("REAL_ROLE_PATH_INVALID", `${field} must be a physical directory`);
+  const directory = (await stat(physical)).isDirectory();
+  if (!directory) throw validation("REAL_ROLE_PATH_INVALID", `${field} must be a physical directory`);
   return physical;
 }
 

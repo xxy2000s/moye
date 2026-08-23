@@ -101,6 +101,15 @@ export interface CoreV2ArchiveV2 {
   readonly error: string | null;
 }
 
+export interface CoreV2MergeReceiptV2 {
+  readonly effectId: string;
+  readonly outcome: "APPLIED" | "ALREADY_APPLIED";
+  readonly targetRef: string;
+  readonly mergeCommit: string;
+  readonly reconciledAfterUnknown: boolean;
+  readonly receiptDigest: string;
+}
+
 export interface CoreV2LifecycleProjection {
   readonly schemaVersion: 1;
   readonly taskId: string;
@@ -115,6 +124,7 @@ export interface CoreV2LifecycleProjection {
   readonly verificationGateDigest: string | null;
   readonly knowledgeDispositionDigest: string | null;
   readonly mergeCommit: string | null;
+  readonly mergeReceipt: CoreV2MergeReceiptV2 | null;
   readonly failure: FailureArtifactV2 | null;
   readonly failureClosure: FailureClosureV2 | null;
   readonly archive: CoreV2ArchiveV2 | null;
@@ -154,6 +164,7 @@ export function createCoreV2Lifecycle(input: {
     verificationGateDigest: null,
     knowledgeDispositionDigest: null,
     mergeCommit: null,
+    mergeReceipt: null,
     failure: null,
     failureClosure: null,
     archive: null,
@@ -301,6 +312,7 @@ export function workflowAuthorizeRepairV2(
     verificationGateDigest: null,
     knowledgeDispositionDigest: null,
     mergeCommit: null,
+    mergeReceipt: null,
     outcome: null,
     events: append(projection.events, "ImplementationRepairAuthorized", instant(input.at), `g${projection.implementationGeneration + 1}:${reason}`),
   });
@@ -613,16 +625,38 @@ export function workflowRetryFailureArchiveV2(
 
 export function workflowCloseCoreV2(
   projectionInput: CoreV2LifecycleProjection,
-  input: { readonly mergeCommit: string; readonly at: string },
+  input: {
+    readonly effectId: string;
+    readonly outcome: "APPLIED" | "ALREADY_APPLIED";
+    readonly targetRef: string;
+    readonly mergeCommit: string;
+    readonly reconciledAfterUnknown: boolean;
+    readonly at: string;
+  },
 ): CoreV2LifecycleProjection {
   const projection = parseProjection(projectionInput);
   if (projection.state !== "MERGE_REQUIRED" || projection.verificationGateDigest === null || projection.knowledgeDispositionDigest === null || projection.candidateCommit === null) {
     throw conflict("CORE_V2_CLOSURE_GATE_FAILED", "Closure requires Merge state, Verification Gate and Knowledge Disposition");
   }
-  if (commit(input.mergeCommit, "mergeCommit") !== projection.candidateCommit) throw conflict("CORE_V2_MERGE_COMMIT_MISMATCH", "Merge commit must equal verified Candidate Commit");
+  const mergeCommit = commit(input.mergeCommit, "mergeCommit");
+  if (mergeCommit === projection.candidateCommit) throw conflict("CORE_V2_MERGE_COMMIT_MISMATCH", "Merge commit must be a real Merge Commit distinct from the verified Candidate Commit");
+  const effectId = required(input.effectId, "effectId");
+  if (!/^local-merge-effect:sha256:[0-9a-f]{64}$/.test(effectId)) throw validation("CORE_V2_MERGE_EFFECT_INVALID", "Merge Effect ID is invalid");
+  const targetRef = required(input.targetRef, "targetRef");
+  if (!/^refs\/heads\/[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(targetRef) || targetRef.includes("..") || targetRef.endsWith(".lock")) {
+    throw validation("CORE_V2_MERGE_TARGET_INVALID", "Merge target ref is invalid");
+  }
+  const receiptCore = {
+    effectId,
+    outcome: choice(input.outcome, ["APPLIED", "ALREADY_APPLIED"] as const, "merge.outcome"),
+    targetRef,
+    mergeCommit,
+    reconciledAfterUnknown: input.reconciledAfterUnknown === true,
+  };
+  const mergeReceipt = deepFreeze({ ...receiptCore, receiptDigest: digest(receiptCore) });
   const at = instant(input.at);
-  const events = append(append(append(projection.events, "MergeConfirmed", at, input.mergeCommit), "TaskClosed", at, "SUCCEEDED"), "ArchiveArchived", at, projection.taskId);
-  return seal({ ...withoutDigest(projection), state: "CLOSED", mergeCommit: input.mergeCommit, outcome: "SUCCEEDED", events });
+  const events = append(append(append(projection.events, "MergeConfirmed", at, mergeReceipt.receiptDigest), "TaskClosed", at, "SUCCEEDED"), "ArchiveArchived", at, projection.taskId);
+  return seal({ ...withoutDigest(projection), state: "CLOSED", mergeCommit, mergeReceipt, outcome: "SUCCEEDED", events });
 }
 
 export function workflowReplanV2(
@@ -651,6 +685,7 @@ export function workflowReplanV2(
     verificationGateDigest: null,
     knowledgeDispositionDigest: null,
     mergeCommit: null,
+    mergeReceipt: null,
     failure: null,
     failureClosure: null,
     archive: null,

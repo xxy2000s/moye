@@ -34,7 +34,7 @@ export interface StateTransitionFact {
 }
 
 export interface StateMachineExecution {
-  readonly kind: "STEP_ATTEMPT" | "AGENT_RUN" | "ROLE_RUN" | "REVIEW_RUN" | "VERIFICATION" | "BOOTSTRAP_EVIDENCE" | "SEAL_COMMIT";
+  readonly kind: "STEP_ATTEMPT" | "AGENT_RUN" | "ROLE_RUN" | "REVIEW_RUN" | "VERIFICATION" | "MERGE_EFFECT" | "BOOTSTRAP_EVIDENCE" | "SEAL_COMMIT";
   readonly id: string;
   readonly state: string;
   readonly step: string;
@@ -315,6 +315,14 @@ export function buildCoreV2StateMachine(projection: CoreV2WorkflowProjection): T
   }));
   if (projection.lifecycle.trustedTestRun !== null) executions.push({ kind: "VERIFICATION", id: projection.lifecycle.trustedTestRun.runId, state: "RECORDED", step: "TEST_EXECUTION_REQUIRED", evidenceDigests: [projection.lifecycle.trustedTestRun.manifestDigest] });
   if (projection.lifecycle.verificationGateDigest !== null) executions.push({ kind: "VERIFICATION", id: projection.lifecycle.verificationGateDigest, state: "PASSED", step: "VERIFICATION_GATE_REQUIRED", evidenceDigests: [projection.lifecycle.verificationGateDigest] });
+  if (projection.lifecycle.mergeReceipt !== null) executions.push({
+    kind: "MERGE_EFFECT",
+    id: projection.lifecycle.mergeReceipt.effectId,
+    state: projection.lifecycle.mergeReceipt.reconciledAfterUnknown ? "RECONCILED" : projection.lifecycle.mergeReceipt.outcome,
+    step: "MERGE_REQUIRED",
+    producer: projection.lifecycle.mergeReceipt.targetRef,
+    evidenceDigests: [projection.lifecycle.mergeReceipt.receiptDigest, projection.lifecycle.mergeReceipt.mergeCommit],
+  });
   const overall = projection.state === "FAILED_TERMINAL" ? "FAILED_TERMINAL"
     : projection.state === "CLOSED" ? "ARCHIVED"
     : projection.state === "ARCHIVE_PENDING" ? "ARCHIVE_PENDING"

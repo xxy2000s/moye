@@ -378,6 +378,7 @@ function renderCoreV2Trace(trace) {
     ["规格", `R${task.specRevision}`],
     ["Agent", `${trace.roles.length} 个真实 Session`],
     ["Candidate", lifecycle.candidateCommit ? shortSha(lifecycle.candidateCommit) : "等待生成"],
+    ["Merge", lifecycle.mergeReceipt ? `${shortSha(lifecycle.mergeReceipt.mergeCommit)}${lifecycle.mergeReceipt.reconciledAfterUnknown ? " · 已对账" : ""}` : "等待合入"],
     ["Archive", archiveStatusLabel(task.archiveStatus), task.archiveStatus === "ARCHIVED" ? "success" : "neutral"],
   ]);
   elements.detail.innerHTML = `
@@ -392,7 +393,7 @@ function renderCoreV2Trace(trace) {
       <div class="task-evidence-content">
         <section class="journey-section" aria-label="真实角色会话"><div class="trace-heading"><div><p class="eyebrow">Role / Agent Sessions</p><h3>每个 Agent 的对话与工具事件</h3></div><span>支持按事件类别筛选</span></div><ul class="action-list">${roleSessions || "<li>等待首个 Agent Session</li>"}</ul></section>
         <section class="journey-section" aria-label="生命周期交付物"><div class="trace-heading"><div><p class="eyebrow">Immutable Artifacts</p><h3>Spec、Design、Documentation、Test 与 Review 证据</h3></div><span>绑定 Revision 与 Commit</span></div><ul class="artifact-list">${artifacts || "<li>等待 Artifact</li>"}</ul></section>
-        <div class="correlation-strip" aria-label="任务关联链">${correlationNode("Task", task.taskId)}<span aria-hidden="true">→</span>${correlationNode("Workflow", trace.durableRuntime.workflowRef)}<span aria-hidden="true">→</span>${correlationNode("Candidate", lifecycle.candidateCommit || "等待生成")}<span aria-hidden="true">→</span>${correlationNode("Gate", lifecycle.verificationGateDigest || "等待验证")}</div>
+        <div class="correlation-strip" aria-label="任务关联链">${correlationNode("Task", task.taskId)}<span aria-hidden="true">→</span>${correlationNode("Workflow", trace.durableRuntime.workflowRef)}<span aria-hidden="true">→</span>${correlationNode("Candidate", lifecycle.candidateCommit || "等待生成")}<span aria-hidden="true">→</span>${correlationNode("Gate", lifecycle.verificationGateDigest || "等待验证")}<span aria-hidden="true">→</span>${correlationNode("Merge", lifecycle.mergeReceipt?.mergeCommit || "等待合入")}</div>
       </div>
     </details>
     ${renderDomainEventPanel(trace.business.events, trace.stateMachine)}

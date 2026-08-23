@@ -4,7 +4,7 @@
 
 ```text
 tasks/
-├── TASK-0042/                        # Active：包括等待、执行、阻塞、验证和关闭中
+├── TASK-NNNN/                        # Active：包括等待、执行、阻塞、验证和关闭中
 │   ├── task.yaml
 │   ├── spec.md
 │   ├── design.md
@@ -23,7 +23,7 @@ tasks/
 
 | Task | 状态 | 目标 |
 |---|---|---|
-| — | — | 当前没有 Active Task；TASK-0040R2 已进入 Seal Prepared，冻结包见 Archive。 |
+| [TASK-0041](./archive/2026-08-23-TASK-0041/task.yaml) | Seal Prepared | 接入 Core v2 真实 Merge Effect 与未知回执对账 |
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 

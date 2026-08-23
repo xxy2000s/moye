@@ -2,13 +2,13 @@ schema_version: 1
 id: "BL-0043"
 title: "完成 Core v2 真实 Agent 产品级故障矩阵"
 kind: "feature"
-status: "ready"
+status: "scheduled"
 priority: "critical"
-source_refs: [core-v2-real-fault-matrix-evidence-incomplete, core-v2-test-assessment-finding-can-bypass-repair]
+source_refs: [core-v2-real-fault-matrix-evidence-incomplete, core-v2-test-assessment-finding-can-bypass-repair, core-v2-role-scope-symlink-path-retry-loop, core-v2-shared-failure-artifact-root-collides, trusted-test-file-digest-does-not-bind-evidence-bytes, bl-0043-uses-invalid-in-progress-status]
 affected_areas: [core-v2-workflow, role-runtime, trusted-runner, git, merge, reconcile, observer, acceptance, board]
 acceptance_outline:
   - "十五个场景各有独立真实 Core v2 Runtime Task 与完整 Evidence"
   - "真实 Merge Effect、Checkpoint/Test/Merge UNKNOWN 对账和 stale Attempt fencing 可重复验证"
   - "提供非交互 acceptance:core-v2 与 acceptance:core-v2:faults 命令"
   - "成功与失败任务均形成唯一归档终态，文档严格区分不同证据等级"
-resolution: { task_refs: [], duplicate_of: null, reason: "计划由 TASK-0041～TASK-0047 分片执行；只在实际创建后登记 Task Ref" }
+resolution: { task_refs: [TASK-0041], duplicate_of: null, reason: "TASK-0041 已创建；后续分片只在实际创建时追加稳定 Task Ref" }

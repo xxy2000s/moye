@@ -1,0 +1,14 @@
+schema_version: 1
+id: "BL-0046"
+title: "为 journaled durable command failure 增加 Core v2 append-only recovery successor"
+kind: "bug"
+status: "ready"
+priority: "critical"
+source_refs: [core-v2-durable-command-failure-needs-successor-recovery]
+affected_areas: [core-v2-workflow, task-authority, recovery, restate, failure-closure, archive]
+acceptance_outline:
+  - "只对可证明的 stalled/failed Invocation 和精确 Projection Digest 创建唯一 successor"
+  - "successor 不重跑 Agent、Trusted Test、Candidate Commit 或 Merge"
+  - "TASK-CORE-V2-MERGE-UNKNOWN-001、003、004 保留原历史并完成失败 Closure/Archive"
+  - "Board、Trace 与 Authority 明确展示 original workflow、recovery action 和 Archive Receipt"
+resolution: { task_refs: [], duplicate_of: null, reason: "等待创建独立实现 Task" }

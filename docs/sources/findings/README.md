@@ -24,5 +24,11 @@ Finding 与 Incident 的边界：
 - [Core v2 真实 Agent 故障矩阵证据不完整](./core-v2-real-fault-matrix-evidence-incomplete.md)：真实证据只完整覆盖 Happy Path，异常分支尚未达到同等级产品验收。
 - [Core v2 Test Assessment Finding 会以 Invalid Output 绕过 Repair](./core-v2-test-assessment-finding-can-bypass-repair.md)：真实失败测试在形成 Test Report 前被 Output Gate 终止，尚未进入预期 Repair。
 - [Sealed Recovery Attempt 无法从已失败 Attempt 继续追加](./sealed-recovery-attempt-cannot-chain.md)：真实 TASK-0040 recovery 暴露 numbered successor 只能读取第一层 recovery，无法形成任意长度 append-only chain。
+- [Core v2 Role scope 遇到符号链接路径后在 Activity 重试](./core-v2-role-scope-symlink-path-retry-loop.md)：真实 Merge 验收 Task 在 claim 后才拒绝 `/tmp` 非 canonical 路径，需由同一 Journal 在新部署接管。
+- [Core v2 共享 Failure Artifact Root 导致跨 Task 冲突](./core-v2-shared-failure-artifact-root-collides.md)：多个真实 Task 共用 Artifact Root 时，旧布局会竞争同一个 Failure 文件。
+- [Trusted Test 文件摘要没有绑定落盘 Evidence 原始字节](./trusted-test-file-digest-does-not-bind-evidence-bytes.md)：Final Reviewer 发现 stdout/stderr Manifest Digest 与文件原始 SHA-256 不一致。
+- [Core v2 durable command 失败后缺少合法 successor recovery](./core-v2-durable-command-failure-needs-successor-recovery.md)：journaled command failure 可能绕过 Workflow catch，原任务需要窄化 append-only recovery 收敛。
+- [Core v2 成功路径没有 Archive Receipt](./core-v2-success-archive-receipt-missing.md)：成功 Task 当前从 CLOSED 直接投影 ARCHIVED，尚未执行真实 Success Archive Effect。
+- [BL-0043 使用了不存在的 in_progress 状态](./bl-0043-uses-invalid-in-progress-status.md)：Backlog 同步门禁正确拒绝 Runtime 风格状态，已改为 SCHEDULED。
 
 不要为了演示目录创建虚构 Bug。

@@ -126,7 +126,7 @@ Daemon 调度、角色 Agent、Worktree、Git、Gate 和知识沉淀都建立在
 `CodingTaskWorkflow/<task_id>` 的产品路径已串联 `CONTEXT(role) → WORKSPACE → IMPLEMENT(agent) → SELF_REVIEW(role) → VERIFY → REVIEW(independent role) → MERGE → DOCS_GATE(role) → CLOSED → ARCHIVE`。`TaskAuthority/<task_id>` 保证通用 TaskWorkflow、CodingTaskWorkflow 与 CoreClosureWorkflow 不会同时认领同一个 Task；同一 Coding owner 只允许单调提升 Spec Revision。Workflow 通过 Observer 独占 Projection 写入并同步 ProjectBoard 查询副本。六个领域 Step、虚拟 Role Step、每个 Attempt/Session/Evidence/Binding 都进入 Projection；每个外部操作经 Restate `ctx.run`，Adapter 只能返回可验证结果。
 
 - Verification Gate 只执行 Envelope argv 并固定 `shell:false`；稳定 Operation Intent 让完成 Outcome 可复用，pending/未知结果停止而不重跑命令；Branch Commit 漂移或任一失败都不会产生 Binding；
-- Local Merge Request 只能从可信 Verification Binding 构造；确定性双亲 Commit 通过 `git update-ref` Expected-Base CAS 原子发布，未知结果由 marker、双亲和 target ancestry 对账；
+- Local Merge Request 只能从可信 Verification Binding 或 Core v2 Verification Gate Digest 构造；确定性双亲 Commit 通过 `git update-ref` Expected-Base CAS 原子发布，未知结果由 effect marker、双亲和 target ancestry 对账。Core v2 Lifecycle 保存真实 effectId、target ref、Merge Commit、outcome 与 reconciled flag，禁止 Candidate SHA 冒充 Merge SHA；
 - Fake Coding Runner 用 Commit marker 对账中断点；真实 Codex 在进程启动前写稳定 Intent，缺少完整结果时标记 UNKNOWN 并禁止自动重启；
 - Context、Self Review 与 Docs Gate 使用 `src/agent/live-role.ts` 启动独立只读 Codex/Claude Session；Implementation 使用可写 Worktree Session；Review 使用另一独立只读 Session。每个 Run 固定 Intent、Session、原始 JSONL、stderr、Manifest 和 Digest；产品输入不允许 Fake；
 - Review 的 Blocking Finding 必须声明 `REPAIR | REPLAN`。Repair 创建 Implementation Generation N+1；Replan 创建 TaskEnvelope Spec Revision N+1，旧 Attempt/Evidence 保留但不绑定新 Gate，Workspace 可作为缓存沿用，后续 Checkpoint/Verification 显式绑定新 Revision；

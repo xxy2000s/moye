@@ -58,7 +58,7 @@ export async function runTrustedTestPlan(input: {
   const manifestPath = resolve(runRoot, "manifest.json");
   await mkdir(runRoot, { recursive: true });
   const existingManifest = await optionalJson<TrustedTestRunManifest>(manifestPath);
-  if (existingManifest !== undefined) return { state: "COMPLETE", manifest: verifyManifest(existingManifest, runId) };
+  if (existingManifest !== undefined) return { state: "COMPLETE", manifest: await verifyManifest(existingManifest, runId) };
   const intent = { schemaVersion: 1, runId, taskId: plan.taskId, specRevision: plan.specRevision, candidateCommit: input.candidateCommit, planDigest: plan.artifactDigest, repositoryRoot };
   try {
     await writeFile(intentPath, `${JSON.stringify(intent, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
@@ -75,8 +75,8 @@ export async function runTrustedTestPlan(input: {
     const stderrRef = resolve(runRoot, `${testCase.id}.stderr.txt`);
     await writeFile(stdoutRef, result.stdout, "utf8");
     await writeFile(stderrRef, result.stderr, "utf8");
-    cases.push({ caseId: testCase.id, argv: testCase.argv, exitCode: result.exitCode, stdoutRef, stdoutDigest: digest("stdout", result.stdout),
-      stderrRef, stderrDigest: digest("stderr", result.stderr), status: result.exitCode === 0 ? "PASSED" : "FAILED" });
+    cases.push({ caseId: testCase.id, argv: testCase.argv, exitCode: result.exitCode, stdoutRef, stdoutDigest: contentDigest(result.stdout),
+      stderrRef, stderrDigest: contentDigest(result.stderr), status: result.exitCode === 0 ? "PASSED" : "FAILED" });
   }
   const core = { schemaVersion: 1 as const, runId, taskId: plan.taskId, specRevision: plan.specRevision, candidateCommit: input.candidateCommit,
     planDigest: plan.artifactDigest, repositoryRoot, cases, outcome: cases.every((item) => item.status === "PASSED") ? "PASSED" as const : "FAILED" as const };
@@ -134,7 +134,17 @@ function trustedRoot(value: string, allowed: readonly string[]): string {
   return root;
 }
 async function optionalJson<T>(path: string): Promise<T | undefined> { try { return JSON.parse(await readFile(path, "utf8")) as T; } catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined; throw error; } }
-function verifyManifest(value: TrustedTestRunManifest, runId: string): TrustedTestRunManifest { const { manifestDigest, ...core } = value; if (value.runId !== runId || digest("trusted-test-manifest", core) !== manifestDigest) throw conflict("TRUSTED_TEST_MANIFEST_INVALID", "manifest integrity failed"); return value; }
+async function verifyManifest(value: TrustedTestRunManifest, runId: string): Promise<TrustedTestRunManifest> {
+  const { manifestDigest, ...core } = value;
+  if (value.runId !== runId || digest("trusted-test-manifest", core) !== manifestDigest) throw conflict("TRUSTED_TEST_MANIFEST_INVALID", "manifest integrity failed");
+  for (const evidence of value.cases) {
+    if (contentDigest(await readFile(evidence.stdoutRef)) !== evidence.stdoutDigest || contentDigest(await readFile(evidence.stderrRef)) !== evidence.stderrDigest) {
+      throw conflict("TRUSTED_TEST_EVIDENCE_INVALID", `Trusted Test evidence integrity failed for ${evidence.caseId}`);
+    }
+  }
+  return value;
+}
+function contentDigest(value: string | Buffer): string { return `sha256:${createHash("sha256").update(value).digest("hex")}`; }
 function digest(namespace: string, value: unknown): string { return `sha256:${createHash("sha256").update(`${namespace}\0${JSON.stringify(value)}`).digest("hex")}`; }
 function validation(code: string, message: string): MoyeError { return new MoyeError({ code, category: "VALIDATION", message }); }
 function conflict(code: string, message: string): MoyeError { return new MoyeError({ code, category: "CONFLICT", message }); }

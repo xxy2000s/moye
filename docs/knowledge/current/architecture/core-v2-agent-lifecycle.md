@@ -50,9 +50,9 @@ Implementation 阶段只接受 Workflow 当前授权 Generation 的成功 `IMPLE
 
 Documentation 阶段只接受绑定当前 Candidate Commit 和 Implementation Generation 的成功 Attempt。通过 Router、Graph 与 Impact Gate 的摘要形成 `DOCS_IMPACT` Artifact，并精确依赖当前 Revision 的 Spec/Design；Agent 的自然语言声明本身不能推进到 Test Plan。
 
-Test/Verification 使用两个隔离只读 Attempt：`TEST_PLAN` 形成 Requirement/Case/argv 映射；`TEST_ASSESSMENT` 只能在真实 Trusted Runner Manifest 已记录后形成综合报告。`src/testing/trusted-test-runner.ts` 先持久化 Intent，再以 `shell:false` 执行命令并保存退出码和 stdout/stderr Digest；恢复时发现 Intent-only 必须返回 UNKNOWN，不启动第二次命令。PASS、FINDINGS、INCONCLUSIVE 分别路由到 Final Review、Repair、`WAITING_RECONCILE`。
+Test/Verification 使用两个隔离只读 Attempt：`TEST_PLAN` 形成 Requirement/Case/argv 映射；`TEST_ASSESSMENT` 只能在真实 Trusted Runner Manifest 已记录后形成综合报告。`src/testing/trusted-test-runner.ts` 先持久化 Intent，再以 `shell:false` 执行命令并保存退出码和 stdout/stderr 原始文件字节 SHA-256；Manifest 复用或 CONFIRMED 对账会重新读取文件校验 Digest。恢复时发现 Intent-only 必须返回 UNKNOWN，不启动第二次命令。PASS、FINDINGS、INCONCLUSIVE 分别路由到 Final Review、Repair、`WAITING_RECONCILE`。
 
-Final Review 是第二次隔离 `REVIEW` Attempt，精确依赖 Docs Impact 和 Test Report。PASSED 之后仍需纯 Verification Gate 重建八类主流程 Artifact、完整依赖和 Task/Revision/Commit/Digest 绑定；Gate Digest 写入 Projection 后才进入 Merge。Review 的文字 verdict 不能替代 Gate。
+Final Review 是第二次隔离 `REVIEW` Attempt，精确依赖 Docs Impact 和 Test Report。它审查 Candidate 与 Merge 前证据；目标 ref 更新由其后的 Verification Gate 授权，不能因尚未执行 Merge 而形成 Finding。PASSED 之后仍需纯 Verification Gate 重建八类主流程 Artifact、完整依赖和 Task/Revision/Commit/Digest 绑定；Gate Digest 写入 Projection 后才进入真实 Merge Effect。Review 的文字 verdict 不能替代 Gate。
 
 `src/domain/core-v2-observer.ts` 从 Lifecycle Projection 与 Role Attempt 重建事件、Artifact、Session、失败、Repair、Replan、UNKNOWN 和告警事实，不写主状态。Knowledge Disposition 是 append-only Lifecycle Artifact；智能 Observer 不可用时 Workflow 可记录 deferred，主流程状态保持不变。
 
@@ -76,10 +76,10 @@ Test Agent 提出 Requirement 覆盖和 Case 意图；Workflow 为每条预授�
 
 ## 7. 失败 Closure 与历史 successor
 
-不可恢复错误或预算耗尽首先冻结 `FAILED_TERMINAL` 的原阶段、原因、source Workflow ref、source Projection Digest、Attempt ID 与 Session ID。Workflow 随后持久化 Failure Artifact，记录 Knowledge Disposition，形成不可变 Failure Closure，再进入独立的 `ARCHIVE_PENDING | ARCHIVE_FAILED | ARCHIVED`。Archive Effect 的 identity 由 Task、Revision 与 Closure Digest 决定；Archive 失败时原 Workflow 保持运行并等待同一 token，只允许 Archive-only retry，不能重新进入 Implementation、Test 或 Merge。
+不可恢复错误或预算耗尽首先冻结 `FAILED_TERMINAL` 的原阶段、原因、source Workflow ref、source Projection Digest、Attempt ID 与 Session ID。Workflow 随后在 `<artifactRoot>/<taskId>/...` 命名空间持久化 Failure Artifact，记录 Knowledge Disposition，形成不可变 Failure Closure，再进入独立的 `ARCHIVE_PENDING | ARCHIVE_FAILED | ARCHIVED`。Archive Effect 的 identity 由 Task、Revision 与 Closure Digest 决定；Archive 失败时原 Workflow 保持运行并等待同一 token，只允许 Archive-only retry，不能重新进入 Implementation、Test 或 Merge。
 
 旧版本已完成在 `FAILED_TERMINAL + NOT_READY` 的 Workflow 不能改写。`CoreV2FailureRecoveryWorkflow/<task_id>` 先校验原 Projection Digest，再通过 `TaskAuthority.beginCoreV2FailureRecovery` 原子登记唯一 append-only successor；successor 复制原 Attempt、Session 与 Event 引用，只追加 Failure Closure/Archive 事实。Board、CLI 与 Trace 解析 Authority 指向 successor，直接查询 `CoreV2Workflow/<task_id>` 仍得到未修改的原历史。
 
-截至 2026-08-23，真实证据分级如下：LIVE-005/006 证明真实 Agent Happy Path；LIVE-001～004 证明真实历史 Agent 失败经合法 Restate successor 归档；Repair/Replan/Reconcile 等已有单元、确定性 Adapter 或局部 E2E，但完整十五场景真实故障矩阵仍未完成。成功 Closure 仍把 Candidate 当作 Merge 结果，真实、幂等、可对账的目标分支 Merge Effect 属于后续 TASK-0041。
+截至 2026-08-23，真实证据分级如下：LIVE-005/006 证明真实 Agent Happy Path；LIVE-001～004 证明真实历史 Agent 失败经合法 Restate successor 归档；`TASK-CORE-V2-MERGE-UNKNOWN-005` 证明真实七 Role、Trusted Runner、Verification Gate、双父 Merge Commit 以及 ref 更新后进程终止的 `ALREADY_APPLIED` 对账，且 Candidate、Merge 和 ref 更新均唯一。Repair/Replan/Test UNKNOWN 等其余场景仍未完成同等级矩阵。成功 Task 当前仍缺少真实 Success Closure/Archive Receipt；journaled durable command failure 也仍需要 append-only stalled recovery，不能宣称 Core 完全闭环。
 
 Board 的 `CORE_V2` Trace 从 Lifecycle Event、Attempt、Session、Artifact 和确定性 Observer 重建主流程、失败 Closure 与 Archive 状态，以及 Happy Path、Repair/Replan/Reconcile/Failure/Archive 合法边。节点 Inspector 直接关联真实 Role Event；Event 在 Chatbot 弹窗中按对话、工具调用、工具结果、系统和错误筛选，不提供跳转下载入口。

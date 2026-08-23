@@ -1,4 +1,4 @@
-import { chmod, mkdir, mkdtemp, readFile, realpath, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readFile, realpath, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -76,6 +76,21 @@ describe("Real Core v2 Role Runtime", () => {
     await runtime.run(input);
     await writeFile(path.join(request.runRoot, "events.jsonl"), "tampered\n", "utf8");
     await expect(runtime.run(input)).rejects.toMatchObject({ code: "REAL_ROLE_ARTIFACT_INTEGRITY_FAILED" });
+  });
+
+  it("canonicalizes symlinked scope and Artifact roots before creating durable Role identity", async () => {
+    const fixture = await realCliFixture();
+    const logicalRoot = path.join(fixture.root, "logical");
+    await symlink(fixture.scope, logicalRoot);
+    const request = await prepareRealRoleRunV2({
+      attempt: running("ARCHITECT", "ARCHITECT", "TASK-E2E-ROLE-SYMLINK"),
+      scopeRoot: logicalRoot,
+      artifactRoot: fixture.artifacts,
+      instructions: "Inspect the canonical repository scope.",
+    });
+
+    expect(request.scopeRoot).toBe(await realpath(fixture.scope));
+    expect(request.artifactRoot).toBe(await realpath(fixture.artifacts));
   });
 
   it("turns Intent-only recovery into UNKNOWN and forbids a second process until NOT_APPLIED reconcile", async () => {

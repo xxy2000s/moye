@@ -1,7 +1,7 @@
 schema_version: 1
 id: "BL-0045"
 title: "允许 Sealed Recovery Attempt 形成任意长度 append-only chain"
-kind: "runtime_correctness"
+kind: "bug"
 status: "converted_to_task"
 priority: "critical"
 source_refs: [sealed-recovery-attempt-cannot-chain]

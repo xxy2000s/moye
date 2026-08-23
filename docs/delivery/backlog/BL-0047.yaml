@@ -1,0 +1,14 @@
+schema_version: 1
+id: "BL-0047"
+title: "补齐 Core v2 成功 Closure 与真实 Archive Effect"
+kind: "bug"
+status: "ready"
+priority: "critical"
+source_refs: [core-v2-success-archive-receipt-missing]
+affected_areas: [core-v2-lifecycle, core-v2-workflow, closure, archive, board, trace]
+acceptance_outline:
+  - "成功 Merge 后先形成不可变 Success Closure Artifact，再进入 ARCHIVE_PENDING"
+  - "Archive 成功保存 Effect ID、Receipt Ref 与 Digest；Archive 失败只重试 Archive"
+  - "Board 不再用 CLOSED 直接推导 ARCHIVED"
+  - "真实 Restate Task 证明 SUCCEEDED 的 Closure、Archive Receipt 和 Event History 一致"
+resolution: { task_refs: [], duplicate_of: null, reason: "等待创建独立实现 Task" }

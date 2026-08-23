@@ -17,6 +17,16 @@ export interface LocalMergeInput {
   readonly verification: VerificationBinding;
 }
 
+export interface CoreV2LocalMergeInput {
+  readonly repositoryRoot: string;
+  readonly targetRef: string;
+  readonly expectedBase: string;
+  readonly taskId: string;
+  readonly specRevision: number;
+  readonly verifiedCommit: string;
+  readonly verificationGateDigest: string;
+}
+
 export interface LocalMergeRequest {
   readonly schemaVersion: 1;
   readonly taskId: string;
@@ -46,25 +56,64 @@ interface MergeReconcile {
 
 export async function createLocalMergeRequest(input: LocalMergeInput): Promise<LocalMergeRequest> {
   assertTrustedVerification(input.verification);
+  return createTrustedRequest({
+    taskId: input.verification.taskId,
+    specRevision: input.verification.specRevision,
+    repositoryRoot: input.repositoryRoot,
+    targetRef: input.targetRef,
+    expectedBase: input.expectedBase,
+    verifiedCommit: input.verification.verifiedCommit,
+    verificationDigest: input.verification.verificationDigest,
+  });
+}
+
+export async function createCoreV2LocalMergeRequest(input: CoreV2LocalMergeInput): Promise<LocalMergeRequest> {
+  if (!/^TASK-[A-Z0-9][A-Z0-9-]*$/.test(input.taskId) || !Number.isSafeInteger(input.specRevision) || input.specRevision < 1) {
+    throw validation("INVALID_CORE_V2_MERGE_BINDING", "Core v2 Merge requires a stable Task and positive Spec Revision");
+  }
+  if (!/^sha256:[0-9a-f]{64}$/.test(input.verificationGateDigest)) {
+    throw validation("INVALID_CORE_V2_MERGE_BINDING", "Core v2 Merge requires a Verification Gate digest");
+  }
+  return createTrustedRequest({
+    taskId: input.taskId,
+    specRevision: input.specRevision,
+    repositoryRoot: input.repositoryRoot,
+    targetRef: input.targetRef,
+    expectedBase: input.expectedBase,
+    verifiedCommit: input.verifiedCommit,
+    verificationDigest: input.verificationGateDigest,
+  });
+}
+
+async function createTrustedRequest(input: {
+  readonly taskId: string;
+  readonly specRevision: number;
+  readonly repositoryRoot: string;
+  readonly targetRef: string;
+  readonly expectedBase: string;
+  readonly verifiedCommit: string;
+  readonly verificationDigest: string;
+}): Promise<LocalMergeRequest> {
   if (!/^refs\/heads\/[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(input.targetRef)
       || input.targetRef.includes("..") || input.targetRef.endsWith(".lock")) {
     throw validation("INVALID_MERGE_TARGET_REF", "targetRef must be a canonical refs/heads/* name");
   }
   assertObjectId(input.expectedBase, "expectedBase");
-  if (input.expectedBase === input.verification.verifiedCommit) {
+  assertObjectId(input.verifiedCommit, "verifiedCommit");
+  if (input.expectedBase === input.verifiedCommit) {
     throw validation("EMPTY_MERGE_RESULT", "Verified Result Commit must differ from Expected Base");
   }
   const repositoryRoot = await realpath(path.resolve(input.repositoryRoot));
   await assertGitTopLevel(repositoryRoot);
   const core = {
     schemaVersion: 1 as const,
-    taskId: input.verification.taskId,
-    specRevision: input.verification.specRevision,
+    taskId: input.taskId,
+    specRevision: input.specRevision,
     repositoryRoot,
     targetRef: input.targetRef,
     expectedBase: input.expectedBase,
-    sourceCommit: input.verification.verifiedCommit,
-    verificationDigest: input.verification.verificationDigest,
+    sourceCommit: input.verifiedCommit,
+    verificationDigest: input.verificationDigest,
   };
   const request = deepFreeze({ ...core, effectId: digest("local-merge-effect", core) });
   trustedMergeRequests.add(request);

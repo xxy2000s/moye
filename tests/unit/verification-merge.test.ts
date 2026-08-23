@@ -9,7 +9,7 @@ import { SpawnAgentProcessRunner } from "../../src/agent/codex-exec.js";
 import type { AgentProcessRunner } from "../../src/agent/codex-exec.js";
 import { createTaskEnvelope } from "../../src/domain/coding-task.js";
 import type { TaskEnvelope } from "../../src/domain/coding-task.js";
-import { applyLocalMerge, createLocalMergeRequest, reconcileLocalMerge } from "../../src/git/merge-effect.js";
+import { applyLocalMerge, createCoreV2LocalMergeRequest, createLocalMergeRequest, reconcileLocalMerge } from "../../src/git/merge-effect.js";
 import { applyWorkspaceEffect, createGitCheckpoint, createWorkspaceEffectRequest, nodeGitCommandRunner } from "../../src/git/workspace-effect.js";
 import type { GitCommandRunner, GitCheckpoint, WorkspaceEffectRequest } from "../../src/git/workspace-effect.js";
 import { parseVerificationBinding, runVerificationGate } from "../../src/verification/gate.js";
@@ -19,6 +19,28 @@ const roots: string[] = [];
 afterEach(async () => { for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true }); });
 
 describe("verification and local merge", () => {
+  it("creates a real Merge Effect from a Core v2 Verification Gate binding", async () => {
+    const fixture = await preparedFixture();
+    const request = await createCoreV2LocalMergeRequest({
+      repositoryRoot: fixture.workspace.worktreePath,
+      targetRef: "refs/heads/master",
+      expectedBase: fixture.baseSha,
+      taskId: fixture.envelope.taskId,
+      specRevision: fixture.envelope.specRevision,
+      verifiedCommit: fixture.checkpoint.commitSha,
+      verificationGateDigest: `sha256:${"a".repeat(64)}`,
+    });
+    const merged = await applyLocalMerge(request);
+    expect(merged).toMatchObject({ outcome: "APPLIED", effectId: request.effectId, targetRef: "refs/heads/master" });
+    expect(merged.mergeCommit).not.toBe(fixture.checkpoint.commitSha);
+    expect(git(fixture.repositoryRoot, "rev-list", "--parents", "-n", "1", merged.mergeCommit!).trim().split(/\s+/).slice(1))
+      .toEqual([fixture.baseSha, fixture.checkpoint.commitSha]);
+    await expect(createCoreV2LocalMergeRequest({
+      repositoryRoot: fixture.workspace.worktreePath, targetRef: "refs/heads/master", expectedBase: fixture.baseSha,
+      taskId: fixture.envelope.taskId, specRevision: 1, verifiedCommit: fixture.checkpoint.commitSha, verificationGateDigest: "untrusted",
+    })).rejects.toThrow(/Verification Gate digest/);
+  });
+
   it("binds argv-only command evidence to one Commit and merges it exactly once", async () => {
     const fixture = await preparedFixture();
     const binding = await verify(fixture);

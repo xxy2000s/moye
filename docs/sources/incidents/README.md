@@ -26,3 +26,4 @@ YYYY-MM-DD-short-title.md
 - [Bootstrap 基线门禁失败后 Projection 停留在 EXECUTING](./2026-08-22-bootstrap-base-commit-gate-left-projection-executing.md)：关闭门禁正确拒绝事后修正的错误基线，但 owning Invocation 失败后业务 Projection 未收敛为终态。
 - [TASK-0032 提交错误 Seal Result Commit Evidence](./2026-08-23-wrong-seal-result-commit-evidence.md)：Gate 正确拒绝不存在的 Commit；原失败历史保留，通过 append-only successor 恢复。
 - [TASK-0040 Docs Impact 漏项导致 Seal 失败](./2026-08-23-task-0040-docs-impact-seal-failure.md)：全部 Gate 拒绝和 successor 保留，TASK-0040/TASK-0040R1 最终通过多级 append-only recovery 收敛为 `SUCCEEDED + ARCHIVED`。
+- [Core v2 真实 Merge 验收连续暴露 durable command 收敛缺口](./2026-08-23-core-v2-real-merge-acceptance-exposed-recovery-gaps.md)：五个独立真实 Task 保留失败链，第五个完成唯一 Merge UNKNOWN 对账，遗留恢复与成功 Archive 进入 Backlog。

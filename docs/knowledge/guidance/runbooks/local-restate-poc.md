@@ -154,7 +154,11 @@ npm run cli -- core-v2-status TASK-CORE-V2-EXAMPLE
 npm run cli -- core-v2-reconcile TASK-CORE-V2-EXAMPLE --token 'sha256:...' --action NOT_APPLIED --evidence 'trusted ledger reference'
 ```
 
-`core-v2-start` 异步提交唯一 `CoreV2Workflow/<task_id>`；`core-v2-status` 只查询该 keyed Projection。Implementation Agent 负责 Workspace 变更，Workflow 负责创建或对账 Candidate Commit；不要要求 Agent 绕过 sandbox 写 `.git`。Test Agent 的覆盖意图会被约束到输入中预授权的 argv，再由 Trusted Runner 执行。状态为 `WAITING_RECONCILE` 时不得提交第二个相同任务或直接重跑测试。
+`core-v2-start` 异步提交唯一 `CoreV2Workflow/<task_id>`；`core-v2-status` 只查询该 keyed Projection。Implementation Agent 负责 Workspace 变更，Workflow 负责创建或对账 Candidate Commit；不要要求 Agent 绕过 sandbox 写 `.git`。Test Agent 的覆盖意图会被约束到输入中预授权的 argv，再由 Trusted Runner 执行；stdout/stderr Digest 应等于对应落盘文件原始字节的 SHA-256。Final Review 和 Verification Gate 通过后，Workflow 才用 Gate Digest 创建真实双父 Merge，并 CAS 更新 `targetRef`。状态为 `WAITING_RECONCILE` 时不得提交第二个相同任务或直接重跑测试。
+
+验证 Merge 回执未知时，在专用测试进程启用受控 fault injection，让 Service 在 `git update-ref` 成功后退出。重启相同 deployment URI 后应核对：`mergeReceipt.outcome=ALREADY_APPLIED`、`reconciledAfterUnknown=true`、target Merge 恰有 expectedBase/Candidate 两个 parent、effect marker 和 ref-update marker 各一份。不要删除 Journal、移动 ref 或重新提交相同 Workflow key。该证据只证明 Merge/Reconcile；在 Success Archive Receipt 实现前，`CLOSED + ARCHIVED` 字样本身不等于已完成真实 Archive Effect。
+
+若 `ctx.run` command 已把校验/文件冲突等错误写入 Journal，热修后可能仍重放同一失败 command，外层 Workflow catch 也未必能执行。当前不要 cancel/purge 或复用 key；保存 Invocation ID、完整 Projection Digest、Attempt/Session/Event 和 Artifact，等待 BL-0046 的窄化 append-only recovery successor 收敛。
 
 Board 访问 `/tasks/<task_id>` 可查看完整状态定义、实际点亮路径、Artifact、确定性 Observer 和每个 Role Session。点击节点后使用页面内 Agent Events 弹窗筛选对话、工具调用、工具结果、系统与错误；Events 不通过下载跳转查看。
 
@@ -167,7 +171,7 @@ npm run cli -- core-v2-status TASK-ID
 
 该命令创建唯一 `CoreV2FailureRecoveryWorkflow/<task_id>` successor，不会重跑 Agent、Test 或 Merge，也不改写原 Workflow。恢复后应核对 Authority 的 source/recovery ref、Failure/Closure/Archive Digest、Board `FAILED_TERMINAL + ARCHIVED` 和 Trace `Projection = Event History`。不要再次提交同一 Workflow key；Archive 若处于 `ARCHIVE_FAILED`，只使用页面给出的 Effect token 调用 `core-v2-retry-archive`。
 
-证据口径必须分开记录：单元测试证明纯 Reducer/校验；确定性 Adapter E2E 证明协议组合；真实 Restate 证明 Journal/Workflow/Recovery；真实 Agent 产品验收还必须包含 Codex/Claude Session、真实 Git/Runner/Artifact。当前只完整证明 Happy Path 和 LIVE-001～004 失败恢复，其他异常分支不得写成“完整故障矩阵已完成”。
+证据口径必须分开记录：单元测试证明纯 Reducer/校验；确定性 Adapter E2E 证明协议组合；真实 Restate 证明 Journal/Workflow/Recovery；真实 Agent 产品验收还必须包含 Codex/Claude Session、真实 Git/Runner/Artifact。当前真实证据包括 Happy Path、LIVE-001～004 失败恢复，以及 `TASK-CORE-V2-MERGE-UNKNOWN-005` 的 Merge ref 更新回执丢失；其余异常分支不得写成“完整故障矩阵已完成”。
 
 Core Workflow 的只读状态可直接从 Restate Ingress 查询：
 

@@ -93,7 +93,7 @@ async function writeArtifact(
   body: unknown,
 ): Promise<CoreV2StoredArtifact> {
   assertTaskId(taskId);
-  const directory = path.resolve(artifactRoot, directoryName);
+  const directory = path.resolve(artifactRoot, taskId, directoryName);
   await mkdir(directory, { recursive: true });
   const target = path.join(directory, fileName);
   const content = Buffer.from(`${JSON.stringify(body, null, 2)}\n`, "utf8");

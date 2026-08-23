@@ -1,7 +1,7 @@
 schema_version: 1
 id: "BL-0044"
 title: "以 append-only successor 恢复 TASK-0040 Docs Impact Seal 失败"
-kind: "incident_recovery"
+kind: "bug"
 status: "converted_to_task"
 priority: "critical"
 source_refs: [incident-task-0040-docs-impact-seal-failure]
