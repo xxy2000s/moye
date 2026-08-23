@@ -17,6 +17,9 @@ export const ARCHIVE_STATUSES = [
 export type TaskState = (typeof TASK_STATES)[number];
 export type ArchiveStatus = (typeof ARCHIVE_STATUSES)[number];
 export type TaskOutcome = "SUCCEEDED" | "CANCELLED" | "FAILED_TERMINAL";
+export type BoardWorkflowKind = "TASK" | "SEALED_TASK" | "CODING" | "CORE" | "CORE_V2" | "UNKNOWN";
+export type TaskHistoryKind = "PROJECT_TASK" | "PRODUCT_ACCEPTANCE";
+export type TaskHistoryKindSource = "WORKFLOW_INPUT" | "LEGACY_CONVENTION" | "DEFAULT";
 
 export interface TaskEventSummary {
   readonly sequence: number;
@@ -35,6 +38,12 @@ export interface TaskProjection {
   readonly specRevision: number;
   readonly backlogRefs: readonly string[];
   readonly archiveStatus: ArchiveStatus;
+  /** Exact owning Workflow state for read-only Board presentation. */
+  readonly runtimeState?: string;
+  /** Presentation metadata; TaskAuthority remains the owner source of truth. */
+  readonly workflowKind?: BoardWorkflowKind;
+  readonly historyKind?: TaskHistoryKind;
+  readonly historyKindSource?: TaskHistoryKindSource;
   readonly archivePath?: string;
   readonly outcome?: TaskOutcome;
   readonly error?: string;

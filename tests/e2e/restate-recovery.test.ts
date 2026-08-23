@@ -210,7 +210,13 @@ describe("Restate process-loss recovery", () => {
     const repeated = await invoke<TaskProjection>(ingressUrl(), "TaskWorkflow", taskId, "status");
     expect(repeated).toEqual(finalTask);
     const board = await invoke<ProjectBoardSnapshot>(ingressUrl(), "ProjectBoard", "moye-e2e", "get");
-    expect(board.archived.find((task) => task.taskId === taskId)).toEqual(finalTask);
+    expect(board.archived.find((task) => task.taskId === taskId)).toEqual({
+      ...finalTask,
+      runtimeState: "CLOSED",
+      workflowKind: "UNKNOWN",
+      historyKind: "PROJECT_TASK",
+      historyKindSource: "DEFAULT",
+    });
   }, 30_000);
 
   it("hands a legacy failed Workflow to one append-only recovery successor", async () => {

@@ -5,8 +5,9 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { extname, isAbsolute, relative, resolve } from "node:path";
 
 import type { BacklogProjection } from "../domain/backlog.js";
-import type { ProjectBoardSnapshot } from "../domain/board.js";
+import { normalizeBoardTask, type BoardTaskProjection, type ProjectBoardSnapshot } from "../domain/board.js";
 import { assertTaskId, type TaskProjection } from "../domain/task.js";
+import type { BoardWorkflowKind } from "../domain/task.js";
 import { invoke, send } from "../restate/ingress.js";
 import type { TaskAuthorityState } from "../restate/services.js";
 import type { CodingWorkflowProjection } from "../coding/workflow.js";
@@ -57,7 +58,9 @@ async function route(
       options.projectId,
       "get",
     );
-    writeJson(response, 200, snapshot);
+    writeJson(response, 200, await enrichBoardSnapshot(snapshot, async (taskId) => invoke<TaskAuthorityState | null>(
+      options.ingressUrl, "TaskAuthority", taskId, "get",
+    )));
     return;
   }
 
@@ -413,6 +416,11 @@ export function buildCoreV2Trace(projection: CoreV2WorkflowProjection, restateAd
     specRevision: projection.lifecycle.specRevision,
     backlogRefs: [],
     archiveStatus: projection.lifecycle.archive?.status ?? "NOT_READY",
+    runtimeState: projection.state,
+    workflowKind: "CORE_V2",
+    historyKind: projection.historyKind ?? classifyAcceptanceHistory(projection.taskId, projection.title),
+    historyKindSource: projection.historyKindSource
+      ?? (classifyAcceptanceHistory(projection.taskId, projection.title) === "PRODUCT_ACCEPTANCE" ? "LEGACY_CONVENTION" : "DEFAULT"),
     ...(projection.outcome === null ? {} : { outcome: projection.outcome }),
     ...(projection.error === null ? {} : { error: projection.error }),
     lastEventAt: projection.lifecycle.events.at(-1)?.at ?? projection.startedAt,
@@ -452,6 +460,53 @@ export function buildCoreV2Trace(projection: CoreV2WorkflowProjection, restateAd
       invocationsUrl: buildWorkflowInvocationsUrl(restateAdminUrl, workflowTarget.service, workflowTarget.key),
     },
   };
+}
+
+export async function enrichBoardSnapshot(
+  snapshot: ProjectBoardSnapshot,
+  resolveAuthority: (taskId: string) => Promise<TaskAuthorityState | null>,
+): Promise<ProjectBoardSnapshot> {
+  const all = [...snapshot.active, ...snapshot.archivePending, ...snapshot.archived];
+  const resolved = new Map<string, BoardTaskProjection>();
+  await Promise.all(all.map(async (task) => {
+    let workflowKind = task.workflowKind;
+    if (workflowKind === undefined || workflowKind === "UNKNOWN") {
+      try { workflowKind = workflowKindForAuthority(await resolveAuthority(task.taskId)); }
+      catch { workflowKind = "UNKNOWN"; }
+    }
+    resolved.set(task.taskId, normalizeBoardTask(task, workflowKind));
+  }));
+  const map = (items: readonly BoardTaskProjection[]) => items.map((task) => resolved.get(task.taskId) ?? normalizeBoardTask(task));
+  const active = map(snapshot.active);
+  const archivePending = map(snapshot.archivePending);
+  const archived = map(snapshot.archived);
+  return {
+    ...snapshot,
+    active,
+    archivePending,
+    archived,
+    latestSucceeded: [...active, ...archivePending, ...archived]
+      .sort((left, right) => right.lastEventAt.localeCompare(left.lastEventAt) || left.taskId.localeCompare(right.taskId))
+      .find((task) => task.outcome === "SUCCEEDED" && task.archiveStatus === "ARCHIVED") ?? null,
+  };
+}
+
+function workflowKindForAuthority(authority: TaskAuthorityState | null): BoardWorkflowKind {
+  if (authority === null) return "UNKNOWN";
+  switch (authority.owner) {
+    case "TASK_WORKFLOW": return "TASK";
+    case "SEALED_TASK_WORKFLOW": return "SEALED_TASK";
+    case "CODING_WORKFLOW": return "CODING";
+    case "CORE_WORKFLOW": return "CORE";
+    case "CORE_V2_WORKFLOW": return "CORE_V2";
+  }
+}
+
+function classifyAcceptanceHistory(taskId: string, title: string): "PROJECT_TASK" | "PRODUCT_ACCEPTANCE" {
+  return /^(?:LIVE-|TASK-(?:ACCEPT|RCV|GRD|LIVE-|CORE-V2-(?:LIVE-|MERGE-UNKNOWN-)))/i.test(taskId)
+      || /(?:\b(?:real|product)[^\n]{0,40}acceptance\b|(?:真实|产品)[^\n]{0,30}验收|验收矩阵)/i.test(title)
+    ? "PRODUCT_ACCEPTANCE"
+    : "PROJECT_TASK";
 }
 
 function coreV2WorkflowTarget(authority: TaskAuthorityState, taskId: string): { service: "CoreV2Workflow" | "CoreV2FailureRecoveryWorkflow" | "CoreV2FailureRecoveryAttemptWorkflow"; key: string } {

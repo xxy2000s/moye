@@ -5,6 +5,12 @@ const elements = {
   active: document.querySelector("#active-count"),
   pending: document.querySelector("#pending-count"),
   generated: document.querySelector("#generated-at"),
+  latestSuccess: document.querySelector("#latest-success"),
+  latestSuccessId: document.querySelector("[data-latest-success-id]"),
+  latestSuccessTitle: document.querySelector("[data-latest-success-title]"),
+  filterOutcome: document.querySelector("#filter-outcome"),
+  filterWorkflow: document.querySelector("#filter-workflow"),
+  filterHistory: document.querySelector("#filter-history"),
   empty: document.querySelector("#empty-state"),
   projectMasthead: document.querySelector("#project-masthead"),
   projectView: document.querySelector("#project-view"),
@@ -48,6 +54,8 @@ let agentEventsReturnFocus;
 let shouldRestoreAgentEventsFocus = true;
 let machineGraphUiState = { filter: "ALL", zoom: undefined, selectedId: undefined, inspectorOpen: false, scrollLeft: 0, scrollTop: 0 };
 let closeMachineGraphInspector = () => false;
+let latestBoardSnapshot;
+const boardFilters = { outcome: "ALL", workflow: "ALL", history: "ALL" };
 elements.eventsDialog.addEventListener("close", () => {
   const returnFocus = agentEventsReturnFocus;
   stopAgentEventsFollower();
@@ -67,6 +75,16 @@ window.addEventListener("keydown", event => {
   closeMachineGraphInspector(true);
 });
 document.querySelector("#refresh").addEventListener("click", loadBoard);
+[elements.filterOutcome, elements.filterWorkflow, elements.filterHistory].forEach(select => select.addEventListener("change", () => {
+  boardFilters.outcome = elements.filterOutcome.value;
+  boardFilters.workflow = elements.filterWorkflow.value;
+  boardFilters.history = elements.filterHistory.value;
+  lastProjectionSignature = "";
+  if (latestBoardSnapshot) renderBoard(latestBoardSnapshot);
+}));
+elements.latestSuccess.addEventListener("click", () => {
+  if (latestBoardSnapshot?.latestSucceeded) navigateToTask(latestBoardSnapshot.latestSucceeded);
+});
 initializeHistoryState();
 void loadBoard();
 setInterval(loadBoard, 5000);
@@ -88,19 +106,47 @@ async function loadBoard() {
 }
 
 function renderBoard(board) {
+  latestBoardSnapshot = board;
+  const filtered = filterBoard(board);
   elements.project.textContent = board.projectId;
-  elements.active.textContent = String(board.active.length);
-  elements.pending.textContent = String(board.archivePending.length);
+  elements.active.textContent = String(filtered.active.length);
+  elements.pending.textContent = String(filtered.archivePending.length);
   elements.generated.textContent = formatTime(board.generatedAt);
-  const signature = JSON.stringify([board.backlog, board.active, board.archivePending, board.archived]);
+  renderLatestSucceeded(board.latestSucceeded);
+  const signature = JSON.stringify([boardFilters, filtered.backlog, filtered.active, filtered.archivePending, filtered.archived]);
   if (signature !== lastProjectionSignature) {
-    renderLane("backlog", board.backlog, backlogCard);
-    renderLane("active", board.active, taskCard);
-    renderLane("archivePending", board.archivePending, taskCard);
-    renderLane("archived", board.archived, taskCard);
+    renderLane("backlog", filtered.backlog, backlogCard);
+    renderLane("active", filtered.active, taskCard);
+    renderLane("archivePending", filtered.archivePending, taskCard);
+    renderLane("archived", filtered.archived, taskCard);
     lastProjectionSignature = signature;
   }
-  elements.empty.hidden = board.backlog.length + board.active.length + board.archivePending.length + board.archived.length !== 0;
+  elements.empty.hidden = filtered.backlog.length + filtered.active.length + filtered.archivePending.length + filtered.archived.length !== 0;
+}
+
+function filterBoard(board) {
+  const filterTasks = items => items.filter(task => {
+    const status = visibleTaskState(task);
+    const outcomeMatch = boardFilters.outcome === "ALL"
+      || (boardFilters.outcome === "IN_PROGRESS" ? !["SUCCEEDED", "FAILED_TERMINAL", "ARCHIVE_FAILED", "WAITING_RECONCILE"].includes(status) : status === boardFilters.outcome);
+    return outcomeMatch
+      && (boardFilters.workflow === "ALL" || task.workflowKind === boardFilters.workflow)
+      && (boardFilters.history === "ALL" || task.historyKind === boardFilters.history);
+  });
+  const taskFiltersActive = boardFilters.outcome !== "ALL" || boardFilters.workflow !== "ALL" || boardFilters.history !== "ALL";
+  return {
+    backlog: taskFiltersActive ? [] : board.backlog,
+    active: filterTasks(board.active),
+    archivePending: filterTasks(board.archivePending),
+    archived: filterTasks(board.archived),
+  };
+}
+
+function renderLatestSucceeded(task) {
+  elements.latestSuccess.hidden = !task;
+  if (!task) return;
+  elements.latestSuccessId.textContent = task.taskId;
+  elements.latestSuccessTitle.textContent = task.title;
 }
 
 function renderLane(name, items, renderer) {
@@ -127,16 +173,26 @@ function taskCard(task, index) {
   const card = cardShell(index, "button");
   card.type = "button";
   card.setAttribute("aria-label", `查看任务 ${task.taskId}：${task.title}`);
-  const visibleState = task.outcome === "FAILED_TERMINAL" ? "FAILED" : task.state;
+  const visibleState = visibleTaskState(task);
   card.innerHTML = `
-    <div class="card-meta"><span>${escapeHtml(task.taskId)}</span><span>R${task.specRevision}</span></div>
+    <div class="card-meta"><span>${escapeHtml(task.taskId)}</span><span>${escapeHtml(workflowKindLabel(task.workflowKind))} · R${task.specRevision}</span></div>
     <h3>${escapeHtml(task.title)}</h3>
     <div class="card-footer">
       <span class="tag ${stateColor(visibleState)}">${escapeHtml(taskStateLabel(visibleState))}</span>
       <span class="tag ${archiveColor(task.archiveStatus)}">${escapeHtml(archiveStatusLabel(task.archiveStatus))}</span>
+      ${task.historyKind === "PRODUCT_ACCEPTANCE" ? '<span class="tag acceptance-history">验收历史</span>' : ""}
     </div>`;
   card.addEventListener("click", () => navigateToTask(task));
   return card;
+}
+
+function visibleTaskState(task) {
+  if (task.archiveStatus === "FAILED" || task.runtimeState === "ARCHIVE_FAILED") return "ARCHIVE_FAILED";
+  if (task.runtimeState === "WAITING_RECONCILE") return "WAITING_RECONCILE";
+  if (task.outcome === "FAILED_TERMINAL") return "FAILED_TERMINAL";
+  if (task.outcome === "SUCCEEDED" && task.archiveStatus === "ARCHIVED") return "SUCCEEDED";
+  if (task.runtimeState === "ARCHIVE_PENDING") return "ARCHIVE_PENDING";
+  return task.runtimeState || task.state;
 }
 
 function cardShell(index, tagName) {
@@ -683,7 +739,7 @@ function machineGraphPositions(machine) {
 
 function renderMachineGraphNode(node, position = [40, 600]) {
   const [x, y] = position;
-  const state = node.status === "CURRENT" ? "当前状态" : node.status === "VISITED" ? "实际经过" : "尚未经过";
+  const state = node.status === "CURRENT" ? "当前状态" : node.status === "VISITED" ? "本次经过" : "合法但本次未发生";
   return `<foreignObject x="${x}" y="${y}" width="136" height="84">
     <button xmlns="http://www.w3.org/1999/xhtml" type="button" class="machine-graph-node status-${node.status.toLowerCase()} domain-${node.domain.toLowerCase()} ${node.terminal ? "terminal" : ""}" data-machine-node="${escapeHtml(node.id)}" aria-label="${escapeHtml(`${node.label}，${state}`)}" aria-pressed="false">
       <small>${escapeHtml(node.id)}</small><strong>${escapeHtml(node.label)}</strong><span>${state}</span>
@@ -1323,7 +1379,11 @@ function archiveJourneyStatus(task) {
 }
 
 function taskStateLabel(state) {
-  return ({ RECEIVED: "已接收", RUNNING: "执行中", WAITING_RECONCILE: "等待对账", VERIFYING: "验证中", FAILED: "已失败", CLOSED: "已关闭" })[state] || state;
+  return ({ RECEIVED: "已接收", EXECUTING: "执行中", RUNNING: "执行中", WAITING_RECONCILE: "等待对账", VERIFYING: "验证中", ARCHIVE_PENDING: "归档中", ARCHIVE_FAILED: "归档失败", FAILED_TERMINAL: "失败终态", FAILED: "已失败", SUCCEEDED: "成功归档", CLOSED: "已关闭" })[state] || state;
+}
+
+function workflowKindLabel(kind) {
+  return ({ CORE_V2: "Core v2", CODING: "Coding", SEALED_TASK: "Sealed", TASK: "Task", CORE: "Core", UNKNOWN: "Legacy" })[kind] || kind || "Legacy";
 }
 
 function backlogStatusLabel(status) {
@@ -1331,7 +1391,7 @@ function backlogStatusLabel(status) {
 }
 
 function archiveStatusLabel(status) {
-  return ({ NOT_STARTED: "未开始归档", PENDING: "等待归档", ARCHIVING: "归档中", ARCHIVED: "已归档", FAILED: "归档失败" })[status] || status;
+  return ({ NOT_STARTED: "未开始归档", NOT_READY: "归档未就绪", PENDING: "等待归档", ARCHIVING: "归档中", ARCHIVED: "已归档", FAILED: "归档失败" })[status] || status;
 }
 
 function stepLabel(step) {
@@ -1373,9 +1433,9 @@ function statusIcon(status) {
 }
 
 function stateColor(state) {
-  if (state === "CLOSED") return "green";
-  if (state === "FAILED") return "red";
-  if (state === "VERIFYING" || state === "RUNNING") return "blue";
+  if (state === "CLOSED" || state === "SUCCEEDED") return "green";
+  if (state === "FAILED" || state === "FAILED_TERMINAL" || state === "ARCHIVE_FAILED") return "red";
+  if (state === "VERIFYING" || state === "RUNNING" || state === "EXECUTING") return "blue";
   return "yellow";
 }
 

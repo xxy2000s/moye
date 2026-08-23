@@ -23,6 +23,7 @@ import { reconcileTrustedTestPlan, runTrustedTestPlan } from "../testing/trusted
 import type { TrustedTestReconcileInput, TrustedTestRunManifest } from "../testing/trusted-test-runner.js";
 import { projectBoard, taskAuthority } from "./services.js";
 import type { TaskProjection } from "../domain/task.js";
+import type { TaskHistoryKind, TaskHistoryKindSource } from "../domain/task.js";
 import { inspectCoreV2SourceInvocation, inspectFailedRecoveryInvocation } from "./invocation-inspector.js";
 import type { CoreV2SourceInvocationFact } from "./invocation-inspector.js";
 
@@ -37,6 +38,7 @@ export interface CoreV2WorkflowInput {
   readonly acceptanceControl?: CoreV2AcceptanceControl;
   readonly recoveryControl?: CoreV2RecoveryControl;
   readonly observerKnowledge?: { readonly enabled: boolean; readonly timeoutMs?: number };
+  readonly acceptanceMetadata?: { readonly kind: "PRODUCT_ACCEPTANCE"; readonly suite: string; readonly scenario: string };
 }
 export interface CoreV2RecoveryControl {
   readonly roleExitAfterManifestOnceAt?: Partial<Record<"ARCHITECT" | "IMPLEMENTATION" | "FINAL_REVIEW", string>>;
@@ -68,6 +70,7 @@ export interface CoreV2WorkflowProjection {
   readonly artifactRoot: string;
   readonly sourceWorkflowRef?: string; readonly workflowRef?: string;
   readonly recovery?: CoreV2RecoveryRecord;
+  readonly historyKind?: TaskHistoryKind; readonly historyKindSource?: TaskHistoryKindSource;
   readonly lastReconciliation?: CoreV2ReconcileInput;
   readonly startedAt: string; readonly completedAt: string | null; readonly outcome: "SUCCEEDED" | "FAILED_TERMINAL" | null; readonly error: string | null;
 }
@@ -99,6 +102,7 @@ export const coreV2Workflow = restate.workflow({
       try {
         const enabled = process.env["MOYE_ACCEPTANCE_FAULT_INJECTION"] === "enabled";
         validateCoreV2AcceptanceControl(input.acceptanceControl, enabled);
+        validateCoreV2AcceptanceMetadata(input.acceptanceMetadata, enabled);
         validateCoreV2RecoveryControl(input.recoveryControl, input.mergeFault, input.artifactRoot, enabled);
         validateCoreV2ObserverKnowledge(input.observerKnowledge);
       }
@@ -107,7 +111,9 @@ export const coreV2Workflow = restate.workflow({
       const startedAt = await durableNow(ctx, "intake-time");
       let projection: CoreV2WorkflowProjection = { schemaVersion: 1, taskId: input.taskId, projectId: input.projectId, title: input.title,
         state: "EXECUTING", currentStep: "ARCHITECT_REQUIRED", lifecycle: createCoreV2Lifecycle({ taskId: input.taskId, specRevision: 1, subjectCommit: input.baseCommit, at: startedAt }),
-        attempts: [], roleRuns: [], artifactRoot: input.artifactRoot, startedAt, completedAt: null, outcome: null, error: null };
+        attempts: [], roleRuns: [], artifactRoot: input.artifactRoot,
+        historyKind: input.acceptanceMetadata?.kind ?? "PROJECT_TASK", historyKindSource: "WORKFLOW_INPUT",
+        startedAt, completedAt: null, outcome: null, error: null };
       projection = await publish(ctx, input, projection);
       try {
         for (;;) {
@@ -579,7 +585,10 @@ function addRun(p: CoreV2WorkflowProjection, result: { attempt: RoleAttemptV2; m
 function withLifecycle(p: CoreV2WorkflowProjection, lifecycle: CoreV2LifecycleProjection): CoreV2WorkflowProjection { return { ...p, lifecycle, currentStep: lifecycle.state }; }
 async function publish(ctx: restate.WorkflowContext<CoreV2WorkflowState>, input: Pick<CoreV2WorkflowInput, "projectId">, p: CoreV2WorkflowProjection): Promise<CoreV2WorkflowProjection> { ctx.set("projection", p); await ctx.objectClient(projectBoard, input.projectId).upsertTask(boardTask(p)); return p; }
 function boardTask(p: CoreV2WorkflowProjection): TaskProjection { const archiveStatus = p.lifecycle.archive?.status ?? "NOT_READY"; return { taskId: p.taskId, projectId: p.projectId, title: p.title, state: p.outcome === "FAILED_TERMINAL" || p.state === "CLOSED" ? "CLOSED" : "EXECUTING", currentStep: p.currentStep,
-  attempt: p.attempts.length, specRevision: p.lifecycle.specRevision, backlogRefs: [], archiveStatus, ...(p.outcome === "SUCCEEDED" ? { outcome: "SUCCEEDED" as const } : p.outcome === "FAILED_TERMINAL" ? { outcome: "FAILED_TERMINAL" as const } : {}),
+  attempt: p.attempts.length, specRevision: p.lifecycle.specRevision, backlogRefs: [], archiveStatus, runtimeState: p.state, workflowKind: "CORE_V2",
+  ...(p.historyKind === undefined ? {} : { historyKind: p.historyKind }),
+  ...(p.historyKindSource === undefined ? {} : { historyKindSource: p.historyKindSource }),
+  ...(p.outcome === "SUCCEEDED" ? { outcome: "SUCCEEDED" as const } : p.outcome === "FAILED_TERMINAL" ? { outcome: "FAILED_TERMINAL" as const } : {}),
   ...(p.error === null ? {} : { error: p.error }), lastEventAt: p.lifecycle.events.at(-1)?.at ?? p.startedAt, events: p.lifecycle.events.map((event) => ({ sequence: event.sequence, type: event.type, at: event.at, detail: event.detail })) }; }
 async function durableNow(ctx: restate.WorkflowContext<CoreV2WorkflowState>, name: string): Promise<string> { return ctx.run(name, () => Promise.resolve(new Date().toISOString())); }
 function deliverable<T>(manifest: RoleRunManifestV2): T { if (manifest.output?.deliverable === undefined) throw new Error(`${manifest.phase} did not return deliverable`); return manifest.output.deliverable as T; }
@@ -628,6 +637,15 @@ export function validateCoreV2AcceptanceControl(control: CoreV2AcceptanceControl
   const keys = Object.keys(control);
   if (keys.length !== 1 || keys[0] !== "profile" || !CORE_V2_ACCEPTANCE_PROFILES.has(control.profile)) {
     throw new Error("Core v2 acceptance profile is invalid");
+  }
+}
+export function validateCoreV2AcceptanceMetadata(metadata: CoreV2WorkflowInput["acceptanceMetadata"], enabled: boolean): void {
+  if (metadata === undefined) return;
+  if (!enabled) throw new Error("Core v2 product acceptance metadata is disabled");
+  if (metadata.kind !== "PRODUCT_ACCEPTANCE" || !metadata.suite.trim() || !metadata.scenario.trim()
+      || metadata.suite.length > 80 || metadata.scenario.length > 120
+      || Object.keys(metadata).sort().join(",") !== "kind,scenario,suite") {
+    throw new Error("Core v2 product acceptance metadata is invalid");
   }
 }
 export function validateCoreV2RecoveryControl(

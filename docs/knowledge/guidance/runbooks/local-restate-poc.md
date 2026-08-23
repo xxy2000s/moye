@@ -160,7 +160,9 @@ npm run cli -- core-v2-reconcile TASK-CORE-V2-EXAMPLE --token 'sha256:...' --act
 
 若 `ctx.run` command 已把校验/文件冲突等错误写入 Journal，热修后仍重放同一失败 command，先保存 Invocation ID、完整 Projection、Attempt/Session/Event 和 Artifact。不得 cancel、kill、purge、restart 或复用 key；使用 Restate 的可逆 pause 停止原 Invocation，确认状态为 `paused` 后执行 `core-v2-recovery-plan TASK-ID --invocation INVOCATION-ID`。该命令只接受原 `CoreV2Workflow/<task>/run` 的最后 durable `Run` command，并输出绑定 Invocation fact 与 source Projection digest 的恢复 JSON；审核后再首次提交 `core-v2-recover-failure --file ...`。若 root recovery 自身在 Authority 前失败，保留它并以新 recovery ID、前序 Workflow ref/Invocation fact 创建 numbered successor，禁止复用失败 key。
 
-Board 访问 `/tasks/<task_id>` 可查看完整状态定义、实际点亮路径、Artifact、确定性 Observer 和每个 Role Session。点击节点后使用页面内 Agent Events 弹窗筛选对话、工具调用、工具结果、系统与错误；Events 不通过下载跳转查看。
+Board 首页可按 outcome、Workflow kind、项目任务/验收历史筛选，并通过“最新成功归档”直达最近的 `SUCCEEDED + ARCHIVED` Task。卡片上的等待对账、归档中、归档失败、失败终态和成功归档来自 Workflow Projection/TaskAuthority 的只读事实；筛选不会向 Runtime 发命令。升级前验收 Task 使用受限兼容标签，新的 acceptance harness 会在 Workflow 输入中声明显式 `acceptanceMetadata`。
+
+Board 访问 `/tasks/<task_id>` 可查看完整状态定义、实际点亮路径、Artifact、确定性 Observer 和每个 Role Session。成功 Task 中没有实际 Event 的 Repair/Replan/Reconcile/Failure/Archive Failed 节点显示“合法但本次未发生”；只有 History 经过的异常节点会点亮。点击 Session 后使用页面内 Agent Events 弹窗筛选对话、工具调用、工具结果、系统与错误；Events 不通过下载跳转查看。
 
 Core v2 真实产品验收使用持久化验收根目录，不删除失败历史，也不重复 Workflow key。Service 的 repository/artifact allowlist 必须覆盖该根目录；只有专用故障验收 Service 可启用窄化的 Prompt 条件：
 

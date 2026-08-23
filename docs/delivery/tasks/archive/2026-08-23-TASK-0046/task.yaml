@@ -1,0 +1,25 @@
+schema_version: 1
+id: TASK-0046
+title: Core v2 Board 运行语义与验收历史 UX 修复
+status: seal_prepared
+outcome: null
+backlog_refs:
+  - BL-0043
+  - BL-0050
+spec_revision: 1
+workflow_id: sealed-task/TASK-0046
+execution_mode: sealed-result-commit
+base_commit: d3b00fbd89f976cb2ebb1355b13045fd57d092a2
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-23-TASK-0046
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:580a46fd7907abd37ceab5211181d1f5a13f5afe6f67bbc60f7d296d8830a72e
+  base_commit: d3b00fbd89f976cb2ebb1355b13045fd57d092a2
+  archive_path: docs/delivery/tasks/archive/2026-08-23-TASK-0046

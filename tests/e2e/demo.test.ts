@@ -96,7 +96,9 @@ describe("npm run demo", () => {
     expect(app).toContain("WAITING_RECONCILE");
     expect(app).toContain("renderMachineNodeInspector");
     expect(app).toContain("machine.definition.edges");
-    expect(app).toContain('task.outcome === "FAILED_TERMINAL" ? "FAILED" : task.state');
+    expect(app).toContain("function visibleTaskState(task)");
+    expect(app).toContain('task.runtimeState === "WAITING_RECONCILE"');
+    expect(app).toContain('task.archiveStatus === "FAILED" || task.runtimeState === "ARCHIVE_FAILED"');
     expect(app).toContain("实际路径 ·");
     expect(app).toContain("查看完整合法边");
     expect(app).toContain("查看 Agent Events");

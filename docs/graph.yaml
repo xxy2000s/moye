@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 93
+graph_revision: 95
 updated_at: "2026-08-23"
 
 entrypoints:
@@ -2800,6 +2800,14 @@ documents:
     authority: observed-fact
     read_when: [finding-intake, task-execution, verification]
 
+  - id: core-v2-board-obscures-runtime-outcome-and-acceptance-history
+    path: docs/sources/findings/core-v2-board-obscures-runtime-outcome-and-acceptance-history.md
+    type: finding
+    status: confirmed
+    scope: core-v2-board-runtime-semantics
+    authority: observed-fact
+    read_when: [finding-intake, task-execution, verification]
+
   - id: bl-0042-core-v2-failure-closure
     path: docs/delivery/backlog/BL-0042.yaml
     type: backlog-item
@@ -2813,6 +2821,14 @@ documents:
     type: backlog-item
     status: ready
     scope: core-v2-real-acceptance
+    authority: delivery-control
+    read_when: [task-create, task-execution]
+
+  - id: bl-0050-core-v2-board-runtime-semantics
+    path: docs/delivery/backlog/BL-0050.yaml
+    type: backlog-item
+    status: scheduled
+    scope: core-v2-board-runtime-semantics
     authority: delivery-control
     read_when: [task-create, task-execution]
 
@@ -3381,6 +3397,54 @@ documents:
     type: docs-impact
     status: archived
     scope: core-v2-budget-observer-fencing
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0046-manifest
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0046/task.yaml
+    type: task-manifest
+    status: active
+    scope: core-v2-board-runtime-semantics
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0046-spec
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0046/spec.md
+    type: task-spec
+    status: active
+    scope: core-v2-board-runtime-semantics
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0046-design
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0046/design.md
+    type: task-design
+    status: active
+    scope: core-v2-board-runtime-semantics
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0046-plan
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0046/plan.md
+    type: task-plan
+    status: active
+    scope: core-v2-board-runtime-semantics
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0046-verification
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0046/verification.md
+    type: verification
+    status: active
+    scope: core-v2-board-runtime-semantics
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0046-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0046/docs-impact.yaml
+    type: docs-impact
+    status: active
+    scope: core-v2-board-runtime-semantics
     authority: task-evidence
     read_when: [task-close, task-archive]
 
@@ -5478,6 +5542,46 @@ relations:
     type: reports_on
 
   - from: task-0045-manifest
+    to: core-v2-agent-lifecycle
+    type: implements_slice_of
+
+  - from: core-v2-board-obscures-runtime-outcome-and-acceptance-history
+    to: bl-0050-core-v2-board-runtime-semantics
+    type: promoted_to
+
+  - from: bl-0050-core-v2-board-runtime-semantics
+    to: task-0046-manifest
+    type: schedules_into
+
+  - from: bl-0043-core-v2-real-fault-matrix
+    to: task-0046-manifest
+    type: schedules_into
+
+  - from: tasks-index
+    to: task-0046-manifest
+    type: indexes
+
+  - from: task-0046-spec
+    to: task-0046-manifest
+    type: belongs_to
+
+  - from: task-0046-design
+    to: task-0046-spec
+    type: refines
+
+  - from: task-0046-plan
+    to: task-0046-manifest
+    type: belongs_to
+
+  - from: task-0046-verification
+    to: task-0046-manifest
+    type: verifies
+
+  - from: task-0046-docs-impact
+    to: task-0046-manifest
+    type: reports_on
+
+  - from: task-0046-manifest
     to: core-v2-agent-lifecycle
     type: implements_slice_of
 

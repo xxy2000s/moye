@@ -81,6 +81,7 @@ async function executeScenario(scenario: Scenario, index: number) {
     targetRef: "refs/heads/release",
     testCommands: [["npm", "test"]],
     ...(scenario.profile === undefined ? {} : { acceptanceControl: { profile: scenario.profile } }),
+    acceptanceMetadata: { kind: "PRODUCT_ACCEPTANCE" as const, suite: "core-v2", scenario: scenario.name },
   };
   await writeJson(path.join(scenarioRoot, "task-input.json"), input);
   const receipt = await send(ingressUrl, "CoreV2Workflow", taskId, "run", input);

@@ -58,6 +58,7 @@ async function executeScenario(scenario: Scenario, index: number) {
     repositoryRoot, artifactRoot, runnerKind: "CODEX_EXEC", baseCommit, targetRef: "refs/heads/release", testCommands: [["npm", "test"]],
     ...(scenario === "REPAIR_BUDGET" ? { acceptanceControl: { profile: "REPAIR_BUDGET" as const } } : {}),
     ...(scenario === "REPLAN_BUDGET" ? { acceptanceControl: { profile: "REPLAN_BUDGET" as const } } : {}),
+    acceptanceMetadata: { kind: "PRODUCT_ACCEPTANCE" as const, suite: "core-v2-guards", scenario },
     ...(scenario === "OBSERVER_TIMEOUT" ? { observerKnowledge: { enabled: true, timeoutMs: 1_000 } } : {}),
   };
   await writeJson(path.join(root, "task-input.json"), input);

@@ -2,7 +2,7 @@
 
 Moye 是一个面向代码研发任务的全自动、可恢复、可追踪 Harness。它以 Task 为业务聚合根，协调 Agent、Daemon、Worktree、测试、Review、Git 合并和知识沉淀，目标是让一次研发任务从需求进入到主干合入形成可验证闭环。
 
-当前状态：**Core v2 已用真实 Codex、Restate、隔离 Git 与受信任测试逐 Task 验收 Happy Path、Finding 驱动 Repair/Replan、Test `UNKNOWN → CONFIRMED | NOT_APPLIED`、Role Worker 中断、Git Candidate/Merge 回执未知、Repair/Replan 预算耗尽、智能 Observer 超时非阻塞及旧 Generation/Revision fencing；成功与失败 Task 都有独立 Closure Artifact 和 Archive Receipt，历史 LIVE-001～004 也已通过 append-only recovery successor 合法归档。当前仍需完成 Board 验收语义、全矩阵统一复跑和最终证据审计，不能提前宣称 Core 完全闭环或完整故障矩阵已经完成。**
+当前状态：**Core v2 已用真实 Codex、Restate、隔离 Git 与受信任测试逐 Task 验收 Happy Path、Finding 驱动 Repair/Replan、Test `UNKNOWN → CONFIRMED | NOT_APPLIED`、Role Worker 中断、Git Candidate/Merge 回执未知、Repair/Replan 预算耗尽、智能 Observer 超时非阻塞及旧 Generation/Revision fencing；成功与失败 Task 都有独立 Closure Artifact 和 Archive Receipt，历史 LIVE-001～004 也已通过 append-only recovery successor 合法归档。Board 已能按真实 outcome、Workflow 与验收历史区分并下钻上述 Runtime 事实；当前仍需完成全矩阵统一复跑和最终证据审计，不能提前宣称 Core 完全闭环或完整故障矩阵已经完成。**
 
 ## 当前目标
 
@@ -114,6 +114,8 @@ CLI 统一使用 `npm run cli -- <command>`；项目 Agent 应使用 [moye-task-
 
 Bootstrap Task 的 `validate/create/close` 会在进入 Runtime 前校验冻结 `base_commit`；升级前遗留的已失败 Invocation 只能使用受限的 `recover-bootstrap-failure` successor 收敛，禁止删除 Invocation、直接编辑 Projection 或扫描 Git 伪造 Board 状态。
 
+Board 总览保持四列业务分组，并在顶部提供 outcome、Workflow kind 与“项目任务/验收历史”筛选，以及最新成功归档 Task 的直达入口。`WAITING_RECONCILE`、`ARCHIVE_PENDING`、`ARCHIVE_FAILED`、`FAILED_TERMINAL` 和 `SUCCEEDED` 使用 Workflow 发布或 TaskAuthority 只读解析出的精确语义；筛选不写 ProjectBoard，也不推进 Task。新增 Core v2 验收输入使用显式 `acceptanceMetadata`，升级前历史记录只按受限 Task ID/标题约定显示兼容标签并标明来源。
+
 Coding Task 出现在看板后，点击卡片会路由到可直达和刷新的全屏 `/tasks/<task_id>` Task Audit Page；右上角“返回项目”回到 `/`，浏览器 Back/Forward 同样有效。默认视图以状态摘要和 Graph 画布为中心，不预占详情侧栏：
 
 1. 当前业务状态、独立 Archive 状态，以及 Projection 与 Event History 是否一致；
@@ -176,4 +178,4 @@ Moye 使用自己定义的 Task、证据和知识治理原则建设自身：
 
 ## 当前边界
 
-本轮已经实现 Task/Archive Workflow、Core v2 真实多角色 Happy Path、两阶段 Sealed Result Commit 自举协议、真实 Codex 与 Claude Print Adapter、Self Review、两次隔离 Review、Repair/Replan/Reconcile 领域协议、成功/失败 Closure 与独立 Archive Effect、真实本地双父 Merge/Reconcile、停滞 Workflow 的窄化 successor、全部 Session Event 下钻、实际路径点亮的只读状态机 Graph、确定性 Observer、可选智能 Observer/Knowledge 旁路、Board Projection、三层 Trace、OTLP 和统一 CLI。当前关键异常分支已分别取得真实产品证据；仍需按 [Core v2 Roadmap](./docs/delivery/core-v2-roadmap.md) 完成 Board 语义修复、统一矩阵复跑和最终证据审计。完整多 Daemon Lease/Fencing、远程 Git Provider/PR、鉴权、多租户，以及 Metrics/Logs/告警/SLO 等仍未完成。
+本轮已经实现 Task/Archive Workflow、Core v2 真实多角色 Happy Path、两阶段 Sealed Result Commit 自举协议、真实 Codex 与 Claude Print Adapter、Self Review、两次隔离 Review、Repair/Replan/Reconcile 领域协议、成功/失败 Closure 与独立 Archive Effect、真实本地双父 Merge/Reconcile、停滞 Workflow 的窄化 successor、全部 Session Event 下钻、实际路径点亮的只读状态机 Graph、确定性 Observer、可选智能 Observer/Knowledge 旁路、可筛选且保留精确运行语义的 Board Projection、三层 Trace、OTLP 和统一 CLI。当前关键异常分支已分别取得真实产品证据；仍需按 [Core v2 Roadmap](./docs/delivery/core-v2-roadmap.md) 完成统一矩阵复跑和最终证据审计。完整多 Daemon Lease/Fencing、远程 Git Provider/PR、鉴权、多租户，以及 Metrics/Logs/告警/SLO 等仍未完成。

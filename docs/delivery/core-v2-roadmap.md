@@ -39,7 +39,7 @@
 | TASK-0043 | BL-0043 | Seal Prepared / Runtime authoritative | 真实 Agent Happy/Implementation/Final Review/Documentation/Test/Design Replan 场景全部逐 Task 通过；未筛选五场景 Fault 命令全量复跑通过 | `SealedTaskWorkflow` Receipt |
 | TASK-0044 | BL-0043 | Archived / Succeeded | 五个独立真实 Task 完成 Test UNKNOWN 两分支、Role Worker 中断、Git Candidate Checkpoint 与 Merge 回执未知验收；恢复 Harness 清理另有零场景 smoke 证据 | `aa9473e` / `sha256:9d3d76…8dc7` |
 | TASK-0045 | BL-0043 | Seal Prepared / Runtime authoritative | 三个独立真实 Task 完成 Repair/Replan 预算失败归档、Observer 超时非阻塞和旧 Generation/Revision Manifest fencing | `SealedTaskWorkflow` Receipt |
-| TASK-0046 | BL-0043 | Planned | Board outcome/workflow/history 筛选、验收历史标识、失败详情与实际路径语义 | — |
+| TASK-0046 | BL-0043、BL-0050 | Seal Prepared / Runtime authoritative | Board outcome/workflow/history 筛选、验收历史标识、失败详情与实际路径语义；57 个持久化 Runtime Task 与真实 Role Events 完成桌面/移动验收 | `SealedTaskWorkflow` Receipt |
 | TASK-0047 | BL-0043 | Planned | 逐场景证据完整性审计、矩阵重复执行与遗漏修复 | — |
 | TASK-0048 | BL-0043 | Planned | 全矩阵复跑、文档证据审计、最终部署与验收报告 | — |
 
@@ -61,9 +61,10 @@ TASK-0029 Bootstrap correctness
                     → TASK-0039 unified workflow + real Happy Path
                       → TASK-0040 failure closure + legacy convergence
                         → TASK-0041 real merge + TASK-0042 closure/recovery foundation
-                          → TASK-0043～0046 real fault infrastructure + executions
-                            → TASK-0047 board audit UX
-                              → TASK-0048 final evidence audit + deployment
+                          → TASK-0043～0045 real fault infrastructure + executions
+                            → TASK-0046 board audit UX
+                              → TASK-0047 evidence integrity + repeatability audit
+                                → TASK-0048 final matrix rerun + deployment
 ```
 
 ## 4. 最终真实验收矩阵
@@ -85,6 +86,6 @@ TASK-0039 只完成了真实 Happy Path 基线。以下矩阵由 TASK-0041～TAS
 
 ## 5. 明确延后
 
-当前真实 Agent 产品证据已经逐项覆盖 Happy Path、Implementation Self Review Finding、Final Review Finding、Documentation Finding、Test Failure Repair、Design Review Replan、Test UNKNOWN 两分支、Architect/Implementation/Final Review Worker 中断、Git Candidate Checkpoint/Merge 回执未知、Repair/Replan 预算耗尽、Observer/Knowledge 超时非阻塞，以及当前 owning Workflow 下的旧 Generation/Revision fencing，并保留运行中暴露的失败历史。TASK-0046 仍需修复和真实验收 Board 语义，TASK-0047/0048 仍需做跨场景证据完整性审计和统一复跑；在这些完成前不使用“完整故障矩阵已完成”。单元测试和确定性 Adapter E2E 只能补充协议证明，不能替代真实产品验收。
+当前真实 Agent 产品证据已经逐项覆盖 Happy Path、Implementation Self Review Finding、Final Review Finding、Documentation Finding、Test Failure Repair、Design Review Replan、Test UNKNOWN 两分支、Architect/Implementation/Final Review Worker 中断、Git Candidate Checkpoint/Merge 回执未知、Repair/Replan 预算耗尽、Observer/Knowledge 超时非阻塞，以及当前 owning Workflow 下的旧 Generation/Revision fencing，并保留运行中暴露的失败历史。TASK-0046 已在持久化 Runtime 的 57 个历史 Task 上完成 Board 语义和真实 Agent Events 浏览器验收；TASK-0047/0048 仍需做跨场景证据完整性审计、统一复跑和最终部署验收，在这些完成前不使用“完整故障矩阵已完成”。单元测试和确定性 Adapter E2E 只能补充协议证明，不能替代真实产品验收。
 
 完整多 Daemon Lease/Fencing、远程 PR、权限、多租户、生产级观测或长期知识效果反馈仍属于生产阶段能力；本路线只对当前可实现的 Attempt/Generation/Revision fencing 做真实验收，并明确剩余限制。

@@ -49,6 +49,19 @@
         <div><span>投影更新时间</span><strong id="generated-at">—</strong></div>
       </section>
 
+      <section class="board-controls reveal" aria-label="任务筛选与最新成功任务">
+        <button id="latest-success" class="latest-success" type="button" hidden>
+          <span>最新成功归档</span>
+          <strong data-latest-success-id>—</strong>
+          <small data-latest-success-title>—</small>
+        </button>
+        <div class="board-filters" role="group" aria-label="筛选任务卡片">
+          <label><span>Outcome</span><select id="filter-outcome"><option value="ALL">全部结果</option><option value="SUCCEEDED">成功</option><option value="FAILED_TERMINAL">失败终态</option><option value="IN_PROGRESS">执行中</option><option value="WAITING_RECONCILE">等待对账</option><option value="ARCHIVE_FAILED">归档失败</option></select></label>
+          <label><span>Workflow</span><select id="filter-workflow"><option value="ALL">全部 Workflow</option><option value="CORE_V2">Core v2</option><option value="CODING">Coding</option><option value="SEALED_TASK">Sealed Task</option><option value="TASK">Task</option><option value="CORE">Core Closure</option><option value="UNKNOWN">遗留未知</option></select></label>
+          <label><span>任务类型</span><select id="filter-history"><option value="ALL">全部任务</option><option value="PROJECT_TASK">项目任务</option><option value="PRODUCT_ACCEPTANCE">验收历史</option></select></label>
+        </div>
+      </section>
+
       <section class="board reveal" aria-label="项目任务看板">
         <article class="lane lane-backlog">
           <header><div><span>01</span><h2>需求池</h2></div><b id="backlog-count">0</b></header>

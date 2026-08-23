@@ -7,7 +7,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { createCoreV2Lifecycle } from "../../src/domain/core-v2-lifecycle.js";
-import { coreV2AcceptanceInstruction, coreV2AssessmentPrompt, coreV2ReviewBoundary, ensureGitCheckpoint, normalizeArchitectDeliverableV2, validateCoreV2AcceptanceControl, validateCoreV2ObserverKnowledge, validateCoreV2RecoveryControl } from "../../src/restate/core-v2-services.js";
+import { coreV2AcceptanceInstruction, coreV2AssessmentPrompt, coreV2ReviewBoundary, ensureGitCheckpoint, normalizeArchitectDeliverableV2, validateCoreV2AcceptanceControl, validateCoreV2AcceptanceMetadata, validateCoreV2ObserverKnowledge, validateCoreV2RecoveryControl } from "../../src/restate/core-v2-services.js";
 import type { CoreV2WorkflowProjection } from "../../src/restate/core-v2-services.js";
 import { buildCoreV2StateMachine } from "../../src/trace/state-machine.js";
 
@@ -24,6 +24,14 @@ describe("Core v2 Workflow control-plane", () => {
     expect(() => validateCoreV2AcceptanceControl({ profile: "TEST_FAILURE" }, false)).toThrow("acceptance fault injection is disabled");
     expect(() => validateCoreV2AcceptanceControl({ profile: "TEST_FAILURE" }, true)).not.toThrow();
     expect(() => validateCoreV2AcceptanceControl({ profile: "NOT_REAL" } as never, true)).toThrow("acceptance profile is invalid");
+  });
+
+  it("accepts explicit product acceptance metadata only on an enabled acceptance Service", () => {
+    const metadata = { kind: "PRODUCT_ACCEPTANCE" as const, suite: "core-v2", scenario: "HAPPY_PATH" };
+    expect(() => validateCoreV2AcceptanceMetadata(undefined, false)).not.toThrow();
+    expect(() => validateCoreV2AcceptanceMetadata(metadata, false)).toThrow("product acceptance metadata is disabled");
+    expect(() => validateCoreV2AcceptanceMetadata(metadata, true)).not.toThrow();
+    expect(() => validateCoreV2AcceptanceMetadata({ ...metadata, scenario: "" }, true)).toThrow("metadata is invalid");
   });
 
   it("rejects recovery process exits before TaskAuthority claim unless explicitly enabled and scoped", () => {

@@ -71,6 +71,7 @@ async function executeScenario(scenario: Scenario, index: number) {
       ARCHITECT: marker("role-architect"), IMPLEMENTATION: marker("role-implementation"), FINAL_REVIEW: marker("role-final-review"),
     } } } : {}),
     ...(scenario === "CHECKPOINT_UNKNOWN" ? { recoveryControl: { checkpointExitAfterCommitOnceAt: marker("checkpoint") } } : {}),
+    acceptanceMetadata: { kind: "PRODUCT_ACCEPTANCE" as const, suite: "core-v2-recovery", scenario },
     ...(scenario === "MERGE_UNKNOWN" ? { mergeFault: { exitAfterRefUpdateOnceAt: marker("merge") } } : {}),
   };
   await writeJson(path.join(scenarioRoot, "task-input.json"), input);

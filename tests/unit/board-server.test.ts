@@ -7,7 +7,9 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { readAgentEventPage, resolveAgentArtifactFile, startBoardServer } from "../../src/board/server.js";
+import { enrichBoardSnapshot, readAgentEventPage, resolveAgentArtifactFile, startBoardServer } from "../../src/board/server.js";
+import { buildBoardSnapshot } from "../../src/domain/board.js";
+import { createTaskProjection } from "../../src/domain/task.js";
 
 const roots: string[] = [];
 const servers: Server[] = [];
@@ -132,6 +134,25 @@ describe("board static server", () => {
     await expect(readAgentEventPage({
       artifactRoots: [root], declaredArtifactRoot: artifactRoot, locator, cursor: 0, limit: 2,
     })).rejects.toThrow(/does not match/);
+  });
+
+  it("enriches legacy Board rows from TaskAuthority without mutating the source snapshot", async () => {
+    const task = createTaskProjection({
+      taskId: "TASK-LIVE-BOARD-1",
+      projectId: "moye",
+      title: "Historical acceptance",
+      specRevision: 1,
+      backlogRefs: [],
+    }, "2026-08-23T00:00:00.000Z");
+    const snapshot = buildBoardSnapshot("moye", { [task.taskId]: task }, {}, "2026-08-23T00:01:00.000Z");
+    const enriched = await enrichBoardSnapshot(snapshot, async () => ({ owner: "CORE_V2_WORKFLOW", specRevision: 1 }));
+
+    expect(snapshot.active[0]?.workflowKind).toBe("UNKNOWN");
+    expect(enriched.active[0]).toMatchObject({
+      workflowKind: "CORE_V2",
+      historyKind: "PRODUCT_ACCEPTANCE",
+      runtimeState: "RECEIVED",
+    });
   });
 });
 
