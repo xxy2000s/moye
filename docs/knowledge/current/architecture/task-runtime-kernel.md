@@ -235,11 +235,11 @@ Goal Bootstrap 使用三次同源校验：CLI 在派发前给出同步错误，`
 
 ### 5.0.13 当前已实现 Sealed Result Commit 自举切片
 
-`SealedTaskWorkflow/<task_id>` 解决旧 Bootstrap 在 Result Commit 后还要改 Manifest/移动目录而形成的 SHA 自引用。Workflow 先从当前 HEAD、`execution_mode: sealed-result-commit` Manifest、Task/Revision/Base 和日期归档目标生成内容寻址 Seal Intent，将 Projection 显示为 `EXECUTING / waiting-result-commit`，再等待 keyed durable promise。TaskAuthority 的 `SEALED_TASK_WORKFLOW` owner 让 CLI、Board 和 Trace 始终查询同一状态所有者。
+`SealedTaskWorkflow/<task_id>` 解决旧 Bootstrap 在 Result Commit 后还要改 Manifest/移动目录而形成的 SHA 自引用。`seal-start` 在发送 Invocation 前先以 `createSealIntent` 只读校验当前 HEAD、`execution_mode: sealed-result-commit` Manifest、Task/Revision/Base、物理 Active package 和日期归档目标；无效输入不会创建 Runtime Task。Workflow 在 Authority claim 和首个 Projection 前用同一函数执行 durable 兜底校验，成功后持久化内容寻址 Seal Intent，将 Projection 显示为 `EXECUTING / waiting-result-commit`，再等待 keyed durable promise。TaskAuthority 的 `SEALED_TASK_WORKFLOW` owner 让 CLI、Board 和 Trace 始终查询同一状态所有者。
 
 执行者只能按 Intent 把 package 标为 `seal_prepared` 并移动到固定 Archive 路径，然后创建唯一 Result Commit。`seal` shared handler 先校验 token、Artifact 路径和 producer，再解析 promise；错误 token 不消费信号，相同 Evidence 重放幂等，不同 Evidence 冲突。Worker 在等待期间退出并重启时，Journal 重放返回完全相同的 Intent。
 
-最终 Gate 要求 Result Commit 是 clean worktree 的当前 HEAD，且只有一个父提交并精确等于冻结 Base；Active package 必须消失，Archive manifest/Verification/Docs Impact 必须存在于该 Commit并绑定相同 Task、Revision 与 Intent；Verification 必须 Accepted，Docs Impact 必须覆盖 `base..result` 的全部 changed paths并通过文档图谱影响校验。成功后 Workflow 只追加 Seal Receipt、`CLOSED` 和 `ARCHIVED` Runtime Event，不再写 Git；Result SHA 因而只存在于 Runtime Receipt。Archive 目录位置本身不能证明关闭。
+最终 Gate 要求 Result Commit 是 clean worktree 的当前 HEAD，且只有一个父提交并精确等于冻结 Base；Active package 必须消失，Archive manifest/Verification/Docs Impact 必须存在于该 Commit并绑定相同 Task、Revision 与 Intent；Verification 必须 Accepted，Docs Impact 必须覆盖 `base..result` 的全部 changed paths并通过文档图谱影响校验。成功后 Workflow 只追加 Seal Receipt、`CLOSED` 和 `ARCHIVED` Runtime Event，不再写 Git；Result SHA 因而只存在于 Runtime Receipt。Archive 目录位置本身不能证明关闭，Git Roadmap 也只能声明自己的快照截止时间并指向实时查询，不能递归写入产生当前 Commit 的未来 Receipt。
 
 如果调用方提交的 Evidence 本身错误，原 `SealedTaskWorkflow` 必须保留 `FAILED_TERMINAL`，不能解析第二次 Durable Promise。`SealedTaskRecoveryWorkflow`/`SealRecoveryAttemptWorkflow` 以 append-only successor 链恢复：每个失败 predecessor 只允许 TaskAuthority 登记一个下一 successor；第一条 numbered Attempt 可读取 `SealedTaskRecoveryWorkflow`，后续 Attempt 读取前一个 `SealRecoveryAttemptWorkflow`，并由 Authority 原子拒绝非当前 chain head。successor 读取原 Intent 和错误 Evidence，在目标 Result Commit 的 detached worktree 中重跑 Verification/Docs Impact，并要求该 Commit 是当前 HEAD 的祖先、唯一父提交仍等于冻结 Base。CLI、Board 和 Trace 默认解析 Authority 中最后一个 successor ref，显式 source ref 保留前序失败历史。`seal-submit` 在发送不可撤销回执前先用本地 `git cat-file` 拒绝不存在的 SHA。
 

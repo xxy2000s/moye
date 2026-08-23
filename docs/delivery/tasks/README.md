@@ -23,7 +23,7 @@ tasks/
 
 | Task | 状态 | 目标 |
 |---|---|---|
-| — | — | 当前没有 Git Active Task package；TASK-0048 已 Seal Prepared |
+| — | — | 当前没有 Git Active Task package；TASK-0049R1 已 Seal Prepared，业务终态以 Runtime Receipt 为准 |
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 

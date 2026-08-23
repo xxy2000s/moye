@@ -43,28 +43,29 @@ YYYY-MM-DD-TASK-NNNN
 | [TASK-0027](./2026-08-22-TASK-0027/spec.md) | Succeeded | 2026-08-22 | 优化状态机边标签与合法路径详情 |
 | [TASK-0028](./2026-08-23-TASK-0028/spec.md) | Failed Terminal | 2026-08-23 | 全屏任务审计与持久化已实现；Bootstrap 基线未冻结导致任务失败收敛 |
 | [TASK-0029](./2026-08-23-TASK-0029/spec.md) | Succeeded | 2026-08-23 | Bootstrap 预检、失败收敛、历史恢复与 Core v2 Roadmap |
-| [TASK-0030](./2026-08-23-TASK-0030/spec.md) | Sealed；业务终态见 Runtime | 2026-08-23 | Core v2 5+1 架构与单 Result Commit Seal 协议 |
-| [TASK-0031](./2026-08-23-TASK-0031/spec.md) | Sealed；业务终态见 Runtime | 2026-08-23 | Core v2 九类 Lifecycle Artifact 与精确 Gate |
-| [TASK-0032](./2026-08-23-TASK-0032/spec.md) | Sealed；业务终态见 Runtime | 2026-08-23 | 五类 Agent 与旁路 Observer 共用的真实 Role Runtime v2 |
-| [TASK-0032R1](./2026-08-23-TASK-0032R1/spec.md) | Sealed；业务终态见 Runtime | 2026-08-23 | 错误 Seal Evidence 的 append-only successor recovery |
-| [TASK-0033](./2026-08-23-TASK-0033/spec.md) | Sealed；业务终态见 Runtime | 2026-08-23 | Architect、Design Review 与 Revision REPLAN |
-| [TASK-0034](./2026-08-23-TASK-0034/spec.md) | Sealed；业务终态见 Runtime | 2026-08-23 | Implementation、Self Review、Checkpoint 与 Repair |
-| [TASK-0035](./2026-08-23-TASK-0035/spec.md) | Sealed；业务终态见 Runtime | 2026-08-23 | Documentation Agent 与 Docs Impact Gate |
-| [TASK-0036](./2026-08-23-TASK-0036/spec.md) | Sealed；业务终态见 Runtime | 2026-08-23 | Test Verification 与真实 Trusted Runner |
-| [TASK-0037](./2026-08-23-TASK-0037/spec.md) | Sealed；业务终态见 Runtime | 2026-08-23 | Final Review 与确定性 Verification Gate |
-| [TASK-0038](./2026-08-23-TASK-0038/spec.md) | Sealed；业务终态见 Runtime | 2026-08-23 | 确定性 Observer 与旁路 Knowledge |
-| [TASK-0039](./2026-08-23-TASK-0039/spec.md) | Sealed；业务终态见 Runtime | 2026-08-23 | Core v2 统一 Workflow、CLI、Board 与真实 Agent/Runner/Git 验收 |
+| [TASK-0030](./2026-08-23-TASK-0030/spec.md) | Succeeded + Archived（Runtime verified） | 2026-08-23 | Core v2 5+1 架构与单 Result Commit Seal 协议 |
+| [TASK-0031](./2026-08-23-TASK-0031/spec.md) | Succeeded + Archived（Runtime verified） | 2026-08-23 | Core v2 九类 Lifecycle Artifact 与精确 Gate |
+| [TASK-0032](./2026-08-23-TASK-0032/spec.md) | Succeeded + Archived（Runtime verified） | 2026-08-23 | 五类 Agent 与旁路 Observer 共用的真实 Role Runtime v2 |
+| [TASK-0032R1](./2026-08-23-TASK-0032R1/spec.md) | Succeeded + Archived via recovery | 2026-08-23 | 错误 Seal Evidence 的 append-only successor recovery |
+| [TASK-0033](./2026-08-23-TASK-0033/spec.md) | Succeeded + Archived（Runtime verified） | 2026-08-23 | Architect、Design Review 与 Revision REPLAN |
+| [TASK-0034](./2026-08-23-TASK-0034/spec.md) | Succeeded + Archived（Runtime verified） | 2026-08-23 | Implementation、Self Review、Checkpoint 与 Repair |
+| [TASK-0035](./2026-08-23-TASK-0035/spec.md) | Succeeded + Archived（Runtime verified） | 2026-08-23 | Documentation Agent 与 Docs Impact Gate |
+| [TASK-0036](./2026-08-23-TASK-0036/spec.md) | Succeeded + Archived（Runtime verified） | 2026-08-23 | Test Verification 与真实 Trusted Runner |
+| [TASK-0037](./2026-08-23-TASK-0037/spec.md) | Succeeded + Archived（Runtime verified） | 2026-08-23 | Final Review 与确定性 Verification Gate |
+| [TASK-0038](./2026-08-23-TASK-0038/spec.md) | Succeeded + Archived（Runtime verified） | 2026-08-23 | 确定性 Observer 与旁路 Knowledge |
+| [TASK-0039](./2026-08-23-TASK-0039/spec.md) | Succeeded + Archived（Runtime verified） | 2026-08-23 | Core v2 统一 Workflow、CLI、Board 与真实 Agent/Runner/Git 验收 |
 | [TASK-0040](./2026-08-23-TASK-0040/spec.md) | Succeeded + Archived via recovery；原失败保留 | 2026-08-23 | Core v2 失败 Closure、Archive 与 LIVE-001～004 合法收敛 |
 | [TASK-0040R1](./2026-08-23-TASK-0040R1/spec.md) | Succeeded + Archived via recovery；原失败保留 | 2026-08-23 | append-only 恢复 TASK-0040 Docs Impact Seal 失败 |
-| [TASK-0040R2](./2026-08-23-TASK-0040R2/spec.md) | Seal Prepared；业务终态见 Runtime | 2026-08-23 | 多级 Sealed Recovery chain 与 TASK-0040/TASK-0040R1 合法收敛 |
-| [TASK-0041](./2026-08-23-TASK-0041/spec.md) | Seal Prepared；业务终态见 Runtime | 2026-08-23 | Core v2 真实双父 Merge Effect、未知回执对账与证据边界修复 |
-| [TASK-0042](./2026-08-23-TASK-0042/spec.md) | Seal Prepared；业务终态见 Runtime | 2026-08-23 | Core v2 成功 Closure/Archive、停滞 Workflow successor 与历史 Trace 兼容 |
-| [TASK-0042R1](./2026-08-23-TASK-0042R1/spec.md) | Seal Prepared；业务终态见 Runtime | 2026-08-23 | append-only 恢复 TASK-0042 Verification 状态 Seal 失败 |
-| [TASK-0043](./2026-08-23-TASK-0043/spec.md) | Seal Prepared；业务终态见 Runtime | 2026-08-23 | 真实 Agent Happy、Finding-driven Repair 与 Design Replan 产品验收矩阵 |
-| [TASK-0044](./2026-08-23-TASK-0044/spec.md) | Seal Prepared；业务终态见 Runtime | 2026-08-23 | Test UNKNOWN、Role Worker 中断、Git Checkpoint 与 Merge 回执未知真实验收 |
-| [TASK-0045](./2026-08-23-TASK-0045/spec.md) | Seal Prepared；业务终态见 Runtime | 2026-08-23 | Repair/Replan 预算、Observer/Knowledge 超时与 stale fencing 真实验收 |
-| [TASK-0046](./2026-08-23-TASK-0046/spec.md) | Seal Prepared；业务终态见 Runtime | 2026-08-23 | Board 运行语义、验收历史筛选、最新成功入口与状态机实际路径 UX |
-| [TASK-0047](./2026-08-24-TASK-0047/spec.md) | Seal Prepared；业务终态见 Runtime | 2026-08-24 | Core v2 显式矩阵证据完整性、实时交叉校验与 Document Graph 归档审计 |
-| [TASK-0048](./2026-08-24-TASK-0048/spec.md) | Seal Prepared；业务终态见 Runtime | 2026-08-24 | Core v2 16 场景真实矩阵、Role Reconcile、零 Finding 审计与最终部署 |
+| [TASK-0040R2](./2026-08-23-TASK-0040R2/spec.md) | Succeeded + Archived（Runtime verified） | 2026-08-23 | 多级 Sealed Recovery chain 与 TASK-0040/TASK-0040R1 合法收敛 |
+| [TASK-0041](./2026-08-23-TASK-0041/spec.md) | Succeeded + Archived（Runtime verified） | 2026-08-23 | Core v2 真实双父 Merge Effect、未知回执对账与证据边界修复 |
+| [TASK-0042](./2026-08-23-TASK-0042/spec.md) | Succeeded + Archived via recovery | 2026-08-23 | Core v2 成功 Closure/Archive、停滞 Workflow successor 与历史 Trace 兼容 |
+| [TASK-0042R1](./2026-08-23-TASK-0042R1/spec.md) | Succeeded + Archived（Runtime verified） | 2026-08-23 | append-only 恢复 TASK-0042 Verification 状态 Seal 失败 |
+| [TASK-0043](./2026-08-23-TASK-0043/spec.md) | Succeeded + Archived（Runtime verified） | 2026-08-23 | 真实 Agent Happy、Finding-driven Repair 与 Design Replan 产品验收矩阵 |
+| [TASK-0044](./2026-08-23-TASK-0044/spec.md) | Succeeded + Archived（Runtime verified） | 2026-08-23 | Test UNKNOWN、Role Worker 中断、Git Checkpoint 与 Merge 回执未知真实验收 |
+| [TASK-0045](./2026-08-23-TASK-0045/spec.md) | Succeeded + Archived（Runtime verified） | 2026-08-23 | Repair/Replan 预算、Observer/Knowledge 超时与 stale fencing 真实验收 |
+| [TASK-0046](./2026-08-23-TASK-0046/spec.md) | Succeeded + Archived（Runtime verified） | 2026-08-23 | Board 运行语义、验收历史筛选、最新成功入口与状态机实际路径 UX |
+| [TASK-0047](./2026-08-24-TASK-0047/spec.md) | Succeeded + Archived（Runtime verified） | 2026-08-24 | Core v2 显式矩阵证据完整性、实时交叉校验与 Document Graph 归档审计 |
+| [TASK-0048](./2026-08-24-TASK-0048/spec.md) | Succeeded + Archived（Runtime verified） | 2026-08-24 | Core v2 16 场景真实矩阵、Role Reconcile、零 Finding 审计与最终部署 |
+| [TASK-0049R1](./2026-08-24-TASK-0049R1/spec.md) | Seal Prepared；业务终态见 Runtime | 2026-08-24 | Seal 派发前 preflight 与 Core v2 Runtime Receipt 台账修正 |
 
-Bootstrap Task 的 `task.yaml` 冻结在 Archive 开始前，因此其中 `archive.status: pending` 描述的是冻结点；最终 `ARCHIVED` 事实由目录位置、`archive-manifest.json` 和 ProjectBoard Projection 共同证明。TASK-0002 归档后文档图门禁曾发现 Spec 的 Active 相对链接因目录层级变化而失效，控制面只修正了该链接；修正前内容仍由 Result Commit `ff1954f4e4360e85276cf22aa30d6f5e8e396f84` 保存。后续 Task 使用不随 Active/Archive 深度变化的稳定引用。
+Bootstrap Task 的 `task.yaml` 冻结在 Archive 开始前，因此其中 `archive.status: pending` 描述的是冻结点；最终 `ARCHIVED` 事实由目录位置、`archive-manifest.json` 和 ProjectBoard Projection 共同证明。Sealed Task 的 Git package 固定为 `seal_prepared`，上表的 `Succeeded + Archived` 来自 2026-08-24 对 owning Workflow/合法 recovery successor 的只读 Runtime 查询；精确 Result Commit 与 Package Digest 见 [Core v2 Roadmap](../../core-v2-roadmap.md)。TASK-0002 归档后文档图门禁曾发现 Spec 的 Active 相对链接因目录层级变化而失效，控制面只修正了该链接；修正前内容仍由 Result Commit `ff1954f4e4360e85276cf22aa30d6f5e8e396f84` 保存。后续 Task 使用不随 Active/Archive 深度变化的稳定引用。

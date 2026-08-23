@@ -1,0 +1,99 @@
+schema_version: 1
+task_id: TASK-0049R1
+graph_revision: 98
+intents: [task-close, runtime-control-change, docs-change, incident-response, finding-intake, roadmap-correction]
+changed_paths:
+  - docs/delivery/backlog/README.md
+  - docs/delivery/backlog/BL-0059.yaml
+  - docs/delivery/backlog/BL-0060.yaml
+  - docs/delivery/core-v2-roadmap.md
+  - docs/delivery/tasks/README.md
+  - docs/delivery/tasks/archive/README.md
+  - docs/delivery/tasks/archive/2026-08-24-TASK-0049R1/task.yaml
+  - docs/delivery/tasks/archive/2026-08-24-TASK-0049R1/spec.md
+  - docs/delivery/tasks/archive/2026-08-24-TASK-0049R1/design.md
+  - docs/delivery/tasks/archive/2026-08-24-TASK-0049R1/plan.md
+  - docs/delivery/tasks/archive/2026-08-24-TASK-0049R1/verification.md
+  - docs/delivery/tasks/archive/2026-08-24-TASK-0049R1/docs-impact.yaml
+  - docs/graph.yaml
+  - docs/knowledge/current/architecture/poc-01-restate.md
+  - docs/knowledge/current/architecture/task-runtime-kernel.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/pitfalls/durable-task-runtime.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - docs/sources/findings/README.md
+  - docs/sources/findings/core-v2-roadmap-lags-sealed-runtime-receipts.md
+  - docs/sources/findings/seal-start-dispatches-before-active-package-preflight.md
+  - docs/sources/incidents/README.md
+  - docs/sources/incidents/2026-08-24-task-0049-seal-start-before-package.md
+  - src/cli/index.ts
+  - tests/unit/cli-seal-preflight.test.ts
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - meta-index
+    - adr-0002-doc-lifecycle-roles
+    - incidents-index
+    - backlog-index
+    - runbooks-index
+    - pitfalls-index
+    - findings-index
+    - sources-index
+    - core-v2-roadmap
+    - tasks-index
+    - task-runtime-kernel
+    - archived-tasks-index
+    - restate-poc-architecture
+    - architecture-index
+    - durable-runtime-pitfalls
+    - local-restate-poc-runbook
+    - bl-0059-core-v2-runtime-receipt-ledger
+    - bl-0060-seal-start-package-preflight
+    - task-0049r1-design
+    - task-0049r1-docs-impact
+    - task-0049r1-plan
+    - task-0049r1-spec
+    - task-0049r1-manifest
+    - task-0049r1-verification
+    - core-v2-roadmap-lags-sealed-runtime-receipts
+    - seal-start-dispatches-before-active-package-preflight
+    - incident-task-0049-seal-start-before-package
+  reviewed:
+    task-0049r1-manifest: { outcome: updated, reason: "本 Task manifest、Spec、Plan、Verification 与 Docs Impact 在独立 package 中冻结" }
+    architecture-overview: { outcome: unchanged, reason: "系统边界和 5+1 Core v2 模型未改变；只把既有 Seal 输入校验前移到 CLI" }
+    moye-task-control-skill: { outcome: unchanged, reason: "Skill 已要求先创建 Active package；实现把该要求变成可执行 preflight" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "仍使用 Restate 验证本地 PoC，没有改变技术选型" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "两阶段 Seal、单 Result Commit 与 Runtime Receipt 决策未改变" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "没有新增未决需求或候选方案" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "Core Closure 要求由 TASK-0048 的真实矩阵继续覆盖" }
+    task-spec-document-closure-brainstorm: { outcome: unchanged, reason: "Spec/Docs 生命周期决策未改变" }
+    task-0013-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0014-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0015-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0016-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0017-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0018-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0019-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0020-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0021-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0028-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0029-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0030-manifest: { outcome: unchanged, reason: "只读查询 Runtime Receipt；已封存 package 不回写" }
+    task-0031-manifest: { outcome: unchanged, reason: "只读查询 Runtime Receipt；已封存 package 不回写" }
+    task-0032-manifest: { outcome: unchanged, reason: "只读查询合法 recovery successor；已封存 package 不回写" }
+    task-0002-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0003-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0004-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0005-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0006-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0007-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0008-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0009-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0001-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "继续使用既有 TypeScript PoC 实现" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "没有改变 Trace/Phoenix 边界" }
+    root-readme: { outcome: unchanged, reason: "Core v2 的 16 场景证据分级与生产限制已经准确；本次操作细节由 Architecture/Runbook 承载" }
+    core-v2-agent-lifecycle: { outcome: unchanged, reason: "Agent 生命周期、矩阵结论与生产边界未改变" }

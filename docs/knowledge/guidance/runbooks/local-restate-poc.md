@@ -119,7 +119,7 @@ npm run cli -- backlog sync --dir docs/delivery/backlog --project moye
 - `close` 只提交指定 Bootstrap Workflow；已存在的重复 `run` 由 Restate 明确拒绝，使用 `status/wait` 查询既有结果；
 - `recover-bootstrap-failure` 只用于升级前已经 Invocation 失败、Projection 仍为无 Evidence `EXECUTING/NOT_READY` 的已知 Bootstrap 故障。输入必须包含原 Invocation ID 和预期错误码；命令创建 append-only successor，不能用于 Retry、成功任务或手工改写 Projection；
 - `archive` 和 `reconcile` 连接同一 keyed ArchiveWorkflow。
-- Core v2 仓库自举任务使用 `seal-start → seal-status → seal-stage → git commit → seal-submit → wait`。`seal-stage` 只按 Workflow 冻结的 Intent 准备归档 package；`seal-submit` 只解析 durable promise，Gate 会校验唯一父提交、HEAD、clean worktree、Archive package、Accepted Verification、Docs Impact 和实际 changed paths。成功后 Workflow 只更新 Runtime，不再写 Git：
+- Core v2 仓库自举任务使用 `seal-start → seal-status → seal-stage → git commit → seal-submit → wait`。必须先落盘 Active Task package，再调用 `seal-start`；CLI 会在发送 Invocation 前以与 Workflow 相同的规则校验 HEAD/Base、物理 package、Manifest identity 和 Archive path。该本地 preflight 失败意味着 Runtime 尚未创建 Task，不要换端口重试或猜测 Board 状态。`seal-stage` 只按 Workflow 冻结的 Intent 准备归档 package；`seal-submit` 只解析 durable promise，Gate 会校验唯一父提交、HEAD、clean worktree、Archive package、Accepted Verification、Docs Impact 和实际 changed paths。成功后 Workflow 只更新 Runtime，不再写 Git：
 
 ```bash
 npm run cli -- seal-start --file /path/to/sealed-task.json
@@ -132,7 +132,7 @@ npm run cli -- seal-submit TASK-EXAMPLE \
 npm run cli -- wait TASK-EXAMPLE
 ```
 
-`seal-submit` 会先在本地执行 `git cat-file -e <sha>^{commit}`；不要手工补全短 SHA。如果错误 Evidence 已经被 Runtime 消费并形成 `FAILED_TERMINAL`，保留原 Workflow，准备包含原 rejected Commit、corrected Evidence 和 source Workflow ref 的 JSON，再执行：
+`seal-start` 的本地 preflight、Workflow 第一条 durable command 和最终 Result Commit Gate 是三层同源防线；CLI 不拥有状态推进权。升级前或旧版本中若第一条 command 已经 completed Failure、且 `seal-status`、Authority、Board 均为空，这表示业务 Task 从未创建，不能套用 rejected-Evidence Recovery，也不能重提相同 Workflow key；保留 Invocation 并创建新的 replacement Task。`seal-submit` 会先在本地执行 `git cat-file -e <sha>^{commit}`；不要手工补全短 SHA。如果错误 Evidence 已经被 Runtime 消费并形成 `FAILED_TERMINAL`，保留原 Workflow，准备包含原 rejected Commit、corrected Evidence 和 source Workflow ref 的 JSON，再执行：
 
 ```bash
 npm run cli -- recover-sealed-failure --file /path/to/seal-recovery.json

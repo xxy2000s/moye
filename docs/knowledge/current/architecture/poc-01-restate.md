@@ -79,6 +79,8 @@ Goal Bootstrap 是自举期的实际执行者。它只能提交干净 HEAD 上�
 
 Bootstrap 在 CLI 派发前、TaskWorkflow 首次状态写入前和 Closure Gate 三处复用同一冻结基线校验。前两处拒绝无效输入且不产生 Task Projection；进入 Projection 后才发现的确定性 Evidence/Closure 错误由原 Workflow 形成 `FAILED_TERMINAL` 和失败 Artifact，再进入 Archive。升级前已卡死实例只能通过核验原 Invocation 的 append-only `BootstrapFailureRecoveryWorkflow` successor 收敛，不能删除原历史。
 
+Sealed Result Commit 同样执行三层校验：`seal-start` 在发送 keyed Invocation 前只读验证 HEAD/Base、Active package、Manifest identity 与 Archive path；`SealedTaskWorkflow` 在 Authority claim 和首个 Projection 前 durable 重验；Result Commit Gate 最终验证 Commit 与冻结 Evidence。派发前失败不创建 Runtime Task。旧版本若在第一条 command 已 completed Failure 且没有 Intent/Projection，不满足 rejected-Evidence Recovery 的前置条件，必须保留原 Invocation 并用新 Task 接管，不能重提 key 或补造 `FAILED_TERMINAL`。
+
 ## 4. 可恢复副作用
 
 Archive 使用 `archive/<task_id>/revision-<spec_revision>` 作为稳定操作标识。

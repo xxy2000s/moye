@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 97
+graph_revision: 98
 updated_at: "2026-08-24"
 
 entrypoints:
@@ -3671,6 +3671,94 @@ documents:
     authority: delivery-control
     read_when: [task-create, task-execution]
 
+  - id: core-v2-roadmap-lags-sealed-runtime-receipts
+    path: docs/sources/findings/core-v2-roadmap-lags-sealed-runtime-receipts.md
+    type: finding
+    status: confirmed
+    scope: core-v2-delivery-ledger
+    authority: observed-fact
+    read_when: [finding-intake, task-execution, task-close]
+
+  - id: seal-start-dispatches-before-active-package-preflight
+    path: docs/sources/findings/seal-start-dispatches-before-active-package-preflight.md
+    type: finding
+    status: confirmed
+    scope: sealed-result-commit
+    authority: observed-fact
+    read_when: [finding-intake, task-execution, task-close]
+
+  - id: incident-task-0049-seal-start-before-package
+    path: docs/sources/incidents/2026-08-24-task-0049-seal-start-before-package.md
+    type: incident
+    status: resolved
+    scope: sealed-result-commit
+    authority: observed-fact
+    read_when: [incident-response, task-execution, task-close]
+
+  - id: bl-0059-core-v2-runtime-receipt-ledger
+    path: docs/delivery/backlog/BL-0059.yaml
+    type: backlog-item
+    status: converted-to-task
+    scope: core-v2-delivery-ledger
+    authority: delivery-control
+    read_when: [task-create, task-execution]
+
+  - id: bl-0060-seal-start-package-preflight
+    path: docs/delivery/backlog/BL-0060.yaml
+    type: backlog-item
+    status: converted-to-task
+    scope: sealed-result-commit
+    authority: delivery-control
+    read_when: [task-create, task-execution]
+
+  - id: task-0049r1-manifest
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0049R1/task.yaml
+    type: task-manifest
+    status: archived
+    scope: sealed-result-commit-and-delivery-ledger
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0049r1-spec
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0049R1/spec.md
+    type: task-spec
+    status: archived
+    scope: sealed-result-commit-and-delivery-ledger
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0049r1-design
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0049R1/design.md
+    type: task-design
+    status: archived
+    scope: sealed-result-commit-and-delivery-ledger
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0049r1-plan
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0049R1/plan.md
+    type: task-plan
+    status: archived
+    scope: sealed-result-commit-and-delivery-ledger
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0049r1-verification
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0049R1/verification.md
+    type: verification
+    status: archived
+    scope: sealed-result-commit-and-delivery-ledger
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0049r1-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0049R1/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: sealed-result-commit-and-delivery-ledger
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
 relations:
   - from: root-readme
     to: docs-index
@@ -6443,6 +6531,66 @@ relations:
   - from: agent-contract
     to: document-control-plane
     type: enforces
+
+  - from: core-v2-roadmap-lags-sealed-runtime-receipts
+    to: bl-0059-core-v2-runtime-receipt-ledger
+    type: promoted_to
+
+  - from: seal-start-dispatches-before-active-package-preflight
+    to: bl-0060-seal-start-package-preflight
+    type: promoted_to
+
+  - from: incident-task-0049-seal-start-before-package
+    to: seal-start-dispatches-before-active-package-preflight
+    type: produces
+
+  - from: incident-task-0049-seal-start-before-package
+    to: bl-0060-seal-start-package-preflight
+    type: produces
+
+  - from: seal-start-dispatches-before-active-package-preflight
+    to: durable-runtime-pitfalls
+    type: documented_by
+
+  - from: bl-0059-core-v2-runtime-receipt-ledger
+    to: task-0049r1-manifest
+    type: schedules_into
+
+  - from: bl-0060-seal-start-package-preflight
+    to: task-0049r1-manifest
+    type: schedules_into
+
+  - from: archived-tasks-index
+    to: task-0049r1-manifest
+    type: indexes
+
+  - from: task-0049r1-spec
+    to: task-0049r1-manifest
+    type: belongs_to
+
+  - from: task-0049r1-design
+    to: task-0049r1-spec
+    type: refines
+
+  - from: task-0049r1-plan
+    to: task-0049r1-manifest
+    type: belongs_to
+
+  - from: task-0049r1-verification
+    to: task-0049r1-manifest
+    type: verifies
+
+  - from: task-0049r1-docs-impact
+    to: task-0049r1-manifest
+    type: reports_on
+
+  - from: task-0049r1-manifest
+    to: task-runtime-kernel
+    type: implements_slice_of
+
+  - from: task-0049r1-manifest
+    to: core-v2-roadmap
+    type: integrates_with
 
 routing:
   baseline:

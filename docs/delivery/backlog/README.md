@@ -71,6 +71,8 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 | [BL-0056](./BL-0056.yaml) | Converted to Task | 为 Core v2 矩阵注册使用唯一 Workflow 探针 identity | TASK-0048（Seal Prepared） |
 | [BL-0057](./BL-0057.yaml) | Converted to Task | 校准 Observer 超时验收以保留真实 Session/Event | TASK-0048（Seal Prepared） |
 | [BL-0058](./BL-0058.yaml) | Converted to Task | 修正 stale-fence 验收的 Closure 内容身份比较 | TASK-0048（Seal Prepared） |
+| [BL-0059](./BL-0059.yaml) | Converted to Task | 修正 Core v2 Roadmap 的 Runtime 终态与 Result Commit 台账 | TASK-0049R1（Seal Prepared） |
+| [BL-0060](./BL-0060.yaml) | Converted to Task | 让 seal-start 在派发前验证 Active Task package | TASK-0049R1（Seal Prepared） |
 
 ## 本轮调度结果
 

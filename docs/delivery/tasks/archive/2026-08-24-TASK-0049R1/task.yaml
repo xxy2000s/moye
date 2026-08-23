@@ -1,0 +1,25 @@
+schema_version: 1
+id: TASK-0049R1
+title: 修正 Seal 启动预检与 Core v2 Runtime 终态台账
+status: seal_prepared
+outcome: null
+backlog_refs:
+  - BL-0059
+  - BL-0060
+spec_revision: 1
+workflow_id: sealed-task/TASK-0049R1
+execution_mode: sealed-result-commit
+base_commit: 8024d242d93dd17db370942ac6ffe2fbd74050d4
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-24-TASK-0049R1
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:0644d5a8f8c4dd56ffa7ad8a199444a36541161935464ca0ed27d2c831af9793
+  base_commit: 8024d242d93dd17db370942ac6ffe2fbd74050d4
+  archive_path: docs/delivery/tasks/archive/2026-08-24-TASK-0049R1

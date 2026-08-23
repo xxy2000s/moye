@@ -150,3 +150,10 @@
 - 后果：探针被已停止的 Deployment URI 钉住；长矩阵产生大量只读 Invocation 并放大共享 Docker 内存压力。
 - 检测：业务 suite 已结束但 orchestrator 等待旧端口，Restate 日志持续 RT0010；Task 未变但 status Invocation 数持续增长。
 - 规避：每次注册使用唯一 probe Task ID；状态轮询使用有界、低频间隔；真实矩阵串行并保留失败根，补跑通过显式场景根组合审计，不扫描或覆盖历史。
+
+## 22. 只在 Sealed Workflow 内校验 Active package
+
+- 触发：`seal-start` 在 Active Task package、Manifest identity、HEAD/Base 或 Archive path 检查前先发送 keyed Workflow；确定性输入错误直到第一条 durable command 才暴露。
+- 后果：command 重试耗尽后 Invocation 以 Failure Output 完成，但 Authority、Intent、Projection 和 Board 尚未创建；Workflow key 已消耗，现有 rejected-Evidence Recovery 又没有 source Intent 可读。
+- 检测：`sys_journal` 只有 Input、`prepare-seal-intent` Failure 和 Output Failure；`seal-status`、TaskAuthority、Board 均为空。
+- 规避：CLI 发送前、Workflow 首次状态写入前和最终 Commit Gate 复用同一只读校验；派发前失败不创建 Runtime Task。旧失败保留 Invocation，以新 Task 接管，不重提 key、不 purge、不伪造失败 Projection。

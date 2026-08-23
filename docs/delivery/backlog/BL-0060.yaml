@@ -1,0 +1,13 @@
+schema_version: 1
+id: "BL-0060"
+title: "让 seal-start 在派发前验证 Active Task package"
+kind: "bug"
+status: "converted_to_task"
+priority: "high"
+source_refs: [seal-start-dispatches-before-active-package-preflight, incident-task-0049-seal-start-before-package]
+affected_areas: [cli, sealed-result-commit, task-runtime-control]
+acceptance_outline:
+  - "CLI 在 send 前复用 createSealIntent 校验 HEAD/Base、package、manifest 与 archive path"
+  - "无效输入不创建 Restate Invocation、Authority、Projection 或 Board row"
+  - "Workflow 内兜底与最终 Result Commit Gate 保持不变"
+resolution: { task_refs: [TASK-0049R1], duplicate_of: null, reason: "由 TASK-0049R1 实现并增加真实 CLI 子进程回归" }

@@ -48,5 +48,7 @@ Finding 与 Incident 的边界：
 - [Core v2 矩阵复用 Workflow 探针 key 后被旧 Deployment 钉住](./core-v2-matrix-reuses-stale-workflow-probe-key.md)：suite 重注册复用同一 Workflow identity 后路由到已停止的临时 Service，改为每次注册使用唯一探针 Task ID。
 - [Core v2 Observer 验收超时早于 Session 证据产生](./core-v2-observer-timeout-precedes-session-evidence.md)：1 秒受控超时在 Codex 建立 Session 前发生，失败事实保留并用新 Task 覆盖 Session 建立后的超时边界。
 - [Core v2 stale-fence 验收错误比较 Closure 对象引用](./core-v2-stale-fence-harness-compares-closure-object-identity.md)：跨 HTTP 响应比较对象 identity 误报 Projection mutation，改为比较内容寻址 Closure Digest 并附着原 Task 重审计。
+- [Core v2 Roadmap 落后于 Sealed Runtime Receipt](./core-v2-roadmap-lags-sealed-runtime-receipts.md)：TASK-0030～0048 的部分交付状态仍停留在 Seal 前快照，缺少实际 Result Commit 与 Package Digest 台账。
+- [seal-start 在 Active package 预检前提交 Runtime Invocation](./seal-start-dispatches-before-active-package-preflight.md)：真实 TASK-0049 在第一条 durable command 因 package 不存在而完成失败，且未形成可恢复的业务 Projection。
 
 不要为了演示目录创建虚构 Bug。

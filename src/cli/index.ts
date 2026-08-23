@@ -20,7 +20,7 @@ import type { SealedTaskRecoveryInput } from "../restate/services.js";
 import { buildLiveCodingTask } from "../product/live-task.js";
 import type { CodingReconcileInput } from "../restate/coding-services.js";
 import { verifyBootstrapPreflight } from "../archive/bootstrap-closure.js";
-import { stageSealedTaskPackage } from "../archive/sealed-result-commit.js";
+import { createSealIntent, stageSealedTaskPackage } from "../archive/sealed-result-commit.js";
 import type {
   SealEvidence,
   SealIntent,
@@ -175,6 +175,7 @@ try {
     case "seal-start": {
       const input = await loadJson<SealedTaskInput>(requiredOption(args, "--file"));
       createTaskProjection(input, new Date().toISOString());
+      await createSealIntent(resolve(process.env["MOYE_REPOSITORY_ROOT"] ?? process.cwd()), input);
       const receipt = await send(
         config.restateIngressUrl, "SealedTaskWorkflow", input.taskId, "run", input,
       );
