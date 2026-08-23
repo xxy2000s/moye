@@ -62,6 +62,39 @@ describe("Core v2 Workflow control-plane", () => {
       expect.objectContaining({ to: "FAILED_TERMINAL", kind: "FAILURE" }),
     ]));
   });
+
+  it("identifies an append-only failure recovery Workflow without changing the Core v2 graph", () => {
+    const lifecycle = createCoreV2Lifecycle({ taskId: "TASK-GRAPH-RECOVERY", specRevision: 1, subjectCommit: "a".repeat(40), at: "2026-08-23T00:00:00Z" });
+    const projection: CoreV2WorkflowProjection = {
+      schemaVersion: 1, taskId: "TASK-GRAPH-RECOVERY", projectId: "moye", title: "recovery", state: "EXECUTING",
+      currentStep: lifecycle.state, lifecycle, attempts: [], roleRuns: [], artifactRoot: "/tmp/artifacts",
+      workflowRef: "restate://CoreV2FailureRecoveryAttemptWorkflow/TASK-GRAPH-RECOVERY-RECOVERY-1",
+      startedAt: "2026-08-23T00:00:00Z", completedAt: null, outcome: null, error: null,
+    };
+    const machine = buildCoreV2StateMachine(projection);
+    expect(machine.workflow).toBe("CoreV2FailureRecoveryAttemptWorkflow");
+    expect(machine.definition.edges).toEqual(expect.arrayContaining([
+      expect.objectContaining({ from: "MERGE_REQUIRED", to: "ARCHIVE_PENDING", kind: "ARCHIVE" }),
+      expect.objectContaining({ from: "ARCHIVE_PENDING", to: "ARCHIVE_FAILED", kind: "FAILURE" }),
+    ]));
+  });
+
+  it("keeps Trace queryable for an immutable pre-Closure projection with absent nullable fields", () => {
+    const legacyLifecycle = createCoreV2Lifecycle({ taskId: "TASK-GRAPH-LEGACY", specRevision: 1, subjectCommit: "a".repeat(40), at: "2026-08-23T00:00:00Z" });
+    const legacy = { ...legacyLifecycle } as unknown as Record<string, unknown>;
+    delete legacy["trustedTestRun"];
+    delete legacy["verificationGateDigest"];
+    delete legacy["mergeReceipt"];
+    delete legacy["successClosure"];
+    const projection: CoreV2WorkflowProjection = {
+      schemaVersion: 1, taskId: "TASK-GRAPH-LEGACY", projectId: "moye", title: "legacy", state: "CLOSED",
+      currentStep: "ARCHIVED", lifecycle: legacy as unknown as CoreV2WorkflowProjection["lifecycle"], attempts: [], roleRuns: [], artifactRoot: "/tmp/artifacts",
+      workflowRef: "restate://CoreV2FailureRecoveryWorkflow/TASK-GRAPH-LEGACY",
+      startedAt: "2026-08-23T00:00:00Z", completedAt: "2026-08-23T00:01:00Z", outcome: "FAILED_TERMINAL", error: "historical failure",
+    };
+    expect(() => buildCoreV2StateMachine(projection)).not.toThrow();
+    expect(buildCoreV2StateMachine(projection).executions).toEqual([]);
+  });
 });
 
 async function git(cwd: string, args: string[]): Promise<string> {

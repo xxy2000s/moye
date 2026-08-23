@@ -1,0 +1,13 @@
+schema_version: 1
+id: "BL-0048"
+title: "兼容 Core v2 历史 Recovery Projection 的 Trace nullable 字段"
+kind: "bug"
+status: "scheduled"
+priority: "high"
+source_refs: [core-v2-legacy-recovery-trace-nullability]
+affected_areas: [board, trace, core-v2-recovery, historical-projection]
+acceptance_outline:
+  - "旧 schema 缺失 nullable 字段时 Trace 构建不抛错"
+  - "LIVE-001～004 的详情 API 返回 200 并显示真实 Closure、Archive 与 Recovery successor"
+  - "不修改原 Workflow 或 Runtime Projection"
+resolution: { task_refs: [TASK-0042], duplicate_of: null, reason: "TASK-0042 的历史收敛验收中发现并在同一只读展示边界修复" }

@@ -412,7 +412,7 @@ export function buildCoreV2Trace(projection: CoreV2WorkflowProjection, restateAd
     attempt: projection.attempts.length,
     specRevision: projection.lifecycle.specRevision,
     backlogRefs: [],
-    archiveStatus: projection.lifecycle.archive?.status ?? (projection.state === "CLOSED" ? "ARCHIVED" : "NOT_READY"),
+    archiveStatus: projection.lifecycle.archive?.status ?? "NOT_READY",
     ...(projection.outcome === null ? {} : { outcome: projection.outcome }),
     ...(projection.error === null ? {} : { error: projection.error }),
     lastEventAt: projection.lifecycle.events.at(-1)?.at ?? projection.startedAt,
@@ -425,6 +425,7 @@ export function buildCoreV2Trace(projection: CoreV2WorkflowProjection, restateAd
     lifecycle: projection.lifecycle,
     business: { events: task.events, attempts: projection.attempts },
     observer: createCoreV2ObserverReport(projection.lifecycle, projection.attempts),
+    workflowRecovery: projection.recovery ?? null,
     roles: projection.roleRuns.map((run) => ({
       kind: run.phase,
       runId: run.runId,
@@ -453,16 +454,16 @@ export function buildCoreV2Trace(projection: CoreV2WorkflowProjection, restateAd
   };
 }
 
-function coreV2WorkflowTarget(authority: TaskAuthorityState, taskId: string): { service: "CoreV2Workflow" | "CoreV2FailureRecoveryWorkflow"; key: string } {
+function coreV2WorkflowTarget(authority: TaskAuthorityState, taskId: string): { service: "CoreV2Workflow" | "CoreV2FailureRecoveryWorkflow" | "CoreV2FailureRecoveryAttemptWorkflow"; key: string } {
   return authority.recoveryWorkflowRef === undefined
     ? { service: "CoreV2Workflow", key: taskId }
     : parseCoreV2WorkflowRef(authority.recoveryWorkflowRef);
 }
 
-function parseCoreV2WorkflowRef(value: string): { service: "CoreV2Workflow" | "CoreV2FailureRecoveryWorkflow"; key: string } {
-  const match = /^restate:\/\/(CoreV2Workflow|CoreV2FailureRecoveryWorkflow)\/([A-Z0-9-]+)$/.exec(value);
+function parseCoreV2WorkflowRef(value: string): { service: "CoreV2Workflow" | "CoreV2FailureRecoveryWorkflow" | "CoreV2FailureRecoveryAttemptWorkflow"; key: string } {
+  const match = /^restate:\/\/(CoreV2Workflow|CoreV2FailureRecoveryWorkflow|CoreV2FailureRecoveryAttemptWorkflow)\/([A-Z0-9-]+)$/.exec(value);
   if (match === null) throw new Error(`Invalid Core v2 Workflow ref: ${value}`);
-  return { service: match[1] as "CoreV2Workflow" | "CoreV2FailureRecoveryWorkflow", key: match[2]! };
+  return { service: match[1] as "CoreV2Workflow" | "CoreV2FailureRecoveryWorkflow" | "CoreV2FailureRecoveryAttemptWorkflow", key: match[2]! };
 }
 
 function parseRuntimeWorkflowRef(value: string): { service: "SealedTaskRecoveryWorkflow" | "SealRecoveryAttemptWorkflow"; key: string } {

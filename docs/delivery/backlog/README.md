@@ -55,11 +55,12 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 | [BL-0040](./BL-0040.yaml) | Converted | 统一 Core v2 Workflow 并完成真实故障矩阵验收 | TASK-0039 |
 | [BL-0041](./BL-0041.yaml) | Converted to Task | 恢复错误 Seal Evidence 导致的已失败自举任务 | TASK-0032R1（Sealed） |
 | [BL-0042](./BL-0042.yaml) | Converted to Task | 补齐 Core v2 失败 Closure、Archive 与历史失败收敛 | TASK-0040（Sealed） |
-| [BL-0043](./BL-0043.yaml) | Scheduled（执行中） | 完成 Core v2 真实 Agent 产品级故障矩阵 | TASK-0041（Active）；TASK-0042～0047（Planned） |
+| [BL-0043](./BL-0043.yaml) | Scheduled（执行中） | 完成 Core v2 真实 Agent 产品级故障矩阵 | TASK-0041（Archived）；TASK-0043～0048（Planned） |
 | [BL-0044](./BL-0044.yaml) | Converted to Task | 以 append-only successor 恢复 TASK-0040 Docs Impact Seal 失败 | TASK-0040R1（Archived / Succeeded） |
 | [BL-0045](./BL-0045.yaml) | Converted to Task | 允许 Sealed Recovery Attempt 形成任意长度 append-only chain | TASK-0040R2（Seal Prepared） |
-| [BL-0046](./BL-0046.yaml) | Ready | 为 journaled durable command failure 增加 Core v2 append-only recovery successor | — |
-| [BL-0047](./BL-0047.yaml) | Ready | 补齐 Core v2 成功 Closure 与真实 Archive Effect | — |
+| [BL-0046](./BL-0046.yaml) | Scheduled | 为 journaled durable command failure 增加 Core v2 append-only recovery successor | TASK-0042（Active） |
+| [BL-0047](./BL-0047.yaml) | Scheduled | 补齐 Core v2 成功 Closure 与真实 Archive Effect | TASK-0042（Active） |
+| [BL-0048](./BL-0048.yaml) | Scheduled | 兼容 Core v2 历史 Recovery Projection 的 Trace nullable 字段 | TASK-0042（Active） |
 
 ## 本轮调度结果
 

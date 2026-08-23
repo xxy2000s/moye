@@ -2,6 +2,7 @@
 
 import { readFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import { resolve } from "node:path";
 
 import { loadBacklogSyncBatch } from "../backlog/document-sync.js";
@@ -27,6 +28,7 @@ import type {
 } from "../archive/sealed-result-commit.js";
 import type { SealedTaskStatus } from "../restate/services.js";
 import type { CoreV2ArchiveRetryInput, CoreV2FailureRecoveryInput, CoreV2ReconcileInput, CoreV2WorkflowInput, CoreV2WorkflowProjection } from "../restate/core-v2-services.js";
+import { inspectCoreV2SourceInvocation } from "../restate/invocation-inspector.js";
 
 const [command = "help", ...args] = process.argv.slice(2);
 const config = loadConfig();
@@ -102,7 +104,35 @@ try {
     }
     case "core-v2-recover-failure": {
       const input = await loadJson<CoreV2FailureRecoveryInput>(requiredOption(args, "--file"));
-      print(await invoke<CoreV2WorkflowProjection>(config.restateIngressUrl, "CoreV2FailureRecoveryWorkflow", input.taskId, "run", input));
+      print(await invoke<CoreV2WorkflowProjection>(
+        config.restateIngressUrl,
+        input.recoveryId === undefined ? "CoreV2FailureRecoveryWorkflow" : "CoreV2FailureRecoveryAttemptWorkflow",
+        input.recoveryId ?? input.taskId,
+        "run",
+        input,
+      ));
+      break;
+    }
+    case "core-v2-recovery-plan": {
+      const taskId = requiredArgument(args, "task id");
+      const invocationId = requiredOption(args, "--invocation");
+      const authority = await invoke<TaskAuthorityState | null>(config.restateIngressUrl, "TaskAuthority", taskId, "get");
+      if (authority?.owner !== "CORE_V2_WORKFLOW" || authority.recoveryWorkflowRef !== undefined) {
+        throw new Error(`Task ${taskId} is not an unrecovered CoreV2Workflow`);
+      }
+      const source = await invoke<CoreV2WorkflowProjection | null>(config.restateIngressUrl, "CoreV2Workflow", taskId, "status");
+      if (source === null) throw new Error(`CoreV2Workflow ${taskId} has no Projection`);
+      const fact = await inspectCoreV2SourceInvocation(config.restateAdminUrl, taskId, invocationId);
+      const input: CoreV2FailureRecoveryInput = {
+        taskId,
+        projectId: source.projectId,
+        artifactRoot: source.artifactRoot,
+        sourceWorkflowRef: `restate://CoreV2Workflow/${taskId}`,
+        expectedSourceProjectionDigest: cliDigest(source),
+        sourceInvocationId: fact.invocationId,
+        expectedInvocationFactDigest: fact.factDigest,
+      };
+      print({ input, invocationFact: fact });
       break;
     }
     case "core-v2-retry-archive": {
@@ -356,6 +386,10 @@ function print(value: unknown): void {
   process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
 }
 
+function cliDigest(value: unknown): string {
+  return `sha256:${createHash("sha256").update(JSON.stringify(value)).digest("hex")}`;
+}
+
 function helpText(): string {
   return `Moye Task Control CLI
 
@@ -368,6 +402,7 @@ Usage:
   moye create --file task.json
   moye core-v2-start --file core-v2-task.json
   moye core-v2-status TASK-ID
+  moye core-v2-recovery-plan TASK-ID --invocation INVOCATION-ID
   moye core-v2-recover-failure --file recovery.json
   moye core-v2-retry-archive TASK-ID --token TOKEN --evidence TEXT
   moye core-v2-reconcile TASK-ID --token TOKEN --action CONFIRMED|NOT_APPLIED --evidence TEXT

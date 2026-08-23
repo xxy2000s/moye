@@ -30,5 +30,6 @@ Finding 与 Incident 的边界：
 - [Core v2 durable command 失败后缺少合法 successor recovery](./core-v2-durable-command-failure-needs-successor-recovery.md)：journaled command failure 可能绕过 Workflow catch，原任务需要窄化 append-only recovery 收敛。
 - [Core v2 成功路径没有 Archive Receipt](./core-v2-success-archive-receipt-missing.md)：成功 Task 当前从 CLOSED 直接投影 ARCHIVED，尚未执行真实 Success Archive Effect。
 - [BL-0043 使用了不存在的 in_progress 状态](./bl-0043-uses-invalid-in-progress-status.md)：Backlog 同步门禁正确拒绝 Runtime 风格状态，已改为 SCHEDULED。
+- [Core v2 历史 Recovery Projection 导致 Trace 详情返回 500](./core-v2-legacy-recovery-trace-nullability.md)：旧 schema 缺失 nullable 字段时只读状态机投影错误解引用，已由 TASK-0042 纳入兼容修复。
 
 不要为了演示目录创建虚构 Bug。

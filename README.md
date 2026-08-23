@@ -2,7 +2,7 @@
 
 Moye 是一个面向代码研发任务的全自动、可恢复、可追踪 Harness。它以 Task 为业务聚合根，协调 Agent、Daemon、Worktree、测试、Review、Git 合并和知识沉淀，目标是让一次研发任务从需求进入到主干合入形成可验证闭环。
 
-当前状态：**Core v2 已用真实 Codex、Restate、隔离 Git 与受信任测试完成 Happy Path；失败 Task 现在也能形成 Failure Artifact、Knowledge Disposition、Closure 与可重试 Archive，历史 LIVE-001～004 已通过 append-only recovery successor 合法归档。`TASK-CORE-V2-MERGE-UNKNOWN-005` 进一步证明真实双父 Merge 在 ref 更新后进程终止时能对账为唯一 `ALREADY_APPLIED` 结果。成功路径仍缺真实 Success Archive Receipt，journaled durable command failure 仍缺 successor recovery；其余 Repair、Replan、Test UNKNOWN、预算与 stale Attempt 的完整真实 Agent 矩阵也仍在执行，不能视为 Core 完全闭环。**
+当前状态：**Core v2 已用真实 Codex、Restate、隔离 Git 与受信任测试完成 Happy Path；成功与失败 Task 都有独立 Closure Artifact 和可重试 Archive Receipt。历史 LIVE-001～004 已通过 append-only recovery successor 合法归档，journaled durable command 停滞任务也能在核验暂停 Invocation 与 Projection Digest 后由 successor 收敛。`TASK-CORE-V2-MERGE-UNKNOWN-005` 证明真实双父 Merge 在 ref 更新后进程终止时能对账为唯一 `ALREADY_APPLIED` 结果。Repair、Replan、Test UNKNOWN、预算、Worker 中断与 stale Attempt 仍未逐条完成同等级真实 Agent 故障矩阵，不能视为 Core 完全闭环。**
 
 ## 当前目标
 
@@ -166,4 +166,4 @@ Moye 使用自己定义的 Task、证据和知识治理原则建设自身：
 
 ## 当前边界
 
-本轮已经实现 Task/Archive Workflow、Core v2 真实多角色 Happy Path、两阶段 Sealed Result Commit 自举协议、真实 Codex 与 Claude Print Adapter、Self Review、两次隔离 Review、Repair/Replan/Reconcile 领域协议、失败 Closure/Archive、真实本地双父 Merge/Reconcile、全部 Session Event 下钻、实际路径点亮的只读状态机 Graph、确定性 Observer、Board Projection、三层 Trace、OTLP 和统一 CLI。当前真实产品证据覆盖 Happy Path、LIVE-001～004 的失败恢复归档和 `TASK-CORE-V2-MERGE-UNKNOWN-005` 的 Merge 回执丢失；其他异常分支仍按 [Core v2 Roadmap](./docs/delivery/core-v2-roadmap.md) 逐条补齐。成功 Archive Effect/Receipt、durable command stalled recovery、多 Daemon/Lease/Fencing、远程 Git Provider/PR、鉴权、多租户，以及 Metrics/Logs/告警/SLO 等仍未完成。
+本轮已经实现 Task/Archive Workflow、Core v2 真实多角色 Happy Path、两阶段 Sealed Result Commit 自举协议、真实 Codex 与 Claude Print Adapter、Self Review、两次隔离 Review、Repair/Replan/Reconcile 领域协议、成功/失败 Closure 与独立 Archive Effect、真实本地双父 Merge/Reconcile、停滞 Workflow 的窄化 successor、全部 Session Event 下钻、实际路径点亮的只读状态机 Graph、确定性 Observer、Board Projection、三层 Trace、OTLP 和统一 CLI。当前真实产品证据覆盖 Happy Path、LIVE-001～004 的失败恢复归档、三个暂停 durable command 的 append-only 收敛、成功 Archive-only retry，以及 `TASK-CORE-V2-MERGE-UNKNOWN-005` 的 Merge 回执丢失；其他异常分支仍按 [Core v2 Roadmap](./docs/delivery/core-v2-roadmap.md) 逐条补齐。多 Daemon/Lease/Fencing、远程 Git Provider/PR、鉴权、多租户，以及 Metrics/Logs/告警/SLO 等仍未完成。

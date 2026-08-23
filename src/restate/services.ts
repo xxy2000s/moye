@@ -230,6 +230,27 @@ export const taskAuthority = restate.object({
       },
     ),
 
+    advanceCoreV2FailureRecovery: restate.handlers.object.exclusive(
+      { ingressPrivate: true },
+      async (
+        ctx: restate.ObjectContext<TaskAuthorityState>,
+        input: BootstrapRecoveryHandoffInput,
+      ): Promise<TaskAuthorityState> => {
+        const [owner, specRevision, existingRecovery] = await Promise.all([
+          ctx.get("owner") as Promise<TaskAuthorityState["owner"] | null>,
+          ctx.get("specRevision") as Promise<number | null>,
+          ctx.get("recoveryWorkflowRef") as Promise<string | null>,
+        ]);
+        if (owner !== "CORE_V2_WORKFLOW" || specRevision !== input.specRevision || existingRecovery === null ||
+            input.sourceWorkflowRef !== existingRecovery || input.recoveryWorkflowRef === existingRecovery) {
+          throw new restate.TerminalError(`Task ${ctx.key} cannot advance its Core v2 failure recovery chain`, { errorCode: 409 });
+        }
+        ctx.set("recoveryWorkflowRef", input.recoveryWorkflowRef);
+        ctx.set("sourceWorkflowRef", input.sourceWorkflowRef);
+        return { owner, specRevision, recoveryWorkflowRef: input.recoveryWorkflowRef, sourceWorkflowRef: input.sourceWorkflowRef };
+      },
+    ),
+
     beginSealedRecovery: restate.handlers.object.exclusive(
       { ingressPrivate: true },
       async (

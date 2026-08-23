@@ -74,12 +74,14 @@ Implementation Agent 只修改受管 Workspace 并运行检查；Codex sandbox �
 
 Test Agent 提出 Requirement 覆盖和 Case 意图；Workflow 为每条预授权 argv 生成稳定 Case ID、约束合法类别并覆盖无效自然语言形状，Trusted Runner 只执行冻结输入中的 argv。Agent Verdict 仍不能代替 Runner Manifest 或 Verification Gate。
 
-## 7. 失败 Closure 与历史 successor
+## 7. 成功/失败 Closure 与历史 successor
+
+成功路径在 Verification Gate 与真实 Merge Receipt 确认后，先在 Task namespace 持久化不可变 Success Closure Artifact，绑定当前 Revision/Generation、Candidate、Merge、Gate、Knowledge Disposition、Attempt 与 Session；随后进入独立 `ARCHIVE_PENDING | ARCHIVE_FAILED | ARCHIVED`。Board 只能读取 Lifecycle Archive Receipt，不能再由 `state === CLOSED` 推导归档。Archive 失败只等待同一 Effect token；正确 signal 只增加 Archive attempt，不重新调用任何 Agent、Trusted Runner、Checkpoint、Gate 或 Merge。
 
 不可恢复错误或预算耗尽首先冻结 `FAILED_TERMINAL` 的原阶段、原因、source Workflow ref、source Projection Digest、Attempt ID 与 Session ID。Workflow 随后在 `<artifactRoot>/<taskId>/...` 命名空间持久化 Failure Artifact，记录 Knowledge Disposition，形成不可变 Failure Closure，再进入独立的 `ARCHIVE_PENDING | ARCHIVE_FAILED | ARCHIVED`。Archive Effect 的 identity 由 Task、Revision 与 Closure Digest 决定；Archive 失败时原 Workflow 保持运行并等待同一 token，只允许 Archive-only retry，不能重新进入 Implementation、Test 或 Merge。
 
-旧版本已完成在 `FAILED_TERMINAL + NOT_READY` 的 Workflow 不能改写。`CoreV2FailureRecoveryWorkflow/<task_id>` 先校验原 Projection Digest，再通过 `TaskAuthority.beginCoreV2FailureRecovery` 原子登记唯一 append-only successor；successor 复制原 Attempt、Session 与 Event 引用，只追加 Failure Closure/Archive 事实。Board、CLI 与 Trace 解析 Authority 指向 successor，直接查询 `CoreV2Workflow/<task_id>` 仍得到未修改的原历史。
+旧版本已完成在 `FAILED_TERMINAL + NOT_READY` 的 Workflow 不能改写。`CoreV2FailureRecoveryWorkflow/<task_id>` 先校验原 Projection Digest，再通过 `TaskAuthority.beginCoreV2FailureRecovery` 原子登记唯一 append-only successor；successor 复制原 Attempt、Session 与 Event 引用，只追加 Failure Closure/Archive 事实。仍停在 journaled durable Run 的 Workflow 必须先 pause；`core-v2-recovery-plan` 从 Restate Admin 核验 Invocation target/status、最后 command/index/failure digest 和 Projection digest。若 root recovery 自身在 Authority 前失败，只能以新的 `CoreV2FailureRecoveryAttemptWorkflow/<recovery_id>` 绑定前序 completed Failure Invocation 继续。Board、CLI 与 Trace 解析 Authority 指向最新 successor，直接查询原 key 仍得到摘要不变的原历史。
 
-截至 2026-08-23，真实证据分级如下：LIVE-005/006 证明真实 Agent Happy Path；LIVE-001～004 证明真实历史 Agent 失败经合法 Restate successor 归档；`TASK-CORE-V2-MERGE-UNKNOWN-005` 证明真实七 Role、Trusted Runner、Verification Gate、双父 Merge Commit 以及 ref 更新后进程终止的 `ALREADY_APPLIED` 对账，且 Candidate、Merge 和 ref 更新均唯一。Repair/Replan/Test UNKNOWN 等其余场景仍未完成同等级矩阵。成功 Task 当前仍缺少真实 Success Closure/Archive Receipt；journaled durable command failure 也仍需要 append-only stalled recovery，不能宣称 Core 完全闭环。
+截至 2026-08-23，真实证据分级如下：LIVE-005/006 证明真实 Agent Happy Path；LIVE-001～004 证明真实历史 Agent 失败经合法 Restate successor 归档；三个暂停 durable command 的原 Workflow 由绑定 Invocation/Projection fact 的 successor 收敛且原摘要保持不变；`TASK-CORE-V2-MERGE-UNKNOWN-005` 证明真实七 Role、Trusted Runner、Verification Gate、双父 Merge Commit 以及 ref 更新后进程终止的 `ALREADY_APPLIED` 对账；新的成功归档验收 Task 证明 Success Closure、第一次 Archive 失败与 archive-only retry。Repair/Replan/Test UNKNOWN、预算与 stale Attempt 等其余场景仍未完成同等级矩阵，不能宣称 Core 完全闭环。
 
-Board 的 `CORE_V2` Trace 从 Lifecycle Event、Attempt、Session、Artifact 和确定性 Observer 重建主流程、失败 Closure 与 Archive 状态，以及 Happy Path、Repair/Replan/Reconcile/Failure/Archive 合法边。节点 Inspector 直接关联真实 Role Event；Event 在 Chatbot 弹窗中按对话、工具调用、工具结果、系统和错误筛选，不提供跳转下载入口。
+Board 的 `CORE_V2` Trace 从 Lifecycle Event、Attempt、Session、Artifact 和确定性 Observer 重建主流程、成功/失败 Closure、successor Recovery Record 与 Archive 状态，以及 Happy Path、Repair/Replan/Reconcile/Failure/Archive 合法边。节点 Inspector 直接关联真实 Role Event；Event 在 Chatbot 弹窗中按对话、工具调用、工具结果、系统和错误筛选，不提供跳转下载入口。

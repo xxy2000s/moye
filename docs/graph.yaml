@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 82
+graph_revision: 84
 updated_at: "2026-08-23"
 
 entrypoints:
@@ -2968,6 +2968,54 @@ documents:
     authority: task-evidence
     read_when: [task-close, task-archive]
 
+  - id: task-0042-manifest
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0042/task.yaml
+    type: task-manifest
+    status: archived
+    scope: core-v2-closure-recovery
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0042-spec
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0042/spec.md
+    type: task-spec
+    status: archived
+    scope: core-v2-closure-recovery
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0042-design
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0042/design.md
+    type: task-design
+    status: archived
+    scope: core-v2-closure-recovery
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0042-plan
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0042/plan.md
+    type: task-plan
+    status: archived
+    scope: core-v2-closure-recovery
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0042-verification
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0042/verification.md
+    type: verification
+    status: archived
+    scope: core-v2-closure-recovery
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0042-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0042/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: core-v2-closure-recovery
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
   - id: core-v2-role-scope-symlink-path-retry-loop
     path: docs/sources/findings/core-v2-role-scope-symlink-path-retry-loop.md
     type: finding
@@ -3039,6 +3087,22 @@ documents:
     scope: backlog-control
     authority: observed-fact
     read_when: [finding-intake, backlog-triage]
+
+  - id: core-v2-legacy-recovery-trace-nullability
+    path: docs/sources/findings/core-v2-legacy-recovery-trace-nullability.md
+    type: finding
+    status: confirmed
+    scope: core-v2-recovery-trace
+    authority: observed-fact
+    read_when: [finding-intake, task-execution]
+
+  - id: bl-0048-core-v2-legacy-recovery-trace
+    path: docs/delivery/backlog/BL-0048.yaml
+    type: backlog-item
+    status: ready
+    scope: core-v2-recovery-trace
+    authority: delivery-control
+    read_when: [backlog-triage, task-create]
 
 relations:
   - from: root-readme
@@ -4889,6 +4953,42 @@ relations:
     to: core-v2-agent-lifecycle
     type: implements_slice_of
 
+  - from: bl-0046-core-v2-stalled-command-recovery
+    to: task-0042-manifest
+    type: schedules_into
+
+  - from: bl-0047-core-v2-success-archive
+    to: task-0042-manifest
+    type: schedules_into
+
+  - from: tasks-index
+    to: task-0042-manifest
+    type: indexes
+
+  - from: task-0042-spec
+    to: task-0042-manifest
+    type: belongs_to
+
+  - from: task-0042-design
+    to: task-0042-spec
+    type: refines
+
+  - from: task-0042-plan
+    to: task-0042-manifest
+    type: belongs_to
+
+  - from: task-0042-verification
+    to: task-0042-manifest
+    type: verifies
+
+  - from: task-0042-docs-impact
+    to: task-0042-manifest
+    type: reports_on
+
+  - from: task-0042-manifest
+    to: core-v2-agent-lifecycle
+    type: implements_slice_of
+
   - from: core-v2-role-scope-symlink-path-retry-loop
     to: bl-0043-core-v2-real-fault-matrix
     type: promoted_to
@@ -4923,6 +5023,18 @@ relations:
 
   - from: bl-0047-core-v2-success-archive
     to: core-v2-agent-lifecycle
+    type: tracks_requirement_from
+
+  - from: core-v2-legacy-recovery-trace-nullability
+    to: bl-0048-core-v2-legacy-recovery-trace
+    type: promoted_to
+
+  - from: bl-0048-core-v2-legacy-recovery-trace
+    to: task-0042-manifest
+    type: schedules_into
+
+  - from: bl-0048-core-v2-legacy-recovery-trace
+    to: task-runtime-kernel
     type: tracks_requirement_from
 
   - from: bl-0043-uses-invalid-in-progress-status

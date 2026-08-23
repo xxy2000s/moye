@@ -1,0 +1,24 @@
+{
+  "taskId": "TASK-CORE-V2-SUCCESS-ARCHIVE-001",
+  "projectId": "moye",
+  "title": "Core v2 real success archive retry acceptance",
+  "objective": "Add feature.txt containing exactly core-v2-real-merge followed by LF, pass the real npm test, perform a real two-parent merge, persist success closure, and prove archive-only retry after one controlled archive failure.",
+  "acceptanceCriteria": [
+    "feature.txt exists with the exact required bytes",
+    "npm test exits zero through the Trusted Runner",
+    "the owning Workflow creates one real two-parent merge commit on refs/heads/release",
+    "success closure is persisted before archive",
+    "the first controlled archive attempt fails and a correct-token retry archives without rerunning roles, tests, Candidate Commit, or Merge"
+  ],
+  "repositoryRoot": "/private/tmp/moye-corev2-success-archive-001.ynIeOY/repo",
+  "artifactRoot": "/private/tmp/moye-corev2-success-archive-001.ynIeOY/artifacts",
+  "runnerKind": "CODEX_EXEC",
+  "baseCommit": "f937ab8f21309d47b7e6d173ccb047d897446f6e",
+  "testCommands": [
+    ["npm", "test"]
+  ],
+  "targetRef": "refs/heads/release",
+  "successArchiveFault": {
+    "failFirstAttempt": true
+  }
+}

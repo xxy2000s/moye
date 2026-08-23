@@ -33,15 +33,16 @@
 | TASK-0040 | BL-0042 | Archived / Succeeded via Recovery | 失败 Closure/Artifact/Knowledge/Archive、Archive-only retry 与 LIVE-001～004 append-only 合法收敛；原失败与两段失败 successor 均保留 | `ac213a5` / `sha256:3e2627…c1ce` |
 | TASK-0040R1 | BL-0044 | Archived / Succeeded via Recovery | 保留原 Seal 与两段 recovery 失败，以 corrected Evidence append-only 收敛 | `692981d` / `sha256:95d8b2…bdc2` |
 | TASK-0040R2 | BL-0045 | Seal Prepared | 修复 numbered recovery 无法从已失败 Attempt 继续追加的问题；真实 Restate 与历史 Task 均已通过 | Intent `sha256:d0b1…3f10` |
-| TASK-0041 | BL-0043 | Seal Prepared | 真实、幂等、可对账的 Merge Effect；真实 Agent Task 证明 ref 更新后进程终止、唯一双父 Merge 与 `ALREADY_APPLIED`；同时修复 Role 物理路径、Failure Artifact 命名空间和 Trusted Test 文件 Digest | Intent `sha256:de6e…d8e` |
-| TASK-0042 | BL-0043 | Planned | 非交互真实故障矩阵 Harness、Requirement/Evidence Registry 与受控 fault injection | — |
+| TASK-0041 | BL-0043 | Archived / Succeeded | 真实、幂等、可对账的 Merge Effect；真实 Agent Task 证明 ref 更新后进程终止、唯一双父 Merge 与 `ALREADY_APPLIED`；同时修复 Role 物理路径、Failure Artifact 命名空间和 Trusted Test 文件 Digest | `34c07dc` / `sha256:21ec68…2275` |
+| TASK-0042 | BL-0046、BL-0047、BL-0048 | Verified / Seal Pending | 成功 Closure/Archive Receipt、Archive-only retry、journaled command append-only successor、历史 Trace schema 兼容，并合法收敛 001/003/004 | Seal Pending |
 | TASK-0043 | BL-0043 | Planned | 真实 Agent Happy/Implementation/Final Review/Documentation/Test/Design Replan 场景 | — |
 | TASK-0044 | BL-0043 | Planned | Test UNKNOWN 两分支、Worker 中断、Git 与 Merge 回执未知场景 | — |
 | TASK-0045 | BL-0043 | Planned | Repair/Replan 预算、Observer/Knowledge 故障与 stale Attempt 场景 | — |
-| TASK-0046 | BL-0043 | Planned | Board outcome/workflow/history 筛选、失败详情与实际路径语义 | — |
-| TASK-0047 | BL-0043 | Planned | 全矩阵复跑、文档证据审计、最终部署与验收报告 | — |
+| TASK-0046 | BL-0043 | Planned | Board outcome/workflow/history 筛选、验收历史标识、失败详情与实际路径语义 | — |
+| TASK-0047 | BL-0043 | Planned | 逐场景证据完整性审计、矩阵重复执行与遗漏修复 | — |
+| TASK-0048 | BL-0043 | Planned | 全矩阵复跑、文档证据审计、最终部署与验收报告 | — |
 
-本轮真实运行另发现两项阻塞闭环，已进入 [BL-0046](./backlog/BL-0046.yaml) 与 [BL-0047](./backlog/BL-0047.yaml)：journaled durable command failure 需要合法 successor recovery；成功路径需要真实 Closure/Archive Receipt。它们完成前，`TASK-CORE-V2-MERGE-UNKNOWN-005` 只证明 Merge/Reconcile，不证明完整成功 Archive。
+本轮真实运行发现的 Closure/Recovery 缺口已进入 [BL-0046](./backlog/BL-0046.yaml) 与 [BL-0047](./backlog/BL-0047.yaml)，并由 TASK-0042 实现：journaled durable command 使用核验 Invocation/Projection 的合法 successor recovery；成功路径使用内容寻址 Closure 与独立 Archive Receipt。真实 `TASK-CORE-V2-SUCCESS-ARCHIVE-001` 已证明一次受控 Archive 失败后只重试 Archive 并唯一归档；LIVE 历史详情验收发现的旧 schema nullable Trace 缺陷登记为 BL-0048 并完成修复。TASK-0042 尚待 Result Commit Seal，且仍不代表后续完整故障矩阵已经通过。
 
 ## 3. 依赖图
 
@@ -58,9 +59,10 @@ TASK-0029 Bootstrap correctness
                   → TASK-0038 observer/knowledge sidecar
                     → TASK-0039 unified workflow + real Happy Path
                       → TASK-0040 failure closure + legacy convergence
-                        → TASK-0041～0045 real fault infrastructure + executions
-                          → TASK-0046 board audit UX
-                            → TASK-0047 final evidence audit + deployment
+                        → TASK-0041 real merge + TASK-0042 closure/recovery foundation
+                          → TASK-0043～0046 real fault infrastructure + executions
+                            → TASK-0047 board audit UX
+                              → TASK-0048 final evidence audit + deployment
 ```
 
 ## 4. 最终真实验收矩阵

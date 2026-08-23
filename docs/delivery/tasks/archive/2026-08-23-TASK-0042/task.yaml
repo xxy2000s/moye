@@ -1,0 +1,26 @@
+schema_version: 1
+id: TASK-0042
+title: 补齐 Core v2 成功归档与停滞命令恢复
+status: seal_prepared
+outcome: null
+backlog_refs:
+  - BL-0046
+  - BL-0047
+  - BL-0048
+spec_revision: 1
+workflow_id: sealed-task/TASK-0042
+execution_mode: sealed-result-commit
+base_commit: 34c07dc524829c998d0596f74b0030c3450d79c6
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-23-TASK-0042
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:7ac4e30393ca49453954c9faab6e4adc8e2d2e365900b92992a28afde0c36ed8
+  base_commit: 34c07dc524829c998d0596f74b0030c3450d79c6
+  archive_path: docs/delivery/tasks/archive/2026-08-23-TASK-0042

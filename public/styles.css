@@ -403,6 +403,14 @@ dialog > form { position: sticky; top: 0; display: flex; justify-content: flex-e
 .machine-history-drawer > summary small, .machine-evidence-panel > summary small, .task-evidence-panel > summary small { margin-top: 4px; color: var(--muted); font-size: 9px; }
 .machine-history-drawer > summary em { color: var(--muted); font: normal 9px/1 "SF Mono", monospace; white-space: nowrap; }
 .machine-history-drawer[open] > summary, .machine-evidence-panel[open] > summary, .task-evidence-panel[open] > summary { border-bottom: 1px solid var(--line); }
+.core-v2-closure { border-left: 4px solid var(--yellow-ink); }
+.core-v2-closure .closure-evidence-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 14px; }
+.core-v2-closure .journey-section { min-width: 0; margin: 0; }
+.closure-bindings { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
+.closure-bindings summary { cursor: pointer; color: var(--muted); font-size: 11px; }
+.closure-bindings ul { display: grid; gap: 6px; margin: 10px 0 0; padding: 0; list-style: none; }
+.closure-bindings li { display: grid; gap: 3px; }
+.closure-bindings li code, .closure-bindings li span { overflow-wrap: anywhere; font-size: 10px; }
 .machine-history-drawer .machine-history, .machine-evidence-panel .machine-executions { margin: 0; padding: 4px 16px 16px; }
 .domain-events-panel { margin-top: 12px; border: 1px solid var(--line); border-radius: 8px; background: white; }
 .domain-events-panel > summary { display: flex; min-height: 62px; justify-content: space-between; gap: 18px; align-items: center; padding: 13px 16px; cursor: pointer; }
