@@ -108,3 +108,10 @@
 - 后果：合法旧证据因 Graph Revision 已提升而被误拒；失败 successor 需要继续 append-only 恢复。
 - 检测：Recovery 错误显示 report revision 小于 current revision，而 `git show <result>:docs/graph.yaml` 与旧 report 一致。
 - 规避：历史 Gate 必须在目标 Commit 的 detached worktree 中运行文档与内容校验，并要求目标 Commit 是当前 HEAD 的祖先；绝不修改旧 report 迎合当前版本。
+
+## 16. Recovery parser 只接受第一层 successor
+
+- 触发：`SealRecoveryAttemptWorkflow` 只解析 `SealedTaskRecoveryWorkflow/<task-id>`，而 Authority 已前移到 `SealRecoveryAttemptWorkflow/<recovery-id>`；新的 Attempt 无法读取当前失败 predecessor。
+- 后果：第二次 recovery 失败后 append-only chain 断裂；复用旧 key 会发生 Input 冲突，只能通过非法清状态或改 Projection 才能继续。
+- 检测：Authority 的 `recoveryWorkflowRef` 指向 numbered Attempt，但下一次 `recover-sealed-failure` 返回 source ref invalid 或 cannot advance chain。
+- 规避：source ref 使用带 service 判别的 parser，同时支持第一层与 numbered Attempt；按对应 Workflow shared status 读取 Projection，再由 Authority 原子校验 source 等于当前 chain head。真实 E2E 至少覆盖 root failure → recovery failure → attempt failure → new attempt success。

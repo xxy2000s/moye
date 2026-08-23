@@ -1,7 +1,7 @@
 # TASK-0040 Docs Impact 漏项导致 Seal 失败
 
 > 文档类型：Incident
-> 状态：Recovery Prepared；最终状态以 Runtime successor 为准
+> 状态：Resolved through append-only recovery
 > 发生日期：2026-08-23
 > 影响范围：TASK-0040、Sealed Result Commit、Docs Impact Gate
 
@@ -11,7 +11,10 @@
 - Gate 发现实际 changed path `docs/delivery/tasks/archive/README.md` 未在报告中登记；
 - 原 Workflow 正确形成 `FAILED_TERMINAL + ArchiveFailed`，错误 Evidence 与 Event 被保留；
 - 创建 BL-0044 / TASK-0040R1，通过新 Result Commit 补齐报告，并使用 `SealedTaskRecoveryWorkflow/TASK-0040` 重验同一 Intent；
-- corrected Result Commit 生成后，通过 Runtime CLI 提交 recovery；Authority 只在 successor 成功后切换，原失败 Workflow 始终保持可查询。
+- `SealedTaskRecoveryWorkflow/TASK-0040` 因 corrected Commit parent 错误失败；`SealRecoveryAttemptWorkflow/TASK-0040-RECOVERY-1` 因 Commit 尚未成为 HEAD ancestor 再次失败；
+- corrected sibling Commit `ac213a5…` 并入主线 ancestry 后，`TASK-0040-RECOVERY-2` 成功形成 `SealCommitVerified → SUCCEEDED → ArchiveArchived`；
+- TASK-0040R1 自身的原 Seal 与两段 recovery 也因空 Active 目录及 Verification 状态格式被拒绝，最终由 corrected Commit `692981d…` 和 `TASK-0040R1-RECOVERY-2` 合法收敛；
+- Authority 只在每个 successor 启动时原子前移，全部原失败 Workflow 和 numbered Attempt 始终可查询。
 
 ## 根因与处置
 

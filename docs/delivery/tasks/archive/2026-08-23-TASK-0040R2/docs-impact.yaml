@@ -1,0 +1,95 @@
+schema_version: 1
+task_id: TASK-0040R2
+graph_revision: 78
+intents: [finding-intake, incident-intake, task-create, workflow-change, recovery-change, task-archive, docs-change]
+changed_paths:
+  - docs/delivery/backlog/BL-0045.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/core-v2-roadmap.md
+  - docs/delivery/tasks/README.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0040R2/design.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0040R2/docs-impact.yaml
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0040R2/plan.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0040R2/spec.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0040R2/task.yaml
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0040R2/verification.md
+  - docs/delivery/tasks/archive/README.md
+  - docs/graph.yaml
+  - docs/knowledge/current/architecture/task-runtime-kernel.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/pitfalls/durable-task-runtime.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - docs/sources/findings/README.md
+  - docs/sources/findings/sealed-recovery-attempt-cannot-chain.md
+  - docs/sources/incidents/2026-08-23-task-0040-docs-impact-seal-failure.md
+  - docs/sources/incidents/README.md
+  - src/restate/services.ts
+  - tests/e2e/restate-recovery.test.ts
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - meta-index
+    - adr-0002-doc-lifecycle-roles
+    - architecture-index
+    - local-restate-poc-runbook
+    - runbooks-index
+    - sealed-recovery-attempt-cannot-chain
+    - findings-index
+    - incident-task-0040-docs-impact-seal-failure
+    - incidents-index
+    - bl-0045-sealed-recovery-chain
+    - backlog-index
+    - sources-index
+    - archived-tasks-index
+    - tasks-index
+    - task-runtime-kernel
+    - restate-poc-architecture
+    - adr-0001-restate-poc
+    - durable-runtime-pitfalls
+    - core-v2-roadmap
+    - pitfalls-index
+    - task-0040r2-manifest
+    - task-0040r2-spec
+    - task-0040r2-design
+    - task-0040r2-plan
+    - task-0040r2-verification
+    - task-0040r2-docs-impact
+  reviewed:
+    runbooks-index: { outcome: unchanged, reason: "索引结构不变，具体多级 recovery 步骤已更新本地 Restate Runbook" }
+    local-restate-poc-runbook: { outcome: updated, reason: "明确第一层与后续 numbered Attempt 的 source ref 和新 recoveryId 规则" }
+    moye-task-control-skill: { outcome: unchanged, reason: "继续通过 CLI、Runtime 与 Seal 门禁操作，不直接写 Projection" }
+    architecture-overview: { outcome: unchanged, reason: "顶层 Task/Workflow/Runner 边界不变" }
+    durable-workflow-research: { outcome: unchanged, reason: "不回写历史调研，当前设计事实更新 Architecture" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "Finding、Incident、Backlog、Task 分层遵循既有决策" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "多级 successor 保留原 Commit 和失败历史，不放宽两阶段 Seal" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "历史方案输入不作为当前实现权威" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "不改变 5+1 Agent 角色模型" }
+    task-spec-document-closure-brainstorm: { outcome: unchanged, reason: "历史任务文档需求不改写，继续使用既有 Spec/Design/Plan/Verification/Docs Impact package" }
+    task-0013-manifest: { outcome: unchanged, reason: "历史 Control Kernel Task 已封存" }
+    task-0014-manifest: { outcome: unchanged, reason: "历史 Role Task 已封存" }
+    task-0015-manifest: { outcome: unchanged, reason: "历史 Review/Finding Task 已封存" }
+    task-0016-manifest: { outcome: unchanged, reason: "历史 Retry/Repair/Replan Task 已封存" }
+    task-0017-manifest: { outcome: unchanged, reason: "历史 Observer/Docs Task 已封存" }
+    task-0018-manifest: { outcome: unchanged, reason: "历史 Closure Task 已封存" }
+    task-0019-manifest: { outcome: unchanged, reason: "历史真实 Agent Task 已封存" }
+    task-0020-manifest: { outcome: unchanged, reason: "历史状态机展示 Task 已封存" }
+    task-0021-manifest: { outcome: unchanged, reason: "历史 Web 审计 Task 已封存" }
+    task-0028-manifest: { outcome: unchanged, reason: "历史失败 Task 已封存" }
+    task-0029-manifest: { outcome: unchanged, reason: "历史 Bootstrap recovery Task 已封存" }
+    task-0030-manifest: { outcome: unchanged, reason: "历史 Core v2/Seal Task 已封存" }
+    task-0031-manifest: { outcome: unchanged, reason: "历史 Lifecycle Artifact Task 已封存" }
+    task-0032-manifest: { outcome: unchanged, reason: "历史 Role Runtime Task 已封存" }
+    task-0002-manifest: { outcome: unchanged, reason: "历史 Backlog Task 已封存" }
+    task-0003-manifest: { outcome: unchanged, reason: "历史协议 Task 已封存" }
+    task-0004-manifest: { outcome: unchanged, reason: "历史 Git Task 已封存" }
+    task-0005-manifest: { outcome: unchanged, reason: "历史 Agent Task 已封存" }
+    task-0006-manifest: { outcome: unchanged, reason: "历史 Workflow Task 已封存" }
+    task-0007-manifest: { outcome: unchanged, reason: "历史 Trace Task 已封存" }
+    task-0008-manifest: { outcome: unchanged, reason: "历史 Demo Task 已封存" }
+    task-0009-manifest: { outcome: unchanged, reason: "历史 Telemetry Task 已封存" }
+    task-0001-manifest: { outcome: unchanged, reason: "历史 Runtime Task 已封存" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "语言和 TypeScript Restate 技术选型不变" }
+    adr-0004-otlp-phoenix-demo: { outcome: not_applicable, reason: "不涉及 OTLP 或 Phoenix" }

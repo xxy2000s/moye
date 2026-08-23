@@ -139,7 +139,7 @@ npm run cli -- recover-sealed-failure --file /path/to/seal-recovery.json
 npm run cli -- status TASK-EXAMPLE
 ```
 
-Recovery 对旧 Result Commit 的 Docs Impact 必须在该 Commit 的 detached worktree 中验证，不能把当前 Graph Revision 写回旧 package。Recovery 自身失败时只能从 Authority 当前 recovery ref 追加一个新 `recoveryId` Attempt；禁止 purge Invocation、改写 Board 或重置 Runtime 数据卷。
+Recovery 对旧 Result Commit 的 Docs Impact 必须在该 Commit 的 detached worktree 中验证，不能把当前 Graph Revision 写回旧 package。Recovery 自身失败时只能从 Authority 当前 recovery ref 追加一个新 `recoveryId` Attempt：第一条 source 是 `SealedTaskRecoveryWorkflow/<task-id>`，后续 source 是 `SealRecoveryAttemptWorkflow/<previous-recovery-id>`；每次都用新的 `<task-id>-RECOVERY-N`，禁止复用 key、purge Invocation、改写 Board 或重置 Runtime 数据卷。
 
 目录已经位于 `archive/` 但 Runtime 尚未返回 `ARCHIVED` 时，状态仍是 `WAITING_COMMIT` 或 `VERIFYING`，不能从目录扫描推导成功。错误 token 不会消费信号；相同 Evidence 可安全重复提交；不同 Commit 冲突时停止并保留证据，不能盲目 amend 或追加第二个 Result Commit。
 - `backlog sync` 在提交前校验完整 YAML 批次；重复同步按 Source Digest 收敛；运行时独有记录默认保留并报告。
