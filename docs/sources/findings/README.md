@@ -23,5 +23,6 @@ Finding 与 Incident 的边界：
 - [Core v2 失败终态没有完成 Closure 与 Archive](./core-v2-failed-terminal-does-not-close-or-archive.md)：失败 Workflow 只停在 `FAILED_TERMINAL`，LIVE-001～004 因而长期未归档。
 - [Core v2 真实 Agent 故障矩阵证据不完整](./core-v2-real-fault-matrix-evidence-incomplete.md)：真实证据只完整覆盖 Happy Path，异常分支尚未达到同等级产品验收。
 - [Core v2 Test Assessment Finding 会以 Invalid Output 绕过 Repair](./core-v2-test-assessment-finding-can-bypass-repair.md)：真实失败测试在形成 Test Report 前被 Output Gate 终止，尚未进入预期 Repair。
+- [Sealed Recovery Attempt 无法从已失败 Attempt 继续追加](./sealed-recovery-attempt-cannot-chain.md)：真实 TASK-0040 recovery 暴露 numbered successor 只能读取第一层 recovery，无法形成任意长度 append-only chain。
 
 不要为了演示目录创建虚构 Bug。

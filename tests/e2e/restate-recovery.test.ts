@@ -373,6 +373,85 @@ describe("Restate process-loss recovery", () => {
       },
     });
   }, 60_000);
+
+  it("extends a real append-only Seal recovery chain after multiple failed successors", async () => {
+    const fixture = await sealedTaskRepository("TASK-E2E-SEAL-RECOVERY-CHAIN");
+    service?.kill("SIGKILL");
+    await waitForExit(service, 10_000);
+    service = await startService(fixture.root);
+    await registerDeployment(servicePort);
+    await send(ingressUrl(), "SealedTaskWorkflow", fixture.input.taskId, "run", fixture.input);
+    const sealStatus = await waitForSeal(fixture.input.taskId, (status) =>
+      status.projection.currentStep === "waiting-result-commit", 15_000);
+    await stageSealedTaskPackage(fixture.root, sealStatus.intent);
+    const resultCommit = commit(fixture.root, "feat(TASK-E2E-SEAL-RECOVERY-CHAIN): sealed result");
+    const rejectedResultCommit = "f".repeat(40);
+    const evidence = (commitSha: string, executorId: string): SealEvidence => ({
+      token: sealStatus.intent.token,
+      resultCommit: commitSha,
+      executorId,
+      verificationPath: sealStatus.intent.verificationPath,
+      docsImpactPath: sealStatus.intent.docsImpactPath,
+    });
+    await invoke(ingressUrl(), "SealedTaskWorkflow", fixture.input.taskId, "seal", {
+      ...evidence(resultCommit, "e2e/root"),
+      resultCommit: rejectedResultCommit,
+    });
+    const rootFailure = await waitForSealedTask(
+      fixture.input.taskId, (task) => task.archiveStatus === "FAILED", 30_000,
+    );
+
+    const rootRecoveryRef = `restate://SealedTaskRecoveryWorkflow/${fixture.input.taskId}`;
+    const rootRecovery = await invoke<TaskProjection>(
+      ingressUrl(), "SealedTaskRecoveryWorkflow", fixture.input.taskId, "run", {
+        taskId: fixture.input.taskId,
+        projectId: fixture.input.projectId,
+        specRevision: fixture.input.specRevision,
+        sourceWorkflowRef: `restate://SealedTaskWorkflow/${fixture.input.taskId}`,
+        rejectedResultCommit,
+        correctedEvidence: evidence("e".repeat(40), "e2e/recovery-root"),
+      } satisfies SealedTaskRecoveryInput,
+    );
+    expect(rootRecovery).toMatchObject({ outcome: "FAILED_TERMINAL", archiveStatus: "FAILED" });
+
+    const attempt1Id = `${fixture.input.taskId}-RECOVERY-1`;
+    const attempt1Ref = `restate://SealRecoveryAttemptWorkflow/${attempt1Id}`;
+    const attempt1 = await invoke<TaskProjection>(
+      ingressUrl(), "SealRecoveryAttemptWorkflow", attempt1Id, "run", {
+        taskId: fixture.input.taskId,
+        recoveryId: attempt1Id,
+        projectId: fixture.input.projectId,
+        specRevision: fixture.input.specRevision,
+        sourceWorkflowRef: rootRecoveryRef,
+        rejectedResultCommit,
+        correctedEvidence: evidence("d".repeat(40), "e2e/recovery-1"),
+      } satisfies SealedTaskRecoveryInput,
+    );
+    expect(attempt1).toMatchObject({ outcome: "FAILED_TERMINAL", archiveStatus: "FAILED" });
+
+    const attempt2Id = `${fixture.input.taskId}-RECOVERY-2`;
+    const attempt2 = await invoke<TaskProjection>(
+      ingressUrl(), "SealRecoveryAttemptWorkflow", attempt2Id, "run", {
+        taskId: fixture.input.taskId,
+        recoveryId: attempt2Id,
+        projectId: fixture.input.projectId,
+        specRevision: fixture.input.specRevision,
+        sourceWorkflowRef: attempt1Ref,
+        rejectedResultCommit,
+        correctedEvidence: evidence(resultCommit, "e2e/recovery-2"),
+      } satisfies SealedTaskRecoveryInput,
+    );
+    expect(attempt2).toMatchObject({ state: "CLOSED", outcome: "SUCCEEDED", archiveStatus: "ARCHIVED" });
+    expect(await invoke(ingressUrl(), "SealedTaskWorkflow", fixture.input.taskId, "status")).toEqual(rootFailure);
+    expect(await invoke(ingressUrl(), "SealedTaskRecoveryWorkflow", fixture.input.taskId, "status")).toEqual(rootRecovery);
+    expect(await invoke(ingressUrl(), "SealRecoveryAttemptWorkflow", attempt1Id, "status")).toEqual(attempt1);
+    expect(await invoke(ingressUrl(), "TaskAuthority", fixture.input.taskId, "get")).toMatchObject({
+      recoveryWorkflowRef: `restate://SealRecoveryAttemptWorkflow/${attempt2Id}`,
+      sourceWorkflowRef: attempt1Ref,
+    });
+    const detailResponse = await fetch(`http://127.0.0.1:${boardPort}/api/tasks/${fixture.input.taskId}`);
+    expect(await detailResponse.json()).toEqual(attempt2);
+  }, 60_000);
 });
 
 async function registerDeployment(port: number): Promise<void> {

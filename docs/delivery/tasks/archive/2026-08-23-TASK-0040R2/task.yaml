@@ -1,0 +1,17 @@
+schema_version: 1
+id: TASK-0040R2
+title: 修复多级 Sealed Recovery successor 并收敛 TASK-0040
+status: seal_prepared
+outcome: null
+backlog_refs: [BL-0045]
+spec_revision: 1
+workflow_id: sealed-task/TASK-0040R2
+execution_mode: sealed-result-commit
+base_commit: 9b395c5bed8eb23db7b535037ee133c10755408f
+archive: { status: prepared, archived_at: null, archived_path: docs/delivery/tasks/archive/2026-08-23-TASK-0040R2 }
+result: { pull_request: null, merge_commit: null, closure_report: null }
+seal:
+  status: prepared
+  intent_digest: sha256:d0b1fd84c34e5fc4c765e0073fad156fa2acd955965a6235eb8777f704bc3f10
+  base_commit: 9b395c5bed8eb23db7b535037ee133c10755408f
+  archive_path: docs/delivery/tasks/archive/2026-08-23-TASK-0040R2

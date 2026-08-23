@@ -927,9 +927,13 @@ export const sealedTaskRecoveryAttemptWorkflow = restate.workflow({
       const rootSourceRef = `restate://SealedTaskWorkflow/${input.taskId}`;
       const rootSource = await ctx.workflowClient<typeof sealedTaskWorkflow>(sealedTaskWorkflow, input.taskId).sealStatus();
       const sourceRef = parseRecoveryWorkflowRef(input.sourceWorkflowRef);
-      const sourceProjection = await ctx.workflowClient<typeof sealedTaskRecoveryWorkflow>(
-        sealedTaskRecoveryWorkflow, sourceRef.key,
-      ).status();
+      const sourceProjection = sourceRef.service === "SealedTaskRecoveryWorkflow"
+        ? await ctx.workflowClient<typeof sealedTaskRecoveryWorkflow>(
+          sealedTaskRecoveryWorkflow, sourceRef.key,
+        ).status()
+        : await ctx.workflowClient<typeof sealedTaskRecoveryAttemptWorkflow>(
+          sealedTaskRecoveryAttemptWorkflow, sourceRef.key,
+        ).status();
       if (rootSource === null || sourceProjection === null || sourceProjection.taskId !== input.taskId ||
           sourceProjection.state !== "CLOSED" || sourceProjection.archiveStatus !== "FAILED" ||
           rootSource.evidence === undefined || rootSource.evidence.resultCommit !== input.rejectedResultCommit ||
@@ -980,10 +984,16 @@ export const sealedTaskRecoveryAttemptWorkflow = restate.workflow({
   },
 });
 
-function parseRecoveryWorkflowRef(value: string): { service: "SealedTaskRecoveryWorkflow"; key: string } {
-  const match = /^restate:\/\/(SealedTaskRecoveryWorkflow)\/([A-Z0-9-]+)$/.exec(value);
+function parseRecoveryWorkflowRef(value: string): {
+  service: "SealedTaskRecoveryWorkflow" | "SealRecoveryAttemptWorkflow";
+  key: string;
+} {
+  const match = /^restate:\/\/(SealedTaskRecoveryWorkflow|SealRecoveryAttemptWorkflow)\/([A-Z0-9-]+)$/.exec(value);
   if (match === null) throw new restate.TerminalError("Recovery source Workflow ref is invalid", { errorCode: 400 });
-  return { service: "SealedTaskRecoveryWorkflow", key: match[2]! };
+  return {
+    service: match[1] as "SealedTaskRecoveryWorkflow" | "SealRecoveryAttemptWorkflow",
+    key: match[2]!,
+  };
 }
 
 function sealPromiseName(intent: SealIntent): string {
