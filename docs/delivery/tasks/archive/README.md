@@ -59,5 +59,6 @@ YYYY-MM-DD-TASK-NNNN
 | [TASK-0040R2](./2026-08-23-TASK-0040R2/spec.md) | Seal Prepared；业务终态见 Runtime | 2026-08-23 | 多级 Sealed Recovery chain 与 TASK-0040/TASK-0040R1 合法收敛 |
 | [TASK-0041](./2026-08-23-TASK-0041/spec.md) | Seal Prepared；业务终态见 Runtime | 2026-08-23 | Core v2 真实双父 Merge Effect、未知回执对账与证据边界修复 |
 | [TASK-0042](./2026-08-23-TASK-0042/spec.md) | Seal Prepared；业务终态见 Runtime | 2026-08-23 | Core v2 成功 Closure/Archive、停滞 Workflow successor 与历史 Trace 兼容 |
+| [TASK-0042R1](./2026-08-23-TASK-0042R1/spec.md) | Seal Prepared；业务终态见 Runtime | 2026-08-23 | append-only 恢复 TASK-0042 Verification 状态 Seal 失败 |
 
 Bootstrap Task 的 `task.yaml` 冻结在 Archive 开始前，因此其中 `archive.status: pending` 描述的是冻结点；最终 `ARCHIVED` 事实由目录位置、`archive-manifest.json` 和 ProjectBoard Projection 共同证明。TASK-0002 归档后文档图门禁曾发现 Spec 的 Active 相对链接因目录层级变化而失效，控制面只修正了该链接；修正前内容仍由 Result Commit `ff1954f4e4360e85276cf22aa30d6f5e8e396f84` 保存。后续 Task 使用不随 Active/Archive 深度变化的稳定引用。

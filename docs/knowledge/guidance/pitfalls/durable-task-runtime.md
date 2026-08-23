@@ -129,3 +129,10 @@
 - 后果：错误可能先被写入 Restate Journal，Invocation 反复重放同一失败 command，业务 Projection 停在 EXECUTING/FAILED_TERMINAL 且 Closure 永远不执行；热修不会删除旧 command result。
 - 检测：`sys_invocation.last_failure_related_command_*` 指向 Run command，retry_count 增长，但 Projection/Event sequence 不再前进。
 - 规避：把可预见校验移到首个 Projection 前；Effect 内返回显式结果而不是抛出可恢复业务错误；遗留历史只用校验 Invocation/Projection Digest 的 append-only successor recovery 收敛，禁止 purge、复用 key 或改 Board。
+
+## 19. 在 Verification 状态机器字段追加自然语言说明
+
+- 触发：把 `> 状态：Accepted` 写成 `> 状态：Accepted（Seal Pending）` 或在同一行附加其他说明。
+- 后果：测试和 Docs Impact 可以全部通过，但 Sealed Result Commit Gate 按精确协议拒绝，Task 进入 `FAILED_TERMINAL + ArchiveFailed`。
+- 检测：Seal stage 后直接运行与 `verifySealedResultCommit` 相同的 Verification 状态解析，确认存在独立、精确的 `> 状态：Accepted` 行。
+- 规避：机器字段只写规范枚举，证据边界和 Seal 阶段说明另起普通段落；失败后保留 rejected Commit，通过 corrected sibling Commit 与 append-only successor 恢复，禁止 amend 或重交同一 Evidence。

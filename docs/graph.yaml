@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 84
+graph_revision: 85
 updated_at: "2026-08-23"
 
 entrypoints:
@@ -3104,6 +3104,70 @@ documents:
     authority: delivery-control
     read_when: [backlog-triage, task-create]
 
+  - id: incident-task-0042-verification-status-seal-failure
+    path: docs/sources/incidents/2026-08-23-task-0042-verification-status-seal-failure.md
+    type: incident
+    status: active
+    scope: sealed-result-commit
+    authority: incident-record
+    read_when: [incident-response, task-execution]
+
+  - id: bl-0049-task-0042-seal-recovery
+    path: docs/delivery/backlog/BL-0049.yaml
+    type: backlog-item
+    status: ready
+    scope: sealed-result-commit
+    authority: delivery-control
+    read_when: [backlog-triage, task-create]
+
+  - id: task-0042r1-manifest
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0042R1/task.yaml
+    type: task-manifest
+    status: archived
+    scope: task-0042-seal-recovery
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0042r1-spec
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0042R1/spec.md
+    type: task-spec
+    status: archived
+    scope: task-0042-seal-recovery
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0042r1-design
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0042R1/design.md
+    type: task-design
+    status: archived
+    scope: task-0042-seal-recovery
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0042r1-plan
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0042R1/plan.md
+    type: task-plan
+    status: archived
+    scope: task-0042-seal-recovery
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0042r1-verification
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0042R1/verification.md
+    type: verification
+    status: archived
+    scope: task-0042-seal-recovery
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0042r1-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0042R1/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: task-0042-seal-recovery
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
 relations:
   - from: root-readme
     to: docs-index
@@ -5036,6 +5100,42 @@ relations:
   - from: bl-0048-core-v2-legacy-recovery-trace
     to: task-runtime-kernel
     type: tracks_requirement_from
+
+  - from: incident-task-0042-verification-status-seal-failure
+    to: bl-0049-task-0042-seal-recovery
+    type: produced
+
+  - from: bl-0049-task-0042-seal-recovery
+    to: task-0042r1-manifest
+    type: schedules_into
+
+  - from: task-0042r1-spec
+    to: task-0042r1-manifest
+    type: belongs_to
+
+  - from: task-0042r1-design
+    to: task-0042r1-spec
+    type: refines
+
+  - from: task-0042r1-plan
+    to: task-0042r1-manifest
+    type: belongs_to
+
+  - from: task-0042r1-verification
+    to: task-0042r1-manifest
+    type: verifies
+
+  - from: task-0042r1-docs-impact
+    to: task-0042r1-manifest
+    type: reports_on
+
+  - from: task-0042r1-manifest
+    to: task-0042-manifest
+    type: recovers
+
+  - from: incident-task-0042-verification-status-seal-failure
+    to: durable-runtime-pitfalls
+    type: documented_by
 
   - from: bl-0043-uses-invalid-in-progress-status
     to: bl-0043-core-v2-real-fault-matrix

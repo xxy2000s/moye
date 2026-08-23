@@ -1,0 +1,24 @@
+schema_version: 1
+id: TASK-0042R1
+title: 恢复 TASK-0042 Verification 状态 Seal 失败
+status: seal_prepared
+outcome: null
+backlog_refs:
+  - BL-0049
+spec_revision: 1
+workflow_id: sealed-task/TASK-0042R1
+execution_mode: sealed-result-commit
+base_commit: a0501f75eff690b51fab3242a937145d99e2f9c3
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-23-TASK-0042R1
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:f216f0c2406ae7a83b07e096bd136b33222f9d5d757407b6efbd703b57d64584
+  base_commit: a0501f75eff690b51fab3242a937145d99e2f9c3
+  archive_path: docs/delivery/tasks/archive/2026-08-23-TASK-0042R1

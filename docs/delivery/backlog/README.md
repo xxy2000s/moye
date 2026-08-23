@@ -61,6 +61,7 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 | [BL-0046](./BL-0046.yaml) | Scheduled | 为 journaled durable command failure 增加 Core v2 append-only recovery successor | TASK-0042（Active） |
 | [BL-0047](./BL-0047.yaml) | Scheduled | 补齐 Core v2 成功 Closure 与真实 Archive Effect | TASK-0042（Active） |
 | [BL-0048](./BL-0048.yaml) | Scheduled | 兼容 Core v2 历史 Recovery Projection 的 Trace nullable 字段 | TASK-0042（Active） |
+| [BL-0049](./BL-0049.yaml) | Converted to Task | 以规范 Verification 状态恢复 TASK-0042 Seal 失败 | TASK-0042R1（Active） |
 
 ## 本轮调度结果
 

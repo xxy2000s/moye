@@ -35,6 +35,7 @@
 | TASK-0040R2 | BL-0045 | Seal Prepared | 修复 numbered recovery 无法从已失败 Attempt 继续追加的问题；真实 Restate 与历史 Task 均已通过 | Intent `sha256:d0b1…3f10` |
 | TASK-0041 | BL-0043 | Archived / Succeeded | 真实、幂等、可对账的 Merge Effect；真实 Agent Task 证明 ref 更新后进程终止、唯一双父 Merge 与 `ALREADY_APPLIED`；同时修复 Role 物理路径、Failure Artifact 命名空间和 Trusted Test 文件 Digest | `34c07dc` / `sha256:21ec68…2275` |
 | TASK-0042 | BL-0046、BL-0047、BL-0048 | Verified / Seal Pending | 成功 Closure/Archive Receipt、Archive-only retry、journaled command append-only successor、历史 Trace schema 兼容，并合法收敛 001/003/004 | Seal Pending |
+| TASK-0042R1 | BL-0049 | Recovering | 保留 TASK-0042 rejected Commit，以规范 Verification 状态的 sibling Evidence append-only 收敛原 Seal | — |
 | TASK-0043 | BL-0043 | Planned | 真实 Agent Happy/Implementation/Final Review/Documentation/Test/Design Replan 场景 | — |
 | TASK-0044 | BL-0043 | Planned | Test UNKNOWN 两分支、Worker 中断、Git 与 Merge 回执未知场景 | — |
 | TASK-0045 | BL-0043 | Planned | Repair/Replan 预算、Observer/Knowledge 故障与 stale Attempt 场景 | — |
