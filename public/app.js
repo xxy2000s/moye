@@ -387,6 +387,7 @@ function renderCoreV2Trace(trace) {
       <dl><div><dt>当前阶段</dt><dd>${escapeHtml(task.currentStep)}</dd></div><div><dt>Workflow</dt><dd>CoreV2Workflow</dd></div></dl>
     </section>
     ${task.error ? `<p class="error-box"><strong>失败原因：</strong>${escapeHtml(task.error)}</p>` : ""}
+    ${renderCoreV2Closure(trace)}
     ${renderStateMachine(trace.stateMachine, trace)}
     <details class="task-evidence-panel" open>
       <summary><span>角色会话与交付物</span><small>${trace.roles.length} 个 Session · ${lifecycle.artifacts.length} 个不可变 Artifact</small></summary>
@@ -400,6 +401,29 @@ function renderCoreV2Trace(trace) {
     <details class="advanced-panel"><summary><span>高级诊断</span><small>确定性 Observer、Restate Journal 与完整 Lifecycle Projection</small></summary><div class="advanced-content"><section><p class="subheading">确定性 Observer</p><dl class="machine-node-facts"><div><dt>Event</dt><dd>${trace.observer.facts.events}</dd></div><div><dt>Attempt</dt><dd>${trace.observer.facts.attempts}</dd></div><div><dt>Failure / UNKNOWN</dt><dd>${trace.observer.facts.failures} / ${trace.observer.facts.unknown}</dd></div><div><dt>Repair / Replan</dt><dd>${trace.observer.facts.repairs} / ${trace.observer.facts.replans}</dd></div></dl><code class="wide-code">${escapeHtml(trace.observer.reportDigest)}</code></section><section><code class="wide-code">${escapeHtml(trace.durableRuntime.workflowRef)}</code><a class="runtime-link" href="${escapeAttribute(trace.durableRuntime.invocationsUrl)}" target="_blank" rel="noreferrer">在 Restate 中核对 Journal ↗</a></section><section><p class="subheading">Projection Digest</p><code class="wide-code">${escapeHtml(lifecycle.projectionDigest)}</code></section></div></details>`;
   bindStateMachineGraph(trace.stateMachine, trace);
   bindAgentEventsDialog(trace);
+}
+
+function renderCoreV2Closure(trace) {
+  const lifecycle = trace.lifecycle;
+  const failure = lifecycle.failure;
+  const failureClosure = lifecycle.failureClosure;
+  const successClosure = lifecycle.successClosure;
+  const archive = lifecycle.archive;
+  const recovery = trace.workflowRecovery;
+  if (!failure && !failureClosure && !successClosure && !archive && !recovery) return "";
+  const outcome = failure ? "失败 Closure" : successClosure ? "成功 Closure" : "Closure / Archive";
+  const attempts = failure?.attemptIds || [];
+  const sessions = failure?.sessionIds || [];
+  return `<details class="task-evidence-panel core-v2-closure" ${failure || recovery || archive?.status === "FAILED" ? "open" : ""}>
+    <summary><span>${escapeHtml(outcome)}</span><small>失败事实、Closure Artifact、恢复来源与 Archive Receipt</small></summary>
+    <div class="task-evidence-content closure-evidence-grid">
+      ${failure ? `<section class="journey-section"><div class="trace-heading"><div><p class="eyebrow">Original Failure</p><h3>原始失败事实</h3></div><span>append-only</span></div><dl class="machine-node-facts"><div><dt>失败阶段</dt><dd>${escapeHtml(failure.originalStage)}</dd></div><div><dt>发生时间</dt><dd>${escapeHtml(formatTime(failure.failedAt))}</dd></div><div><dt>原 Workflow</dt><dd><code>${escapeHtml(failure.sourceWorkflowRef)}</code></dd></div><div><dt>Failure Digest</dt><dd><code>${escapeHtml(failure.failureDigest)}</code></dd></div></dl><p class="error-box">${escapeHtml(failure.reason)}</p><details class="closure-bindings"><summary>原始 Attempt 与 Session · ${attempts.length} / ${sessions.length}</summary><ul>${attempts.map((id, index) => `<li><code>${escapeHtml(id)}</code>${sessions[index] ? `<span>${escapeHtml(sessions[index])}</span>` : ""}</li>`).join("") || "<li>原任务尚未建立 Role Attempt</li>"}</ul></details></section>` : ""}
+      ${successClosure ? `<section class="journey-section"><div class="trace-heading"><div><p class="eyebrow">Success Closure</p><h3>成功闭环事实</h3></div><span>不可变 Artifact</span></div><dl class="machine-node-facts"><div><dt>Merge Commit</dt><dd><code>${escapeHtml(successClosure.mergeCommit)}</code></dd></div><div><dt>Closure Artifact</dt><dd><code>${escapeHtml(successClosure.closureArtifactRef)}</code></dd></div><div><dt>Closure Digest</dt><dd><code>${escapeHtml(successClosure.closureDigest)}</code></dd></div><div><dt>关闭时间</dt><dd>${escapeHtml(formatTime(successClosure.closedAt))}</dd></div></dl></section>` : ""}
+      ${failureClosure ? `<section class="journey-section"><div class="trace-heading"><div><p class="eyebrow">Failure Closure</p><h3>失败闭环 Artifact</h3></div><span>${escapeHtml(failureClosure.outcome)}</span></div><dl class="machine-node-facts"><div><dt>Closure Artifact</dt><dd><code>${escapeHtml(failureClosure.closureArtifactRef)}</code></dd></div><div><dt>Closure Digest</dt><dd><code>${escapeHtml(failureClosure.closureDigest)}</code></dd></div><div><dt>Knowledge</dt><dd><code>${escapeHtml(failureClosure.knowledgeDispositionDigest)}</code></dd></div><div><dt>关闭时间</dt><dd>${escapeHtml(formatTime(failureClosure.closedAt))}</dd></div></dl></section>` : ""}
+      ${recovery ? `<section class="journey-section"><div class="trace-heading"><div><p class="eyebrow">Recovery Successor</p><h3>合法接管记录</h3></div><span>原 Projection 未改写</span></div><dl class="machine-node-facts"><div><dt>Source Invocation</dt><dd><code>${escapeHtml(recovery.sourceInvocationId)}</code></dd></div><div><dt>停滞命令</dt><dd>${escapeHtml(recovery.stalledCommand)} · #${recovery.stalledCommandIndex}</dd></div><div><dt>Invocation Fact</dt><dd><code>${escapeHtml(recovery.invocationFactDigest)}</code></dd></div><div><dt>Source Projection</dt><dd><code>${escapeHtml(recovery.sourceProjectionDigest)}</code></dd></div><div><dt>恢复动作</dt><dd>${escapeHtml(recovery.action)}</dd></div></dl>${recovery.predecessorWorkflowRef ? `<p class="result-ref"><span>前序恢复</span><code>${escapeHtml(recovery.predecessorWorkflowRef)}</code></p>` : ""}</section>` : ""}
+      ${archive ? `<section class="journey-section"><div class="trace-heading"><div><p class="eyebrow">Archive Effect</p><h3>${escapeHtml(archiveStatusLabel(archive.status))}</h3></div><span>Attempt ${archive.attempts}</span></div><dl class="machine-node-facts"><div><dt>Effect ID</dt><dd><code>${escapeHtml(archive.effectId)}</code></dd></div>${archive.receiptRef ? `<div><dt>Receipt</dt><dd><code>${escapeHtml(archive.receiptRef)}</code></dd></div>` : ""}${archive.receiptDigest ? `<div><dt>Receipt Digest</dt><dd><code>${escapeHtml(archive.receiptDigest)}</code></dd></div>` : ""}${archive.error ? `<div><dt>错误</dt><dd>${escapeHtml(archive.error)}</dd></div>` : ""}</dl></section>` : ""}
+    </div>
+  </details>`;
 }
 
 function renderCodingTrace(trace, summary) {
@@ -646,7 +670,7 @@ function renderMachineGraphCanvas(machine, transitions) {
 }
 
 function machineGraphPositions(machine) {
-  const source = machine.workflow === "CoreV2Workflow" ? CORE_V2_GRAPH_POSITIONS : machine.workflow === "CodingTaskWorkflow" ? CODING_GRAPH_POSITIONS : TASK_GRAPH_POSITIONS;
+  const source = machine.workflow.startsWith("CoreV2") ? CORE_V2_GRAPH_POSITIONS : machine.workflow === "CodingTaskWorkflow" ? CODING_GRAPH_POSITIONS : TASK_GRAPH_POSITIONS;
   const positions = new Map();
   let fallback = 0;
   machine.definition.nodes.forEach(node => {

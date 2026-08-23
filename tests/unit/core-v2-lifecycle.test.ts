@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createCoreV2Lifecycle, workflowAcceptArchitectV2, workflowAcceptDesignReviewV2, workflowAcceptDocumentationV2, workflowAcceptFinalReviewV2, workflowAcceptImplementationV2, workflowAcceptTestAssessmentV2, workflowAcceptTestPlanV2, workflowArchiveFailureV2, workflowAuthorizeRepairV2, workflowCloseCoreV2, workflowCloseFailureV2, workflowEnterFailureTerminalV2, workflowFailFailureArchiveV2, workflowPassVerificationGateV2, workflowRecordFailureArtifactV2, workflowRecordKnowledgeDispositionV2, workflowRecordTrustedTestRunV2, workflowReplanV2, workflowResumeTestReconcileV2, workflowRetryFailureArchiveV2, workflowWaitForTestReconcileV2 } from "../../src/domain/core-v2-lifecycle.js";
+import { createCoreV2Lifecycle, workflowAcceptArchitectV2, workflowAcceptDesignReviewV2, workflowAcceptDocumentationV2, workflowAcceptFinalReviewV2, workflowAcceptImplementationV2, workflowAcceptTestAssessmentV2, workflowAcceptTestPlanV2, workflowArchiveFailureV2, workflowArchiveSuccessV2, workflowAuthorizeRepairV2, workflowCloseCoreV2, workflowCloseFailureV2, workflowEnterFailureTerminalV2, workflowFailFailureArchiveV2, workflowPassVerificationGateV2, workflowRecordFailureArtifactV2, workflowRecordKnowledgeDispositionV2, workflowRecordTrustedTestRunV2, workflowReplanV2, workflowResumeTestReconcileV2, workflowRetryFailureArchiveV2, workflowWaitForTestReconcileV2 } from "../../src/domain/core-v2-lifecycle.js";
 import { completeRoleAttemptV2, createRoleAttemptV2, createRoleRunEvidenceV2, startRoleAttemptV2 } from "../../src/domain/role-runtime-v2.js";
 import type { AgentRoleV2, RolePhaseV2 } from "../../src/domain/role-runtime-v2.js";
 
@@ -123,17 +123,24 @@ describe("Core v2 Architect and Design Review lifecycle", () => {
     const effectId = `local-merge-effect:${sha("f")}`;
     expect(() => workflowCloseCoreV2(gated, {
       effectId, outcome: "APPLIED", targetRef: "refs/heads/master", mergeCommit: "c".repeat(40),
-      reconciledAfterUnknown: false, at: time(13),
+      reconciledAfterUnknown: false, closureArtifactRef: "artifact://success-closure", closureContentDigest: sha("e"), at: time(13),
     })).toThrow(/distinct from the verified Candidate/);
     const closed = workflowCloseCoreV2(gated, {
       effectId, outcome: "ALREADY_APPLIED", targetRef: "refs/heads/master", mergeCommit: "d".repeat(40),
-      reconciledAfterUnknown: true, at: time(13),
+      reconciledAfterUnknown: true, closureArtifactRef: "artifact://success-closure", closureContentDigest: sha("e"), at: time(13),
     });
     expect(closed).toMatchObject({
-      state: "CLOSED", outcome: "SUCCEEDED", candidateCommit: "c".repeat(40), mergeCommit: "d".repeat(40),
+      state: "ARCHIVE_PENDING", outcome: "SUCCEEDED", candidateCommit: "c".repeat(40), mergeCommit: "d".repeat(40),
       mergeReceipt: { effectId, outcome: "ALREADY_APPLIED", targetRef: "refs/heads/master", reconciledAfterUnknown: true },
+      successClosure: { outcome: "SUCCEEDED", closureArtifactRef: "artifact://success-closure" },
+      archive: { status: "PENDING", attempts: 1 },
     });
     expect(closed.mergeReceipt?.receiptDigest).toMatch(/^sha256:/);
+    const archived = workflowArchiveSuccessV2(closed, { receiptRef: "artifact://success-archive", receiptDigest: sha("f"), at: time(14) });
+    expect(archived).toMatchObject({ state: "CLOSED", outcome: "SUCCEEDED", archive: { status: "ARCHIVED" } });
+    expect(archived.events.slice(-5).map((event) => event.type)).toEqual([
+      "MergeConfirmed", "SuccessClosureCompleted", "ArchivePending", "TaskClosed", "ArchiveArchived",
+    ]);
   });
 
   it("closes and archives a failed Task without re-entering product stages", () => {

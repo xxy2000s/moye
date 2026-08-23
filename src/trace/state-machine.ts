@@ -50,7 +50,7 @@ export interface StateMachineExecution {
 export interface TaskStateMachineTrace {
   readonly schemaVersion: 1;
   readonly authority: "derived-from-runtime-projection";
-  readonly workflow: "CoreV2Workflow" | "CodingTaskWorkflow" | "TaskWorkflow" | "BootstrapFailureRecoveryWorkflow" | "SealedTaskWorkflow" | "SealedTaskRecoveryWorkflow" | "SealRecoveryAttemptWorkflow";
+  readonly workflow: "CoreV2Workflow" | "CoreV2FailureRecoveryWorkflow" | "CoreV2FailureRecoveryAttemptWorkflow" | "CodingTaskWorkflow" | "TaskWorkflow" | "BootstrapFailureRecoveryWorkflow" | "SealedTaskWorkflow" | "SealedTaskRecoveryWorkflow" | "SealRecoveryAttemptWorkflow";
   readonly definition: {
     readonly nodes: readonly StateMachineNode[];
     readonly edges: readonly StateMachineEdge[];
@@ -178,11 +178,11 @@ const CORE_V2_EDGES: readonly Omit<StateMachineEdge, "traversed">[] = [
   edge("REPAIR_REQUIRED", "IMPLEMENTATION_REQUIRED", "REPAIR", "授权新 Implementation Generation"),
   edge("WAITING_RECONCILE", "TEST_EXECUTION_REQUIRED", "REPAIR", "对账后恢复原测试"),
   edge("VERIFICATION_GATE_REQUIRED", "MERGE_REQUIRED", "NORMAL", "确定性 Artifact Gate 通过"),
-  edge("MERGE_REQUIRED", "CLOSED", "NORMAL", "Merge 与 Knowledge Disposition 完整"),
+  edge("MERGE_REQUIRED", "ARCHIVE_PENDING", "ARCHIVE", "Merge 与 Success Closure 已冻结，等待 Archive Receipt"),
   edge("CLOSED", "ARCHIVED", "ARCHIVE", "Archive Receipt 确认"),
   edge("FAILED_TERMINAL", "ARCHIVE_PENDING", "ARCHIVE", "Failure Artifact、Knowledge Disposition 与 Closure 已冻结"),
-  edge("ARCHIVE_PENDING", "CLOSED", "ARCHIVE", "失败业务 Closure 已完成"),
-  edge("ARCHIVE_PENDING", "ARCHIVE_FAILED", "FAILURE", "Failure Archive Effect 失败"),
+  edge("ARCHIVE_PENDING", "CLOSED", "ARCHIVE", "业务 Closure 已冻结并收到 Archive Receipt"),
+  edge("ARCHIVE_PENDING", "ARCHIVE_FAILED", "FAILURE", "Archive Effect 失败；业务执行不得重跑"),
   edge("ARCHIVE_FAILED", "ARCHIVE_PENDING", "REPAIR", "仅重试同一 Archive Effect"),
   ...["ARCHITECT_REQUIRED", "DESIGN_REVIEW_REQUIRED", "IMPLEMENTATION_REQUIRED", "DOCUMENTATION_REQUIRED", "TEST_PLAN_REQUIRED", "TEST_EXECUTION_REQUIRED", "TEST_ASSESSMENT_REQUIRED", "FINAL_REVIEW_REQUIRED", "VERIFICATION_GATE_REQUIRED", "MERGE_REQUIRED", "REPAIR_REQUIRED", "REPLAN_REQUIRED"]
     .map((from) => edge(from, "FAILED_TERMINAL", "FAILURE", "不可恢复或预算耗尽")),
@@ -288,7 +288,7 @@ export function buildCoreV2StateMachine(projection: CoreV2WorkflowProjection): T
     const target = targets[event.type];
     if (target === undefined || target === current) continue;
     if (event.type === "TaskClosed" && current === "ARCHIVED") continue;
-    history.push(transition(event, current, target, target === "ARCHIVED" ? "ARCHIVE" : "BUSINESS"));
+    history.push(transition(event, current, target, target.startsWith("ARCHIVE") ? "ARCHIVE" : "BUSINESS"));
     current = target;
   }
   if (projection.state === "FAILED_TERMINAL" && current !== "FAILED_TERMINAL") {
@@ -313,9 +313,12 @@ export function buildCoreV2StateMachine(projection: CoreV2WorkflowProjection): T
     ...(attempt.finishedAt === undefined ? {} : { finishedAt: attempt.finishedAt }),
     evidenceDigests: attempt.run === undefined ? [attempt.attemptDigest] : [attempt.attemptDigest, attempt.run.evidenceDigest, attempt.run.eventsDigest],
   }));
-  if (projection.lifecycle.trustedTestRun !== null) executions.push({ kind: "VERIFICATION", id: projection.lifecycle.trustedTestRun.runId, state: "RECORDED", step: "TEST_EXECUTION_REQUIRED", evidenceDigests: [projection.lifecycle.trustedTestRun.manifestDigest] });
-  if (projection.lifecycle.verificationGateDigest !== null) executions.push({ kind: "VERIFICATION", id: projection.lifecycle.verificationGateDigest, state: "PASSED", step: "VERIFICATION_GATE_REQUIRED", evidenceDigests: [projection.lifecycle.verificationGateDigest] });
-  if (projection.lifecycle.mergeReceipt !== null) executions.push({
+  // Recovery successors can expose projections written before nullable Core v2
+  // fields were introduced. Treat an absent field like an explicit null so the
+  // read-only Trace remains available for immutable historical tasks.
+  if (projection.lifecycle.trustedTestRun != null) executions.push({ kind: "VERIFICATION", id: projection.lifecycle.trustedTestRun.runId, state: "RECORDED", step: "TEST_EXECUTION_REQUIRED", evidenceDigests: [projection.lifecycle.trustedTestRun.manifestDigest] });
+  if (projection.lifecycle.verificationGateDigest != null) executions.push({ kind: "VERIFICATION", id: projection.lifecycle.verificationGateDigest, state: "PASSED", step: "VERIFICATION_GATE_REQUIRED", evidenceDigests: [projection.lifecycle.verificationGateDigest] });
+  if (projection.lifecycle.mergeReceipt != null) executions.push({
     kind: "MERGE_EFFECT",
     id: projection.lifecycle.mergeReceipt.effectId,
     state: projection.lifecycle.mergeReceipt.reconciledAfterUnknown ? "RECONCILED" : projection.lifecycle.mergeReceipt.outcome,
@@ -323,14 +326,21 @@ export function buildCoreV2StateMachine(projection: CoreV2WorkflowProjection): T
     producer: projection.lifecycle.mergeReceipt.targetRef,
     evidenceDigests: [projection.lifecycle.mergeReceipt.receiptDigest, projection.lifecycle.mergeReceipt.mergeCommit],
   });
+  const archive = projection.lifecycle.archive?.status ?? "NOT_READY";
   const overall = projection.state === "FAILED_TERMINAL" ? "FAILED_TERMINAL"
-    : projection.state === "CLOSED" ? "ARCHIVED"
+    : projection.state === "CLOSED" && archive === "ARCHIVED" ? "ARCHIVED"
+    : projection.state === "CLOSED" ? "CLOSED"
     : projection.state === "ARCHIVE_PENDING" ? "ARCHIVE_PENDING"
     : projection.state === "ARCHIVE_FAILED" ? "ARCHIVE_FAILED"
     : projection.lifecycle.state;
-  return finalizeMachine({ workflow: "CoreV2Workflow", nodes: CORE_V2_NODES, edges: CORE_V2_EDGES,
+  const workflow = projection.workflowRef?.includes("CoreV2FailureRecoveryAttemptWorkflow/")
+    ? "CoreV2FailureRecoveryAttemptWorkflow"
+    : projection.workflowRef?.includes("CoreV2FailureRecoveryWorkflow/")
+      ? "CoreV2FailureRecoveryWorkflow"
+      : "CoreV2Workflow";
+  return finalizeMachine({ workflow, nodes: CORE_V2_NODES, edges: CORE_V2_EDGES,
     business: projection.lifecycle.state,
-    archive: projection.state === "CLOSED" ? "ARCHIVED" : projection.state === "ARCHIVE_PENDING" ? "PENDING" : projection.state === "ARCHIVE_FAILED" ? "FAILED" : "NOT_READY",
+    archive,
     overall, history, executions });
 }
 

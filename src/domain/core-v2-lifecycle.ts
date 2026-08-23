@@ -92,6 +92,21 @@ export interface FailureClosureV2 {
   readonly closureDigest: string;
 }
 
+export interface SuccessClosureV2 {
+  readonly outcome: "SUCCEEDED";
+  readonly candidateCommit: string;
+  readonly mergeCommit: string;
+  readonly mergeReceiptDigest: string;
+  readonly verificationGateDigest: string;
+  readonly knowledgeDispositionDigest: string;
+  readonly implementationGeneration: number;
+  readonly sourceWorkflowRef: string;
+  readonly closureArtifactRef: string;
+  readonly closureContentDigest: string;
+  readonly closedAt: string;
+  readonly closureDigest: string;
+}
+
 export interface CoreV2ArchiveV2 {
   readonly status: "PENDING" | "ARCHIVED" | "FAILED";
   readonly effectId: string;
@@ -127,6 +142,7 @@ export interface CoreV2LifecycleProjection {
   readonly mergeReceipt: CoreV2MergeReceiptV2 | null;
   readonly failure: FailureArtifactV2 | null;
   readonly failureClosure: FailureClosureV2 | null;
+  readonly successClosure: SuccessClosureV2 | null;
   readonly archive: CoreV2ArchiveV2 | null;
   readonly outcome: "SUCCEEDED" | "FAILED_TERMINAL" | null;
   readonly invalidatedRevisions: readonly InvalidatedRevisionV2[];
@@ -167,6 +183,7 @@ export function createCoreV2Lifecycle(input: {
     mergeReceipt: null,
     failure: null,
     failureClosure: null,
+    successClosure: null,
     archive: null,
     outcome: null,
     invalidatedRevisions: [],
@@ -313,6 +330,7 @@ export function workflowAuthorizeRepairV2(
     knowledgeDispositionDigest: null,
     mergeCommit: null,
     mergeReceipt: null,
+    successClosure: null,
     outcome: null,
     events: append(projection.events, "ImplementationRepairAuthorized", instant(input.at), `g${projection.implementationGeneration + 1}:${reason}`),
   });
@@ -597,6 +615,30 @@ export function workflowArchiveFailureV2(
   });
 }
 
+export function workflowArchiveSuccessV2(
+  projectionInput: CoreV2LifecycleProjection,
+  input: { readonly receiptRef: string; readonly receiptDigest: string; readonly at: string },
+): CoreV2LifecycleProjection {
+  const projection = parseProjection(projectionInput);
+  if (projection.state !== "ARCHIVE_PENDING" || projection.archive?.status !== "PENDING" || projection.successClosure === null) {
+    throw conflict("CORE_V2_SUCCESS_ARCHIVE_NOT_PENDING", "Success Archive is not pending");
+  }
+  const at = instant(input.at);
+  const archive: CoreV2ArchiveV2 = deepFreeze({
+    ...projection.archive,
+    status: "ARCHIVED",
+    receiptRef: required(input.receiptRef, "receiptRef"),
+    receiptDigest: sha(input.receiptDigest, "receiptDigest"),
+    error: null,
+  });
+  return seal({
+    ...withoutDigest(projection),
+    state: "CLOSED",
+    archive,
+    events: append(append(projection.events, "TaskClosed", at, "SUCCEEDED"), "ArchiveArchived", at, archive.receiptDigest!),
+  });
+}
+
 export function workflowFailFailureArchiveV2(
   projectionInput: CoreV2LifecycleProjection,
   input: { readonly error: string; readonly at: string },
@@ -631,6 +673,8 @@ export function workflowCloseCoreV2(
     readonly targetRef: string;
     readonly mergeCommit: string;
     readonly reconciledAfterUnknown: boolean;
+    readonly closureArtifactRef: string;
+    readonly closureContentDigest: string;
     readonly at: string;
   },
 ): CoreV2LifecycleProjection {
@@ -655,8 +699,37 @@ export function workflowCloseCoreV2(
   };
   const mergeReceipt = deepFreeze({ ...receiptCore, receiptDigest: digest(receiptCore) });
   const at = instant(input.at);
-  const events = append(append(append(projection.events, "MergeConfirmed", at, mergeReceipt.receiptDigest), "TaskClosed", at, "SUCCEEDED"), "ArchiveArchived", at, projection.taskId);
-  return seal({ ...withoutDigest(projection), state: "CLOSED", mergeCommit, mergeReceipt, outcome: "SUCCEEDED", events });
+  const closureCore = {
+    outcome: "SUCCEEDED" as const,
+    candidateCommit: projection.candidateCommit,
+    mergeCommit,
+    mergeReceiptDigest: mergeReceipt.receiptDigest,
+    verificationGateDigest: projection.verificationGateDigest,
+    knowledgeDispositionDigest: projection.knowledgeDispositionDigest,
+    implementationGeneration: projection.implementationGeneration,
+    sourceWorkflowRef: `restate://CoreV2Workflow/${projection.taskId}`,
+    closureArtifactRef: required(input.closureArtifactRef, "closureArtifactRef"),
+    closureContentDigest: sha(input.closureContentDigest, "closureContentDigest"),
+    closedAt: at,
+  };
+  const successClosure = deepFreeze({ ...closureCore, closureDigest: digest(closureCore) });
+  const archiveEffectId = digest({ namespace: "core-v2-success-archive", taskId: projection.taskId, specRevision: projection.specRevision, closureDigest: successClosure.closureDigest });
+  const events = append(
+    append(append(projection.events, "MergeConfirmed", at, mergeReceipt.receiptDigest), "SuccessClosureCompleted", at, successClosure.closureDigest),
+    "ArchivePending",
+    at,
+    archiveEffectId,
+  );
+  return seal({
+    ...withoutDigest(projection),
+    state: "ARCHIVE_PENDING",
+    mergeCommit,
+    mergeReceipt,
+    successClosure,
+    archive: { status: "PENDING", effectId: archiveEffectId, attempts: 1, receiptRef: null, receiptDigest: null, error: null },
+    outcome: "SUCCEEDED",
+    events,
+  });
 }
 
 export function workflowReplanV2(
@@ -688,6 +761,7 @@ export function workflowReplanV2(
     mergeReceipt: null,
     failure: null,
     failureClosure: null,
+    successClosure: null,
     archive: null,
     outcome: null,
     invalidatedRevisions: [...projection.invalidatedRevisions, invalidated],

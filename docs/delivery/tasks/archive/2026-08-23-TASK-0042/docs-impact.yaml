@@ -1,0 +1,99 @@
+schema_version: 1
+task_id: TASK-0042
+graph_revision: 84
+intents: [task-create, workflow-change, archive-change, recovery-change, board-change, finding-intake, docs-change]
+changed_paths:
+  - README.md
+  - docs/delivery/backlog/BL-0046.yaml
+  - docs/delivery/backlog/BL-0047.yaml
+  - docs/delivery/backlog/BL-0048.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/core-v2-roadmap.md
+  - docs/delivery/tasks/README.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0042/design.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0042/docs-impact.yaml
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0042/evidence/success-archive-input.json
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0042/plan.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0042/spec.md
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0042/task.yaml
+  - docs/delivery/tasks/archive/2026-08-23-TASK-0042/verification.md
+  - docs/delivery/tasks/archive/README.md
+  - docs/graph.yaml
+  - docs/knowledge/current/architecture/core-v2-agent-lifecycle.md
+  - docs/knowledge/current/architecture/task-runtime-kernel.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - docs/sources/findings/README.md
+  - docs/sources/findings/core-v2-legacy-recovery-trace-nullability.md
+  - public/app.js
+  - public/styles.css
+  - src/archive/core-v2-artifact-store.ts
+  - src/archive/core-v2-failure.ts
+  - src/archive/core-v2-success.ts
+  - src/board/server.ts
+  - src/cli/index.ts
+  - src/domain/core-v2-lifecycle.ts
+  - src/index.ts
+  - src/restate/core-v2-services.ts
+  - src/restate/invocation-inspector.ts
+  - src/restate/services.ts
+  - src/trace/state-machine.ts
+  - tests/unit/core-v2-failure-artifact.test.ts
+  - tests/unit/core-v2-invocation-inspector.test.ts
+  - tests/unit/core-v2-lifecycle.test.ts
+  - tests/unit/core-v2-workflow.test.ts
+docs:
+  read: [agent-contract, root-readme, docs-index, sources-index, findings-index, backlog-index, tasks-index, archived-tasks-index, codemap, document-control-plane, meta-index, adr-0002-doc-lifecycle-roles, task-runtime-kernel, restate-poc-architecture, adr-0001-restate-poc, durable-runtime-pitfalls, architecture-index, runbooks-index, local-restate-poc-runbook, core-v2-agent-lifecycle, core-v2-roadmap, adr-0006-sealed-result-commit, bl-0046-core-v2-stalled-command-recovery, bl-0047-core-v2-success-archive, bl-0048-core-v2-legacy-recovery-trace, core-v2-durable-command-failure-needs-successor-recovery, core-v2-success-archive-receipt-missing, core-v2-legacy-recovery-trace-nullability, task-0042-manifest, task-0042-spec, task-0042-design, task-0042-plan, task-0042-verification, task-0042-docs-impact]
+  reviewed:
+    architecture-overview: { outcome: unchanged, reason: "Task/Workflow/Effect/Projection 总体边界不变；Core v2 细节写入专属 Architecture" }
+    restate-poc-architecture: { outcome: unchanged, reason: "不改变 Restate PoC 系统边界或选型" }
+    local-restate-poc-runbook: { outcome: updated, reason: "补充 Success Archive、Archive-only retry 与 paused Invocation successor 操作和证据口径" }
+    moye-task-control-skill: { outcome: unchanged, reason: "继续使用既有 Route、Docs Impact、Result Commit 与 Seal 门禁" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "沿用未知副作用先对账、旧执行结果禁止覆盖和 append-only recovery 风险规则" }
+    durable-workflow-research: { outcome: unchanged, reason: "不改写历史研究或 Restate 选型" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "TASK-0042 继续使用两阶段唯一 Result Commit" }
+    adr-0005-core-v2-agent-model: { outcome: unchanged, reason: "5+1 Agent 角色与权限未改变" }
+    core-v2-five-plus-one-agent-requirements: { outcome: unchanged, reason: "历史需求基线不改写；Task Verification 明确最终证据边界" }
+    task-spec-document-closure-brainstorm: { outcome: unchanged, reason: "历史 Brainstorm 不构成当前实现事实" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "历史输入不改写" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "历史需求输入不改写；真实证据边界更新到 Architecture、Roadmap 和 Task Verification" }
+    tasks-index: { outcome: updated, reason: "TASK-0042 已从 Active index 移除" }
+    archived-tasks-index: { outcome: updated, reason: "登记 TASK-0042 Seal Prepared package" }
+    backlog-index: { outcome: updated, reason: "登记 BL-0046～0048 与 TASK-0042 调度关系" }
+    findings-index: { outcome: updated, reason: "登记真实 LIVE 历史 Trace 500 Finding" }
+    docs-index: { outcome: unchanged, reason: "文档分类和入口结构未改变" }
+    codemap: { outcome: updated, reason: "登记 success/failure Artifact store、successor Workflow、Board 与 Trace 查询位置" }
+    task-0013-manifest: { outcome: unchanged, reason: "历史 Core 控制 Task 已封存" }
+    task-0014-manifest: { outcome: unchanged, reason: "历史 Role 协议 Task 已封存" }
+    task-0015-manifest: { outcome: unchanged, reason: "历史 Review/Finding Task 已封存" }
+    task-0016-manifest: { outcome: unchanged, reason: "历史 Repair/Replan Task 已封存" }
+    task-0017-manifest: { outcome: unchanged, reason: "历史 Docs/Observer Task 已封存" }
+    task-0018-manifest: { outcome: unchanged, reason: "历史 Closure Task 已封存" }
+    task-0019-manifest: { outcome: unchanged, reason: "历史真实 Agent 产品 Task 已封存" }
+    task-0020-manifest: { outcome: unchanged, reason: "历史状态机展示 Task 已封存" }
+    task-0021-manifest: { outcome: unchanged, reason: "历史多角色闭环 Task 已封存" }
+    task-0028-manifest: { outcome: unchanged, reason: "保留历史失败与 UI 实现事实" }
+    task-0029-manifest: { outcome: unchanged, reason: "历史 Bootstrap recovery Task 已封存" }
+    task-0030-manifest: { outcome: unchanged, reason: "历史 Core v2/Seal 架构 Task 已封存" }
+    task-0031-manifest: { outcome: unchanged, reason: "历史 Lifecycle Artifact Task 已封存" }
+    task-0032-manifest: { outcome: unchanged, reason: "历史 Role Runtime v2 Task 已封存" }
+    task-0033-manifest: { outcome: unchanged, reason: "历史 Architect/Replan Task 已封存" }
+    task-0034-manifest: { outcome: unchanged, reason: "历史 Implementation/Repair Task 已封存" }
+    task-0035-manifest: { outcome: unchanged, reason: "历史 Documentation Task 已封存" }
+    task-0036-manifest: { outcome: unchanged, reason: "历史 Test Verification Task 已封存" }
+    task-0037-manifest: { outcome: unchanged, reason: "历史 Final Review/Gate Task 已封存" }
+    task-0038-manifest: { outcome: unchanged, reason: "历史 Observer/Knowledge Task 已封存" }
+    task-0039-manifest: { outcome: unchanged, reason: "保留已封存 Happy Path 证据，不扩大其验收范围" }
+    task-0040-manifest: { outcome: unchanged, reason: "保留失败 Closure/Archive 与 LIVE-001～004 历史收敛事实" }
+    task-0041-manifest: { outcome: unchanged, reason: "保留真实 Merge UNKNOWN Result Commit 与证据" }
+    task-0002-manifest: { outcome: unchanged, reason: "历史 Backlog 同步 Task 已封存" }
+    task-0003-manifest: { outcome: unchanged, reason: "历史 Coding Task 已封存" }
+    task-0004-manifest: { outcome: unchanged, reason: "历史 Coding Task 已封存" }
+    task-0005-manifest: { outcome: unchanged, reason: "历史 Coding Task 已封存" }
+    task-0006-manifest: { outcome: unchanged, reason: "历史 Coding Task 已封存" }
+    task-0007-manifest: { outcome: unchanged, reason: "历史 Coding Task 已封存" }
+    task-0008-manifest: { outcome: unchanged, reason: "历史 Demo Task 已封存" }
+    task-0009-manifest: { outcome: unchanged, reason: "历史 Trace Task 已封存" }
+    task-0001-manifest: { outcome: unchanged, reason: "历史 PoC 基线 Task 已封存" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "语言和工具链未改变" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "Trace 技术选型未改变" }

@@ -249,6 +249,12 @@ Goal Bootstrap 使用三次同源校验：CLI 在派发前给出同步错误，`
 
 Artifact 依赖不是任意字符串：协议固定 Architect 三件套、Design Review、Documentation、Test Plan/Assessment、Final Review 的输入链。Review Subject Digest 从依赖集合派生；Test Report 必须绑定 Candidate Commit，在 Gate 中覆盖 Test Plan 的全部 Case，`PASS` 不能包含失败、未执行或未知 Outcome。Artifact Gate 同时解析整个声明集合，按 Task/Revision/Commit/Kind/Digest 精确匹配，并拒绝未解析到集合内真实 Artifact 的 Dependency ref。该模块不推进 Task；后续 Role Workflow 只消费它产生的可信 Artifact。
 
+### 5.0.15 当前已实现 Core v2 成功 Archive 与停滞 successor
+
+成功路径不再由 `state === CLOSED` 推断归档。Verification Gate 和本地双父 Merge Receipt 确认后，Workflow 先持久化 `Success Closure Artifact`，其中绑定 Revision、Generation、Candidate、Merge Receipt、Verification Gate、Knowledge Disposition、原 Workflow、全部 Attempt 与 Session；Reducer 再进入 `ARCHIVE_PENDING` 并派生稳定 Archive Effect ID。Archive Adapter 在 Task namespace 下以 content-checked pending/rename 写 Receipt，成功后才追加 `TaskClosed + ArchiveArchived`。失败时只保留 `ARCHIVE_FAILED` 和同一 Effect token；合法 signal 只能重试 Archive，不能重新进入 Agent、Trusted Test、Checkpoint、Gate 或 Merge。
+
+已经卡在 Restate durable `Run` command 的历史 `CoreV2Workflow` 不能 purge、restart、复用 key 或改 Projection。操作员先暂停原 Invocation，使旧执行者失去继续推进的资格；`core-v2-recovery-plan` 再从 Restate Admin 的 `sys_invocation + sys_journal` 核验 Task/target、`paused`、最后 durable Run command/index/failure digest，并绑定完整 source Projection Digest。`TaskAuthority` 只允许当前 chain head 追加 `CoreV2FailureRecoveryWorkflow`；若该 successor 自身在 Authority handoff 前失败，后续必须以新 `CoreV2FailureRecoveryAttemptWorkflow/<recovery_id>` 绑定前序 completed Failure Invocation。successor 复制原 Attempt、Session、Artifact、Event 和失败原因，只追加 Recovery Record、Failure Artifact、Knowledge Disposition、Failure Closure 与 Archive；原 Workflow Projection 保持逐字节摘要不变。
+
 ### 5.1 模型关系
 
 ```mermaid

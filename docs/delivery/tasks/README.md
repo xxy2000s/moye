@@ -23,7 +23,6 @@ tasks/
 
 | Task | 状态 | 目标 |
 |---|---|---|
-| [TASK-0041](./archive/2026-08-23-TASK-0041/task.yaml) | Seal Prepared | 接入 Core v2 真实 Merge Effect 与未知回执对账 |
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 
