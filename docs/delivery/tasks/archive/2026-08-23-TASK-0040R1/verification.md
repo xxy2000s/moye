@@ -1,6 +1,6 @@
 # TASK-0040R1 Verification
 
-> 状态：Seal Prepared；Result Commit 后的业务终态以 Runtime Receipt 为准
+> 状态：Accepted；Result Commit 后的业务终态以 Runtime Receipt 为准
 
 ## Requirement → Test → Evidence
 
