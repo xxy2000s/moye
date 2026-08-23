@@ -26,7 +26,7 @@ import type {
   SealedTaskInput,
 } from "../archive/sealed-result-commit.js";
 import type { SealedTaskStatus } from "../restate/services.js";
-import type { CoreV2ReconcileInput, CoreV2WorkflowInput, CoreV2WorkflowProjection } from "../restate/core-v2-services.js";
+import type { CoreV2ArchiveRetryInput, CoreV2FailureRecoveryInput, CoreV2ReconcileInput, CoreV2WorkflowInput, CoreV2WorkflowProjection } from "../restate/core-v2-services.js";
 
 const [command = "help", ...args] = process.argv.slice(2);
 const config = loadConfig();
@@ -97,7 +97,21 @@ try {
     }
     case "core-v2-status": {
       const taskId = requiredArgument(args, "task id");
-      print(await invoke<CoreV2WorkflowProjection | null>(config.restateIngressUrl, "CoreV2Workflow", taskId, "status"));
+      print(await taskStatus(taskId));
+      break;
+    }
+    case "core-v2-recover-failure": {
+      const input = await loadJson<CoreV2FailureRecoveryInput>(requiredOption(args, "--file"));
+      print(await invoke<CoreV2WorkflowProjection>(config.restateIngressUrl, "CoreV2FailureRecoveryWorkflow", input.taskId, "run", input));
+      break;
+    }
+    case "core-v2-retry-archive": {
+      const taskId = requiredArgument(args, "task id");
+      const authority = await invoke<TaskAuthorityState | null>(config.restateIngressUrl, "TaskAuthority", taskId, "get");
+      if (authority?.owner !== "CORE_V2_WORKFLOW") throw new Error(`Task ${taskId} is not owned by CoreV2Workflow`);
+      const target = authority.recoveryWorkflowRef === undefined ? { service: "CoreV2Workflow", key: taskId } : parseWorkflowRef(authority.recoveryWorkflowRef);
+      const input: CoreV2ArchiveRetryInput = { token: requiredOption(args, "--token"), evidence: requiredOption(args, "--evidence") };
+      print(await invoke<CoreV2WorkflowProjection>(config.restateIngressUrl, target.service, target.key, "retryArchive", input));
       break;
     }
     case "core-v2-reconcile": {
@@ -216,13 +230,16 @@ try {
   process.exitCode = 1;
 }
 
-async function taskStatus(taskId: string): Promise<TaskProjection | CodingWorkflowProjection | null> {
+async function taskStatus(taskId: string): Promise<TaskProjection | CodingWorkflowProjection | CoreV2WorkflowProjection | null> {
   const authority = await invoke<TaskAuthorityState | null>(config.restateIngressUrl, "TaskAuthority", taskId, "get");
   if (authority === null) return null;
   if (authority.owner === "CODING_WORKFLOW") {
     return invoke<CodingWorkflowProjection | null>(config.restateIngressUrl, "CodingTaskWorkflow", taskId, "status");
   }
-  if (authority.owner === "CORE_V2_WORKFLOW") return invoke(config.restateIngressUrl, "CoreV2Workflow", taskId, "status");
+  if (authority.owner === "CORE_V2_WORKFLOW") {
+    const target = authority.recoveryWorkflowRef === undefined ? { service: "CoreV2Workflow", key: taskId } : parseWorkflowRef(authority.recoveryWorkflowRef);
+    return invoke(config.restateIngressUrl, target.service, target.key, "status");
+  }
   if (authority.owner === "TASK_WORKFLOW") {
     if (authority.recoveryWorkflowRef !== undefined) {
       return invoke<TaskProjection | null>(
@@ -249,7 +266,7 @@ function parseWorkflowRef(value: string): { service: string; key: string } {
   return { service: match[1]!, key: match[2]! };
 }
 
-async function waitForTask(taskId: string, timeoutMs: number): Promise<TaskProjection | CodingWorkflowProjection> {
+async function waitForTask(taskId: string, timeoutMs: number): Promise<TaskProjection | CodingWorkflowProjection | CoreV2WorkflowProjection> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     const projection = await taskStatus(taskId);
@@ -257,6 +274,7 @@ async function waitForTask(taskId: string, timeoutMs: number): Promise<TaskProje
       if ("archiveStatus" in projection && projection.archiveStatus === "ARCHIVED") return projection;
       if ("state" in projection && projection.state === "WAITING_RECONCILE") return projection;
       if ("archiveStatus" in projection && projection.archiveStatus === "FAILED") return projection;
+      if ("lifecycle" in projection && (projection.state === "CLOSED" || projection.state === "ARCHIVE_FAILED")) return projection;
     }
     await new Promise((resolveWait) => setTimeout(resolveWait, 1000));
   }
@@ -350,6 +368,8 @@ Usage:
   moye create --file task.json
   moye core-v2-start --file core-v2-task.json
   moye core-v2-status TASK-ID
+  moye core-v2-recover-failure --file recovery.json
+  moye core-v2-retry-archive TASK-ID --token TOKEN --evidence TEXT
   moye core-v2-reconcile TASK-ID --token TOKEN --action CONFIRMED|NOT_APPLIED --evidence TEXT
   moye close --file task.json
   moye recover-bootstrap-failure --file recovery.json

@@ -54,6 +54,8 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 | [BL-0039](./BL-0039.yaml) | Converted to Task | 接入 Final Review 与确定性 Verification Gate | TASK-0037（Sealed） |
 | [BL-0040](./BL-0040.yaml) | Converted | 统一 Core v2 Workflow 并完成真实故障矩阵验收 | TASK-0039 |
 | [BL-0041](./BL-0041.yaml) | Converted to Task | 恢复错误 Seal Evidence 导致的已失败自举任务 | TASK-0032R1（Sealed） |
+| [BL-0042](./BL-0042.yaml) | Converted to Task | 补齐 Core v2 失败 Closure、Archive 与历史失败收敛 | TASK-0040（Sealed） |
+| [BL-0043](./BL-0043.yaml) | Ready | 完成 Core v2 真实 Agent 产品级故障矩阵 | TASK-0041～TASK-0047（Planned） |
 
 ## 本轮调度结果
 

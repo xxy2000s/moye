@@ -152,6 +152,8 @@ const CORE_V2_NODES = [
   ["REPLAN_REQUIRED", "Replan", "BUSINESS", false],
   ["WAITING_RECONCILE", "Reconcile", "BUSINESS", false],
   ["FAILED_TERMINAL", "Failed", "BUSINESS", true],
+  ["ARCHIVE_PENDING", "Archive Pending", "ARCHIVE", false],
+  ["ARCHIVE_FAILED", "Archive Failed", "ARCHIVE", false],
   ["ARCHIVED", "Archived", "ARCHIVE", true],
 ] as const;
 
@@ -178,6 +180,10 @@ const CORE_V2_EDGES: readonly Omit<StateMachineEdge, "traversed">[] = [
   edge("VERIFICATION_GATE_REQUIRED", "MERGE_REQUIRED", "NORMAL", "确定性 Artifact Gate 通过"),
   edge("MERGE_REQUIRED", "CLOSED", "NORMAL", "Merge 与 Knowledge Disposition 完整"),
   edge("CLOSED", "ARCHIVED", "ARCHIVE", "Archive Receipt 确认"),
+  edge("FAILED_TERMINAL", "ARCHIVE_PENDING", "ARCHIVE", "Failure Artifact、Knowledge Disposition 与 Closure 已冻结"),
+  edge("ARCHIVE_PENDING", "CLOSED", "ARCHIVE", "失败业务 Closure 已完成"),
+  edge("ARCHIVE_PENDING", "ARCHIVE_FAILED", "FAILURE", "Failure Archive Effect 失败"),
+  edge("ARCHIVE_FAILED", "ARCHIVE_PENDING", "REPAIR", "仅重试同一 Archive Effect"),
   ...["ARCHITECT_REQUIRED", "DESIGN_REVIEW_REQUIRED", "IMPLEMENTATION_REQUIRED", "DOCUMENTATION_REQUIRED", "TEST_PLAN_REQUIRED", "TEST_EXECUTION_REQUIRED", "TEST_ASSESSMENT_REQUIRED", "FINAL_REVIEW_REQUIRED", "VERIFICATION_GATE_REQUIRED", "MERGE_REQUIRED", "REPAIR_REQUIRED", "REPLAN_REQUIRED"]
     .map((from) => edge(from, "FAILED_TERMINAL", "FAILURE", "不可恢复或预算耗尽")),
 ];
@@ -268,12 +274,20 @@ export function buildCoreV2StateMachine(projection: CoreV2WorkflowProjection): T
     FinalReviewPassed: "VERIFICATION_GATE_REQUIRED",
     FinalReviewRequestedRepair: "REPAIR_REQUIRED",
     VerificationGatePassed: "MERGE_REQUIRED",
+    WorkflowFailedTerminal: "FAILED_TERMINAL",
+    FailureClosureStarted: "FAILED_TERMINAL",
+    FailureArtifactRecorded: "FAILED_TERMINAL",
+    FailureClosureCompleted: "FAILED_TERMINAL",
+    ArchivePending: "ARCHIVE_PENDING",
+    ArchiveFailed: "ARCHIVE_FAILED",
+    ArchiveRetryStarted: "ARCHIVE_PENDING",
     TaskClosed: "CLOSED",
     ArchiveArchived: "ARCHIVED",
   };
   for (const event of projection.lifecycle.events) {
     const target = targets[event.type];
     if (target === undefined || target === current) continue;
+    if (event.type === "TaskClosed" && current === "ARCHIVED") continue;
     history.push(transition(event, current, target, target === "ARCHIVED" ? "ARCHIVE" : "BUSINESS"));
     current = target;
   }
@@ -301,9 +315,15 @@ export function buildCoreV2StateMachine(projection: CoreV2WorkflowProjection): T
   }));
   if (projection.lifecycle.trustedTestRun !== null) executions.push({ kind: "VERIFICATION", id: projection.lifecycle.trustedTestRun.runId, state: "RECORDED", step: "TEST_EXECUTION_REQUIRED", evidenceDigests: [projection.lifecycle.trustedTestRun.manifestDigest] });
   if (projection.lifecycle.verificationGateDigest !== null) executions.push({ kind: "VERIFICATION", id: projection.lifecycle.verificationGateDigest, state: "PASSED", step: "VERIFICATION_GATE_REQUIRED", evidenceDigests: [projection.lifecycle.verificationGateDigest] });
-  const overall = projection.state === "FAILED_TERMINAL" ? "FAILED_TERMINAL" : projection.state === "CLOSED" ? "ARCHIVED" : projection.lifecycle.state;
+  const overall = projection.state === "FAILED_TERMINAL" ? "FAILED_TERMINAL"
+    : projection.state === "CLOSED" ? "ARCHIVED"
+    : projection.state === "ARCHIVE_PENDING" ? "ARCHIVE_PENDING"
+    : projection.state === "ARCHIVE_FAILED" ? "ARCHIVE_FAILED"
+    : projection.lifecycle.state;
   return finalizeMachine({ workflow: "CoreV2Workflow", nodes: CORE_V2_NODES, edges: CORE_V2_EDGES,
-    business: projection.lifecycle.state, archive: projection.state === "CLOSED" ? "ARCHIVED" : "NOT_READY", overall, history, executions });
+    business: projection.lifecycle.state,
+    archive: projection.state === "CLOSED" ? "ARCHIVED" : projection.state === "ARCHIVE_PENDING" ? "PENDING" : projection.state === "ARCHIVE_FAILED" ? "FAILED" : "NOT_READY",
+    overall, history, executions });
 }
 
 function codingHistory(events: readonly CodingWorkflowEvent[]): StateTransitionFact[] {

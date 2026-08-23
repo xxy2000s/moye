@@ -1,9 +1,11 @@
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import * as restate from "@restatedev/restate-sdk";
 
 import { RealRoleRuntimeV2 } from "../agent/role-runtime-v2.js";
 import type { RoleRunManifestV2 } from "../agent/role-runtime-v2.js";
-import { createCoreV2Lifecycle, workflowAcceptArchitectV2, workflowAcceptDesignReviewV2, workflowAcceptDocumentationV2, workflowAcceptFinalReviewV2, workflowAcceptImplementationV2, workflowAcceptTestAssessmentV2, workflowAcceptTestPlanV2, workflowAuthorizeRepairV2, workflowCloseCoreV2, workflowPassVerificationGateV2, workflowRecordKnowledgeDispositionV2, workflowRecordTrustedTestRunV2, workflowReplanV2, workflowRequestRepairV2, workflowResumeTestReconcileV2, workflowWaitForTestReconcileV2 } from "../domain/core-v2-lifecycle.js";
+import { persistCoreV2FailureArchiveReceipt, persistCoreV2FailureArtifact, persistCoreV2FailureClosure } from "../archive/core-v2-failure.js";
+import { createCoreV2Lifecycle, workflowAcceptArchitectV2, workflowAcceptDesignReviewV2, workflowAcceptDocumentationV2, workflowAcceptFinalReviewV2, workflowAcceptImplementationV2, workflowAcceptTestAssessmentV2, workflowAcceptTestPlanV2, workflowArchiveFailureV2, workflowAuthorizeRepairV2, workflowCloseCoreV2, workflowCloseFailureV2, workflowEnterFailureTerminalV2, workflowFailFailureArchiveV2, workflowPassVerificationGateV2, workflowRecordFailureArtifactV2, workflowRecordKnowledgeDispositionV2, workflowRecordTrustedTestRunV2, workflowReplanV2, workflowRequestRepairV2, workflowResumeTestReconcileV2, workflowRetryFailureArchiveV2, workflowWaitForTestReconcileV2 } from "../domain/core-v2-lifecycle.js";
 import type { ArchitectDeliverableV2, CoreV2LifecycleProjection } from "../domain/core-v2-lifecycle.js";
 import { completeRoleAttemptV2, createRoleAttemptV2, startRoleAttemptV2 } from "../domain/role-runtime-v2.js";
 import type { AgentRoleV2, RealRoleRunnerKind, RoleAttemptV2, RolePhaseV2 } from "../domain/role-runtime-v2.js";
@@ -17,15 +19,23 @@ export interface CoreV2WorkflowInput {
   readonly taskId: string; readonly projectId: string; readonly title: string; readonly objective: string;
   readonly acceptanceCriteria: readonly string[]; readonly repositoryRoot: string; readonly artifactRoot: string;
   readonly runnerKind: RealRoleRunnerKind; readonly baseCommit: string; readonly testCommands: readonly (readonly string[])[];
+  readonly failureArchiveFault?: { readonly failFirstAttempt?: boolean };
 }
 export interface CoreV2WorkflowProjection {
   readonly schemaVersion: 1; readonly taskId: string; readonly projectId: string; readonly title: string;
-  readonly state: "EXECUTING" | "WAITING_RECONCILE" | "CLOSED" | "FAILED_TERMINAL"; readonly currentStep: string;
+  readonly state: "EXECUTING" | "WAITING_RECONCILE" | "CLOSED" | "FAILED_TERMINAL" | "ARCHIVE_PENDING" | "ARCHIVE_FAILED"; readonly currentStep: string;
   readonly lifecycle: CoreV2LifecycleProjection; readonly attempts: readonly RoleAttemptV2[]; readonly roleRuns: readonly RoleRunManifestV2[];
   readonly artifactRoot: string;
+  readonly sourceWorkflowRef?: string; readonly workflowRef?: string;
   readonly startedAt: string; readonly completedAt: string | null; readonly outcome: "SUCCEEDED" | "FAILED_TERMINAL" | null; readonly error: string | null;
 }
 export interface CoreV2ReconcileInput extends TrustedTestReconcileInput {}
+export interface CoreV2ArchiveRetryInput { readonly token: string; readonly evidence: string }
+export interface CoreV2FailureRecoveryInput {
+  readonly taskId: string; readonly projectId: string; readonly artifactRoot: string;
+  readonly sourceWorkflowRef: string; readonly expectedSourceProjectionDigest: string;
+  readonly failureArchiveFault?: { readonly failFirstAttempt?: boolean };
+}
 interface CoreV2WorkflowState { projection: CoreV2WorkflowProjection }
 
 export const coreV2Workflow = restate.workflow({
@@ -101,8 +111,7 @@ export const coreV2Workflow = restate.workflow({
           return publish(ctx, input, projection);
         }
       } catch (error) {
-        projection = { ...projection, state: "FAILED_TERMINAL", currentStep: "FAILED_TERMINAL", completedAt: await durableNow(ctx, "failed"), outcome: "FAILED_TERMINAL", error: error instanceof Error ? error.message : String(error) };
-        await publish(ctx, input, projection); throw new restate.TerminalError(projection.error ?? "Core v2 failed", { errorCode: 422 });
+        return closeFailedCoreV2Workflow(ctx, input, projection, error, `restate://CoreV2Workflow/${input.taskId}`);
       }
     },
     status: restate.handlers.workflow.shared(async (ctx: restate.WorkflowSharedContext<CoreV2WorkflowState>) => ctx.get("projection") as Promise<CoreV2WorkflowProjection | null>),
@@ -114,8 +123,128 @@ export const coreV2Workflow = restate.workflow({
       if (await promise.peek() === undefined) await promise.resolve({ ...input, evidence: input.evidence.trim() });
       return projection;
     }),
+    retryArchive: restate.handlers.workflow.shared(async (ctx: restate.WorkflowSharedContext<CoreV2WorkflowState>, input: CoreV2ArchiveRetryInput): Promise<CoreV2WorkflowProjection> => {
+      const projection = await ctx.get("projection");
+      if (projection === null || projection.state !== "ARCHIVE_FAILED" || projection.lifecycle.archive?.effectId !== input.token || !input.evidence.trim()) {
+        throw new restate.TerminalError("Core v2 Failure Archive retry does not match the pending Effect", { errorCode: 409 });
+      }
+      const promise = ctx.promise<CoreV2ArchiveRetryInput>(failureArchivePromiseName(input.token, projection.lifecycle.archive.attempts));
+      if (await promise.peek() === undefined) await promise.resolve({ token: input.token, evidence: input.evidence.trim() });
+      return projection;
+    }),
   },
 });
+
+export const coreV2FailureRecoveryWorkflow = restate.workflow({
+  name: "CoreV2FailureRecoveryWorkflow", options: { workflowRetention: { days: 30 } }, handlers: {
+    run: async (ctx: restate.WorkflowContext<CoreV2WorkflowState>, input: CoreV2FailureRecoveryInput): Promise<CoreV2WorkflowProjection> => {
+      const expectedSource = `restate://CoreV2Workflow/${input.taskId}`;
+      if (ctx.key !== input.taskId || input.sourceWorkflowRef !== expectedSource || !/^sha256:[0-9a-f]{64}$/.test(input.expectedSourceProjectionDigest)) {
+        throw new restate.TerminalError("Core v2 failure recovery key or source is invalid", { errorCode: 400 });
+      }
+      const source = await ctx.workflowClient(coreV2Workflow, input.taskId).status();
+      if (source === null || source.projectId !== input.projectId || source.state !== "FAILED_TERMINAL" ||
+          source.outcome !== "FAILED_TERMINAL" || source.error === null || source.lifecycle.outcome !== null ||
+          projectionDigest(source) !== input.expectedSourceProjectionDigest) {
+        throw new restate.TerminalError("Core v2 source projection is not an eligible historical failure", { errorCode: 409 });
+      }
+      const recoveryWorkflowRef = `restate://CoreV2FailureRecoveryWorkflow/${input.taskId}`;
+      await ctx.objectClient(taskAuthority, input.taskId).beginCoreV2FailureRecovery({
+        specRevision: source.lifecycle.specRevision, recoveryWorkflowRef, sourceWorkflowRef: input.sourceWorkflowRef,
+      });
+      const recoveryProjection: CoreV2WorkflowProjection = {
+        ...source,
+        artifactRoot: input.artifactRoot,
+        sourceWorkflowRef: input.sourceWorkflowRef,
+        workflowRef: recoveryWorkflowRef,
+      };
+      return closeFailedCoreV2Workflow(ctx, input, recoveryProjection, new Error(source.error), input.sourceWorkflowRef, {
+        originalStage: source.lifecycle.state,
+        sourceProjectionDigest: input.expectedSourceProjectionDigest,
+      });
+    },
+    status: restate.handlers.workflow.shared(async (ctx: restate.WorkflowSharedContext<CoreV2WorkflowState>) => ctx.get("projection") as Promise<CoreV2WorkflowProjection | null>),
+    retryArchive: restate.handlers.workflow.shared(async (ctx: restate.WorkflowSharedContext<CoreV2WorkflowState>, input: CoreV2ArchiveRetryInput): Promise<CoreV2WorkflowProjection> => {
+      const projection = await ctx.get("projection");
+      if (projection === null || projection.state !== "ARCHIVE_FAILED" || projection.lifecycle.archive?.effectId !== input.token || !input.evidence.trim()) {
+        throw new restate.TerminalError("Core v2 recovery Archive retry does not match the pending Effect", { errorCode: 409 });
+      }
+      const promise = ctx.promise<CoreV2ArchiveRetryInput>(failureArchivePromiseName(input.token, projection.lifecycle.archive.attempts));
+      if (await promise.peek() === undefined) await promise.resolve({ token: input.token, evidence: input.evidence.trim() });
+      return projection;
+    }),
+  },
+});
+
+async function closeFailedCoreV2Workflow(
+  ctx: restate.WorkflowContext<CoreV2WorkflowState>,
+  input: {
+    readonly taskId: string; readonly projectId: string; readonly artifactRoot: string;
+    readonly failureArchiveFault?: { readonly failFirstAttempt?: boolean };
+  },
+  initial: CoreV2WorkflowProjection,
+  error: unknown,
+  sourceWorkflowRef: string,
+  frozenSource?: { readonly originalStage: string; readonly sourceProjectionDigest: string },
+): Promise<CoreV2WorkflowProjection> {
+  const reason = error instanceof Error ? error.message : String(error);
+  const failedAt = await durableNow(ctx, "failure-terminal-at");
+  const sourceProjectionDigest = frozenSource?.sourceProjectionDigest ?? projectionDigest(initial);
+  let projection = withLifecycle(initial, workflowEnterFailureTerminalV2(initial.lifecycle, {
+    originalStage: frozenSource?.originalStage ?? initial.currentStep,
+    reason,
+    failedAt,
+    sourceWorkflowRef,
+    sourceProjectionDigest,
+    attemptIds: initial.attempts.map((attempt) => attempt.attemptId),
+    sessionIds: initial.roleRuns.flatMap((manifest) => manifest.sessionId === undefined ? [] : [manifest.sessionId]),
+  }));
+  projection = await publish(ctx, input, { ...projection, state: "FAILED_TERMINAL", currentStep: "FAILED_TERMINAL", completedAt: failedAt, outcome: "FAILED_TERMINAL", error: reason });
+  const failureArtifact = await ctx.run("persist-failure-artifact", () => persistCoreV2FailureArtifact({
+    artifactRoot: input.artifactRoot, taskId: input.taskId, specRevision: projection.lifecycle.specRevision, failure: projection.lifecycle.failure!,
+  }));
+  projection = withLifecycle(projection, workflowRecordFailureArtifactV2(projection.lifecycle, {
+    artifactRef: failureArtifact.artifactRef, contentDigest: failureArtifact.contentDigest, at: await durableNow(ctx, "failure-artifact-recorded-at"),
+  }));
+  projection = withLifecycle(projection, workflowRecordKnowledgeDispositionV2(projection.lifecycle, {
+    type: "KNOWLEDGE_DISPOSITION", disposition: "none", candidateRefs: [], rationale: "Failure closure recorded no reusable knowledge candidate",
+  }, await durableNow(ctx, "failure-knowledge-disposition-at")));
+  const closedAt = await durableNow(ctx, "failure-closure-at");
+  const closureArtifact = await ctx.run("persist-failure-closure", () => persistCoreV2FailureClosure({
+    artifactRoot: input.artifactRoot, taskId: input.taskId, specRevision: projection.lifecycle.specRevision,
+    failure: projection.lifecycle.failure!, knowledgeDispositionDigest: projection.lifecycle.knowledgeDispositionDigest!, closedAt,
+  }));
+  projection = withLifecycle(projection, workflowCloseFailureV2(projection.lifecycle, {
+    closureArtifactRef: closureArtifact.artifactRef, closureContentDigest: closureArtifact.contentDigest, closedAt,
+  }));
+  projection = await publish(ctx, input, { ...projection, state: "ARCHIVE_PENDING", currentStep: "ARCHIVE_PENDING" });
+  for (;;) {
+    const attempt = projection.lifecycle.archive!.attempts;
+    const archivedAt = await durableNow(ctx, `failure-archive-attempt-${attempt}-at`);
+    const archived = await ctx.run(`persist-failure-archive-attempt-${attempt}`, async () => {
+      try {
+        if (input.failureArchiveFault?.failFirstAttempt === true && attempt === 1) throw new Error("Controlled Failure Archive fault before receipt");
+        return { ok: true as const, value: await persistCoreV2FailureArchiveReceipt({
+          artifactRoot: input.artifactRoot, taskId: input.taskId, specRevision: projection.lifecycle.specRevision,
+          failureClosure: projection.lifecycle.failureClosure!, effectId: projection.lifecycle.archive!.effectId, archivedAt,
+        }) };
+      } catch (archiveError) {
+        return { ok: false as const, error: archiveError instanceof Error ? archiveError.message : String(archiveError) };
+      }
+    });
+    if (archived.ok) {
+      projection = withLifecycle(projection, workflowArchiveFailureV2(projection.lifecycle, {
+        receiptRef: archived.value.receiptRef, receiptDigest: archived.value.receiptDigest, at: archivedAt,
+      }));
+      return publish(ctx, input, { ...projection, state: "CLOSED", currentStep: "ARCHIVED", completedAt: failedAt, outcome: "FAILED_TERMINAL", error: reason });
+    }
+    projection = withLifecycle(projection, workflowFailFailureArchiveV2(projection.lifecycle, { error: archived.error, at: archivedAt }));
+    projection = await publish(ctx, input, { ...projection, state: "ARCHIVE_FAILED", currentStep: "ARCHIVE_FAILED" });
+    await ctx.promise<CoreV2ArchiveRetryInput>(failureArchivePromiseName(projection.lifecycle.archive!.effectId, attempt)).get();
+    projection = withLifecycle(projection, workflowRetryFailureArchiveV2(projection.lifecycle, { at: await durableNow(ctx, `failure-archive-retry-${attempt + 1}-at`) }));
+    projection = await publish(ctx, input, { ...projection, state: "ARCHIVE_PENDING", currentStep: "ARCHIVE_PENDING" });
+  }
+}
 
 async function runRole(ctx: restate.WorkflowContext<CoreV2WorkflowState>, input: CoreV2WorkflowInput, projection: CoreV2WorkflowProjection,
   role: AgentRoleV2, phase: RolePhaseV2, subjectCommit: string, generation: number, instructions: string) {
@@ -127,9 +256,9 @@ async function runRole(ctx: restate.WorkflowContext<CoreV2WorkflowState>, input:
 }
 function addRun(p: CoreV2WorkflowProjection, result: { attempt: RoleAttemptV2; manifest: RoleRunManifestV2 }): CoreV2WorkflowProjection { return { ...p, attempts: [...p.attempts, result.attempt], roleRuns: [...p.roleRuns, result.manifest] }; }
 function withLifecycle(p: CoreV2WorkflowProjection, lifecycle: CoreV2LifecycleProjection): CoreV2WorkflowProjection { return { ...p, lifecycle, currentStep: lifecycle.state }; }
-async function publish(ctx: restate.WorkflowContext<CoreV2WorkflowState>, input: CoreV2WorkflowInput, p: CoreV2WorkflowProjection): Promise<CoreV2WorkflowProjection> { ctx.set("projection", p); await ctx.objectClient(projectBoard, input.projectId).upsertTask(boardTask(p)); return p; }
-function boardTask(p: CoreV2WorkflowProjection): TaskProjection { return { taskId: p.taskId, projectId: p.projectId, title: p.title, state: p.state === "CLOSED" || p.state === "FAILED_TERMINAL" ? "CLOSED" : "EXECUTING", currentStep: p.currentStep,
-  attempt: p.attempts.length, specRevision: p.lifecycle.specRevision, backlogRefs: [], archiveStatus: p.state === "CLOSED" ? "ARCHIVED" : "NOT_READY", ...(p.outcome === "SUCCEEDED" ? { outcome: "SUCCEEDED" as const } : p.outcome === "FAILED_TERMINAL" ? { outcome: "FAILED_TERMINAL" as const } : {}),
+async function publish(ctx: restate.WorkflowContext<CoreV2WorkflowState>, input: Pick<CoreV2WorkflowInput, "projectId">, p: CoreV2WorkflowProjection): Promise<CoreV2WorkflowProjection> { ctx.set("projection", p); await ctx.objectClient(projectBoard, input.projectId).upsertTask(boardTask(p)); return p; }
+function boardTask(p: CoreV2WorkflowProjection): TaskProjection { const archiveStatus = p.lifecycle.archive?.status ?? (p.state === "CLOSED" ? "ARCHIVED" : "NOT_READY"); return { taskId: p.taskId, projectId: p.projectId, title: p.title, state: p.outcome === "FAILED_TERMINAL" || p.state === "CLOSED" ? "CLOSED" : "EXECUTING", currentStep: p.currentStep,
+  attempt: p.attempts.length, specRevision: p.lifecycle.specRevision, backlogRefs: [], archiveStatus, ...(p.outcome === "SUCCEEDED" ? { outcome: "SUCCEEDED" as const } : p.outcome === "FAILED_TERMINAL" ? { outcome: "FAILED_TERMINAL" as const } : {}),
   ...(p.error === null ? {} : { error: p.error }), lastEventAt: p.lifecycle.events.at(-1)?.at ?? p.startedAt, events: p.lifecycle.events.map((event) => ({ sequence: event.sequence, type: event.type, at: event.at, detail: event.detail })) }; }
 async function durableNow(ctx: restate.WorkflowContext<CoreV2WorkflowState>, name: string): Promise<string> { return ctx.run(name, () => Promise.resolve(new Date().toISOString())); }
 function deliverable<T>(manifest: RoleRunManifestV2): T { if (manifest.output?.deliverable === undefined) throw new Error(`${manifest.phase} did not return deliverable`); return manifest.output.deliverable as T; }
@@ -177,3 +306,5 @@ async function authorizeRepair(ctx: restate.WorkflowContext<CoreV2WorkflowState>
   return publish(ctx, input, repaired);
 }
 function reconcilePromiseName(token: string): string { return `core-v2-reconcile-${token.slice(token.lastIndexOf(":") + 1)}`; }
+function failureArchivePromiseName(token: string, attempt: number): string { return `core-v2-archive-retry-${token.slice(-24)}-${attempt}`; }
+function projectionDigest(value: unknown): string { return `sha256:${createHash("sha256").update(JSON.stringify(value)).digest("hex")}`; }

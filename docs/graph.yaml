@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 74
+graph_revision: 76
 updated_at: "2026-08-23"
 
 entrypoints:
@@ -2704,6 +2704,94 @@ documents:
     authority: task-evidence
     read_when: [task-close, task-archive]
 
+  - id: core-v2-failed-terminal-does-not-close-or-archive
+    path: docs/sources/findings/core-v2-failed-terminal-does-not-close-or-archive.md
+    type: finding
+    status: confirmed
+    scope: core-v2-failure-closure
+    authority: observed-fact
+    read_when: [finding-intake, task-execution]
+
+  - id: core-v2-real-fault-matrix-evidence-incomplete
+    path: docs/sources/findings/core-v2-real-fault-matrix-evidence-incomplete.md
+    type: finding
+    status: confirmed
+    scope: core-v2-real-acceptance
+    authority: observed-fact
+    read_when: [finding-intake, task-execution]
+
+  - id: core-v2-test-assessment-finding-can-bypass-repair
+    path: docs/sources/findings/core-v2-test-assessment-finding-can-bypass-repair.md
+    type: finding
+    status: confirmed
+    scope: core-v2-test-verification
+    authority: observed-fact
+    read_when: [finding-intake, task-execution]
+
+  - id: bl-0042-core-v2-failure-closure
+    path: docs/delivery/backlog/BL-0042.yaml
+    type: backlog-item
+    status: converted
+    scope: core-v2-failure-closure
+    authority: delivery-control
+    read_when: [task-create, task-execution]
+
+  - id: bl-0043-core-v2-real-fault-matrix
+    path: docs/delivery/backlog/BL-0043.yaml
+    type: backlog-item
+    status: ready
+    scope: core-v2-real-acceptance
+    authority: delivery-control
+    read_when: [task-create, task-execution]
+
+  - id: task-0040-manifest
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0040/task.yaml
+    type: task-manifest
+    status: archived
+    scope: core-v2-failure-closure
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0040-spec
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0040/spec.md
+    type: task-spec
+    status: archived
+    scope: core-v2-failure-closure
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0040-design
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0040/design.md
+    type: task-design
+    status: archived
+    scope: core-v2-failure-closure
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0040-plan
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0040/plan.md
+    type: task-plan
+    status: archived
+    scope: core-v2-failure-closure
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0040-verification
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0040/verification.md
+    type: verification
+    status: archived
+    scope: core-v2-failure-closure
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0040-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-23-TASK-0040/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: core-v2-failure-closure
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
 relations:
   - from: root-readme
     to: docs-index
@@ -4384,6 +4472,58 @@ relations:
   - from: task-0039-manifest
     to: core-v2-agent-lifecycle
     type: implements_slice_of
+
+  - from: core-v2-failed-terminal-does-not-close-or-archive
+    to: bl-0042-core-v2-failure-closure
+    type: promoted_to
+
+  - from: core-v2-real-fault-matrix-evidence-incomplete
+    to: bl-0043-core-v2-real-fault-matrix
+    type: promoted_to
+
+  - from: core-v2-test-assessment-finding-can-bypass-repair
+    to: bl-0043-core-v2-real-fault-matrix
+    type: promoted_to
+
+  - from: bl-0042-core-v2-failure-closure
+    to: task-0040-manifest
+    type: schedules_into
+
+  - from: archived-tasks-index
+    to: task-0040-manifest
+    type: indexes
+
+  - from: task-0040-spec
+    to: task-0040-manifest
+    type: belongs_to
+
+  - from: task-0040-design
+    to: task-0040-spec
+    type: refines
+
+  - from: task-0040-plan
+    to: task-0040-manifest
+    type: belongs_to
+
+  - from: task-0040-verification
+    to: task-0040-manifest
+    type: verifies
+
+  - from: task-0040-docs-impact
+    to: task-0040-manifest
+    type: reports_on
+
+  - from: task-0040-manifest
+    to: core-v2-agent-lifecycle
+    type: implements_slice_of
+
+  - from: core-v2-roadmap
+    to: bl-0042-core-v2-failure-closure
+    type: schedules
+
+  - from: core-v2-roadmap
+    to: bl-0043-core-v2-real-fault-matrix
+    type: schedules
 
   - from: bl-0013-agent-events-dialog
     to: task-0012-manifest

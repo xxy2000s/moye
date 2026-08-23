@@ -1,4 +1,5 @@
 import { execFileSync, spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { mkdtemp, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import net from "node:net";
@@ -12,6 +13,7 @@ import type { TaskProjection } from "../../src/domain/task.js";
 import { stageSealedTaskPackage } from "../../src/archive/sealed-result-commit.js";
 import type { SealEvidence, SealedTaskInput } from "../../src/archive/sealed-result-commit.js";
 import { invoke, send } from "../../src/restate/ingress.js";
+import type { CoreV2FailureRecoveryInput, CoreV2WorkflowInput, CoreV2WorkflowProjection } from "../../src/restate/core-v2-services.js";
 import type {
   BootstrapFailureRecoveryInput,
   SealedTaskRecoveryInput,
@@ -31,6 +33,7 @@ let legacyService: ChildProcess | undefined;
 let serviceLogs = "";
 let bootstrapRepositoryRoot = "";
 let legacyRecoveryInput: BootstrapFailureRecoveryInput;
+let legacyCoreV2RecoveryInput: CoreV2FailureRecoveryInput;
 
 describe("Restate process-loss recovery", () => {
   beforeAll(async () => {
@@ -62,6 +65,19 @@ describe("Restate process-loss recovery", () => {
       async () => serviceLogs.includes("BOOTSTRAP_BASE_COMMIT_NOT_FROZEN"),
       10_000,
     );
+    const coreV2Input: CoreV2WorkflowInput = {
+      taskId: "TASK-E2E-CORE-V2-LEGACY-FAILURE", projectId: "moye-e2e", title: "Recover one historical Core v2 failure",
+      objective: "fixture", acceptanceCriteria: ["failure closes"], repositoryRoot: bootstrapRepositoryRoot,
+      artifactRoot: path.join(bootstrapRepositoryRoot, ".runtime", "core-v2-failure"), runnerKind: "CODEX_EXEC",
+      baseCommit: git(bootstrapRepositoryRoot, ["rev-parse", "HEAD"]).trim(), testCommands: [["npm", "test"]],
+    };
+    await send(ingressUrl(), "CoreV2Workflow", coreV2Input.taskId, "run", coreV2Input);
+    const legacyCoreProjection = await waitForCoreV2(coreV2Input.taskId, (projection) => projection.state === "FAILED_TERMINAL", 10_000);
+    legacyCoreV2RecoveryInput = {
+      taskId: coreV2Input.taskId, projectId: coreV2Input.projectId, artifactRoot: coreV2Input.artifactRoot,
+      sourceWorkflowRef: `restate://CoreV2Workflow/${coreV2Input.taskId}`,
+      expectedSourceProjectionDigest: digestProjection(legacyCoreProjection),
+    };
     legacyService.kill("SIGKILL");
     await waitForExit(legacyService, 10_000);
     service = await startService();
@@ -222,6 +238,36 @@ describe("Restate process-loss recovery", () => {
       .toMatchObject({ recoveryWorkflowRef: expect.stringContaining("BootstrapFailureRecoveryWorkflow") });
     const detailResponse = await fetch(`http://127.0.0.1:${boardPort}/api/tasks/${legacyRecoveryInput.taskId}`);
     expect(await detailResponse.json()).toEqual(recovered);
+  }, 30_000);
+
+  it("closes and archives a historical Core v2 failure through one append-only successor", async () => {
+    const original = await invoke<CoreV2WorkflowProjection>(ingressUrl(), "CoreV2Workflow", legacyCoreV2RecoveryInput.taskId, "status");
+    expect(original).toMatchObject({ state: "FAILED_TERMINAL", outcome: "FAILED_TERMINAL" });
+    const recovered = await invoke<CoreV2WorkflowProjection>(
+      ingressUrl(), "CoreV2FailureRecoveryWorkflow", legacyCoreV2RecoveryInput.taskId, "run", legacyCoreV2RecoveryInput,
+    );
+    expect(recovered).toMatchObject({
+      state: "CLOSED", currentStep: "ARCHIVED", outcome: "FAILED_TERMINAL",
+      lifecycle: { state: "CLOSED", archive: { status: "ARCHIVED", attempts: 1 }, failure: { sourceProjectionDigest: legacyCoreV2RecoveryInput.expectedSourceProjectionDigest } },
+    });
+    expect(recovered.attempts).toEqual(original.attempts);
+    expect(recovered.roleRuns).toEqual(original.roleRuns);
+    expect(await invoke(ingressUrl(), "CoreV2Workflow", legacyCoreV2RecoveryInput.taskId, "status")).toEqual(original);
+    expect(await invoke(ingressUrl(), "TaskAuthority", legacyCoreV2RecoveryInput.taskId, "get")).toMatchObject({
+      recoveryWorkflowRef: `restate://CoreV2FailureRecoveryWorkflow/${legacyCoreV2RecoveryInput.taskId}`,
+      sourceWorkflowRef: legacyCoreV2RecoveryInput.sourceWorkflowRef,
+    });
+    expect(await invoke<CoreV2WorkflowProjection>(
+      ingressUrl(), "CoreV2FailureRecoveryWorkflow", legacyCoreV2RecoveryInput.taskId, "status",
+    )).toEqual(recovered);
+    const detail = await fetch(`http://127.0.0.1:${boardPort}/api/tasks/${legacyCoreV2RecoveryInput.taskId}`);
+    expect(await detail.json()).toEqual(recovered);
+    const trace = await fetch(`http://127.0.0.1:${boardPort}/api/tasks/${legacyCoreV2RecoveryInput.taskId}/trace`);
+    expect(await trace.json()).toMatchObject({
+      task: { archiveStatus: "ARCHIVED", outcome: "FAILED_TERMINAL" },
+      stateMachine: { current: { overall: "ARCHIVED", consistency: "VERIFIED" } },
+      durableRuntime: { workflowService: "CoreV2FailureRecoveryWorkflow", sourceWorkflowRef: legacyCoreV2RecoveryInput.sourceWorkflowRef },
+    });
   }, 30_000);
 
   it("waits durably for one real Git Result Commit and closes without post-commit writes", async () => {
@@ -538,6 +584,24 @@ async function waitForTask(
   }, timeoutMs);
   if (latest === null) throw new Error("Task projection remained empty");
   return latest;
+}
+
+async function waitForCoreV2(
+  taskId: string,
+  predicate: (projection: CoreV2WorkflowProjection) => boolean,
+  timeoutMs: number,
+): Promise<CoreV2WorkflowProjection> {
+  let latest: CoreV2WorkflowProjection | null = null;
+  await waitUntil(async () => {
+    latest = await invoke<CoreV2WorkflowProjection | null>(ingressUrl(), "CoreV2Workflow", taskId, "status");
+    return latest !== null && predicate(latest);
+  }, timeoutMs);
+  if (latest === null) throw new Error(`Core v2 projection ${taskId} was not created`);
+  return latest;
+}
+
+function digestProjection(value: unknown): string {
+  return `sha256:${createHash("sha256").update(JSON.stringify(value)).digest("hex")}`;
 }
 
 async function waitForSealedTask(

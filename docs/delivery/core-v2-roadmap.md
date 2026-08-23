@@ -1,7 +1,7 @@
 # Core v2 Delivery Roadmap
 
 > 文档类型：Delivery Plan  
-> 状态：Completed
+> 状态：In Progress（真实 Happy Path 已完成；产品级故障矩阵未完成）
 > 基线日期：2026-08-23  
 > 需求来源：[Core v2：5+1 Agent 研发闭环需求基线](../sources/brainstorm/core-v2-five-plus-one-agent-requirements.md)  
 > 当前实现事实仍以 Architecture、代码、测试和已归档 Task 为准。
@@ -30,6 +30,14 @@
 | TASK-0037 | BL-0039 | Sealed / Runtime authoritative | 接入隔离 FINAL_REVIEW 与确定性 Verification Gate，绑定 Spec Revision、Candidate Commit、报告和 Evidence Digest | `SealedTaskWorkflow` Receipt |
 | TASK-0038 | BL-0006、BL-0007 | Sealed / Runtime authoritative | 建成确定性 Observer 投影和非阻塞 OBSERVER_KNOWLEDGE；旁路崩溃不阻塞 Closure，Knowledge Disposition 必填 | `SealedTaskWorkflow` Receipt |
 | TASK-0039 | BL-0040 | Sealed / Runtime authoritative | 统一 Workflow 串起 Intake→Archive、Repair/Replan/Reconcile/Merge/Closure；CLI、Board 与真实 Agent/Runner/Git 完成最终验收 | `SealedTaskWorkflow` Receipt |
+| TASK-0040 | BL-0042 | Sealed / Runtime authoritative | 失败 Closure/Artifact/Knowledge/Archive、Archive-only retry 与 LIVE-001～004 append-only 合法收敛 | `SealedTaskWorkflow` Receipt |
+| TASK-0041 | BL-0043 | Planned | 真实、幂等、可对账的 Merge Effect；Git Checkpoint/Merge UNKNOWN 与 stale result 基础设施 | — |
+| TASK-0042 | BL-0043 | Planned | 非交互真实故障矩阵 Harness、Requirement/Evidence Registry 与受控 fault injection | — |
+| TASK-0043 | BL-0043 | Planned | 真实 Agent Happy/Implementation/Final Review/Documentation/Test/Design Replan 场景 | — |
+| TASK-0044 | BL-0043 | Planned | Test UNKNOWN 两分支、Worker 中断、Git 与 Merge 回执未知场景 | — |
+| TASK-0045 | BL-0043 | Planned | Repair/Replan 预算、Observer/Knowledge 故障与 stale Attempt 场景 | — |
+| TASK-0046 | BL-0043 | Planned | Board outcome/workflow/history 筛选、失败详情与实际路径语义 | — |
+| TASK-0047 | BL-0043 | Planned | 全矩阵复跑、文档证据审计、最终部署与验收报告 | — |
 
 ## 3. 依赖图
 
@@ -44,12 +52,16 @@ TASK-0029 Bootstrap correctness
               → TASK-0036 test verification/trusted runner
                 → TASK-0037 final review/verification gate
                   → TASK-0038 observer/knowledge sidecar
-                    → TASK-0039 unified workflow + real acceptance
+                    → TASK-0039 unified workflow + real Happy Path
+                      → TASK-0040 failure closure + legacy convergence
+                        → TASK-0041～0045 real fault infrastructure + executions
+                          → TASK-0046 board audit UX
+                            → TASK-0047 final evidence audit + deployment
 ```
 
 ## 4. 最终真实验收矩阵
 
-TASK-0039 至少运行并保存以下真实证据：
+TASK-0039 只完成了真实 Happy Path 基线。以下矩阵由 TASK-0041～TASK-0047 逐条运行并保存真实证据；在全部通过前不得声明完整故障矩阵已完成：
 
 | 场景 | 唯一预期结果 |
 |---|---|
@@ -66,4 +78,6 @@ TASK-0039 至少运行并保存以下真实证据：
 
 ## 5. 明确延后
 
-Core v2 真实闭环与可运行画布已完成。后续仍不在本路线实现多 Daemon/Lease/Fencing、远程 PR、权限、多租户、生产级观测或长期知识效果反馈；这些能力继续由现有 Backlog 调度。
+当前只证明真实 Happy Path；Repair/Replan/Reconcile 等异常分支主要由单元测试、确定性 Adapter 或局部 E2E 支持，尚未构成产品级真实故障矩阵。TASK-0040～TASK-0047 负责补齐本路线内的真实闭环证据。
+
+完整多 Daemon Lease/Fencing、远程 PR、权限、多租户、生产级观测或长期知识效果反馈仍属于生产阶段能力；本路线只对当前可实现的 Attempt/Generation/Revision fencing 做真实验收，并明确剩余限制。

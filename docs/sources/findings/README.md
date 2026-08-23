@@ -20,5 +20,8 @@ Finding 与 Incident 的边界：
 - [节点 Agent Events 入口隐蔽且 Inspector 信息过密](./node-agent-events-hidden-and-inspector-dense.md)：真实 Agent Events 被埋在执行卡片底部，Domain Event 与 Agent Event 缺少清晰边界，节点详情难以扫描。
 - [状态机边标签与合法路径详情可读性不足](./state-machine-edge-labels-and-legal-path-detail-dense.md)：未经过合法边的完整说明以小字铺在画布上，节点合法路径仍使用拥挤的旧式双卡片布局。
 - [单任务弹窗与原始 Domain Event 难以持续审计](./task-detail-dialog-and-domain-events-hard-to-audit.md)：任务没有独立 URL，原始业务事件展开后也缺少稳定的时间线层级。
+- [Core v2 失败终态没有完成 Closure 与 Archive](./core-v2-failed-terminal-does-not-close-or-archive.md)：失败 Workflow 只停在 `FAILED_TERMINAL`，LIVE-001～004 因而长期未归档。
+- [Core v2 真实 Agent 故障矩阵证据不完整](./core-v2-real-fault-matrix-evidence-incomplete.md)：真实证据只完整覆盖 Happy Path，异常分支尚未达到同等级产品验收。
+- [Core v2 Test Assessment Finding 会以 Invalid Output 绕过 Repair](./core-v2-test-assessment-finding-can-bypass-repair.md)：真实失败测试在形成 Test Report 前被 Output Gate 终止，尚未进入预期 Repair。
 
 不要为了演示目录创建虚构 Bug。

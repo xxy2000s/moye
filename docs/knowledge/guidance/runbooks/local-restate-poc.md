@@ -158,6 +158,17 @@ npm run cli -- core-v2-reconcile TASK-CORE-V2-EXAMPLE --token 'sha256:...' --act
 
 Board 访问 `/tasks/<task_id>` 可查看完整状态定义、实际点亮路径、Artifact、确定性 Observer 和每个 Role Session。点击节点后使用页面内 Agent Events 弹窗筛选对话、工具调用、工具结果、系统与错误；Events 不通过下载跳转查看。
 
+历史 Core v2 Workflow 若已经终止在 `FAILED_TERMINAL + NOT_READY`，先直接查询原 `CoreV2Workflow/<task_id>/status` 并计算完整 JSON 的 SHA-256，准备包含 `taskId`、`projectId`、`artifactRoot`、精确 `sourceWorkflowRef` 与 `expectedSourceProjectionDigest` 的恢复输入，然后执行：
+
+```bash
+npm run cli -- core-v2-recover-failure --file recovery.json
+npm run cli -- core-v2-status TASK-ID
+```
+
+该命令创建唯一 `CoreV2FailureRecoveryWorkflow/<task_id>` successor，不会重跑 Agent、Test 或 Merge，也不改写原 Workflow。恢复后应核对 Authority 的 source/recovery ref、Failure/Closure/Archive Digest、Board `FAILED_TERMINAL + ARCHIVED` 和 Trace `Projection = Event History`。不要再次提交同一 Workflow key；Archive 若处于 `ARCHIVE_FAILED`，只使用页面给出的 Effect token 调用 `core-v2-retry-archive`。
+
+证据口径必须分开记录：单元测试证明纯 Reducer/校验；确定性 Adapter E2E 证明协议组合；真实 Restate 证明 Journal/Workflow/Recovery；真实 Agent 产品验收还必须包含 Codex/Claude Session、真实 Git/Runner/Artifact。当前只完整证明 Happy Path 和 LIVE-001～004 失败恢复，其他异常分支不得写成“完整故障矩阵已完成”。
+
 Core Workflow 的只读状态可直接从 Restate Ingress 查询：
 
 ```bash

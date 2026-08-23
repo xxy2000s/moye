@@ -68,10 +68,18 @@ Dependency policy 是角色交接协议而非自由引用：Design 依赖 Spec�
 
 Git 中的 Task package 使用两阶段 Seal：Workflow 先发布 Seal Intent并等待；最终 Result Commit 同时包含代码、文档和位于 Archive 路径的 sealed package；Workflow 再验证 Commit 并发布 `CLOSED/ARCHIVED`。目录位置只是 Seal Evidence，不是业务状态，避免在 Commit 后由 Runtime 改写文件造成 SHA 循环。
 
-Seal 协议已经由 `SealedTaskWorkflow`、统一 CLI、Board/Trace 查询和真实 Git + Restate 强杀恢复 E2E 实现。Core v2 产品路径由 `core-v2-start` 发起、`core-v2-status` 查询；它串联 Architect、Design Review、Implementation、Documentation、Test Plan、Trusted Runner、Test Assessment、Final Review、确定性 Gate、Knowledge Disposition、Merge、Closure 与 Archive。
+Seal 协议已经由 `SealedTaskWorkflow`、统一 CLI、Board/Trace 查询和真实 Git + Restate 强杀恢复 E2E 实现。Core v2 产品路径由 `core-v2-start` 发起、`core-v2-status` 查询；它串联 Architect、Design Review、Implementation、Documentation、Test Plan、Trusted Runner、Test Assessment、Final Review、确定性 Gate、Knowledge Disposition、Merge、Closure 与 Archive。这里的完整串联只代表状态机和 Happy Path 已接通，不代表每个异常分支都已有真实 Agent 产品验收。
 
 Implementation Agent 只修改受管 Workspace 并运行检查；Codex sandbox 不拥有 Git 元数据写权限。Workflow 随后执行带 `Moye-Task` 和 `Moye-Generation` 标记的幂等 Git checkpoint：首次创建 Candidate Commit，重放时校验 parent、message、clean tree 后复用同一 Commit。Documentation 首版审计已提交 Candidate，不在 Gate 后再产生隐藏 Commit。
 
 Test Agent 提出 Requirement 覆盖和 Case 意图；Workflow 为每条预授权 argv 生成稳定 Case ID、约束合法类别并覆盖无效自然语言形状，Trusted Runner 只执行冻结输入中的 argv。Agent Verdict 仍不能代替 Runner Manifest 或 Verification Gate。
 
-Board 的 `CORE_V2` Trace 从 Lifecycle Event、Attempt、Session、Artifact 和确定性 Observer 重建 17 个状态、Happy Path 与 Repair/Replan/Reconcile/Failure/Archive 合法边。节点 Inspector 直接关联真实 Role Event；Event 在 Chatbot 弹窗中按对话、工具调用、工具结果、系统和错误筛选，不提供跳转下载入口。
+## 7. 失败 Closure 与历史 successor
+
+不可恢复错误或预算耗尽首先冻结 `FAILED_TERMINAL` 的原阶段、原因、source Workflow ref、source Projection Digest、Attempt ID 与 Session ID。Workflow 随后持久化 Failure Artifact，记录 Knowledge Disposition，形成不可变 Failure Closure，再进入独立的 `ARCHIVE_PENDING | ARCHIVE_FAILED | ARCHIVED`。Archive Effect 的 identity 由 Task、Revision 与 Closure Digest 决定；Archive 失败时原 Workflow 保持运行并等待同一 token，只允许 Archive-only retry，不能重新进入 Implementation、Test 或 Merge。
+
+旧版本已完成在 `FAILED_TERMINAL + NOT_READY` 的 Workflow 不能改写。`CoreV2FailureRecoveryWorkflow/<task_id>` 先校验原 Projection Digest，再通过 `TaskAuthority.beginCoreV2FailureRecovery` 原子登记唯一 append-only successor；successor 复制原 Attempt、Session 与 Event 引用，只追加 Failure Closure/Archive 事实。Board、CLI 与 Trace 解析 Authority 指向 successor，直接查询 `CoreV2Workflow/<task_id>` 仍得到未修改的原历史。
+
+截至 2026-08-23，真实证据分级如下：LIVE-005/006 证明真实 Agent Happy Path；LIVE-001～004 证明真实历史 Agent 失败经合法 Restate successor 归档；Repair/Replan/Reconcile 等已有单元、确定性 Adapter 或局部 E2E，但完整十五场景真实故障矩阵仍未完成。成功 Closure 仍把 Candidate 当作 Merge 结果，真实、幂等、可对账的目标分支 Merge Effect 属于后续 TASK-0041。
+
+Board 的 `CORE_V2` Trace 从 Lifecycle Event、Attempt、Session、Artifact 和确定性 Observer 重建主流程、失败 Closure 与 Archive 状态，以及 Happy Path、Repair/Replan/Reconcile/Failure/Archive 合法边。节点 Inspector 直接关联真实 Role Event；Event 在 Chatbot 弹窗中按对话、工具调用、工具结果、系统和错误筛选，不提供跳转下载入口。

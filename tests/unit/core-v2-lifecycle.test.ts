@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createCoreV2Lifecycle, workflowAcceptArchitectV2, workflowAcceptDesignReviewV2, workflowAcceptDocumentationV2, workflowAcceptFinalReviewV2, workflowAcceptImplementationV2, workflowAcceptTestAssessmentV2, workflowAcceptTestPlanV2, workflowAuthorizeRepairV2, workflowPassVerificationGateV2, workflowRecordTrustedTestRunV2, workflowReplanV2, workflowResumeTestReconcileV2, workflowWaitForTestReconcileV2 } from "../../src/domain/core-v2-lifecycle.js";
+import { createCoreV2Lifecycle, workflowAcceptArchitectV2, workflowAcceptDesignReviewV2, workflowAcceptDocumentationV2, workflowAcceptFinalReviewV2, workflowAcceptImplementationV2, workflowAcceptTestAssessmentV2, workflowAcceptTestPlanV2, workflowArchiveFailureV2, workflowAuthorizeRepairV2, workflowCloseFailureV2, workflowEnterFailureTerminalV2, workflowFailFailureArchiveV2, workflowPassVerificationGateV2, workflowRecordFailureArtifactV2, workflowRecordKnowledgeDispositionV2, workflowRecordTrustedTestRunV2, workflowReplanV2, workflowResumeTestReconcileV2, workflowRetryFailureArchiveV2, workflowWaitForTestReconcileV2 } from "../../src/domain/core-v2-lifecycle.js";
 import { completeRoleAttemptV2, createRoleAttemptV2, createRoleRunEvidenceV2, startRoleAttemptV2 } from "../../src/domain/role-runtime-v2.js";
 import type { AgentRoleV2, RolePhaseV2 } from "../../src/domain/role-runtime-v2.js";
 
@@ -111,7 +111,49 @@ describe("Core v2 Architect and Design Review lifecycle", () => {
     expect(gated.state).toBe("MERGE_REQUIRED");
     expect(gated.verificationGateDigest).toMatch(/^sha256:/);
   });
+
+  it("closes and archives a failed Task without re-entering product stages", () => {
+    let projection = workflowEnterFailureTerminalV2(implementationReady(), {
+      originalStage: "IMPLEMENTATION_REQUIRED", reason: "repair budget exhausted", failedAt: time(5),
+      sourceWorkflowRef: "restate://CoreV2Workflow/TASK-LIFECYCLE", sourceProjectionDigest: sha("a"),
+      attemptIds: ["TASK-LIFECYCLE.IMPLEMENTATION.r1.g0.a1"], sessionIds: ["session-implementation"],
+    });
+    expect(projection).toMatchObject({ state: "FAILED_TERMINAL", outcome: "FAILED_TERMINAL" });
+    projection = workflowRecordFailureArtifactV2(projection, { artifactRef: "artifact://failure", contentDigest: sha("b"), at: time(6) });
+    projection = workflowRecordKnowledgeDispositionV2(projection, {
+      type: "KNOWLEDGE_DISPOSITION", disposition: "none", candidateRefs: [], rationale: "none",
+    }, time(7));
+    projection = workflowCloseFailureV2(projection, { closureArtifactRef: "artifact://closure", closureContentDigest: sha("c"), closedAt: time(8) });
+    expect(projection).toMatchObject({ state: "ARCHIVE_PENDING", archive: { status: "PENDING", attempts: 1 } });
+    const archived = workflowArchiveFailureV2(projection, { receiptRef: "artifact://archive", receiptDigest: sha("d"), at: time(9) });
+    expect(archived).toMatchObject({ state: "CLOSED", outcome: "FAILED_TERMINAL", archive: { status: "ARCHIVED" } });
+    expect(archived.events.slice(-6).map((event) => event.type)).toEqual([
+      "FailureArtifactRecorded", "KnowledgeDispositionRecorded", "FailureClosureCompleted", "ArchivePending", "TaskClosed", "ArchiveArchived",
+    ]);
+    expect(() => workflowAcceptImplementationV2(archived, success("IMPLEMENTATION", "IMPLEMENTATION"), checkpoint("PASSED"), time(10)))
+      .toThrow(/not currently required/);
+  });
+
+  it("retries only a failed Failure Archive with the same Effect identity", () => {
+    let projection = failedArchivePending();
+    const effectId = projection.archive!.effectId;
+    projection = workflowFailFailureArchiveV2(projection, { error: "storage unavailable", at: time(9) });
+    expect(projection).toMatchObject({ state: "ARCHIVE_FAILED", archive: { status: "FAILED", attempts: 1 } });
+    projection = workflowRetryFailureArchiveV2(projection, { at: time(10) });
+    expect(projection).toMatchObject({ state: "ARCHIVE_PENDING", archive: { status: "PENDING", attempts: 2, effectId } });
+    expect(() => workflowRetryFailureArchiveV2(projection, { at: time(11) })).toThrow(/Only a failed/);
+  });
 });
+
+function failedArchivePending() {
+  let projection = workflowEnterFailureTerminalV2(implementationReady(), {
+    originalStage: "IMPLEMENTATION_REQUIRED", reason: "failed", failedAt: time(5),
+    sourceWorkflowRef: "restate://CoreV2Workflow/TASK-LIFECYCLE", sourceProjectionDigest: sha("a"), attemptIds: [], sessionIds: [],
+  });
+  projection = workflowRecordFailureArtifactV2(projection, { artifactRef: "artifact://failure", contentDigest: sha("b"), at: time(6) });
+  projection = workflowRecordKnowledgeDispositionV2(projection, { type: "KNOWLEDGE_DISPOSITION", disposition: "none", candidateRefs: [], rationale: "none" }, time(7));
+  return workflowCloseFailureV2(projection, { closureArtifactRef: "artifact://closure", closureContentDigest: sha("c"), closedAt: time(8) });
+}
 
 function implementationReady() {
   const initial = createCoreV2Lifecycle({ taskId: "TASK-LIFECYCLE", specRevision: 1, subjectCommit: base, at: time(0) });
