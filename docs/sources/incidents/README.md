@@ -25,3 +25,4 @@ YYYY-MM-DD-short-title.md
 - [本地 Restate 容器重建后 Board 历史投影丢失](./2026-08-22-restate-board-projection-lost-after-container-recreate.md)：Git Task Archive 未丢失，但未持久化的 Restate Journal 与 ProjectBoard Projection 随旧容器消失。
 - [Bootstrap 基线门禁失败后 Projection 停留在 EXECUTING](./2026-08-22-bootstrap-base-commit-gate-left-projection-executing.md)：关闭门禁正确拒绝事后修正的错误基线，但 owning Invocation 失败后业务 Projection 未收敛为终态。
 - [TASK-0032 提交错误 Seal Result Commit Evidence](./2026-08-23-wrong-seal-result-commit-evidence.md)：Gate 正确拒绝不存在的 Commit；原失败历史保留，通过 append-only successor 恢复。
+- [TASK-0040 Docs Impact 漏项导致 Seal 失败](./2026-08-23-task-0040-docs-impact-seal-failure.md)：Gate 正确拒绝漏列 Archived Tasks 索引的报告，TASK-0040R1 已冻结 corrected Evidence，最终状态以 Runtime successor 为准。

@@ -30,7 +30,8 @@
 | TASK-0037 | BL-0039 | Sealed / Runtime authoritative | 接入隔离 FINAL_REVIEW 与确定性 Verification Gate，绑定 Spec Revision、Candidate Commit、报告和 Evidence Digest | `SealedTaskWorkflow` Receipt |
 | TASK-0038 | BL-0006、BL-0007 | Sealed / Runtime authoritative | 建成确定性 Observer 投影和非阻塞 OBSERVER_KNOWLEDGE；旁路崩溃不阻塞 Closure，Knowledge Disposition 必填 | `SealedTaskWorkflow` Receipt |
 | TASK-0039 | BL-0040 | Sealed / Runtime authoritative | 统一 Workflow 串起 Intake→Archive、Repair/Replan/Reconcile/Merge/Closure；CLI、Board 与真实 Agent/Runner/Git 完成最终验收 | `SealedTaskWorkflow` Receipt |
-| TASK-0040 | BL-0042 | Sealed / Runtime authoritative | 失败 Closure/Artifact/Knowledge/Archive、Archive-only retry 与 LIVE-001～004 append-only 合法收敛 | `SealedTaskWorkflow` Receipt |
+| TASK-0040 | BL-0042 | Seal failed / Recovery prepared | 失败 Closure/Artifact/Knowledge/Archive、Archive-only retry 与 LIVE-001～004 append-only 合法收敛；原 Seal 因 Docs Impact 漏项失败，历史保留 | `9c68901`（rejected evidence） |
+| TASK-0040R1 | BL-0044 | Seal Prepared | 保留 TASK-0040 Seal 失败历史，以 corrected Evidence append-only 恢复 | Intent `sha256:954c…5ae9` |
 | TASK-0041 | BL-0043 | Planned | 真实、幂等、可对账的 Merge Effect；Git Checkpoint/Merge UNKNOWN 与 stale result 基础设施 | — |
 | TASK-0042 | BL-0043 | Planned | 非交互真实故障矩阵 Harness、Requirement/Evidence Registry 与受控 fault injection | — |
 | TASK-0043 | BL-0043 | Planned | 真实 Agent Happy/Implementation/Final Review/Documentation/Test/Design Replan 场景 | — |

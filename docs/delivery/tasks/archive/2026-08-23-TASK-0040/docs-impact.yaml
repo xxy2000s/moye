@@ -15,6 +15,7 @@ changed_paths:
   - docs/delivery/tasks/archive/2026-08-23-TASK-0040/spec.md
   - docs/delivery/tasks/archive/2026-08-23-TASK-0040/task.yaml
   - docs/delivery/tasks/archive/2026-08-23-TASK-0040/verification.md
+  - docs/delivery/tasks/archive/README.md
   - docs/graph.yaml
   - docs/knowledge/current/architecture/core-v2-agent-lifecycle.md
   - docs/knowledge/current/codemap/README.md
