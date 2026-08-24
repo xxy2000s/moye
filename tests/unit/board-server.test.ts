@@ -30,12 +30,16 @@ describe("board static server", () => {
     expect(script).toContain('if (initialRoute.kind === "task") void applyRoute().finally(loadBoard)');
     expect(script).toContain("const snapshot = board || latestBoardSnapshot");
     expect(script).toContain("CORE_V2_MACHINE_GRAPH_SIZE");
-    expect(script).toContain("ARCHIVE_PENDING: [1260, 350]");
+    expect(script).toContain("CORE_V2_MACHINE_GRAPH_SIZE = { width: 1640, height: 485 }");
+    expect(script).toContain("REPAIR_REQUIRED: [500, 270]");
+    expect(script).toContain('x="470" y="235" width="575" height="145"');
+    expect(script).not.toContain('x="18" y="300" width="1205" height="270"');
     expect(script).toContain("Workflow 状态事实");
     expect(script).toContain("本次节点路径");
     expect(script).toContain("renderMachineSystemOwner");
     expect(script).toContain("查看原始 detail");
     expect(styles).toContain(".machine-graph-node.is-filter-muted");
+    expect(styles).toContain(".machine-graph-stage.is-core-v2");
     expect(styles).toContain(".machine-node-route-proof");
     expect(styles).toContain(".domain-event-raw");
   });

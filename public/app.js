@@ -681,7 +681,7 @@ function renderStateMachine(machine, trace) {
 }
 
 const DEFAULT_MACHINE_GRAPH_SIZE = { width: 1640, height: 760 };
-const CORE_V2_MACHINE_GRAPH_SIZE = { width: 1640, height: 590 };
+const CORE_V2_MACHINE_GRAPH_SIZE = { width: 1640, height: 485 };
 const CODING_GRAPH_POSITIONS = {
   START: [30, 195], CONTEXT: [185, 195], WORKSPACE: [340, 195], IMPLEMENT: [495, 195],
   SELF_REVIEW: [650, 195], VERIFY: [805, 195], REVIEW: [960, 195], MERGE: [1115, 195],
@@ -693,12 +693,12 @@ const TASK_GRAPH_POSITIONS = {
   ARCHIVE_PENDING: [1090, 405], ARCHIVED: [1350, 405], ARCHIVE_FAILED: [1350, 605],
 };
 const CORE_V2_GRAPH_POSITIONS = {
-  START: [20, 150], ARCHITECT_REQUIRED: [165, 150], DESIGN_REVIEW_REQUIRED: [310, 150], IMPLEMENTATION_REQUIRED: [455, 150],
-  DOCUMENTATION_REQUIRED: [600, 150], TEST_PLAN_REQUIRED: [745, 150], TEST_EXECUTION_REQUIRED: [890, 150],
-  TEST_ASSESSMENT_REQUIRED: [1035, 150], FINAL_REVIEW_REQUIRED: [1180, 150], VERIFICATION_GATE_REQUIRED: [1325, 150],
-  MERGE_REQUIRED: [1470, 150], REPLAN_REQUIRED: [310, 20], REPAIR_REQUIRED: [540, 350],
-  WAITING_RECONCILE: [825, 350], FAILED_TERMINAL: [1095, 475], ARCHIVE_PENDING: [1260, 350],
-  CLOSED: [1445, 350], ARCHIVE_FAILED: [1260, 475], ARCHIVED: [1445, 475],
+  START: [20, 110], ARCHITECT_REQUIRED: [165, 110], DESIGN_REVIEW_REQUIRED: [310, 110], IMPLEMENTATION_REQUIRED: [455, 110],
+  DOCUMENTATION_REQUIRED: [600, 110], TEST_PLAN_REQUIRED: [745, 110], TEST_EXECUTION_REQUIRED: [890, 110],
+  TEST_ASSESSMENT_REQUIRED: [1035, 110], FINAL_REVIEW_REQUIRED: [1180, 110], VERIFICATION_GATE_REQUIRED: [1325, 110],
+  MERGE_REQUIRED: [1470, 110], REPLAN_REQUIRED: [310, 0], REPAIR_REQUIRED: [500, 270],
+  WAITING_RECONCILE: [690, 270], FAILED_TERMINAL: [880, 270], ARCHIVE_PENDING: [1080, 270],
+  CLOSED: [1250, 270], ARCHIVED: [1420, 270], ARCHIVE_FAILED: [1080, 385],
 };
 
 function renderMachineGraphCanvas(machine, transitions) {
@@ -728,7 +728,7 @@ function renderMachineGraphCanvas(machine, transitions) {
     <div class="machine-graph-legend" aria-label="状态机图例">
       <span class="legend-actual">实际经过</span><span class="legend-normal">合法主路径</span><span class="legend-repair">Repair / Replan / 恢复</span><span class="legend-failure">异常 / Reconcile / 失败</span><span class="legend-archive">Archive</span>
     </div>
-    <div class="machine-graph-stage" data-machine-graph-stage data-inspector-open="${machineGraphUiState.inspectorOpen}">
+    <div class="machine-graph-stage${machine.workflow.startsWith("CoreV2") ? " is-core-v2" : ""}" data-machine-graph-stage data-inspector-open="${machineGraphUiState.inspectorOpen}">
       <div class="machine-graph-scroll" data-machine-graph-scroll tabindex="0" aria-label="完整状态机 Graph 画布，可横向滚动">
         <svg class="machine-graph-svg" data-machine-svg viewBox="0 0 ${geometry.size.width} ${geometry.size.height}" width="${geometry.size.width}" height="${geometry.size.height}" role="img" aria-labelledby="machine-graph-svg-title machine-graph-svg-desc">
         <title id="machine-graph-svg-title">${escapeHtml(machine.workflow)} 完整状态机</title>
@@ -754,9 +754,9 @@ function machineGraphGeometry(machine) {
   if (machine.workflow.startsWith("CoreV2")) {
     return {
       size: CORE_V2_MACHINE_GRAPH_SIZE,
-      lanes: `<rect x="18" y="105" width="1535" height="140" rx="16" class="lane-business"/><text x="40" y="130">BUSINESS / HAPPY PATH</text>
-        <rect x="18" y="300" width="1205" height="270" rx="16" class="lane-recovery"/><text x="40" y="326">RECOVERY / EXCEPTION</text>
-        <rect x="1240" y="300" width="313" height="270" rx="16" class="lane-archive"/><text x="1265" y="326">ARCHIVE</text>`,
+      lanes: `<rect x="18" y="78" width="1604" height="126" rx="16" class="lane-business"/><text x="40" y="101">BUSINESS / HAPPY PATH</text>
+        <rect x="470" y="235" width="575" height="145" rx="16" class="lane-recovery"/><text x="490" y="258">RECOVERY / EXCEPTION</text>
+        <rect x="1045" y="235" width="577" height="235" rx="16" class="lane-archive"/><text x="1065" y="258">ARCHIVE</text>`,
     };
   }
   return {
@@ -809,7 +809,7 @@ function machineGraphEdgePath(edge, fromPosition, toPosition, index) {
   const endpoints = graphEdgeEndpoints(from, to);
   const [sx, sy, tx, ty] = endpoints;
   if (["FAILED", "FAILED_TERMINAL"].includes(edge.to)) {
-    const bend = 510 + (index % 5) * 12;
+    const bend = edge.to === "FAILED_TERMINAL" ? 405 + (index % 3) * 10 : 510 + (index % 5) * 12;
     return `M ${sx} ${sy} C ${sx} ${bend}, ${tx - 150} ${ty}, ${tx} ${ty}`;
   }
   if (edge.to === "WAITING_RECONCILE") {

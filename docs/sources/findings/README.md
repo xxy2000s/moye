@@ -11,6 +11,7 @@ Finding 与 Incident 的边界：
 
 ## 当前 Finding
 
+- [Core v2 Recovery / Exception 分区仍占据大块空白](./core-v2-recovery-lane-remains-oversized.md)：TASK-0050 缩短了画布，但黄色异常背景仍横跨大半画布。
 - [Backlog 文档未投影到项目看板](./backlog-docs-not-projected.md)：Git 中的 Backlog YAML 与 Restate ProjectBoard Projection 尚无显式同步路径。
 - [Demo 未展示编码任务与 Agent Trace](./demo-does-not-show-coding-agent-trace.md)：一键 Demo 仍使用通用 TaskWorkflow，无法体验已经实现的 Coding Trace。
 - [CLI close 未按契约附着既有 Workflow](./cli-close-does-not-attach.md)：`create` 后调用 `close` 会重复调用 Workflow `run` 并收到 409，尽管同一 Workflow 已正常收束。

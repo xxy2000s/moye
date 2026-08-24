@@ -249,6 +249,7 @@ dialog > form { position: sticky; top: 0; display: flex; justify-content: flex-e
 .machine-graph-legend .legend-failure::before { border-top: 2px dotted #b94c49; }
 .machine-graph-legend .legend-archive::before { border-top: 2px dashed #716789; }
 .machine-graph-stage { display: grid; grid-template-columns: minmax(0, 1fr); height: clamp(410px, 54dvh, 570px); min-height: 0; scroll-margin-top: 132px; overflow: hidden; background: #f5f7f8; transition: grid-template-columns 180ms ease; }
+.machine-graph-stage.is-core-v2 { height: clamp(360px, 46dvh, 480px); }
 .machine-graph-stage[data-inspector-open="true"] { grid-template-columns: minmax(0, 1fr) minmax(420px, 480px); }
 .machine-graph-scroll { position: relative; min-width: 0; height: 100%; max-height: none; overflow: auto; overscroll-behavior: contain; background: #f5f7f8; scroll-behavior: smooth; }
 .machine-graph-scroll:focus-visible { outline: 2px solid #4c7188; outline-offset: -3px; }
@@ -687,6 +688,7 @@ dialog > form { position: sticky; top: 0; display: flex; justify-content: flex-e
   .machine-graph-legend { overflow-x: auto; flex-wrap: nowrap; }
   .machine-graph-legend span { flex: 0 0 auto; }
   .machine-graph-stage { height: min(52dvh, 470px); min-height: 380px; }
+  .machine-graph-stage.is-core-v2 { height: min(46dvh, 430px); min-height: 350px; }
   .machine-graph-inspector:not([hidden]) { right: 0; bottom: 0; left: 0; max-height: 72dvh; padding-bottom: max(18px, env(safe-area-inset-bottom)); border-right: 0; border-bottom: 0; border-left: 0; border-radius: 18px 18px 0 0; }
   .machine-transition-route { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; }
   .machine-transition-route span { line-height: 1; }

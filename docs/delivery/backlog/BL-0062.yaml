@@ -1,0 +1,14 @@
+schema_version: 1
+id: "BL-0062"
+title: "收紧 Core v2 Recovery / Exception 画布分区"
+kind: "bug"
+status: "converted_to_task"
+priority: "high"
+source_refs: [core-v2-recovery-lane-remains-oversized]
+affected_areas: [project-board, task-audit, state-machine-graph]
+acceptance_outline:
+  - "Recovery / Exception 背景只包围异常节点簇，不再横跨大半画布"
+  - "Repair、Reconcile、Failed 与 Archive 在紧凑支线上保持可读且不重叠"
+  - "实际路径与完整状态机筛选都保留全部合法节点和边"
+  - "真实 Core v2 页面在桌面和窄屏均通过视觉验收"
+resolution: { task_refs: [TASK-0051], duplicate_of: null, reason: "由 TASK-0051 修正 TASK-0050 遗留的画布分区空白" }
