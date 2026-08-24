@@ -75,6 +75,7 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 | [BL-0060](./BL-0060.yaml) | Converted to Task | 让 seal-start 在派发前验证 Active Task package | TASK-0049R1（Seal Prepared） |
 | [BL-0061](./BL-0061.yaml) | Converted to Task | 重构 Core v2 状态机画布与节点审计信息层级 | TASK-0050（Seal Prepared） |
 | [BL-0062](./BL-0062.yaml) | Converted to Task | 收紧 Core v2 Recovery / Exception 画布分区 | TASK-0051（Seal Prepared） |
+| [BL-0063](./BL-0063.yaml) | Converted to Task | 补齐 Board Task 时间并重构详情页局部 Tab | TASK-0052（Seal Prepared） |
 
 ## 本轮调度结果
 

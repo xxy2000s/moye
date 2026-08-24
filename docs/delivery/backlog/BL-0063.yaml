@@ -1,0 +1,14 @@
+schema_version: 1
+id: "BL-0063"
+title: "补齐 Board Task 时间并重构详情页局部 Tab"
+kind: "feature"
+status: "converted_to_task"
+priority: "high"
+source_refs: [board-task-timing-and-detail-tabs]
+affected_areas: [project-board, task-audit, frontend]
+acceptance_outline:
+  - "每张 Task 卡片显示由真实 Event 派生的开始、结束与 duration"
+  - "详情页顶部固定提供画布、角色与交付物、Workflow 状态事实、高级诊断四个 Tab"
+  - "画布默认选中，Tab 支持键盘和窄屏"
+  - "所有原有 Runtime 证据仍可访问"
+resolution: { task_refs: [TASK-0052], duplicate_of: null, reason: "由 TASK-0052 实现用户确认的 Board 信息层级需求" }

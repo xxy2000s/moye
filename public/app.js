@@ -53,6 +53,7 @@ let stopAgentEventsFollower = () => {};
 let agentEventsReturnFocus;
 let shouldRestoreAgentEventsFocus = true;
 let machineGraphUiState = { filter: "ACTUAL", zoom: undefined, selectedId: undefined, inspectorOpen: false, scrollLeft: 0, scrollTop: 0 };
+let taskDetailTabUiState = { taskId: undefined, activeId: "canvas" };
 let closeMachineGraphInspector = () => false;
 let latestBoardSnapshot;
 const boardFilters = { outcome: "ALL", workflow: "ALL", history: "ALL" };
@@ -158,7 +159,7 @@ function renderLane(name, items, renderer) {
     container.innerHTML = '<div class="placeholder">暂无条目</div>';
     return;
   }
-  container.replaceChildren(...items.map((item, index) => renderer(item, index)));
+  container.replaceChildren(...items.map((item, index) => renderer(item, index, latestBoardSnapshot?.generatedAt)));
 }
 
 function backlogCard(item, index) {
@@ -171,14 +172,20 @@ function backlogCard(item, index) {
   return card;
 }
 
-function taskCard(task, index) {
+function taskCard(task, index, observedAt) {
   const card = cardShell(index, "button");
   card.type = "button";
   card.setAttribute("aria-label", `查看任务 ${task.taskId}：${task.title}`);
   const visibleState = visibleTaskState(task);
+  const timing = taskLifecycleTiming(task, observedAt);
   card.innerHTML = `
     <div class="card-meta"><span>${escapeHtml(task.taskId)}</span><span>${escapeHtml(workflowKindLabel(task.workflowKind))} · R${task.specRevision}</span></div>
     <h3>${escapeHtml(task.title)}</h3>
+    <dl class="card-timing" aria-label="任务运行时间">
+      <div><dt>开始</dt><dd><time datetime="${escapeHtml(timing.startedAt || "")}">${escapeHtml(formatTime(timing.startedAt))}</time></dd></div>
+      <div><dt>结束</dt><dd>${timing.finishedAt ? `<time datetime="${escapeHtml(timing.finishedAt)}">${escapeHtml(formatTime(timing.finishedAt))}</time>` : "—"}</dd></div>
+      <div><dt>Duration</dt><dd>${escapeHtml(timing.durationLabel)}${timing.running ? '<span class="card-timing-live">运行中</span>' : ""}</dd></div>
+    </dl>
     <div class="card-footer">
       <span class="tag ${stateColor(visibleState)}">${escapeHtml(taskStateLabel(visibleState))}</span>
       <span class="tag ${archiveColor(task.archiveStatus)}">${escapeHtml(archiveStatusLabel(task.archiveStatus))}</span>
@@ -186,6 +193,20 @@ function taskCard(task, index) {
     </div>`;
   card.addEventListener("click", () => navigateToTask(task));
   return card;
+}
+
+function taskLifecycleTiming(task, observedAt) {
+  const events = Array.isArray(task.events) ? task.events : [];
+  const startedAt = events[0]?.at;
+  const finishedAt = task.archiveStatus === "ARCHIVED" ? events.at(-1)?.at : undefined;
+  const running = Boolean(startedAt && !finishedAt);
+  const end = finishedAt || (running ? observedAt : undefined);
+  return {
+    startedAt,
+    finishedAt,
+    running,
+    durationLabel: startedAt && end ? formatCompactDuration(startedAt, end) : "—",
+  };
 }
 
 function visibleTaskState(task) {
@@ -301,6 +322,7 @@ async function openTask(summary) {
   openedTaskSummary = summary;
   openedTaskTraceSignature = "";
   machineGraphUiState = { filter: "ACTUAL", zoom: undefined, selectedId: undefined, inspectorOpen: false, scrollLeft: 0, scrollTop: 0 };
+  taskDetailTabUiState = { taskId: summary.taskId, activeId: "canvas" };
   renderTaskDetailHeader(summary, summary.title, [
     ["状态", taskStateLabel(summary.state)],
     ["归档", archiveStatusLabel(summary.archiveStatus)],
@@ -390,6 +412,60 @@ function renderTaskDetailHeader(task, title, facts = []) {
     <span class="detail-meta-item tone-${escapeHtml(tone)}"><small>${escapeHtml(label)}</small><strong>${escapeHtml(value || "—")}</strong></span>`).join("");
 }
 
+const TASK_DETAIL_TABS = [
+  { id: "canvas", label: "画布" },
+  { id: "deliverables", label: "角色与交付物" },
+  { id: "workflow", label: "Workflow 状态事实" },
+  { id: "diagnostics", label: "高级诊断" },
+];
+
+function renderTaskDetailTabs(taskId, panels) {
+  if (taskDetailTabUiState.taskId !== taskId) taskDetailTabUiState = { taskId, activeId: "canvas" };
+  const activeId = TASK_DETAIL_TABS.some(tab => tab.id === taskDetailTabUiState.activeId) ? taskDetailTabUiState.activeId : "canvas";
+  const tabs = TASK_DETAIL_TABS.map(tab => `<button type="button" role="tab" id="task-tab-${tab.id}" aria-controls="task-panel-${tab.id}" aria-selected="${tab.id === activeId}" tabindex="${tab.id === activeId ? "0" : "-1"}" data-task-detail-tab="${tab.id}">${tab.label}</button>`).join("");
+  const content = TASK_DETAIL_TABS.map(tab => `<section role="tabpanel" id="task-panel-${tab.id}" aria-labelledby="task-tab-${tab.id}" data-task-detail-panel="${tab.id}"${tab.id === activeId ? "" : " hidden"}>${panels[tab.id] || renderEmptyTaskTab(tab.label)}</section>`).join("");
+  return `<div class="task-detail-tabs-shell">
+    <nav class="task-detail-tabs" aria-label="Task 详情视图"><div role="tablist" aria-orientation="horizontal">${tabs}</div></nav>
+    <div class="task-detail-tab-panels">${content}</div>
+  </div>`;
+}
+
+function renderEmptyTaskTab(label) {
+  return `<div class="task-tab-empty"><strong>${escapeHtml(label)}</strong><span>这个 Workflow 当前没有可展示的对应事实。</span></div>`;
+}
+
+function bindTaskDetailTabs(taskId) {
+  const tablist = elements.detail.querySelector('[role="tablist"]');
+  if (!(tablist instanceof HTMLElement)) return;
+  const tabs = [...tablist.querySelectorAll("[data-task-detail-tab]")];
+  const activate = (id, moveFocus = false) => {
+    if (!TASK_DETAIL_TABS.some(tab => tab.id === id)) return;
+    taskDetailTabUiState = { taskId, activeId: id };
+    tabs.forEach(tab => {
+      const selected = tab.dataset.taskDetailTab === id;
+      tab.setAttribute("aria-selected", String(selected));
+      tab.tabIndex = selected ? 0 : -1;
+      if (selected && moveFocus) tab.focus();
+    });
+    elements.detail.querySelectorAll("[data-task-detail-panel]").forEach(panel => {
+      panel.hidden = panel.dataset.taskDetailPanel !== id;
+    });
+  };
+  tabs.forEach((tab, index) => {
+    tab.addEventListener("click", () => activate(tab.dataset.taskDetailTab));
+    tab.addEventListener("keydown", event => {
+      let next = index;
+      if (event.key === "ArrowRight") next = (index + 1) % tabs.length;
+      else if (event.key === "ArrowLeft") next = (index - 1 + tabs.length) % tabs.length;
+      else if (event.key === "Home") next = 0;
+      else if (event.key === "End") next = tabs.length - 1;
+      else return;
+      event.preventDefault();
+      activate(tabs[next].dataset.taskDetailTab, true);
+    });
+  });
+}
+
 function renderTaskTrace(trace) {
   const task = trace.task;
   renderTaskDetailHeader(task, task.title, [
@@ -398,18 +474,18 @@ function renderTaskTrace(trace) {
     ["Workflow", `TaskWorkflow/${task.taskId}`],
     ["Attempt", String(task.attempt)],
   ]);
-  elements.detail.innerHTML = `
-    <section class="task-workspace-summary" aria-label="TaskWorkflow 摘要">
-      <div><span class="workspace-summary-mark" aria-hidden="true">T</span><p><strong>TaskWorkflow 业务聚合</strong><small>只展示 Runtime Projection 与 Event 证明的事实，不补画 Coding Agent、Worktree 或 Git 记录。</small></p></div>
-      <dl><div><dt>当前步骤</dt><dd>${escapeHtml(task.currentStep)}</dd></div><div><dt>需求来源</dt><dd>${task.backlogRefs.map(escapeHtml).join(", ") || "—"}</dd></div></dl>
-    </section>
-    ${renderStateMachine(trace.stateMachine, trace)}
-    ${task.archivePath ? `<p class="result-ref"><span>归档结果</span><code>${escapeHtml(task.archivePath)}</code></p>` : ""}
-    ${task.error ? `<p class="error-box">${escapeHtml(task.error)}</p>` : ""}
-    ${renderDomainEventPanel(task.events, trace.stateMachine)}
-    <div class="domain-event-runtime-link">
-      ${trace.durableRuntime.invocationsUrl ? `<a class="runtime-link" href="${escapeAttribute(trace.durableRuntime.invocationsUrl)}" target="_blank" rel="noreferrer">在 Restate 中核对 Journal ↗</a>` : ""}
-    </div>`;
+  elements.detail.innerHTML = renderTaskDetailTabs(task.taskId, {
+    canvas: `<section class="task-workspace-summary" aria-label="TaskWorkflow 摘要">
+        <div><span class="workspace-summary-mark" aria-hidden="true">T</span><p><strong>TaskWorkflow 业务聚合</strong><small>只展示 Runtime Projection 与 Event 证明的事实，不补画 Coding Agent、Worktree 或 Git 记录。</small></p></div>
+        <dl><div><dt>当前步骤</dt><dd>${escapeHtml(task.currentStep)}</dd></div><div><dt>需求来源</dt><dd>${task.backlogRefs.map(escapeHtml).join(", ") || "—"}</dd></div></dl>
+      </section>
+      ${task.error ? `<p class="error-box">${escapeHtml(task.error)}</p>` : ""}
+      ${renderStateMachine(trace.stateMachine, trace)}`,
+    deliverables: `<section class="task-tab-surface"><div class="trace-heading"><div><p class="eyebrow">System Workflow</p><h3>角色与交付物</h3></div><span>无 Agent Session</span></div><p class="trace-note">这个基础 TaskWorkflow 没有 Agent 角色或代码 Artifact；页面不会补造不存在的执行者。</p>${task.archivePath ? `<p class="result-ref"><span>归档结果</span><code>${escapeHtml(task.archivePath)}</code></p>` : ""}</section>`,
+    workflow: renderDomainEventPanel(task.events, trace.stateMachine, true),
+    diagnostics: `<section class="advanced-panel task-tab-surface"><div class="advanced-content"><section><p class="subheading">Restate Journal</p><code class="wide-code">${escapeHtml(trace.durableRuntime.workflowRef || `TaskWorkflow/${task.taskId}`)}</code>${trace.durableRuntime.invocationsUrl ? `<a class="runtime-link" href="${escapeAttribute(trace.durableRuntime.invocationsUrl)}" target="_blank" rel="noreferrer">在 Restate 中核对 Journal ↗</a>` : ""}</section></div></section>`,
+  });
+  bindTaskDetailTabs(task.taskId);
   bindStateMachineGraph(trace.stateMachine, trace);
 }
 
@@ -436,24 +512,24 @@ function renderCoreV2Trace(trace) {
     ["Merge", lifecycle.mergeReceipt ? `${shortSha(lifecycle.mergeReceipt.mergeCommit)}${lifecycle.mergeReceipt.reconciledAfterUnknown ? " · 已对账" : ""}` : "等待合入"],
     ["Archive", archiveStatusLabel(task.archiveStatus), task.archiveStatus === "ARCHIVED" ? "success" : "neutral"],
   ]);
-  elements.detail.innerHTML = `
-    <section class="task-workspace-summary tone-${failed ? "danger" : succeeded ? "success" : "progress"}" aria-label="Core v2 任务结论">
-      <div><span class="workspace-summary-mark" aria-hidden="true">${failed ? "!" : succeeded ? "✓" : "●"}</span><p><strong>${failed ? "真实执行已失败并保留证据" : succeeded ? "Task 已完整闭环" : "Task 正由 Core v2 Workflow 推进"}</strong><small>${failed ? escapeHtml(task.error || "Workflow failed") : "五类主流程 Agent、受信任 Runner、确定性 Gate 与旁路 Knowledge Disposition 均由 Runtime 事实驱动。"}</small></p></div>
-      <dl><div><dt>当前阶段</dt><dd>${escapeHtml(task.currentStep)}</dd></div><div><dt>Workflow</dt><dd>CoreV2Workflow</dd></div></dl>
-    </section>
-    ${task.error ? `<p class="error-box"><strong>失败原因：</strong>${escapeHtml(task.error)}</p>` : ""}
-    ${renderCoreV2Closure(trace)}
-    ${renderStateMachine(trace.stateMachine, trace)}
-    <details class="task-evidence-panel" open>
-      <summary><span>角色会话与交付物</span><small>${trace.roles.length} 个 Session · ${lifecycle.artifacts.length} 个不可变 Artifact</small></summary>
-      <div class="task-evidence-content">
+  elements.detail.innerHTML = renderTaskDetailTabs(task.taskId, {
+    canvas: `<section class="task-workspace-summary tone-${failed ? "danger" : succeeded ? "success" : "progress"}" aria-label="Core v2 任务结论">
+        <div><span class="workspace-summary-mark" aria-hidden="true">${failed ? "!" : succeeded ? "✓" : "●"}</span><p><strong>${failed ? "真实执行已失败并保留证据" : succeeded ? "Task 已完整闭环" : "Task 正由 Core v2 Workflow 推进"}</strong><small>${failed ? escapeHtml(task.error || "Workflow failed") : "五类主流程 Agent、受信任 Runner、确定性 Gate 与旁路 Knowledge Disposition 均由 Runtime 事实驱动。"}</small></p></div>
+        <dl><div><dt>当前阶段</dt><dd>${escapeHtml(task.currentStep)}</dd></div><div><dt>Workflow</dt><dd>CoreV2Workflow</dd></div></dl>
+      </section>
+      ${task.error ? `<p class="error-box"><strong>失败原因：</strong>${escapeHtml(task.error)}</p>` : ""}
+      ${renderCoreV2Closure(trace)}
+      ${renderStateMachine(trace.stateMachine, trace)}`,
+    deliverables: `<section class="task-evidence-panel task-tab-surface"><div class="task-evidence-content">
+        <div class="tab-panel-heading"><span>角色会话与交付物</span><small>${trace.roles.length} 个 Session · ${lifecycle.artifacts.length} 个不可变 Artifact</small></div>
         <section class="journey-section" aria-label="真实角色会话"><div class="trace-heading"><div><p class="eyebrow">Role / Agent Sessions</p><h3>每个 Agent 的对话与工具事件</h3></div><span>支持按事件类别筛选</span></div><ul class="action-list">${roleSessions || "<li>等待首个 Agent Session</li>"}</ul></section>
         <section class="journey-section" aria-label="生命周期交付物"><div class="trace-heading"><div><p class="eyebrow">Immutable Artifacts</p><h3>Spec、Design、Documentation、Test 与 Review 证据</h3></div><span>绑定 Revision 与 Commit</span></div><ul class="artifact-list">${artifacts || "<li>等待 Artifact</li>"}</ul></section>
         <div class="correlation-strip" aria-label="任务关联链">${correlationNode("Task", task.taskId)}<span aria-hidden="true">→</span>${correlationNode("Workflow", trace.durableRuntime.workflowRef)}<span aria-hidden="true">→</span>${correlationNode("Candidate", lifecycle.candidateCommit || "等待生成")}<span aria-hidden="true">→</span>${correlationNode("Gate", lifecycle.verificationGateDigest || "等待验证")}<span aria-hidden="true">→</span>${correlationNode("Merge", lifecycle.mergeReceipt?.mergeCommit || "等待合入")}</div>
-      </div>
-    </details>
-    ${renderDomainEventPanel(trace.business.events, trace.stateMachine)}
-    <details class="advanced-panel"><summary><span>高级诊断</span><small>确定性 Observer、Restate Journal 与完整 Lifecycle Projection</small></summary><div class="advanced-content"><section><p class="subheading">确定性 Observer</p><dl class="machine-node-facts"><div><dt>Event</dt><dd>${trace.observer.facts.events}</dd></div><div><dt>Attempt</dt><dd>${trace.observer.facts.attempts}</dd></div><div><dt>Failure / UNKNOWN</dt><dd>${trace.observer.facts.failures} / ${trace.observer.facts.unknown}</dd></div><div><dt>Repair / Replan</dt><dd>${trace.observer.facts.repairs} / ${trace.observer.facts.replans}</dd></div></dl><code class="wide-code">${escapeHtml(trace.observer.reportDigest)}</code></section><section><code class="wide-code">${escapeHtml(trace.durableRuntime.workflowRef)}</code><a class="runtime-link" href="${escapeAttribute(trace.durableRuntime.invocationsUrl)}" target="_blank" rel="noreferrer">在 Restate 中核对 Journal ↗</a></section><section><p class="subheading">Projection Digest</p><code class="wide-code">${escapeHtml(lifecycle.projectionDigest)}</code></section></div></details>`;
+      </div></section>`,
+    workflow: renderDomainEventPanel(trace.business.events, trace.stateMachine, true),
+    diagnostics: `<section class="advanced-panel task-tab-surface"><div class="tab-panel-heading"><span>高级诊断</span><small>确定性 Observer、Restate Journal 与完整 Lifecycle Projection</small></div><div class="advanced-content"><section><p class="subheading">确定性 Observer</p><dl class="machine-node-facts"><div><dt>Event</dt><dd>${trace.observer.facts.events}</dd></div><div><dt>Attempt</dt><dd>${trace.observer.facts.attempts}</dd></div><div><dt>Failure / UNKNOWN</dt><dd>${trace.observer.facts.failures} / ${trace.observer.facts.unknown}</dd></div><div><dt>Repair / Replan</dt><dd>${trace.observer.facts.repairs} / ${trace.observer.facts.replans}</dd></div></dl><code class="wide-code">${escapeHtml(trace.observer.reportDigest)}</code></section><section><p class="subheading">Restate Journal</p><code class="wide-code">${escapeHtml(trace.durableRuntime.workflowRef)}</code><a class="runtime-link" href="${escapeAttribute(trace.durableRuntime.invocationsUrl)}" target="_blank" rel="noreferrer">在 Restate 中核对 Journal ↗</a></section><section><p class="subheading">Projection Digest</p><code class="wide-code">${escapeHtml(lifecycle.projectionDigest)}</code></section></div></section>`,
+  });
+  bindTaskDetailTabs(task.taskId);
   bindStateMachineGraph(trace.stateMachine, trace);
   bindAgentEventsDialog(trace);
 }
@@ -530,74 +606,36 @@ function renderCodingTrace(trace, summary) {
     ["Session", sessionRef],
     ["Commit", mergeRef],
   ]);
-  elements.detail.innerHTML = `
-    <section class="task-workspace-summary tone-${conclusion.tone}" aria-label="任务结论">
-      <div><span class="workspace-summary-mark" aria-hidden="true">${conclusion.icon}</span><p><strong>${escapeHtml(conclusion.title)}</strong><small>${escapeHtml(conclusion.text)}</small></p></div>
-      <dl><div><dt>当前阶段</dt><dd>${escapeHtml(stepLabel(task.currentStep))}</dd></div><div><dt>执行者</dt><dd>${escapeHtml(runnerLabel(trace.agent?.runnerKind))}</dd></div></dl>
-      ${agentEvents ? `<button type="button" class="workspace-events-trigger" data-agent-events-trigger data-agent-events-url="${escapeAttribute(agentEvents.viewUrl)}" data-agent-events-kind="IMPLEMENTATION" data-agent-events-binding="${escapeHtml(`${agentEvents.attemptId || "等待 Attempt"} · ${runnerLabel(agentEvents.runnerKind)}`)}" data-agent-events-runner="${escapeHtml(agentEvents.runnerKind)}" aria-controls="agent-events-dialog" aria-haspopup="dialog" aria-expanded="false">查看完整对话</button>` : ""}
-    </section>
-    ${task.error ? `<p class="error-box"><strong>失败原因：</strong>${escapeHtml(task.error)}<br><span>下一步：${escapeHtml(trace.recovery.summary)}</span></p>` : ""}
+  elements.detail.innerHTML = renderTaskDetailTabs(task.taskId, {
+    canvas: `<section class="task-workspace-summary tone-${conclusion.tone}" aria-label="任务结论">
+        <div><span class="workspace-summary-mark" aria-hidden="true">${conclusion.icon}</span><p><strong>${escapeHtml(conclusion.title)}</strong><small>${escapeHtml(conclusion.text)}</small></p></div>
+        <dl><div><dt>当前阶段</dt><dd>${escapeHtml(stepLabel(task.currentStep))}</dd></div><div><dt>执行者</dt><dd>${escapeHtml(runnerLabel(trace.agent?.runnerKind))}</dd></div></dl>
+        ${agentEvents ? `<button type="button" class="workspace-events-trigger" data-agent-events-trigger data-agent-events-url="${escapeAttribute(agentEvents.viewUrl)}" data-agent-events-kind="IMPLEMENTATION" data-agent-events-binding="${escapeHtml(`${agentEvents.attemptId || "等待 Attempt"} · ${runnerLabel(agentEvents.runnerKind)}`)}" data-agent-events-runner="${escapeHtml(agentEvents.runnerKind)}" aria-controls="agent-events-dialog" aria-haspopup="dialog" aria-expanded="false">查看完整对话</button>` : ""}
+      </section>
+      ${task.error ? `<p class="error-box"><strong>失败原因：</strong>${escapeHtml(task.error)}<br><span>下一步：${escapeHtml(trace.recovery.summary)}</span></p>` : ""}
+      ${renderStateMachine(trace.stateMachine, trace)}`,
+    deliverables: `<section class="task-evidence-panel task-tab-surface"><div class="task-evidence-content">
+        <div class="tab-panel-heading"><span>角色与交付物</span><small>${PIPELINE_STAGES.length} 个阶段 · ${(trace.roles || []).length + (trace.reviews || []).length + (trace.agent ? 1 : 0)} 个真实执行会话</small></div>
+        <div class="correlation-strip" aria-label="任务关联链">${correlationNode("任务", task.taskId)}<span aria-hidden="true">→</span>${correlationNode("工作流", workflowRef)}<span aria-hidden="true">→</span>${correlationNode("Agent 会话", sessionRef)}<span aria-hidden="true">→</span>${correlationNode("合入提交", mergeRef)}</div>
+        <section class="journey-section" aria-labelledby="journey-title"><div class="trace-heading"><div><p class="eyebrow">Step / Attempt Evidence</p><h3 id="journey-title">按阶段核对 Attempt 与 Evidence</h3></div><span>状态由 Workflow Event History 证明</span></div><div class="journey">${journey}</div></section>
+        <section class="journey-section" aria-label="真实角色会话"><div class="trace-heading"><div><p class="eyebrow">Role / Agent Sessions</p><h3>角色、会话、版本与结论</h3></div><span>${(trace.roles || []).length + (trace.reviews || []).length + (trace.agent ? 1 : 0)} 个真实执行会话</span></div><ul class="action-list">${implementationSessions + roleSessions + reviewSessions || "<li>尚无角色会话</li>"}</ul></section>
+        <section class="journey-section" aria-label="任务交付物"><div class="trace-heading"><div><p class="eyebrow">Artifacts</p><h3>提交、Manifest 与执行产物</h3></div><span>内容摘要绑定</span></div><ul class="artifact-list">${artifacts || "<li>尚无技术 Artifact</li>"}</ul></section>
+      </div></section>`,
+    workflow: renderDomainEventPanel(trace.business.events, trace.stateMachine, true),
+    diagnostics: `<section class="advanced-panel task-tab-surface"><div class="tab-panel-heading"><span>高级诊断</span><small>Restate Journal、恢复建议、Trace 与原始定位信息</small></div><div class="advanced-content">
+        <section class="diagnostic-actions" aria-label="诊断入口"><div><small>Trace ID</small><code>${escapeHtml(trace.observability.traceId)}</code></div>${trace.observability.enabled && trace.observability.uiBaseUrl ? `<a href="${escapeAttribute(trace.observability.uiBaseUrl)}" target="_blank" rel="noreferrer">打开 Trace（Phoenix）↗</a>` : `<span class="diagnostic-disabled">Trace 后端未启用</span>`}${rawModelIo ? `<a class="sensitive-link" href="${escapeAttribute(rawModelIo.downloadUrl)}" target="_blank" rel="noreferrer">查看 Raw Model IO（敏感）↗</a>` : ""}</section>
+        <section><div class="trace-heading"><div><p class="eyebrow">Restate 定位</p><h3>耐久执行与中断恢复</h3></div><span>执行证据</span></div><p class="trace-note">Restate Journal 负责记录执行与重放；任务是否完成，以 Moye 的业务投影为准。</p><code class="wide-code">${escapeHtml(trace.durableRuntime.workflowRef)}</code>${trace.durableRuntime.invocationsUrl ? `<a class="runtime-link" href="${escapeAttribute(trace.durableRuntime.invocationsUrl)}" target="_blank" rel="noreferrer">在 Restate 中打开这个任务 ↗</a>` : ""}</section>
+        <section class="recovery ${trace.recovery.classification === "NONE" ? "settled" : "attention"}"><div class="trace-heading"><div><p class="eyebrow">恢复判断</p><h3>${escapeHtml(recoveryLabel(trace.recovery.classification))}</h3></div><span>只读建议</span></div><p>${escapeHtml(trace.recovery.summary)}</p>${actions ? `<ul class="action-list">${actions}</ul>` : ""}</section>
+        <section><p class="subheading">技术 Artifact</p><ul class="artifact-list">${artifacts || "<li>尚无技术 Artifact</li>"}</ul></section>
+      </div></section>`,
+  });
 
-    ${renderStateMachine(trace.stateMachine, trace)}
-
-    <details class="task-evidence-panel">
-      <summary><span>执行证据与角色会话</span><small>${PIPELINE_STAGES.length} 个阶段 · ${(trace.roles || []).length + (trace.reviews || []).length + (trace.agent ? 1 : 0)} 个真实执行会话</small></summary>
-      <div class="task-evidence-content">
-        <div class="correlation-strip" aria-label="任务关联链">
-          ${correlationNode("任务", task.taskId)}<span aria-hidden="true">→</span>
-          ${correlationNode("工作流", workflowRef)}<span aria-hidden="true">→</span>
-          ${correlationNode("Agent 会话", sessionRef)}<span aria-hidden="true">→</span>
-          ${correlationNode("合入提交", mergeRef)}
-        </div>
-        <section class="diagnostic-actions" aria-label="诊断入口">
-      <div><small>Trace ID</small><code>${escapeHtml(trace.observability.traceId)}</code></div>
-      ${trace.observability.enabled && trace.observability.uiBaseUrl
-        ? `<a href="${escapeAttribute(trace.observability.uiBaseUrl)}" target="_blank" rel="noreferrer">打开 Trace（Phoenix）↗</a>`
-        : `<span class="diagnostic-disabled">Trace 后端未启用</span>`}
-      ${rawModelIo ? `<a class="sensitive-link" href="${escapeAttribute(rawModelIo.downloadUrl)}" target="_blank" rel="noreferrer">查看 Raw Model IO（敏感）↗</a>` : ""}
-        </section>
-        <p class="trace-note">Trace 与 JSONL 只用于诊断；任务状态以 Moye Projection / Domain Event 为准，中断恢复以 Restate Journal 为准。</p>
-
-        <section class="journey-section" aria-labelledby="journey-title">
-      <div class="trace-heading"><div><p class="eyebrow">Step / Attempt Evidence</p><h3 id="journey-title">按阶段核对 Attempt 与 Evidence</h3></div><span>状态由上方 Event History 证明</span></div>
-      <div class="journey">${journey}</div>
-        </section>
-
-        <section class="journey-section" aria-label="真实角色会话">
-      <div class="trace-heading"><div><p class="eyebrow">Role / Agent Sessions</p><h3>角色、会话、版本与结论</h3></div><span>${(trace.roles || []).length + (trace.reviews || []).length + (trace.agent ? 1 : 0)} 个真实执行会话</span></div>
-      <ul class="action-list">${implementationSessions + roleSessions + reviewSessions || "<li>尚无角色会话</li>"}</ul>
-        </section>
-      </div>
-    </details>
-
-    ${renderDomainEventPanel(trace.business.events, trace.stateMachine)}
-
-    <details class="advanced-panel">
-      <summary><span>高级诊断</span><small>Restate Journal、恢复建议、Artifact 与原始事件</small></summary>
-      <div class="advanced-content">
-        <section>
-          <div class="trace-heading"><div><p class="eyebrow">Restate 定位</p><h3>耐久执行与中断恢复</h3></div><span>执行证据</span></div>
-          <p class="trace-note">Restate Journal 负责记录执行与重放；任务是否完成，以 Moye 的业务投影为准。</p>
-          <code class="wide-code">${escapeHtml(trace.durableRuntime.workflowRef)}</code>
-          ${trace.durableRuntime.invocationsUrl ? `<a class="runtime-link" href="${escapeAttribute(trace.durableRuntime.invocationsUrl)}" target="_blank" rel="noreferrer">在 Restate 中打开这个任务 ↗</a>` : ""}
-        </section>
-        <section class="recovery ${trace.recovery.classification === "NONE" ? "settled" : "attention"}">
-          <div class="trace-heading"><div><p class="eyebrow">恢复判断</p><h3>${escapeHtml(recoveryLabel(trace.recovery.classification))}</h3></div><span>只读建议</span></div>
-          <p>${escapeHtml(trace.recovery.summary)}</p>
-          ${actions ? `<ul class="action-list">${actions}</ul>` : ""}
-        </section>
-        <section>
-          <p class="subheading">技术 Artifact</p>
-          <ul class="artifact-list">${artifacts || "<li>尚无技术 Artifact</li>"}</ul>
-        </section>
-      </div>
-    </details>`;
-
+  bindTaskDetailTabs(task.taskId);
   bindStateMachineGraph(trace.stateMachine, trace);
   bindAgentEventsDialog(trace);
 }
 
-function renderDomainEventPanel(events, machine) {
+function renderDomainEventPanel(events, machine, expanded = false) {
   const historyBySequence = new Map(machine.history.map(item => [item.sequence, item]));
   const rows = events.map(event => {
     const transition = historyBySequence.get(event.sequence);
@@ -615,7 +653,7 @@ function renderDomainEventPanel(events, machine) {
       </div>
     </li>`;
   }).join("");
-  return `<details class="domain-events-panel">
+  return `<details class="domain-events-panel"${expanded ? " open" : ""}>
     <summary><span><strong>Workflow 状态事实</strong><small>${events.length} 条 Domain Event，按 sequence 保留</small></span><em>展开时间线</em></summary>
     <div class="domain-events-intro"><strong>Domain Event 证明状态如何变化。</strong><p>默认展示业务摘要、转换和时间；原始 detail 按单条事件展开。Agent 的对话与工具输出继续在 Agent Events 弹窗中查看。</p></div>
     <ol class="domain-event-timeline">${rows || "<li class=\"domain-event-empty\">尚无 Domain Event。</li>"}</ol>
@@ -1609,6 +1647,27 @@ function formatDuration(startedAt, finishedAt) {
   if (!finishedAt) return "执行中";
   const duration = Math.max(0, new Date(finishedAt).getTime() - new Date(startedAt).getTime());
   return duration < 1000 ? `${duration} ms` : `${(duration / 1000).toFixed(1)} s`;
+}
+
+function formatCompactDuration(startedAt, finishedAt) {
+  const started = new Date(startedAt).getTime();
+  const finished = new Date(finishedAt).getTime();
+  if (!Number.isFinite(started) || !Number.isFinite(finished)) return "—";
+  const duration = Math.max(0, finished - started);
+  if (duration < 1000) return `${duration} ms`;
+  let seconds = Math.floor(duration / 1000);
+  const days = Math.floor(seconds / 86400);
+  seconds %= 86400;
+  const hours = Math.floor(seconds / 3600);
+  seconds %= 3600;
+  const minutes = Math.floor(seconds / 60);
+  seconds %= 60;
+  const parts = [];
+  if (days) parts.push(`${days} 天`);
+  if (hours) parts.push(`${hours} 时`);
+  if (minutes) parts.push(`${minutes} 分`);
+  if (seconds || parts.length === 0) parts.push(`${seconds} 秒`);
+  return parts.slice(0, 2).join(" ");
 }
 
 function shortSha(value) {

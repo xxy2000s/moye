@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 100
+graph_revision: 101
 updated_at: "2026-08-24"
 
 entrypoints:
@@ -3887,6 +3887,70 @@ documents:
     authority: task-evidence
     read_when: [task-close, task-archive]
 
+  - id: board-task-timing-and-detail-tabs
+    path: docs/sources/brainstorm/board-task-timing-and-detail-tabs.md
+    type: brainstorm
+    status: promoted
+    scope: board-task-audit-ux
+    authority: idea-input
+    read_when: [task-create, task-execution, ui-change]
+
+  - id: bl-0063-board-task-timing-tabs
+    path: docs/delivery/backlog/BL-0063.yaml
+    type: backlog-item
+    status: converted-to-task
+    scope: board-task-audit-ux
+    authority: delivery-control
+    read_when: [task-create, task-execution, ui-change]
+
+  - id: task-0052-manifest
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0052/task.yaml
+    type: task-manifest
+    status: archived
+    scope: board-task-audit-ux
+    authority: task-artifact
+    read_when: [task-execution, task-close, ui-change]
+
+  - id: task-0052-spec
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0052/spec.md
+    type: task-spec
+    status: archived
+    scope: board-task-audit-ux
+    authority: task-artifact
+    read_when: [task-execution, task-close, ui-change]
+
+  - id: task-0052-design
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0052/design.md
+    type: task-design
+    status: archived
+    scope: board-task-audit-ux
+    authority: task-artifact
+    read_when: [task-execution, ui-change]
+
+  - id: task-0052-plan
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0052/plan.md
+    type: task-plan
+    status: archived
+    scope: board-task-audit-ux
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0052-verification
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0052/verification.md
+    type: verification
+    status: archived
+    scope: board-task-audit-ux
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0052-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0052/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: board-task-audit-ux
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
 relations:
   - from: root-readme
     to: docs-index
@@ -6806,6 +6870,50 @@ relations:
 
   - from: task-0051-manifest
     to: task-0050-manifest
+    type: refines
+
+  - from: brainstorm-index
+    to: board-task-timing-and-detail-tabs
+    type: indexes
+
+  - from: board-task-timing-and-detail-tabs
+    to: bl-0063-board-task-timing-tabs
+    type: creates_backlog
+
+  - from: backlog-index
+    to: bl-0063-board-task-timing-tabs
+    type: indexes
+
+  - from: bl-0063-board-task-timing-tabs
+    to: task-0052-manifest
+    type: schedules_into
+
+  - from: archived-tasks-index
+    to: task-0052-manifest
+    type: indexes
+
+  - from: task-0052-spec
+    to: task-0052-manifest
+    type: belongs_to
+
+  - from: task-0052-design
+    to: task-0052-spec
+    type: refines
+
+  - from: task-0052-plan
+    to: task-0052-manifest
+    type: belongs_to
+
+  - from: task-0052-verification
+    to: task-0052-manifest
+    type: verifies
+
+  - from: task-0052-docs-impact
+    to: task-0052-manifest
+    type: reports_on
+
+  - from: task-0052-manifest
+    to: task-0051-manifest
     type: refines
 
 routing:

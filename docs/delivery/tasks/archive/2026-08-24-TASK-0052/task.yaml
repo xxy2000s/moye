@@ -1,0 +1,24 @@
+schema_version: 1
+id: TASK-0052
+title: 补齐 Board Task 时间并重构详情页局部 Tab
+status: seal_prepared
+outcome: null
+backlog_refs:
+  - BL-0063
+spec_revision: 1
+workflow_id: sealed-task/TASK-0052
+execution_mode: sealed-result-commit
+base_commit: f02aed54154278845eae13311650a6116fccc9af
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-24-TASK-0052
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:305e498ca938c7a88ec7df389d71f14c14c84a1d797504feaedc3dc666b89aed
+  base_commit: f02aed54154278845eae13311650a6116fccc9af
+  archive_path: docs/delivery/tasks/archive/2026-08-24-TASK-0052

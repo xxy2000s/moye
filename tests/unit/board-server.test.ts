@@ -38,10 +38,23 @@ describe("board static server", () => {
     expect(script).toContain("本次节点路径");
     expect(script).toContain("renderMachineSystemOwner");
     expect(script).toContain("查看原始 detail");
+    expect(script).toContain('class="card-timing"');
+    expect(script).toContain('task.archiveStatus === "ARCHIVED" ? events.at(-1)?.at : undefined');
+    expect(script).toContain('durationLabel: startedAt && end ? formatCompactDuration(startedAt, end) : "—"');
+    expect(script).toContain('{ id: "canvas", label: "画布" }');
+    expect(script).toContain('{ id: "deliverables", label: "角色与交付物" }');
+    expect(script).toContain('{ id: "workflow", label: "Workflow 状态事实" }');
+    expect(script).toContain('{ id: "diagnostics", label: "高级诊断" }');
+    expect(script).toContain('role="tab"');
+    expect(script).toContain('role="tabpanel"');
+    expect(script).toContain('event.key === "ArrowRight"');
     expect(styles).toContain(".machine-graph-node.is-filter-muted");
     expect(styles).toContain(".machine-graph-stage.is-core-v2");
     expect(styles).toContain(".machine-node-route-proof");
     expect(styles).toContain(".domain-event-raw");
+    expect(styles).toContain(".card-timing");
+    expect(styles).toContain('.task-detail-tabs button[aria-selected="true"]');
+    expect(styles).toContain('.task-detail-tab-panels > [role="tabpanel"][hidden]');
   });
 
   it("serves files inside publicRoot but rejects a symlink to an outside file", async () => {

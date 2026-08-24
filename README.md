@@ -118,9 +118,9 @@ CLI 统一使用 `npm run cli -- <command>`；项目 Agent 应使用 [moye-task-
 
 Bootstrap Task 的 `validate/create/close` 会在进入 Runtime 前校验冻结 `base_commit`；升级前遗留的已失败 Invocation 只能使用受限的 `recover-bootstrap-failure` successor 收敛，禁止删除 Invocation、直接编辑 Projection 或扫描 Git 伪造 Board 状态。
 
-Board 总览保持四列业务分组，并在顶部提供 outcome、Workflow kind 与“项目任务/验收历史”筛选，以及最新成功归档 Task 的直达入口。`WAITING_RECONCILE`、`ARCHIVE_PENDING`、`ARCHIVE_FAILED`、`FAILED_TERMINAL` 和 `SUCCEEDED` 使用 Workflow 发布或 TaskAuthority 只读解析出的精确语义；筛选不写 ProjectBoard，也不推进 Task。新增 Core v2 验收输入使用显式 `acceptanceMetadata`，升级前历史记录只按受限 Task ID/标题约定显示兼容标签并标明来源。
+Board 总览保持四列业务分组，并在顶部提供 outcome、Workflow kind 与“项目任务/验收历史”筛选，以及最新成功归档 Task 的直达入口。每张 Task 卡片从自身 Domain Event History 派生开始时间、结束时间与 duration：首条 Event 是开始时间，只有完成 Archive 才显示结束时间，运行中 duration 使用 Board 投影时刻累计。`WAITING_RECONCILE`、`ARCHIVE_PENDING`、`ARCHIVE_FAILED`、`FAILED_TERMINAL` 和 `SUCCEEDED` 使用 Workflow 发布或 TaskAuthority 只读解析出的精确语义；筛选和时间展示都不写 ProjectBoard，也不推进 Task。新增 Core v2 验收输入使用显式 `acceptanceMetadata`，升级前历史记录只按受限 Task ID/标题约定显示兼容标签并标明来源。
 
-Coding Task 出现在看板后，点击卡片会路由到可直达和刷新的全屏 `/tasks/<task_id>` Task Audit Page；右上角“返回项目”回到 `/`，浏览器 Back/Forward 同样有效。默认视图以状态摘要和 Graph 画布为中心，不预占详情侧栏：
+Coding Task 出现在看板后，点击卡片会路由到可直达和刷新的全屏 `/tasks/<task_id>` Task Audit Page；右上角“返回项目”回到 `/`，浏览器 Back/Forward 同样有效。详情内容顶部固定为“画布”“角色与交付物”“Workflow 状态事实”“高级诊断”四个局部 Tab，首次进入默认画布，同一 Task 自动刷新保留当前 Tab；键盘可用左右方向键、Home 和 End 切换，窄屏横向滚动。四个 Tab 只重组现有只读事实，不创建第二套状态。画布视图以状态摘要和 Graph 为中心，不预占详情侧栏：
 
 1. 当前业务状态、独立 Archive 状态，以及 Projection 与 Event History 是否一致；
 2. 一张完整状态机 Graph 画布：默认只强调本次实际路径和 Event sequence，主流程、恢复/异常与 Archive 使用紧凑分区；切换“完整状态机”后可核对 normal、Repair、Replan、Reconcile、failure、archive 全部合法边。未发生节点仍保留在 Definition 中但降低强调，不会冒充本次失败；窄屏保持节点可读并允许横向滚动，不继续缩小成不可读小字；
