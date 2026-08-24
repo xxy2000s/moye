@@ -91,7 +91,7 @@ describe("npm run demo", () => {
     expect(app).toContain("renderMachineGraphCanvas");
     expect(app).toContain("data-machine-graph");
     expect(app).toContain("data-machine-filter");
-    expect(app).toContain("本次点亮");
+    expect(app).toContain("本次路径");
     expect(app).toContain("恢复 / 回滚");
     expect(app).toContain("WAITING_RECONCILE");
     expect(app).toContain("renderMachineNodeInspector");
@@ -112,7 +112,7 @@ describe("npm run demo", () => {
     expect(app).toContain('window.addEventListener("popstate"');
     expect(app).toContain("returnToProject");
     expect(app).toContain("renderDomainEventPanel");
-    expect(app).toContain("这是状态事实，不是 Agent 对话");
+    expect(app).toContain("Domain Event 证明状态如何变化");
     expect(styles).toContain(".domain-event-timeline");
     expect(styles).toContain(".task-detail-page");
     expect(compose).toContain("restate_data:/restate-data");
@@ -135,7 +135,7 @@ describe("npm run demo", () => {
     expect(app).not.toContain('class="machine-inspector-grid"');
     expect(styles).toContain(".machine-transition-row");
     expect(styles).toContain(".machine-edge-proof text");
-    expect(app).toContain("系统控制与结果");
+    expect(app).toContain("系统管控与结果");
     expect(app).toContain("machineExecutionBelongsToNode");
     expect(app).toContain('nodeId === "DOCS" && execution.step === "DOCS_GATE"');
     expect(app).toContain("trigger.dataset.agentEventsBound");

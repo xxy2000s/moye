@@ -73,6 +73,7 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 | [BL-0058](./BL-0058.yaml) | Converted to Task | 修正 stale-fence 验收的 Closure 内容身份比较 | TASK-0048（Seal Prepared） |
 | [BL-0059](./BL-0059.yaml) | Converted to Task | 修正 Core v2 Roadmap 的 Runtime 终态与 Result Commit 台账 | TASK-0049R1（Seal Prepared） |
 | [BL-0060](./BL-0060.yaml) | Converted to Task | 让 seal-start 在派发前验证 Active Task package | TASK-0049R1（Seal Prepared） |
+| [BL-0061](./BL-0061.yaml) | Converted to Task | 重构 Core v2 状态机画布与节点审计信息层级 | TASK-0050（Seal Prepared） |
 
 ## 本轮调度结果
 

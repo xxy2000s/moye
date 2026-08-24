@@ -1,0 +1,24 @@
+schema_version: 1
+id: TASK-0050
+title: 重构 Core v2 状态机画布与节点审计详情
+status: seal_prepared
+outcome: null
+backlog_refs:
+  - BL-0061
+spec_revision: 1
+workflow_id: sealed-task/TASK-0050
+execution_mode: sealed-result-commit
+base_commit: 30b95edbbe7626f5ffeec0d243aa5fbea379dd15
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-24-TASK-0050
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:dba39ac50d307d65830e2818229fc61ed52f62eb9143c044e5f2b86b2c215590
+  base_commit: 30b95edbbe7626f5ffeec0d243aa5fbea379dd15
+  archive_path: docs/delivery/tasks/archive/2026-08-24-TASK-0050

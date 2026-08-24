@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 98
+graph_revision: 99
 updated_at: "2026-08-24"
 
 entrypoints:
@@ -3759,6 +3759,70 @@ documents:
     authority: task-evidence
     read_when: [task-close, task-archive]
 
+  - id: core-v2-audit-graph-compresses-path-and-buries-evidence
+    path: docs/sources/findings/core-v2-audit-graph-compresses-path-and-buries-evidence.md
+    type: finding
+    status: resolved
+    scope: core-v2-task-audit-ux
+    authority: observed-fact
+    read_when: [finding-intake, task-execution, task-close, ui-change]
+
+  - id: bl-0061-core-v2-task-audit-ux
+    path: docs/delivery/backlog/BL-0061.yaml
+    type: backlog-item
+    status: converted-to-task
+    scope: core-v2-task-audit-ux
+    authority: delivery-control
+    read_when: [task-create, task-execution, ui-change]
+
+  - id: task-0050-manifest
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0050/task.yaml
+    type: task-manifest
+    status: archived
+    scope: core-v2-task-audit-ux
+    authority: task-artifact
+    read_when: [task-execution, task-close, ui-change]
+
+  - id: task-0050-spec
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0050/spec.md
+    type: task-spec
+    status: archived
+    scope: core-v2-task-audit-ux
+    authority: task-artifact
+    read_when: [task-execution, task-close, ui-change]
+
+  - id: task-0050-design
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0050/design.md
+    type: task-design
+    status: archived
+    scope: core-v2-task-audit-ux
+    authority: task-artifact
+    read_when: [task-execution, ui-change]
+
+  - id: task-0050-plan
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0050/plan.md
+    type: task-plan
+    status: archived
+    scope: core-v2-task-audit-ux
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0050-verification
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0050/verification.md
+    type: verification
+    status: archived
+    scope: core-v2-task-audit-ux
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0050-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-24-TASK-0050/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: core-v2-task-audit-ux
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
 relations:
   - from: root-readme
     to: docs-index
@@ -6591,6 +6655,50 @@ relations:
   - from: task-0049r1-manifest
     to: core-v2-roadmap
     type: integrates_with
+
+  - from: findings-index
+    to: core-v2-audit-graph-compresses-path-and-buries-evidence
+    type: indexes
+
+  - from: core-v2-audit-graph-compresses-path-and-buries-evidence
+    to: bl-0061-core-v2-task-audit-ux
+    type: creates_backlog
+
+  - from: backlog-index
+    to: bl-0061-core-v2-task-audit-ux
+    type: indexes
+
+  - from: bl-0061-core-v2-task-audit-ux
+    to: task-0050-manifest
+    type: schedules_into
+
+  - from: archived-tasks-index
+    to: task-0050-manifest
+    type: indexes
+
+  - from: task-0050-spec
+    to: task-0050-manifest
+    type: belongs_to
+
+  - from: task-0050-design
+    to: task-0050-spec
+    type: refines
+
+  - from: task-0050-plan
+    to: task-0050-manifest
+    type: belongs_to
+
+  - from: task-0050-verification
+    to: task-0050-manifest
+    type: verifies
+
+  - from: task-0050-docs-impact
+    to: task-0050-manifest
+    type: reports_on
+
+  - from: task-0050-manifest
+    to: task-0046-manifest
+    type: refines
 
 routing:
   baseline:

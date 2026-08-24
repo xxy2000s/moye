@@ -1,6 +1,6 @@
 import { once } from "node:events";
 import { createHash } from "node:crypto";
-import { mkdtemp, mkdir, realpath, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import type { Server } from "node:http";
 import os from "node:os";
 import path from "node:path";
@@ -20,6 +20,26 @@ afterEach(async () => {
 });
 
 describe("board static server", () => {
+  it("keeps the Core v2 audit UI focused on runtime facts without hiding the legal definition", async () => {
+    const [script, styles] = await Promise.all([
+      readFile(new URL("../../public/app.js", import.meta.url), "utf8"),
+      readFile(new URL("../../public/styles.css", import.meta.url), "utf8"),
+    ]);
+
+    expect(script).toContain('filter: "ACTUAL"');
+    expect(script).toContain('if (initialRoute.kind === "task") void applyRoute().finally(loadBoard)');
+    expect(script).toContain("const snapshot = board || latestBoardSnapshot");
+    expect(script).toContain("CORE_V2_MACHINE_GRAPH_SIZE");
+    expect(script).toContain("ARCHIVE_PENDING: [1260, 350]");
+    expect(script).toContain("Workflow 状态事实");
+    expect(script).toContain("本次节点路径");
+    expect(script).toContain("renderMachineSystemOwner");
+    expect(script).toContain("查看原始 detail");
+    expect(styles).toContain(".machine-graph-node.is-filter-muted");
+    expect(styles).toContain(".machine-node-route-proof");
+    expect(styles).toContain(".domain-event-raw");
+  });
+
   it("serves files inside publicRoot but rejects a symlink to an outside file", async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), "moye-board-static-"));
     roots.push(root);

@@ -50,5 +50,6 @@ Finding 与 Incident 的边界：
 - [Core v2 stale-fence 验收错误比较 Closure 对象引用](./core-v2-stale-fence-harness-compares-closure-object-identity.md)：跨 HTTP 响应比较对象 identity 误报 Projection mutation，改为比较内容寻址 Closure Digest 并附着原 Task 重审计。
 - [Core v2 Roadmap 落后于 Sealed Runtime Receipt](./core-v2-roadmap-lags-sealed-runtime-receipts.md)：TASK-0030～0048 的部分交付状态仍停留在 Seal 前快照，缺少实际 Result Commit 与 Package Digest 台账。
 - [seal-start 在 Active package 预检前提交 Runtime Invocation](./seal-start-dispatches-before-active-package-preflight.md)：真实 TASK-0049 在第一条 durable command 因 package 不存在而完成失败，且未形成可恢复的业务 Projection。
+- [Core v2 审计画布压缩主流程且节点证据层级不清](./core-v2-audit-graph-compresses-path-and-buries-evidence.md)：真实 Happy Path 的 52 条合法边压缩主流程并放大 Recovery 空白，节点与 Domain Event 仍缺少稳定审计层级。
 
 不要为了演示目录创建虚构 Bug。

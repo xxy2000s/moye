@@ -127,6 +127,8 @@ Agent Events 和可选 Raw Model IO 完成后仍是内容寻址 Artifact。运�
 
 Workflow Projection 保留 Adapter 的结构化 `errorCode/errorCategory`。产品 Runtime 的 `UNKNOWN_SIDE_EFFECT` 在 Workspace、Role/Agent 与 Merge 边界进入 `WAITING_RECONCILE`，保存稳定 token 并等待带 Evidence 的 durable signal 后对账同一 operation；无 signal 的纯单元适配路径仍可返回 UNKNOWN 失败事实。确定性失败进入 `FAILED_TERMINAL` 后也归档，不再停留为未处置卡片。Board 静态/Artifact 路径在读取前同时校验 lexical path、`realpath`、受管根和摘要。强杀/丢回执开关仅在显式测试进程中可用。
 
+TASK-0050 收紧了这层只读投影的默认呈现：Graph 默认只强调实际路径，Core v2 主流程、恢复/异常和 Archive 使用紧凑分区，完整合法边通过筛选恢复；窄屏在最小可读缩放后保留横向滚动。直接打开 Task 路由时先查询该 Task Trace，再异步刷新整板 Projection。Inspector 的当前顺序是 Agent Activity、系统管控、状态流转、本次节点路径、技术 Evidence、完整合法转换；无 Session 的 Workflow、Gate、Trusted Runner、Git 和 Archive 节点明确显示系统所有权。实际进入/离开路径始终可见，完整合法边按需展开并把 traversed 边排在前面。Domain Event 默认展示业务摘要和转换，原始 detail 只在单条 disclosure 中显示。这些变化不增加任何 Runtime 写入口。
+
 ## 7. 验证结论
 
 自动化 E2E 已证明：

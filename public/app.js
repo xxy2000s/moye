@@ -52,7 +52,7 @@ let boardScrollPosition = 0;
 let stopAgentEventsFollower = () => {};
 let agentEventsReturnFocus;
 let shouldRestoreAgentEventsFocus = true;
-let machineGraphUiState = { filter: "ALL", zoom: undefined, selectedId: undefined, inspectorOpen: false, scrollLeft: 0, scrollTop: 0 };
+let machineGraphUiState = { filter: "ACTUAL", zoom: undefined, selectedId: undefined, inspectorOpen: false, scrollLeft: 0, scrollTop: 0 };
 let closeMachineGraphInspector = () => false;
 let latestBoardSnapshot;
 const boardFilters = { outcome: "ALL", workflow: "ALL", history: "ALL" };
@@ -86,7 +86,9 @@ elements.latestSuccess.addEventListener("click", () => {
   if (latestBoardSnapshot?.latestSucceeded) navigateToTask(latestBoardSnapshot.latestSucceeded);
 });
 initializeHistoryState();
-void loadBoard();
+const initialRoute = readRoute();
+if (initialRoute.kind === "task") void applyRoute().finally(loadBoard);
+else void loadBoard();
 setInterval(loadBoard, 5000);
 
 async function loadBoard() {
@@ -246,11 +248,8 @@ async function applyRoute(board) {
     renderTaskRouteError("这个页面地址不是有效的 Moye Task 路由。");
     return;
   }
-  const snapshot = board || await fetch("/api/board", { cache: "no-store" }).then(response => {
-    if (!response.ok) throw new Error(`项目投影查询失败（${response.status}）`);
-    return response.json();
-  });
-  const summaries = [...snapshot.active, ...snapshot.archivePending, ...snapshot.archived];
+  const snapshot = board || latestBoardSnapshot;
+  const summaries = snapshot ? [...snapshot.active, ...snapshot.archivePending, ...snapshot.archived] : [];
   const summary = summaries.find(item => item.taskId === route.taskId) || {
     taskId: route.taskId,
     title: route.taskId,
@@ -261,7 +260,7 @@ async function applyRoute(board) {
   if (openedTaskSummary?.taskId === summary.taskId) {
     openedTaskSummary = summary;
     showTaskPage(false);
-    await refreshOpenTask(snapshot);
+    if (snapshot) await refreshOpenTask(snapshot);
     return;
   }
   await openTask(summary);
@@ -301,7 +300,7 @@ function renderTaskRouteError(message) {
 async function openTask(summary) {
   openedTaskSummary = summary;
   openedTaskTraceSignature = "";
-  machineGraphUiState = { filter: "ALL", zoom: undefined, selectedId: undefined, inspectorOpen: false, scrollLeft: 0, scrollTop: 0 };
+  machineGraphUiState = { filter: "ACTUAL", zoom: undefined, selectedId: undefined, inspectorOpen: false, scrollLeft: 0, scrollTop: 0 };
   renderTaskDetailHeader(summary, summary.title, [
     ["状态", taskStateLabel(summary.state)],
     ["归档", archiveStatusLabel(summary.archiveStatus)],
@@ -602,24 +601,49 @@ function renderDomainEventPanel(events, machine) {
   const historyBySequence = new Map(machine.history.map(item => [item.sequence, item]));
   const rows = events.map(event => {
     const transition = historyBySequence.get(event.sequence);
-    const transitionLabel = transition
-      ? `${transition.from} → ${transition.to}`
-      : event.step ? stepLabel(event.step) : "业务事实已记录";
+    const edge = transition ? machine.definition.edges.find(item => item.from === transition.from && item.to === transition.to) : undefined;
+    const transitionLabel = transition ? `${transition.from} → ${transition.to}` : "没有状态迁移";
+    const summary = domainEventSummary(event, transition, edge);
     const detail = event.detail || transition?.detail;
     return `<li class="domain-event-row">
       <span class="domain-event-sequence">#${String(event.sequence).padStart(2, "0")}</span>
       <div class="domain-event-body">
-        <div class="domain-event-heading"><strong>${escapeHtml(transitionLabel)}</strong><time datetime="${escapeAttribute(event.at)}">${formatTime(event.at)}</time></div>
-        <div class="domain-event-meta"><span>${escapeHtml(event.type)}</span>${transition?.kind ? `<em>${escapeHtml(transition.kind)}</em>` : ""}</div>
-        ${detail ? `<code class="domain-event-detail">${escapeHtml(detail)}</code>` : ""}
+        <div class="domain-event-heading"><strong>${escapeHtml(summary)}</strong><time datetime="${escapeAttribute(event.at)}">${formatTime(event.at)}</time></div>
+        <div class="domain-event-route"><code>${escapeHtml(transitionLabel)}</code></div>
+        <div class="domain-event-meta"><span>${escapeHtml(event.type)}</span>${transition?.kind ? `<em>${escapeHtml(machineEdgeLabel(transition.kind))}</em>` : ""}</div>
+        ${detail ? `<details class="domain-event-raw"><summary>查看原始 detail</summary><pre>${escapeHtml(detail)}</pre></details>` : ""}
       </div>
     </li>`;
   }).join("");
   return `<details class="domain-events-panel">
-    <summary><span><strong>完整 Domain Event 记录</strong><small>Workflow 写入的 ${events.length} 条业务事实</small></span><em>按 sequence 展开</em></summary>
-    <div class="domain-events-intro"><strong>这是状态事实，不是 Agent 对话。</strong><p>每一行来自 Runtime Event；状态转换只在 History 有同 sequence 证据时显示。Agent 的聊天、工具调用和工具结果仍在 Agent Events 中查看。</p></div>
+    <summary><span><strong>Workflow 状态事实</strong><small>${events.length} 条 Domain Event，按 sequence 保留</small></span><em>展开时间线</em></summary>
+    <div class="domain-events-intro"><strong>Domain Event 证明状态如何变化。</strong><p>默认展示业务摘要、转换和时间；原始 detail 按单条事件展开。Agent 的对话与工具输出继续在 Agent Events 弹窗中查看。</p></div>
     <ol class="domain-event-timeline">${rows || "<li class=\"domain-event-empty\">尚无 Domain Event。</li>"}</ol>
   </details>`;
+}
+
+function domainEventSummary(event, transition, edge) {
+  if (edge?.label) return edge.label;
+  const summaries = {
+    ArchitectRequired: "任务已进入架构与规格阶段",
+    ArchitectArtifactsAccepted: "Spec、Design 与 Plan 已接受",
+    DesignReviewPassed: "Design Review 已通过",
+    ImplementationAccepted: "实现、自审与 Candidate 已接受",
+    DocumentationGateAccepted: "文档与 Docs Impact 已绑定",
+    TestPlanAccepted: "测试计划已覆盖需求",
+    TrustedTestRunRecorded: "Trusted Runner 已记录真实结果",
+    TestVerificationPassed: "综合测试结论已通过",
+    FinalReviewPassed: "最终隔离审查已通过",
+    VerificationGatePassed: "确定性证据 Gate 已通过",
+    KnowledgeDispositionRecorded: "Knowledge Disposition 已记录",
+    MergeConfirmed: "目标分支更新已确认",
+    SuccessClosureCompleted: "成功 Closure Artifact 已冻结",
+    FailureClosureCompleted: "失败 Closure Artifact 已冻结",
+    ArchivePending: "任务已进入独立归档",
+    ArchiveArchived: "Archive Receipt 已确认",
+    TaskClosed: "任务业务终态已冻结",
+  };
+  return summaries[event.type] || (event.step ? `${stepLabel(event.step)} 已记录业务事实` : transition ? `${transition.from} 已转移到 ${transition.to}` : "Workflow 已记录业务事实");
 }
 
 function renderStateMachine(machine, trace) {
@@ -656,7 +680,8 @@ function renderStateMachine(machine, trace) {
   </section>`;
 }
 
-const MACHINE_GRAPH_SIZE = { width: 1640, height: 760 };
+const DEFAULT_MACHINE_GRAPH_SIZE = { width: 1640, height: 760 };
+const CORE_V2_MACHINE_GRAPH_SIZE = { width: 1640, height: 590 };
 const CODING_GRAPH_POSITIONS = {
   START: [30, 195], CONTEXT: [185, 195], WORKSPACE: [340, 195], IMPLEMENT: [495, 195],
   SELF_REVIEW: [650, 195], VERIFY: [805, 195], REVIEW: [960, 195], MERGE: [1115, 195],
@@ -668,14 +693,16 @@ const TASK_GRAPH_POSITIONS = {
   ARCHIVE_PENDING: [1090, 405], ARCHIVED: [1350, 405], ARCHIVE_FAILED: [1350, 605],
 };
 const CORE_V2_GRAPH_POSITIONS = {
-  START: [20, 195], ARCHITECT_REQUIRED: [165, 195], DESIGN_REVIEW_REQUIRED: [310, 195], IMPLEMENTATION_REQUIRED: [455, 195],
-  DOCUMENTATION_REQUIRED: [600, 195], TEST_PLAN_REQUIRED: [745, 195], TEST_EXECUTION_REQUIRED: [890, 195],
-  TEST_ASSESSMENT_REQUIRED: [1035, 195], FINAL_REVIEW_REQUIRED: [1180, 195], VERIFICATION_GATE_REQUIRED: [1325, 195],
-  MERGE_REQUIRED: [1470, 195], CLOSED: [1470, 350], ARCHIVED: [1470, 535], REPLAN_REQUIRED: [310, 35],
-  REPAIR_REQUIRED: [600, 460], WAITING_RECONCILE: [965, 460], FAILED_TERMINAL: [1180, 635],
+  START: [20, 150], ARCHITECT_REQUIRED: [165, 150], DESIGN_REVIEW_REQUIRED: [310, 150], IMPLEMENTATION_REQUIRED: [455, 150],
+  DOCUMENTATION_REQUIRED: [600, 150], TEST_PLAN_REQUIRED: [745, 150], TEST_EXECUTION_REQUIRED: [890, 150],
+  TEST_ASSESSMENT_REQUIRED: [1035, 150], FINAL_REVIEW_REQUIRED: [1180, 150], VERIFICATION_GATE_REQUIRED: [1325, 150],
+  MERGE_REQUIRED: [1470, 150], REPLAN_REQUIRED: [310, 20], REPAIR_REQUIRED: [540, 350],
+  WAITING_RECONCILE: [825, 350], FAILED_TERMINAL: [1095, 475], ARCHIVE_PENDING: [1260, 350],
+  CLOSED: [1445, 350], ARCHIVE_FAILED: [1260, 475], ARCHIVED: [1445, 475],
 };
 
 function renderMachineGraphCanvas(machine, transitions) {
+  const geometry = machineGraphGeometry(machine);
   const positions = machineGraphPositions(machine);
   const traversedCount = machine.definition.edges.filter(edge => edge.traversed).length;
   const filter = (id, label, count) => `<button type="button" data-machine-filter="${id}" aria-pressed="${machineGraphUiState.filter === id}">${label}<span>${count}</span></button>`;
@@ -684,12 +711,12 @@ function renderMachineGraphCanvas(machine, transitions) {
   return `<div class="machine-graph-shell">
     <div class="machine-graph-toolbar">
       <div class="machine-graph-filters" role="group" aria-label="状态机路径筛选">
-        ${filter("ALL", "全部流程", machine.definition.edges.length)}
-        ${filter("ACTUAL", "本次点亮", traversedCount)}
+        ${filter("ACTUAL", "本次路径", traversedCount)}
         ${filter("NORMAL", "主流程", machine.definition.edges.filter(edge => edge.kind === "NORMAL").length)}
         ${filter("REPAIR", "恢复 / 回滚", machine.definition.edges.filter(edge => edge.kind === "REPAIR").length)}
         ${filter("FAILURE", "异常 / 失败", machine.definition.edges.filter(edge => edge.kind === "FAILURE").length)}
         ${filter("ARCHIVE", "归档", machine.definition.edges.filter(edge => edge.kind === "ARCHIVE").length)}
+        ${filter("ALL", "完整状态机", machine.definition.edges.length)}
       </div>
       <div class="machine-graph-zoom" role="group" aria-label="画布缩放">
         <button type="button" data-machine-zoom="out" aria-label="缩小状态机画布">−</button>
@@ -703,7 +730,7 @@ function renderMachineGraphCanvas(machine, transitions) {
     </div>
     <div class="machine-graph-stage" data-machine-graph-stage data-inspector-open="${machineGraphUiState.inspectorOpen}">
       <div class="machine-graph-scroll" data-machine-graph-scroll tabindex="0" aria-label="完整状态机 Graph 画布，可横向滚动">
-        <svg class="machine-graph-svg" data-machine-svg viewBox="0 0 ${MACHINE_GRAPH_SIZE.width} ${MACHINE_GRAPH_SIZE.height}" width="${MACHINE_GRAPH_SIZE.width}" height="${MACHINE_GRAPH_SIZE.height}" role="img" aria-labelledby="machine-graph-svg-title machine-graph-svg-desc">
+        <svg class="machine-graph-svg" data-machine-svg viewBox="0 0 ${geometry.size.width} ${geometry.size.height}" width="${geometry.size.width}" height="${geometry.size.height}" role="img" aria-labelledby="machine-graph-svg-title machine-graph-svg-desc">
         <title id="machine-graph-svg-title">${escapeHtml(machine.workflow)} 完整状态机</title>
         <desc id="machine-graph-svg-desc">包含 ${machine.definition.nodes.length} 个状态和 ${machine.definition.edges.length} 条合法转换；本次实际经过 ${traversedCount} 条。</desc>
         <defs>
@@ -711,9 +738,7 @@ function renderMachineGraphCanvas(machine, transitions) {
           <filter id="machine-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
         </defs>
         <g class="machine-graph-lanes" aria-hidden="true">
-          <rect x="18" y="130" width="1535" height="155" rx="18" class="lane-business"/><text x="40" y="158">BUSINESS / HAPPY PATH</text>
-          <rect x="18" y="330" width="1215" height="410" rx="18" class="lane-recovery"/><text x="40" y="360">RECOVERY / EXCEPTION</text>
-          <rect x="1250" y="330" width="303" height="410" rx="18" class="lane-archive"/><text x="1275" y="360">ARCHIVE</text>
+          ${geometry.lanes}
         </g>
         <g class="machine-graph-edges">${edges}</g>
         <g class="machine-graph-nodes">${nodes}</g>
@@ -723,6 +748,23 @@ function renderMachineGraphCanvas(machine, transitions) {
     </div>
     <details class="machine-history-drawer"><summary><span><strong>实际路径 · ${machine.history.length} 条</strong><small>${escapeHtml(machine.history[0]?.from || machine.current.overall)} → ${escapeHtml(machine.current.historyCurrent)}</small></span><em>展开文本事实</em></summary><div class="machine-history"><ol>${transitions || "<li>尚无可还原的状态转换</li>"}</ol></div></details>
   </div>`;
+}
+
+function machineGraphGeometry(machine) {
+  if (machine.workflow.startsWith("CoreV2")) {
+    return {
+      size: CORE_V2_MACHINE_GRAPH_SIZE,
+      lanes: `<rect x="18" y="105" width="1535" height="140" rx="16" class="lane-business"/><text x="40" y="130">BUSINESS / HAPPY PATH</text>
+        <rect x="18" y="300" width="1205" height="270" rx="16" class="lane-recovery"/><text x="40" y="326">RECOVERY / EXCEPTION</text>
+        <rect x="1240" y="300" width="313" height="270" rx="16" class="lane-archive"/><text x="1265" y="326">ARCHIVE</text>`,
+    };
+  }
+  return {
+    size: DEFAULT_MACHINE_GRAPH_SIZE,
+    lanes: `<rect x="18" y="130" width="1535" height="155" rx="18" class="lane-business"/><text x="40" y="158">BUSINESS / HAPPY PATH</text>
+      <rect x="18" y="330" width="1215" height="410" rx="18" class="lane-recovery"/><text x="40" y="360">RECOVERY / EXCEPTION</text>
+      <rect x="1250" y="330" width="303" height="410" rx="18" class="lane-archive"/><text x="1275" y="360">ARCHIVE</text>`,
+  };
 }
 
 function machineGraphPositions(machine) {
@@ -741,7 +783,7 @@ function renderMachineGraphNode(node, position = [40, 600]) {
   const [x, y] = position;
   const state = node.status === "CURRENT" ? "当前状态" : node.status === "VISITED" ? "本次经过" : "合法但本次未发生";
   return `<foreignObject x="${x}" y="${y}" width="136" height="84">
-    <button xmlns="http://www.w3.org/1999/xhtml" type="button" class="machine-graph-node status-${node.status.toLowerCase()} domain-${node.domain.toLowerCase()} ${node.terminal ? "terminal" : ""}" data-machine-node="${escapeHtml(node.id)}" aria-label="${escapeHtml(`${node.label}，${state}`)}" aria-pressed="false">
+    <button xmlns="http://www.w3.org/1999/xhtml" type="button" class="machine-graph-node status-${node.status.toLowerCase()} domain-${node.domain.toLowerCase()} ${node.terminal ? "terminal" : ""}" data-machine-node="${escapeHtml(node.id)}" data-machine-node-status="${escapeHtml(node.status)}" aria-label="${escapeHtml(`${node.label}，${state}`)}" aria-pressed="false">
       <small>${escapeHtml(node.id)}</small><strong>${escapeHtml(node.label)}</strong><span>${state}</span>
     </button>
   </foreignObject>`;
@@ -766,7 +808,7 @@ function machineGraphEdgePath(edge, fromPosition, toPosition, index) {
   const to = graphNodeCenter(toPosition);
   const endpoints = graphEdgeEndpoints(from, to);
   const [sx, sy, tx, ty] = endpoints;
-  if (edge.to === "FAILED") {
+  if (["FAILED", "FAILED_TERMINAL"].includes(edge.to)) {
     const bend = 510 + (index % 5) * 12;
     return `M ${sx} ${sy} C ${sx} ${bend}, ${tx - 150} ${ty}, ${tx} ${ty}`;
   }
@@ -799,7 +841,7 @@ function graphEdgeEndpoints([fx, fy], [tx, ty]) {
 function machineGraphEdgeLabelPosition(fromPosition, toPosition, edge) {
   const [fx, fy] = graphNodeCenter(fromPosition);
   const [tx, ty] = graphNodeCenter(toPosition);
-  if (edge.to === "FAILED") return [(fx + tx) / 2, Math.max(fy, ty) - 24];
+  if (["FAILED", "FAILED_TERMINAL"].includes(edge.to)) return [(fx + tx) / 2, Math.max(fy, ty) - 24];
   if (edge.to === "WAITING_RECONCILE" || edge.from === "WAITING_RECONCILE") return [(fx + tx) / 2, (fy + ty) / 2];
   return [(fx + tx) / 2, (fy + ty) / 2 - 15];
 }
@@ -807,8 +849,11 @@ function machineGraphEdgeLabelPosition(fromPosition, toPosition, edge) {
 function renderMachineNodeInspector(machine, nodeId, trace) {
   const node = machine.definition.nodes.find(item => item.id === nodeId) || machine.definition.nodes[0];
   if (!node) return "";
-  const incoming = machine.definition.edges.filter(edge => edge.to === node.id);
-  const outgoing = machine.definition.edges.filter(edge => edge.from === node.id);
+  const prioritizeTraversed = items => [...items].sort((left, right) => Number(right.traversed) - Number(left.traversed));
+  const incoming = prioritizeTraversed(machine.definition.edges.filter(edge => edge.to === node.id));
+  const outgoing = prioritizeTraversed(machine.definition.edges.filter(edge => edge.from === node.id));
+  const actualIncoming = incoming.filter(edge => edge.traversed);
+  const actualOutgoing = outgoing.filter(edge => edge.traversed);
   const history = machine.history.filter(item => item.from === node.id || item.to === node.id);
   const executions = machine.executions.filter(item => machineExecutionBelongsToNode(item, node.id));
   const agentExecutions = executions.filter(item => machineSessionForExecution(item, trace));
@@ -817,19 +862,42 @@ function renderMachineNodeInspector(machine, nodeId, trace) {
   return `<header><div><span>${escapeHtml(node.domain)} · ${node.terminal ? "终态" : "可转换状态"}</span><h4>${escapeHtml(node.label)}</h4><code>${escapeHtml(node.id)}</code></div><div class="machine-inspector-actions"><strong class="status-${node.status.toLowerCase()}">${node.status === "CURRENT" ? "当前" : node.status === "VISITED" ? "已进入" : "未进入"}</strong><button type="button" data-machine-inspector-close aria-label="关闭节点详情">关闭详情</button></div></header>
     <div class="machine-inspector-counts" aria-label="节点事实计数"><span><strong>${agentExecutions.length}</strong> Agent</span><span><strong>${history.length}</strong> 状态记录</span><span><strong>${executions.length}</strong> 执行实例</span></div>
     ${agentExecutions.length ? `<section class="machine-node-section machine-node-agent-section"><div class="machine-node-section-heading"><p class="machine-node-section-kicker">Agent activity</p><h5>Agent 活动</h5><p>来自这个节点实际 Run / Session 的对话、工具调用、工具结果、系统和错误事件。</p></div><div class="machine-agent-activities">${agentExecutions.map(item => renderMachineAgentActivity(item, trace)).join("")}</div></section>` : ""}
-    ${history.length ? `<section class="machine-node-section"><div class="machine-node-section-heading"><p class="machine-node-section-kicker">Workflow facts</p><h5>状态流转记录</h5><p><strong>Domain Event</strong> 是 Workflow 写入的业务事实，只证明这个状态如何进入和离开；它不是 Agent 的聊天或工具日志。</p></div><ol class="machine-node-events">${history.map(item => `<li><span class="sequence">#${String(item.sequence).padStart(2, "0")}</span><div><strong>${escapeHtml(item.from)} → ${escapeHtml(item.to)}</strong><small>${escapeHtml(item.eventType)} · ${formatTime(item.at)}</small>${item.detail ? `<code>${escapeHtml(shortDigest(item.detail))}</code>` : ""}</div></li>`).join("")}</ol></section>` : `<p class="machine-node-empty"><strong>本次运行没有进入这个状态。</strong><span>只展示代码允许的合法转换，不会虚构 Agent、Session、Attempt 或 Evidence。</span></p>`}
+    ${agentExecutions.length ? "" : renderMachineSystemOwner(node.id)}
     ${renderMachineControlFacts(trace, node.id)}
+    ${history.length ? `<section class="machine-node-section"><div class="machine-node-section-heading"><p class="machine-node-section-kicker">Workflow facts</p><h5>状态流转记录</h5><p><strong>Domain Event</strong> 是 Workflow 写入的业务事实，只证明这个状态如何进入和离开；它不是 Agent 的聊天或工具日志。</p></div><ol class="machine-node-events">${history.map(item => `<li><span class="sequence">#${String(item.sequence).padStart(2, "0")}</span><div><strong>${escapeHtml(item.from)} → ${escapeHtml(item.to)}</strong><small>${escapeHtml(item.eventType)} · ${formatTime(item.at)}</small>${item.detail ? `<details class="machine-node-event-detail"><summary>原始 detail</summary><code>${escapeHtml(item.detail)}</code></details>` : ""}</div></li>`).join("")}</ol></section>` : `<p class="machine-node-empty"><strong>本次运行没有进入这个状态。</strong><span>只展示代码允许的合法转换，不会虚构 Agent、Session、Attempt 或 Evidence。</span></p>`}
     ${technicalExecutions.length ? `<details class="machine-node-technical"><summary>执行 ID 与 Evidence <span>${technicalExecutions.length}</span></summary><div class="machine-node-executions">${technicalExecutions.map(item => renderMachineExecutionDetail(item, trace)).join("")}</div></details>` : ""}
+    ${(actualIncoming.length || actualOutgoing.length) ? `<section class="machine-node-route-proof"><header><span>本次节点路径</span><strong>${actualIncoming.length + actualOutgoing.length} 条 Event 证据</strong></header><ol>${edgeItems([...actualIncoming, ...actualOutgoing], "actual")}</ol></section>` : ""}
     <details class="machine-node-transitions"><summary><span>合法转换</span><small>进入 ${incoming.length} · 离开 ${outgoing.length}</small></summary><p class="machine-transition-help">这里列出代码允许的路径；“本次经过”必须有 Workflow Event 证明。</p><div class="machine-transition-groups">
       <section><header><span>进入</span><strong>${incoming.length}</strong></header><ol>${edgeItems(incoming, "in") || '<li class="machine-transition-empty">这是起始状态，没有合法进入路径。</li>'}</ol></section>
       <section><header><span>离开</span><strong>${outgoing.length}</strong></header><ol>${edgeItems(outgoing, "out") || '<li class="machine-transition-empty">这是终止状态，没有合法离开路径。</li>'}</ol></section>
     </div></details>`;
 }
 
+function renderMachineSystemOwner(nodeId) {
+  const descriptions = {
+    START: "Task Intake 由 owning Workflow 建立，不运行角色 Agent。",
+    TEST_EXECUTION_REQUIRED: "Trusted Runner 执行冻结 argv 并写入 Manifest，不依赖 Agent 自述测试结果。",
+    VERIFICATION_GATE_REQUIRED: "Verification Gate 只校验最终 Revision、Candidate、Artifact 与 Evidence 绑定。",
+    MERGE_REQUIRED: "Git Merge Effect 以稳定 effect ID 更新目标 ref，并在回执未知时先对账。",
+    REPAIR_REQUIRED: "Workflow 根据 Blocking Finding 授权新的 Implementation Generation。",
+    REPLAN_REQUIRED: "Workflow 使旧 Revision Evidence 失效，并授权新的 Spec Revision。",
+    WAITING_RECONCILE: "Workflow 冻结当前副作用并等待正确 token 的外部事实对账。",
+    FAILED_TERMINAL: "Workflow 冻结原始失败后，只允许 Failure Closure 与 Archive 继续。",
+    ARCHIVE_PENDING: "Archive Effect 独立持久化 Closure package，不重新执行研发步骤。",
+    ARCHIVE_FAILED: "只允许使用同一 Effect token 重试 Archive。",
+    CLOSED: "业务 Closure 已冻结，任务主流程不再接受新的执行结果。",
+    ARCHIVED: "Archive Receipt 已确认，这是唯一可查询的归档终态。",
+  };
+  const description = descriptions[nodeId];
+  if (!description) return "";
+  return `<section class="machine-node-owner"><strong>系统执行节点</strong><p>${escapeHtml(description)}</p></section>`;
+}
+
 function renderMachineTransitionRow(edge, direction, machine) {
   const transition = machine.history.find(item => item.from === edge.from && item.to === edge.to);
   const state = edge.traversed ? `本次经过 · #${transition?.sequence ?? "?"}` : "合法但未发生";
   return `<li class="machine-transition-row kind-${edge.kind.toLowerCase()} ${edge.traversed ? "traversed" : ""}">
+    <span class="machine-transition-direction">${direction === "in" ? "进入" : direction === "out" ? "离开" : "实际"}</span>
     <div class="machine-transition-route"><code>${escapeHtml(edge.from)}</code><span aria-hidden="true">→</span><code>${escapeHtml(edge.to)}</code></div>
     <div class="machine-transition-meta"><span class="machine-transition-kind">${escapeHtml(machineEdgeLabel(edge.kind))}</span><strong>${state}</strong></div>
     <p>${escapeHtml(edge.label)}</p>
@@ -861,9 +929,9 @@ function renderMachineAgentActivity(execution, trace) {
   return `<article class="machine-agent-activity">
     <header><div><span class="machine-agent-mark" aria-hidden="true">A</span><div><small>${escapeHtml(roleLabel(kind))}</small><h6>${escapeHtml(runnerLabel(execution.producer || session.runnerKind))}</h6></div></div><strong class="state-${executionColor(execution.state)}">${escapeHtml(execution.state)}</strong></header>
     <div class="machine-agent-glance"><span>Session <code>${escapeHtml(execution.sessionId || "等待建立")}</code></span>${execution.startedAt ? `<span>${formatDuration(execution.startedAt, execution.finishedAt)}</span>` : ""}${execution.generation === undefined ? "" : `<span>Generation ${execution.generation}</span>`}${verdict ? `<span>${escapeHtml(verdict)}</span>` : ""}</div>
+    <div class="machine-agent-primary-action">${eventButton}</div>
     ${summary ? `<p class="machine-agent-summary">${escapeHtml(summary)}</p>` : ""}
     ${findings ? `<p class="machine-agent-findings">${escapeHtml(findings)}</p>` : ""}
-    <div class="machine-agent-primary-action">${eventButton}</div>
     ${session.eventsUrl ? `<div class="machine-agent-preview" data-machine-agent-preview data-events-url="${escapeAttribute(session.eventsUrl)}" aria-live="polite"><div class="machine-agent-preview-loading">正在读取这个 Session 的真实 Agent Events…</div></div>` : ""}
     <details class="machine-agent-technical"><summary>Run、Attempt 与 Evidence</summary>${renderMachineExecutionTechnical(execution, trace)}</details>
   </article>`;
@@ -908,6 +976,73 @@ function renderMachineControlFacts(trace, nodeId) {
   const rows = [];
   const details = [];
   if (trace.durableRuntime?.workflowRef) rows.push(["Workflow", trace.durableRuntime.workflowRef, true]);
+  const lifecycle = trace.lifecycle;
+  const artifact = kind => lifecycle?.artifacts?.find(item => item.kind === kind);
+  const addArtifact = (kind, label) => {
+    const record = artifact(kind);
+    if (record?.artifactDigest) rows.push([label, record.artifactDigest, true]);
+  };
+  if (nodeId === "START" && lifecycle) {
+    rows.push(["Task", lifecycle.taskId]);
+    rows.push(["规格版本", `R${lifecycle.specRevision}`]);
+    if (lifecycle.subjectCommit) rows.push(["基线提交", lifecycle.subjectCommit, true]);
+  }
+  if (nodeId === "ARCHITECT_REQUIRED") {
+    addArtifact("SPEC", "Spec Artifact");
+    addArtifact("DESIGN", "Design Artifact");
+    addArtifact("PLAN", "Plan Artifact");
+  }
+  if (nodeId === "DESIGN_REVIEW_REQUIRED") addArtifact("DESIGN_REVIEW", "Design Review");
+  if (nodeId === "IMPLEMENTATION_REQUIRED" && lifecycle) {
+    if (lifecycle.candidateCommit) rows.push(["Candidate Commit", lifecycle.candidateCommit, true]);
+    const checkpoint = lifecycle.implementationCheckpoints?.at(-1);
+    if (checkpoint?.checkpointRef) rows.push(["Checkpoint", checkpoint.checkpointRef, true]);
+    if (checkpoint?.treeDigest) rows.push(["Tree Digest", checkpoint.treeDigest, true]);
+    if (checkpoint?.selfReview?.verdict) rows.push(["Self Review", checkpoint.selfReview.verdict]);
+  }
+  if (nodeId === "DOCUMENTATION_REQUIRED") addArtifact("DOCS_IMPACT", "Docs Impact");
+  if (nodeId === "TEST_PLAN_REQUIRED") addArtifact("TEST_PLAN", "Test Plan");
+  if (nodeId === "TEST_EXECUTION_REQUIRED" && lifecycle) {
+    const runs = lifecycle.trustedTestRuns || (lifecycle.trustedTestRun ? [lifecycle.trustedTestRun] : []);
+    rows.push(["测试执行次数", String(runs.length)]);
+    runs.forEach((run, index) => {
+      if (run.manifestDigest) rows.push([`Manifest ${index + 1}`, run.manifestDigest, true]);
+      if (run.manifestRef) details.push(`<li><strong>Trusted Runner ${index + 1}</strong><code>${escapeHtml(run.manifestRef)}</code></li>`);
+    });
+  }
+  if (nodeId === "TEST_ASSESSMENT_REQUIRED") addArtifact("TEST_REPORT", "Test Report");
+  if (nodeId === "FINAL_REVIEW_REQUIRED") addArtifact("FINAL_REVIEW", "Final Review");
+  if (nodeId === "VERIFICATION_GATE_REQUIRED" && lifecycle) {
+    rows.push(["规格版本", `R${lifecycle.specRevision}`]);
+    if (lifecycle.candidateCommit) rows.push(["Candidate Commit", lifecycle.candidateCommit, true]);
+    if (lifecycle.verificationGateDigest) rows.push(["Gate Digest", lifecycle.verificationGateDigest, true]);
+  }
+  if (nodeId === "MERGE_REQUIRED" && lifecycle?.mergeReceipt) {
+    rows.push(["Merge Effect", lifecycle.mergeReceipt.effectId, true]);
+    rows.push(["Target Ref", lifecycle.mergeReceipt.targetRef, true]);
+    rows.push(["Merge Commit", lifecycle.mergeReceipt.mergeCommit, true]);
+    rows.push(["结果", lifecycle.mergeReceipt.reconciledAfterUnknown ? "对账确认" : lifecycle.mergeReceipt.outcome]);
+  }
+  if (nodeId === "REPAIR_REQUIRED" && lifecycle) rows.push(["已失效 Generation", String(lifecycle.invalidatedGenerations?.length || 0)]);
+  if (nodeId === "REPLAN_REQUIRED" && lifecycle) rows.push(["已失效 Revision", String(lifecycle.invalidatedRevisions?.length || 0)]);
+  if (nodeId === "FAILED_TERMINAL" && lifecycle?.failure) {
+    rows.push(["失败阶段", lifecycle.failure.originalStage]);
+    rows.push(["Failure Digest", lifecycle.failure.failureDigest, true]);
+    if (lifecycle.failure.reason) details.push(`<li><strong>原始失败原因</strong><span>${escapeHtml(lifecycle.failure.reason)}</span></li>`);
+  }
+  if (nodeId === "CLOSED" && lifecycle) {
+    const closure = lifecycle.successClosure || lifecycle.failureClosure;
+    if (lifecycle.outcome) rows.push(["业务 Outcome", lifecycle.outcome]);
+    if (closure?.closureDigest) rows.push(["Closure Digest", closure.closureDigest, true]);
+    if (closure?.closureArtifactRef) rows.push(["Closure Artifact", closure.closureArtifactRef, true]);
+  }
+  if (["ARCHIVE_PENDING", "ARCHIVE_FAILED", "ARCHIVED"].includes(nodeId) && lifecycle?.archive) {
+    rows.push(["Archive 状态", lifecycle.archive.status]);
+    rows.push(["Archive Attempt", String(lifecycle.archive.attempts)]);
+    if (lifecycle.archive.effectId) rows.push(["Archive Effect", lifecycle.archive.effectId, true]);
+    if (lifecycle.archive.receiptDigest) rows.push(["Receipt Digest", lifecycle.archive.receiptDigest, true]);
+    if (lifecycle.archive.error) details.push(`<li><strong>Archive 错误</strong><span>${escapeHtml(lifecycle.archive.error)}</span></li>`);
+  }
   if (nodeId === "CONTEXT") {
     rows.push(["规格版本", `R${trace.task.specRevision}`]);
     const latest = trace.specRevisions?.at(-1);
@@ -945,7 +1080,7 @@ function renderMachineControlFacts(trace, nodeId) {
   }
   if (["ARCHIVING", "ARCHIVED", "ARCHIVE_FAILED"].includes(nodeId)) rows.push(["Archive 状态", trace.task.archiveStatus]);
   if (rows.length === 0 && details.length === 0) return "";
-  return `<section class="machine-node-section machine-node-control"><div class="machine-node-section-heading"><p class="machine-node-section-kicker">Control plane</p><h5>系统控制与结果</h5><p>Workflow、Git、Verification、Recovery 与 Archive 对这个节点的约束和结果。</p></div><dl class="machine-node-facts">${rows.map(([label, value, code]) => `<div><dt>${escapeHtml(label)}</dt><dd>${code ? `<code>${escapeHtml(value)}</code>` : escapeHtml(value)}</dd></div>`).join("")}</dl>${details.length ? `<ul class="machine-node-control-list">${details.join("")}</ul>` : ""}</section>`;
+  return `<section class="machine-node-section machine-node-control"><div class="machine-node-section-heading"><p class="machine-node-section-kicker">Control plane</p><h5>系统管控与结果</h5><p>Workflow、Gate、Trusted Runner、Git 与 Archive 对这个节点的真实约束。</p></div><dl class="machine-node-facts">${rows.map(([label, value, code]) => `<div><dt>${escapeHtml(label)}</dt><dd>${code ? `<code>${escapeHtml(value)}</code>` : escapeHtml(value)}</dd></div>`).join("")}</dl>${details.length ? `<ul class="machine-node-control-list">${details.join("")}</ul>` : ""}</section>`;
 }
 
 function bindStateMachineGraph(machine, trace) {
@@ -1012,16 +1147,33 @@ function bindStateMachineGraph(machine, trace) {
       const visible = filter === "ALL" || (filter === "ACTUAL" ? group.dataset.machineEdgeTraversed === "true" : group.dataset.machineEdgeKind === filter);
       group.toggleAttribute("hidden", !visible);
     });
+    const visibleNodes = new Set();
+    machine.definition.edges.forEach(edge => {
+      const visible = filter === "ALL" || (filter === "ACTUAL" ? edge.traversed : edge.kind === filter);
+      if (visible) {
+        visibleNodes.add(edge.from);
+        visibleNodes.add(edge.to);
+      }
+    });
+    section.querySelectorAll("[data-machine-node]").forEach(button => {
+      const keep = filter === "ALL" || visibleNodes.has(button.dataset.machineNode) || button.dataset.machineNodeStatus === "CURRENT";
+      button.classList.toggle("is-filter-muted", !keep);
+    });
   };
   section.querySelectorAll("[data-machine-filter]").forEach(button => button.addEventListener("click", () => applyFilter(button.dataset.machineFilter)));
 
   const applyZoom = value => {
+    const graphSize = machineGraphGeometry(machine).size;
     machineGraphUiState.zoom = Math.min(1.6, Math.max(.5, value));
-    svg.style.width = `${MACHINE_GRAPH_SIZE.width * machineGraphUiState.zoom}px`;
-    svg.style.height = `${MACHINE_GRAPH_SIZE.height * machineGraphUiState.zoom}px`;
+    svg.style.width = `${graphSize.width * machineGraphUiState.zoom}px`;
+    svg.style.height = `${graphSize.height * machineGraphUiState.zoom}px`;
     section.querySelector("[data-machine-zoom-label]").textContent = `${Math.round(machineGraphUiState.zoom * 100)}%`;
   };
-  const fitZoom = () => Math.min(1, scroll.clientWidth / MACHINE_GRAPH_SIZE.width, scroll.clientHeight / MACHINE_GRAPH_SIZE.height);
+  const fitZoom = () => {
+    const graphSize = machineGraphGeometry(machine).size;
+    const available = Math.min(1, scroll.clientWidth / graphSize.width, scroll.clientHeight / graphSize.height);
+    return Math.max(.66, available);
+  };
   section.querySelectorAll("[data-machine-zoom]").forEach(button => button.addEventListener("click", () => {
     const action = button.dataset.machineZoom;
     if (action === "in") applyZoom(machineGraphUiState.zoom + .15);

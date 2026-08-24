@@ -1,0 +1,15 @@
+schema_version: 1
+id: "BL-0061"
+title: "重构 Core v2 状态机画布与节点审计信息层级"
+kind: "bug"
+status: "converted_to_task"
+priority: "high"
+source_refs: [core-v2-audit-graph-compresses-path-and-buries-evidence]
+affected_areas: [project-board, task-audit, state-machine-graph, node-inspector, domain-events]
+acceptance_outline:
+  - "适配视图优先保持实际主路径可读，Recovery/Failure/Archive 紧凑分区且完整合法边仍可查询"
+  - "节点 Inspector 首屏按 Agent 活动、系统管控、状态事实与证据的稳定顺序展示"
+  - "Domain Event 先显示可读业务摘要，原始 detail 作为二级技术信息"
+  - "合法进入与离开路径优先展示本次经过，并明确合法但未发生"
+  - "桌面与移动真实浏览器均可完成节点和 Agent Events 审计"
+resolution: { task_refs: [TASK-0050], duplicate_of: null, reason: "由 TASK-0050 调度实现并进行真实 Runtime 页面验收" }
