@@ -1,0 +1,15 @@
+schema_version: 1
+id: "BL-0064"
+title: "收敛 Task Audit 重复摘要与通用画布空白"
+kind: "bug"
+status: "converted_to_task"
+priority: "high"
+source_refs: [task-audit-canvas-remains-oversized-and-repetitive]
+affected_areas: [project-board, task-audit, state-machine-graph]
+acceptance_outline:
+  - "画布 Tab 不再重复展示 Workflow 摘要、说明文字和四格正常状态"
+  - "Event / Projection 一致时只显示紧凑状态；不一致时主动展开差异"
+  - "完整业务、Archive、整体落点与 Event 重建事实保留在 Workflow 状态事实 Tab"
+  - "TaskWorkflow、SealedTaskWorkflow 与 CodingTaskWorkflow 的异常分区只包围实际异常节点簇"
+  - "页面明确显示基础 Task 没有 Agent Session，不暗示多 Agent 参与"
+resolution: { task_refs: [TASK-0053], duplicate_of: null, reason: "由 TASK-0053 修复最新项目任务中仍存在的重复摘要与通用画布空白" }

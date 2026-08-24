@@ -120,10 +120,10 @@ Bootstrap Task 的 `validate/create/close` 会在进入 Runtime 前校验冻结 
 
 Board 总览保持四列业务分组，并在顶部提供 outcome、Workflow kind 与“项目任务/验收历史”筛选，以及最新成功归档 Task 的直达入口。每张 Task 卡片从自身 Domain Event History 派生开始时间、结束时间与 duration：首条 Event 是开始时间，只有完成 Archive 才显示结束时间，运行中 duration 使用 Board 投影时刻累计。`WAITING_RECONCILE`、`ARCHIVE_PENDING`、`ARCHIVE_FAILED`、`FAILED_TERMINAL` 和 `SUCCEEDED` 使用 Workflow 发布或 TaskAuthority 只读解析出的精确语义；筛选和时间展示都不写 ProjectBoard，也不推进 Task。新增 Core v2 验收输入使用显式 `acceptanceMetadata`，升级前历史记录只按受限 Task ID/标题约定显示兼容标签并标明来源。
 
-Coding Task 出现在看板后，点击卡片会路由到可直达和刷新的全屏 `/tasks/<task_id>` Task Audit Page；右上角“返回项目”回到 `/`，浏览器 Back/Forward 同样有效。详情内容顶部固定为“画布”“角色与交付物”“Workflow 状态事实”“高级诊断”四个局部 Tab，首次进入默认画布，同一 Task 自动刷新保留当前 Tab；键盘可用左右方向键、Home 和 End 切换，窄屏横向滚动。四个 Tab 只重组现有只读事实，不创建第二套状态。画布视图以状态摘要和 Graph 为中心，不预占详情侧栏：
+Coding Task 出现在看板后，点击卡片会路由到可直达和刷新的全屏 `/tasks/<task_id>` Task Audit Page；右上角“返回项目”回到 `/`，浏览器 Back/Forward 同样有效。详情内容顶部固定为“画布”“角色与交付物”“Workflow 状态事实”“高级诊断”四个局部 Tab，首次进入默认画布，同一 Task 自动刷新保留当前 Tab；键盘可用左右方向键、Home 和 End 切换，窄屏横向滚动。四个 Tab 只重组现有只读事实，不创建第二套状态。页面 Header 只常驻 Task 身份、真实 Workflow kind、角色参与和结果摘要；画布 Tab 直接进入 Graph，不再重复 Workflow 说明与四格状态：
 
-1. 当前业务状态、独立 Archive 状态，以及 Projection 与 Event History 是否一致；
-2. 一张完整状态机 Graph 画布：默认只强调本次实际路径和 Event sequence，主流程、恢复/异常与 Archive 使用紧凑分区；切换“完整状态机”后可核对 normal、Repair、Replan、Reconcile、failure、archive 全部合法边。未发生节点仍保留在 Definition 中但降低强调，不会冒充本次失败；窄屏保持节点可读并允许横向滚动，不继续缩小成不可读小字；
+1. Projection 与 Event History 一致时只在 Graph 工具栏显示一个紧凑标识；不一致时才在画布前主动展开业务、Archive、整体落点与 Event 重建差异。四项完整状态事实固定保留在“Workflow 状态事实”Tab；
+2. 一张完整状态机 Graph 画布：默认只强调本次实际路径和 Event sequence，Core v2、Coding 与基础 Task 使用各自紧凑几何；基础 Task 不绘制不存在的 Recovery 背景，其他 Workflow 的恢复/异常容器只包围相关节点簇。切换“完整状态机”后可核对 normal、Repair、Replan、Reconcile、failure、archive 全部合法边。未发生节点仍保留在 Definition 中但降低强调，不会冒充本次失败；窄屏保持节点可读并允许横向滚动，不继续缩小成不可读小字；
 3. 点击节点才打开详情：桌面在画布右侧显示 Inspector，窄屏在底部显示 Bottom Sheet；有真实 Session 的节点先展示 Agent 活动、分类计数、最近事件预览和“查看全部 Agent Events”主入口，再按系统管控、Workflow 状态流转、本次节点路径、技术 Evidence 与完整合法转换分层。没有 Session 的 Workflow、Gate、Trusted Runner、Merge、Closure 与 Archive 节点会明确标记“系统执行节点”并展示对应控制事实，不补造 Agent。Domain Event 是 Workflow 写入的业务事实，不是 Agent 对话或工具日志；实际进入/离开路径始终可见，完整合法转换按需展开并把 traversed 边排在前面。`Esc` 关闭节点详情并把焦点还给节点；
 4. 完整 Domain Event 使用纵向时间线逐条展示 sequence、业务摘要、`来源 → 目标`、event type 和 time；原始 detail 只在单条 disclosure 中按需显示，没有状态转换的业务事实会明确标记，不伪造 `from/to`。“实际路径”、执行实例、完整合法边、角色会话和高级诊断默认折叠，需要时再展开；
 5. 每条 Context、Implementation、Self Review、Review、Replan 与 Docs Gate Session 都在同一个 Chatbot 弹窗中展示；可按对话、工具调用、工具结果、系统和错误筛选，运行中增量跟随；Events 不跳转下载。直接打开 `/tasks/<task_id>` 时会先读取该 Task Trace，不等待体积更大的项目 Board Projection。

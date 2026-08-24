@@ -471,18 +471,15 @@ function renderTaskTrace(trace) {
   renderTaskDetailHeader(task, task.title, [
     ["状态", taskStateLabel(task.state), task.state === "CLOSED" ? "success" : "progress"],
     ["归档", archiveStatusLabel(task.archiveStatus), task.archiveStatus === "ARCHIVED" ? "success" : "neutral"],
-    ["Workflow", `TaskWorkflow/${task.taskId}`],
-    ["Attempt", String(task.attempt)],
+    ["Workflow", trace.stateMachine.workflow],
+    ["角色", "无 Agent Session"],
+    ["来源", task.backlogRefs.join(", ") || "—"],
   ]);
   elements.detail.innerHTML = renderTaskDetailTabs(task.taskId, {
-    canvas: `<section class="task-workspace-summary" aria-label="TaskWorkflow 摘要">
-        <div><span class="workspace-summary-mark" aria-hidden="true">T</span><p><strong>TaskWorkflow 业务聚合</strong><small>只展示 Runtime Projection 与 Event 证明的事实，不补画 Coding Agent、Worktree 或 Git 记录。</small></p></div>
-        <dl><div><dt>当前步骤</dt><dd>${escapeHtml(task.currentStep)}</dd></div><div><dt>需求来源</dt><dd>${task.backlogRefs.map(escapeHtml).join(", ") || "—"}</dd></div></dl>
-      </section>
-      ${task.error ? `<p class="error-box">${escapeHtml(task.error)}</p>` : ""}
+    canvas: `${task.error ? `<p class="error-box">${escapeHtml(task.error)}</p>` : ""}
       ${renderStateMachine(trace.stateMachine, trace)}`,
     deliverables: `<section class="task-tab-surface"><div class="trace-heading"><div><p class="eyebrow">System Workflow</p><h3>角色与交付物</h3></div><span>无 Agent Session</span></div><p class="trace-note">这个基础 TaskWorkflow 没有 Agent 角色或代码 Artifact；页面不会补造不存在的执行者。</p>${task.archivePath ? `<p class="result-ref"><span>归档结果</span><code>${escapeHtml(task.archivePath)}</code></p>` : ""}</section>`,
-    workflow: renderDomainEventPanel(task.events, trace.stateMachine, true),
+    workflow: renderWorkflowStatePanel(task.events, trace.stateMachine),
     diagnostics: `<section class="advanced-panel task-tab-surface"><div class="advanced-content"><section><p class="subheading">Restate Journal</p><code class="wide-code">${escapeHtml(trace.durableRuntime.workflowRef || `TaskWorkflow/${task.taskId}`)}</code>${trace.durableRuntime.invocationsUrl ? `<a class="runtime-link" href="${escapeAttribute(trace.durableRuntime.invocationsUrl)}" target="_blank" rel="noreferrer">在 Restate 中核对 Journal ↗</a>` : ""}</section></div></section>`,
   });
   bindTaskDetailTabs(task.taskId);
@@ -495,6 +492,7 @@ function renderCoreV2Trace(trace) {
   const lifecycle = trace.lifecycle;
   const succeeded = task.outcome === "SUCCEEDED" && task.archiveStatus === "ARCHIVED";
   const failed = task.outcome === "FAILED_TERMINAL";
+  const closure = renderCoreV2Closure(trace);
   const roleSessions = trace.roles.map(role => `
     <li><strong>${escapeHtml(roleLabel(role.kind))}</strong><code>${escapeHtml(role.sessionId || "无 Session ID")}</code><span>R${role.specRevision} · G${role.generation} · ${escapeHtml(role.verdict || role.outcome)}</span><p>${escapeHtml(role.summary)}</p>${sessionEventsButton({
       eventsUrl: role.eventsUrl,
@@ -513,20 +511,17 @@ function renderCoreV2Trace(trace) {
     ["Archive", archiveStatusLabel(task.archiveStatus), task.archiveStatus === "ARCHIVED" ? "success" : "neutral"],
   ]);
   elements.detail.innerHTML = renderTaskDetailTabs(task.taskId, {
-    canvas: `<section class="task-workspace-summary tone-${failed ? "danger" : succeeded ? "success" : "progress"}" aria-label="Core v2 任务结论">
-        <div><span class="workspace-summary-mark" aria-hidden="true">${failed ? "!" : succeeded ? "✓" : "●"}</span><p><strong>${failed ? "真实执行已失败并保留证据" : succeeded ? "Task 已完整闭环" : "Task 正由 Core v2 Workflow 推进"}</strong><small>${failed ? escapeHtml(task.error || "Workflow failed") : "五类主流程 Agent、受信任 Runner、确定性 Gate 与旁路 Knowledge Disposition 均由 Runtime 事实驱动。"}</small></p></div>
-        <dl><div><dt>当前阶段</dt><dd>${escapeHtml(task.currentStep)}</dd></div><div><dt>Workflow</dt><dd>CoreV2Workflow</dd></div></dl>
-      </section>
-      ${task.error ? `<p class="error-box"><strong>失败原因：</strong>${escapeHtml(task.error)}</p>` : ""}
-      ${renderCoreV2Closure(trace)}
-      ${renderStateMachine(trace.stateMachine, trace)}`,
+    canvas: `${task.error ? `<p class="error-box"><strong>失败原因：</strong>${escapeHtml(task.error)}</p>` : ""}
+      ${failed ? closure : ""}
+      ${renderStateMachine(trace.stateMachine, trace)}
+      ${failed ? "" : closure}`,
     deliverables: `<section class="task-evidence-panel task-tab-surface"><div class="task-evidence-content">
         <div class="tab-panel-heading"><span>角色会话与交付物</span><small>${trace.roles.length} 个 Session · ${lifecycle.artifacts.length} 个不可变 Artifact</small></div>
         <section class="journey-section" aria-label="真实角色会话"><div class="trace-heading"><div><p class="eyebrow">Role / Agent Sessions</p><h3>每个 Agent 的对话与工具事件</h3></div><span>支持按事件类别筛选</span></div><ul class="action-list">${roleSessions || "<li>等待首个 Agent Session</li>"}</ul></section>
         <section class="journey-section" aria-label="生命周期交付物"><div class="trace-heading"><div><p class="eyebrow">Immutable Artifacts</p><h3>Spec、Design、Documentation、Test 与 Review 证据</h3></div><span>绑定 Revision 与 Commit</span></div><ul class="artifact-list">${artifacts || "<li>等待 Artifact</li>"}</ul></section>
         <div class="correlation-strip" aria-label="任务关联链">${correlationNode("Task", task.taskId)}<span aria-hidden="true">→</span>${correlationNode("Workflow", trace.durableRuntime.workflowRef)}<span aria-hidden="true">→</span>${correlationNode("Candidate", lifecycle.candidateCommit || "等待生成")}<span aria-hidden="true">→</span>${correlationNode("Gate", lifecycle.verificationGateDigest || "等待验证")}<span aria-hidden="true">→</span>${correlationNode("Merge", lifecycle.mergeReceipt?.mergeCommit || "等待合入")}</div>
       </div></section>`,
-    workflow: renderDomainEventPanel(trace.business.events, trace.stateMachine, true),
+    workflow: renderWorkflowStatePanel(trace.business.events, trace.stateMachine),
     diagnostics: `<section class="advanced-panel task-tab-surface"><div class="tab-panel-heading"><span>高级诊断</span><small>确定性 Observer、Restate Journal 与完整 Lifecycle Projection</small></div><div class="advanced-content"><section><p class="subheading">确定性 Observer</p><dl class="machine-node-facts"><div><dt>Event</dt><dd>${trace.observer.facts.events}</dd></div><div><dt>Attempt</dt><dd>${trace.observer.facts.attempts}</dd></div><div><dt>Failure / UNKNOWN</dt><dd>${trace.observer.facts.failures} / ${trace.observer.facts.unknown}</dd></div><div><dt>Repair / Replan</dt><dd>${trace.observer.facts.repairs} / ${trace.observer.facts.replans}</dd></div></dl><code class="wide-code">${escapeHtml(trace.observer.reportDigest)}</code></section><section><p class="subheading">Restate Journal</p><code class="wide-code">${escapeHtml(trace.durableRuntime.workflowRef)}</code><a class="runtime-link" href="${escapeAttribute(trace.durableRuntime.invocationsUrl)}" target="_blank" rel="noreferrer">在 Restate 中核对 Journal ↗</a></section><section><p class="subheading">Projection Digest</p><code class="wide-code">${escapeHtml(lifecycle.projectionDigest)}</code></section></div></section>`,
   });
   bindTaskDetailTabs(task.taskId);
@@ -560,20 +555,12 @@ function renderCoreV2Closure(trace) {
 function renderCodingTrace(trace, summary) {
   closeAgentEventsDialog(false);
   const task = trace.task;
-  const conclusion = task.archiveStatus === "ARCHIVED" && task.outcome === "FAILED_TERMINAL"
-    ? { icon: "!", title: "任务已失败并归档", text: "失败事实、执行证据与归档回执均已固化；没有把失败伪装成成功。", tone: "danger" }
-    : task.state === "CLOSED" && task.archiveStatus === "ARCHIVED"
-      ? { icon: "✓", title: "任务已闭环", text: "编码、验证、合入、文档与归档证据均已确认。", tone: "success" }
-    : task.state === "FAILED"
-      ? { icon: "!", title: "任务已停止，需要处理", text: trace.recovery.summary, tone: "danger" }
-      : { icon: "●", title: `任务正在${stepLabel(task.currentStep)}`, text: trace.recovery.summary, tone: "progress" };
   const workflowRef = `${trace.durableRuntime.workflowService}/${trace.durableRuntime.workflowKey}`;
   const sessionRef = trace.agent?.sessionId || "等待 Agent Session";
   const mergeRef = trace.git.mergeCommit ? shortSha(trace.git.mergeCommit) : "等待合入";
   const journey = PIPELINE_STAGES.map((definition, index) => renderJourneyStage(trace, definition, index)).join("");
   const artifacts = trace.technical.artifacts.map(artifact => `
     <li><span>${escapeHtml(artifact.kind)}</span><code>${escapeHtml(artifact.artifactRef)}</code><small>${escapeHtml(shortDigest(artifact.contentDigest))}${artifact.bytes === undefined ? "" : ` · ${artifact.bytes} B`}</small>${artifact.downloadUrl && artifact.kind !== "agent-events" ? `<a href="${escapeAttribute(artifact.downloadUrl)}" target="_blank" rel="noreferrer">打开 ↗</a>` : ""}</li>`).join("");
-  const agentEvents = trace.agentEvents;
   const rawModelIo = trace.technical.artifacts.find(artifact => artifact.kind === "raw-model-io" && artifact.downloadUrl);
   const actions = trace.recovery.actions.map(action => `
     <li><strong>${escapeHtml(action.label)}</strong><span class="tag ${action.automatic ? "blue" : "yellow"}">${action.automatic ? "自动" : "人工"}</span><p>${escapeHtml(action.reason)}</p></li>`).join("");
@@ -607,12 +594,7 @@ function renderCodingTrace(trace, summary) {
     ["Commit", mergeRef],
   ]);
   elements.detail.innerHTML = renderTaskDetailTabs(task.taskId, {
-    canvas: `<section class="task-workspace-summary tone-${conclusion.tone}" aria-label="任务结论">
-        <div><span class="workspace-summary-mark" aria-hidden="true">${conclusion.icon}</span><p><strong>${escapeHtml(conclusion.title)}</strong><small>${escapeHtml(conclusion.text)}</small></p></div>
-        <dl><div><dt>当前阶段</dt><dd>${escapeHtml(stepLabel(task.currentStep))}</dd></div><div><dt>执行者</dt><dd>${escapeHtml(runnerLabel(trace.agent?.runnerKind))}</dd></div></dl>
-        ${agentEvents ? `<button type="button" class="workspace-events-trigger" data-agent-events-trigger data-agent-events-url="${escapeAttribute(agentEvents.viewUrl)}" data-agent-events-kind="IMPLEMENTATION" data-agent-events-binding="${escapeHtml(`${agentEvents.attemptId || "等待 Attempt"} · ${runnerLabel(agentEvents.runnerKind)}`)}" data-agent-events-runner="${escapeHtml(agentEvents.runnerKind)}" aria-controls="agent-events-dialog" aria-haspopup="dialog" aria-expanded="false">查看完整对话</button>` : ""}
-      </section>
-      ${task.error ? `<p class="error-box"><strong>失败原因：</strong>${escapeHtml(task.error)}<br><span>下一步：${escapeHtml(trace.recovery.summary)}</span></p>` : ""}
+    canvas: `${task.error ? `<p class="error-box"><strong>失败原因：</strong>${escapeHtml(task.error)}<br><span>下一步：${escapeHtml(trace.recovery.summary)}</span></p>` : ""}
       ${renderStateMachine(trace.stateMachine, trace)}`,
     deliverables: `<section class="task-evidence-panel task-tab-surface"><div class="task-evidence-content">
         <div class="tab-panel-heading"><span>角色与交付物</span><small>${PIPELINE_STAGES.length} 个阶段 · ${(trace.roles || []).length + (trace.reviews || []).length + (trace.agent ? 1 : 0)} 个真实执行会话</small></div>
@@ -621,7 +603,7 @@ function renderCodingTrace(trace, summary) {
         <section class="journey-section" aria-label="真实角色会话"><div class="trace-heading"><div><p class="eyebrow">Role / Agent Sessions</p><h3>角色、会话、版本与结论</h3></div><span>${(trace.roles || []).length + (trace.reviews || []).length + (trace.agent ? 1 : 0)} 个真实执行会话</span></div><ul class="action-list">${implementationSessions + roleSessions + reviewSessions || "<li>尚无角色会话</li>"}</ul></section>
         <section class="journey-section" aria-label="任务交付物"><div class="trace-heading"><div><p class="eyebrow">Artifacts</p><h3>提交、Manifest 与执行产物</h3></div><span>内容摘要绑定</span></div><ul class="artifact-list">${artifacts || "<li>尚无技术 Artifact</li>"}</ul></section>
       </div></section>`,
-    workflow: renderDomainEventPanel(trace.business.events, trace.stateMachine, true),
+    workflow: renderWorkflowStatePanel(trace.business.events, trace.stateMachine),
     diagnostics: `<section class="advanced-panel task-tab-surface"><div class="tab-panel-heading"><span>高级诊断</span><small>Restate Journal、恢复建议、Trace 与原始定位信息</small></div><div class="advanced-content">
         <section class="diagnostic-actions" aria-label="诊断入口"><div><small>Trace ID</small><code>${escapeHtml(trace.observability.traceId)}</code></div>${trace.observability.enabled && trace.observability.uiBaseUrl ? `<a href="${escapeAttribute(trace.observability.uiBaseUrl)}" target="_blank" rel="noreferrer">打开 Trace（Phoenix）↗</a>` : `<span class="diagnostic-disabled">Trace 后端未启用</span>`}${rawModelIo ? `<a class="sensitive-link" href="${escapeAttribute(rawModelIo.downloadUrl)}" target="_blank" rel="noreferrer">查看 Raw Model IO（敏感）↗</a>` : ""}</section>
         <section><div class="trace-heading"><div><p class="eyebrow">Restate 定位</p><h3>耐久执行与中断恢复</h3></div><span>执行证据</span></div><p class="trace-note">Restate Journal 负责记录执行与重放；任务是否完成，以 Moye 的业务投影为准。</p><code class="wide-code">${escapeHtml(trace.durableRuntime.workflowRef)}</code>${trace.durableRuntime.invocationsUrl ? `<a class="runtime-link" href="${escapeAttribute(trace.durableRuntime.invocationsUrl)}" target="_blank" rel="noreferrer">在 Restate 中打开这个任务 ↗</a>` : ""}</section>
@@ -658,6 +640,25 @@ function renderDomainEventPanel(events, machine, expanded = false) {
     <div class="domain-events-intro"><strong>Domain Event 证明状态如何变化。</strong><p>默认展示业务摘要、转换和时间；原始 detail 按单条事件展开。Agent 的对话与工具输出继续在 Agent Events 弹窗中查看。</p></div>
     <ol class="domain-event-timeline">${rows || "<li class=\"domain-event-empty\">尚无 Domain Event。</li>"}</ol>
   </details>`;
+}
+
+function renderWorkflowStatePanel(events, machine) {
+  return `<div class="workflow-state-stack">
+    <section class="workflow-state-facts task-tab-surface" aria-labelledby="workflow-state-title">
+      <div class="tab-panel-heading"><span id="workflow-state-title">Workflow 当前状态事实</span><small>${machine.current.consistency === "VERIFIED" ? "Event / Projection 一致" : "Event / Projection 不一致"}</small></div>
+      ${renderMachineCurrentFacts(machine)}
+    </section>
+    ${renderDomainEventPanel(events, machine, true)}
+  </div>`;
+}
+
+function renderMachineCurrentFacts(machine) {
+  return `<dl class="machine-current">
+    <div><dt>业务状态</dt><dd>${escapeHtml(machine.current.business)}</dd></div>
+    <div><dt>Archive 状态</dt><dd>${escapeHtml(machine.current.archive)}</dd></div>
+    <div><dt>整体落点</dt><dd>${escapeHtml(machine.current.overall)}</dd></div>
+    <div><dt>Event 重建</dt><dd>${escapeHtml(machine.current.historyCurrent)}</dd></div>
+  </dl>`;
 }
 
 function domainEventSummary(event, transition, edge) {
@@ -703,32 +704,31 @@ function renderStateMachine(machine, trace) {
       ${item.producer ? `<small>Producer ${escapeHtml(item.producer)}</small>` : ""}
       ${item.evidenceDigests.length ? `<small>Evidence ${item.evidenceDigests.map(value => escapeHtml(shortDigest(value))).join(" · ")}</small>` : ""}
     </li>`).join("");
+  const mismatch = machine.current.consistency !== "VERIFIED" ? `<section class="machine-consistency-alert" role="alert" aria-labelledby="machine-consistency-title">
+      <div><strong id="machine-consistency-title">Event / Projection 状态不一致</strong><span>画布继续显示真实 Definition 与 History；请在 Workflow 状态事实中核对差异。</span></div>
+      ${renderMachineCurrentFacts(machine)}
+    </section>` : "";
   return `<section class="state-machine-section" data-machine-graph aria-labelledby="state-machine-title">
-    <div class="trace-heading"><div><p class="eyebrow">Runtime State Machine</p><h3 id="state-machine-title">合法转换与本次实际路径</h3></div><span class="machine-integrity ${machine.current.consistency.toLowerCase()}">${machine.current.consistency === "VERIFIED" ? "Event / Projection 一致" : "Event / Projection 不一致"}</span></div>
-    <p class="trace-note">Graph 直接消费 Runtime Definition、Event History 与 Execution Evidence。粗实线是本次实际路径；虚线是合法但未发生的 Repair、Replan、Reconcile、失败与 Archive 分支。页面不能写状态。</p>
-    <div class="machine-current">
-      <div><span>业务状态</span><strong>${escapeHtml(machine.current.business)}</strong></div>
-      <div><span>Archive 状态</span><strong>${escapeHtml(machine.current.archive)}</strong></div>
-      <div><span>整体落点</span><strong>${escapeHtml(machine.current.overall)}</strong></div>
-      <div><span>Event 重建</span><strong>${escapeHtml(machine.current.historyCurrent)}</strong></div>
-    </div>
+    <h3 class="visually-hidden" id="state-machine-title">合法转换与本次实际路径</h3>
+    ${mismatch}
     ${renderMachineGraphCanvas(machine, transitions, trace)}
     <details class="machine-evidence-panel"><summary><span>执行实例 · ${machine.executions.length} 个</span><small>Attempt、Agent Run、Verification、Session 与 Evidence</small></summary><div class="machine-executions"><ul>${executions || "<li>这个 Workflow 没有 Agent/Attempt 执行实例。</li>"}</ul></div></details>
     <details class="machine-definition"><summary><span>查看完整合法边</span><small>实线标记本次已走过；Repair/Failure/Archive 分支不会隐藏</small></summary><ul>${edges}</ul></details>
   </section>`;
 }
 
-const DEFAULT_MACHINE_GRAPH_SIZE = { width: 1640, height: 760 };
+const TASK_MACHINE_GRAPH_SIZE = { width: 1640, height: 380 };
+const CODING_MACHINE_GRAPH_SIZE = { width: 1640, height: 485 };
 const CORE_V2_MACHINE_GRAPH_SIZE = { width: 1640, height: 485 };
 const CODING_GRAPH_POSITIONS = {
-  START: [30, 195], CONTEXT: [185, 195], WORKSPACE: [340, 195], IMPLEMENT: [495, 195],
-  SELF_REVIEW: [650, 195], VERIFY: [805, 195], REVIEW: [960, 195], MERGE: [1115, 195],
-  DOCS: [1270, 195], CLOSED: [1425, 195], REPLAN: [805, 35], WAITING_RECONCILE: [690, 440],
-  FAILED: [1080, 605], ARCHIVING: [1430, 405], ARCHIVED: [1430, 535], ARCHIVE_FAILED: [1260, 665],
+  START: [20, 110], CONTEXT: [165, 110], WORKSPACE: [310, 110], IMPLEMENT: [455, 110],
+  SELF_REVIEW: [600, 110], VERIFY: [745, 110], REVIEW: [890, 110], MERGE: [1035, 110],
+  DOCS: [1180, 110], CLOSED: [1325, 110], REPLAN: [745, 0], WAITING_RECONCILE: [600, 270],
+  FAILED: [790, 270], ARCHIVING: [1050, 270], ARCHIVED: [1240, 270], ARCHIVE_FAILED: [1050, 385],
 };
 const TASK_GRAPH_POSITIONS = {
-  START: [55, 195], RECEIVED: [260, 195], EXECUTING: [465, 195], VERIFYING: [670, 195], CLOSED: [875, 195],
-  ARCHIVE_PENDING: [1090, 405], ARCHIVED: [1350, 405], ARCHIVE_FAILED: [1350, 605],
+  START: [20, 110], RECEIVED: [220, 110], EXECUTING: [420, 110], VERIFYING: [620, 110], CLOSED: [820, 110],
+  ARCHIVE_PENDING: [1050, 110], ARCHIVED: [1290, 110], ARCHIVE_FAILED: [1050, 270],
 };
 const CORE_V2_GRAPH_POSITIONS = {
   START: [20, 110], ARCHITECT_REQUIRED: [165, 110], DESIGN_REVIEW_REQUIRED: [310, 110], IMPLEMENTATION_REQUIRED: [455, 110],
@@ -756,17 +756,20 @@ function renderMachineGraphCanvas(machine, transitions) {
         ${filter("ARCHIVE", "归档", machine.definition.edges.filter(edge => edge.kind === "ARCHIVE").length)}
         ${filter("ALL", "完整状态机", machine.definition.edges.length)}
       </div>
-      <div class="machine-graph-zoom" role="group" aria-label="画布缩放">
-        <button type="button" data-machine-zoom="out" aria-label="缩小状态机画布">−</button>
-        <output data-machine-zoom-label>${Math.round((machineGraphUiState.zoom ?? 1) * 100)}%</output>
-        <button type="button" data-machine-zoom="in" aria-label="放大状态机画布">＋</button>
-        <button type="button" data-machine-zoom="fit">适配</button>
+      <div class="machine-graph-tools">
+        <span class="machine-integrity ${machine.current.consistency.toLowerCase()}">${machine.current.consistency === "VERIFIED" ? "Event / Projection 一致" : "状态不一致"}</span>
+        <div class="machine-graph-zoom" role="group" aria-label="画布缩放">
+          <button type="button" data-machine-zoom="out" aria-label="缩小状态机画布">−</button>
+          <output data-machine-zoom-label>${Math.round((machineGraphUiState.zoom ?? 1) * 100)}%</output>
+          <button type="button" data-machine-zoom="in" aria-label="放大状态机画布">＋</button>
+          <button type="button" data-machine-zoom="fit">适配</button>
+        </div>
       </div>
     </div>
     <div class="machine-graph-legend" aria-label="状态机图例">
       <span class="legend-actual">实际经过</span><span class="legend-normal">合法主路径</span><span class="legend-repair">Repair / Replan / 恢复</span><span class="legend-failure">异常 / Reconcile / 失败</span><span class="legend-archive">Archive</span>
     </div>
-    <div class="machine-graph-stage${machine.workflow.startsWith("CoreV2") ? " is-core-v2" : ""}" data-machine-graph-stage data-inspector-open="${machineGraphUiState.inspectorOpen}">
+    <div class="machine-graph-stage ${geometry.stageClass}" data-machine-graph-stage data-inspector-open="${machineGraphUiState.inspectorOpen}">
       <div class="machine-graph-scroll" data-machine-graph-scroll tabindex="0" aria-label="完整状态机 Graph 画布，可横向滚动">
         <svg class="machine-graph-svg" data-machine-svg viewBox="0 0 ${geometry.size.width} ${geometry.size.height}" width="${geometry.size.width}" height="${geometry.size.height}" role="img" aria-labelledby="machine-graph-svg-title machine-graph-svg-desc">
         <title id="machine-graph-svg-title">${escapeHtml(machine.workflow)} 完整状态机</title>
@@ -792,16 +795,26 @@ function machineGraphGeometry(machine) {
   if (machine.workflow.startsWith("CoreV2")) {
     return {
       size: CORE_V2_MACHINE_GRAPH_SIZE,
+      stageClass: "is-core-v2",
       lanes: `<rect x="18" y="78" width="1604" height="126" rx="16" class="lane-business"/><text x="40" y="101">BUSINESS / HAPPY PATH</text>
         <rect x="470" y="235" width="575" height="145" rx="16" class="lane-recovery"/><text x="490" y="258">RECOVERY / EXCEPTION</text>
         <rect x="1045" y="235" width="577" height="235" rx="16" class="lane-archive"/><text x="1065" y="258">ARCHIVE</text>`,
     };
   }
+  if (machine.workflow === "CodingTaskWorkflow") {
+    return {
+      size: CODING_MACHINE_GRAPH_SIZE,
+      stageClass: "is-coding",
+      lanes: `<rect x="18" y="78" width="1450" height="126" rx="16" class="lane-business"/><text x="40" y="101">BUSINESS / HAPPY PATH</text>
+        <rect x="570" y="235" width="365" height="145" rx="16" class="lane-recovery"/><text x="590" y="258">RECOVERY / EXCEPTION</text>
+        <rect x="1015" y="235" width="607" height="235" rx="16" class="lane-archive"/><text x="1035" y="258">ARCHIVE</text>`,
+    };
+  }
   return {
-    size: DEFAULT_MACHINE_GRAPH_SIZE,
-    lanes: `<rect x="18" y="130" width="1535" height="155" rx="18" class="lane-business"/><text x="40" y="158">BUSINESS / HAPPY PATH</text>
-      <rect x="18" y="330" width="1215" height="410" rx="18" class="lane-recovery"/><text x="40" y="360">RECOVERY / EXCEPTION</text>
-      <rect x="1250" y="330" width="303" height="410" rx="18" class="lane-archive"/><text x="1275" y="360">ARCHIVE</text>`,
+    size: TASK_MACHINE_GRAPH_SIZE,
+    stageClass: "is-task",
+    lanes: `<rect x="18" y="78" width="980" height="126" rx="16" class="lane-business"/><text x="40" y="101">BUSINESS / HAPPY PATH</text>
+      <rect x="1015" y="78" width="607" height="276" rx="16" class="lane-archive"/><text x="1035" y="101">ARCHIVE</text>`,
   };
 }
 

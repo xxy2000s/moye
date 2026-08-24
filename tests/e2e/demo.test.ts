@@ -87,7 +87,9 @@ describe("npm run demo", () => {
     expect(html).toContain("不是进度条");
     expect(html).toContain("本页面只读，不创建或推进 Task");
     expect(html).toContain("等待归档，或失败终止后等待后续动作");
-    expect(app).toContain("Runtime State Machine");
+    expect(app).not.toContain("Runtime State Machine");
+    expect(app).toContain("Event / Projection 一致");
+    expect(app).toContain("renderWorkflowStatePanel");
     expect(app).toContain("renderMachineGraphCanvas");
     expect(app).toContain("data-machine-graph");
     expect(app).toContain("data-machine-filter");

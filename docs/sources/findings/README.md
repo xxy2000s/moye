@@ -52,5 +52,6 @@ Finding 与 Incident 的边界：
 - [Core v2 Roadmap 落后于 Sealed Runtime Receipt](./core-v2-roadmap-lags-sealed-runtime-receipts.md)：TASK-0030～0048 的部分交付状态仍停留在 Seal 前快照，缺少实际 Result Commit 与 Package Digest 台账。
 - [seal-start 在 Active package 预检前提交 Runtime Invocation](./seal-start-dispatches-before-active-package-preflight.md)：真实 TASK-0049 在第一条 durable command 因 package 不存在而完成失败，且未形成可恢复的业务 Projection。
 - [Core v2 审计画布压缩主流程且节点证据层级不清](./core-v2-audit-graph-compresses-path-and-buries-evidence.md)：真实 Happy Path 的 52 条合法边压缩主流程并放大 Recovery 空白，节点与 Domain Event 仍缺少稳定审计层级。
+- [Task Audit 画布仍重复展示状态且通用异常分区过大](./task-audit-canvas-remains-oversized-and-repetitive.md)：最新 Sealed Task 仍重复展示多层归档状态，并命中未压缩的通用黄色异常分区。
 
 不要为了演示目录创建虚构 Bug。

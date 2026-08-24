@@ -3951,6 +3951,70 @@ documents:
     authority: task-evidence
     read_when: [task-close, task-archive]
 
+  - id: finding-task-audit-canvas-oversized-repetitive
+    path: docs/sources/findings/task-audit-canvas-remains-oversized-and-repetitive.md
+    type: finding
+    status: accepted
+    scope: board-task-audit-ux
+    authority: observed-fact
+    read_when: [finding-intake, task-execution, task-close, ui-change]
+
+  - id: bl-0064-task-audit-canvas-density
+    path: docs/delivery/backlog/BL-0064.yaml
+    type: backlog-item
+    status: converted-to-task
+    scope: board-task-audit-ux
+    authority: delivery-control
+    read_when: [task-create, task-execution, ui-change]
+
+  - id: task-0053-manifest
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0053/task.yaml
+    type: task-manifest
+    status: archived
+    scope: board-task-audit-ux
+    authority: task-artifact
+    read_when: [task-execution, task-close, ui-change]
+
+  - id: task-0053-spec
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0053/spec.md
+    type: task-spec
+    status: archived
+    scope: board-task-audit-ux
+    authority: task-artifact
+    read_when: [task-execution, task-close, ui-change]
+
+  - id: task-0053-design
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0053/design.md
+    type: task-design
+    status: archived
+    scope: board-task-audit-ux
+    authority: task-artifact
+    read_when: [task-execution, ui-change]
+
+  - id: task-0053-plan
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0053/plan.md
+    type: task-plan
+    status: archived
+    scope: board-task-audit-ux
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0053-verification
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0053/verification.md
+    type: verification
+    status: archived
+    scope: board-task-audit-ux
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0053-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0053/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: board-task-audit-ux
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
 relations:
   - from: root-readme
     to: docs-index
@@ -6914,6 +6978,50 @@ relations:
 
   - from: task-0052-manifest
     to: task-0051-manifest
+    type: refines
+
+  - from: findings-index
+    to: finding-task-audit-canvas-oversized-repetitive
+    type: indexes
+
+  - from: finding-task-audit-canvas-oversized-repetitive
+    to: bl-0064-task-audit-canvas-density
+    type: creates_backlog
+
+  - from: backlog-index
+    to: bl-0064-task-audit-canvas-density
+    type: indexes
+
+  - from: bl-0064-task-audit-canvas-density
+    to: task-0053-manifest
+    type: schedules_into
+
+  - from: archived-tasks-index
+    to: task-0053-manifest
+    type: indexes
+
+  - from: task-0053-spec
+    to: task-0053-manifest
+    type: belongs_to
+
+  - from: task-0053-design
+    to: task-0053-spec
+    type: refines
+
+  - from: task-0053-plan
+    to: task-0053-manifest
+    type: belongs_to
+
+  - from: task-0053-verification
+    to: task-0053-manifest
+    type: verifies
+
+  - from: task-0053-docs-impact
+    to: task-0053-manifest
+    type: reports_on
+
+  - from: task-0053-manifest
+    to: task-0052-manifest
     type: refines
 
 routing:

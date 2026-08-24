@@ -31,9 +31,16 @@ describe("board static server", () => {
     expect(script).toContain("const snapshot = board || latestBoardSnapshot");
     expect(script).toContain("CORE_V2_MACHINE_GRAPH_SIZE");
     expect(script).toContain("CORE_V2_MACHINE_GRAPH_SIZE = { width: 1640, height: 485 }");
+    expect(script).toContain("TASK_MACHINE_GRAPH_SIZE = { width: 1640, height: 380 }");
+    expect(script).toContain("CODING_MACHINE_GRAPH_SIZE = { width: 1640, height: 485 }");
     expect(script).toContain("REPAIR_REQUIRED: [500, 270]");
     expect(script).toContain('x="470" y="235" width="575" height="145"');
     expect(script).not.toContain('x="18" y="300" width="1205" height="270"');
+    expect(script).not.toContain('x="18" y="330" width="1215" height="410"');
+    expect(script).not.toContain('class="task-workspace-summary');
+    expect(script).toContain("renderWorkflowStatePanel");
+    expect(script).toContain('class="machine-consistency-alert"');
+    expect(script).toContain('["角色", "无 Agent Session"]');
     expect(script).toContain("Workflow 状态事实");
     expect(script).toContain("本次节点路径");
     expect(script).toContain("renderMachineSystemOwner");
@@ -49,7 +56,9 @@ describe("board static server", () => {
     expect(script).toContain('role="tabpanel"');
     expect(script).toContain('event.key === "ArrowRight"');
     expect(styles).toContain(".machine-graph-node.is-filter-muted");
-    expect(styles).toContain(".machine-graph-stage.is-core-v2");
+    expect(styles).toContain(".machine-graph-tools");
+    expect(styles).toContain(".machine-consistency-alert");
+    expect(styles).toContain(".workflow-state-stack");
     expect(styles).toContain(".machine-node-route-proof");
     expect(styles).toContain(".domain-event-raw");
     expect(styles).toContain(".card-timing");
