@@ -27,6 +27,7 @@ Brainstorm 不要求每次讨论都立即收敛，但不能被 Agent 当作当�
 
 ## 当前草稿
 
+- [Moye 外部项目框架化需求基线](./external-project-framework-productization.md)：记录 Core v2 作为 Framework Kernel 的现状、外部项目接入缺口、Framework MVP 完成定义和生产阶段边界，已进入 BL-0068 等待拆分实现。
 - [Board Task 时间与详情分层需求](./board-task-timing-and-detail-tabs.md)：记录 Task 卡片时间事实与详情页四 Tab 的用户需求，已提升为 BL-0063 / TASK-0052。
 - [Core v2：5+1 Agent 研发闭环需求基线](./core-v2-five-plus-one-agent-requirements.md)：修订后的 Core 母需求，固定五类主流程 Agent、非阻塞 Observer/Knowledge、独立 Test/Verification 与确定性 Gate。
 - [多 Agent 研发 Core 闭环需求基线](./multi-agent-core-closure-requirements.md)：当前 Core First 的母需求入口，固定 Orchestrator、Docs、Implementation、Review、Observer 多角色边界，并拆出 ControlDecision、Repair/Replan、Docs Impact 和统一 Closure 验收。

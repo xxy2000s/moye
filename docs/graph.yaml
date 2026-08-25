@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 104
+graph_revision: 105
 updated_at: "2026-08-25"
 
 entrypoints:
@@ -4199,6 +4199,70 @@ documents:
     authority: task-evidence
     read_when: [task-close, task-archive]
 
+  - id: external-project-framework-productization
+    path: docs/sources/brainstorm/external-project-framework-productization.md
+    type: brainstorm
+    status: draft
+    scope: framework-productization
+    authority: idea-input
+    read_when: [requirement-discovery, backlog-triage, architecture-change]
+
+  - id: bl-0068-framework-productization
+    path: docs/delivery/backlog/BL-0068.yaml
+    type: backlog-item
+    status: triaged
+    scope: framework-productization
+    authority: delivery-control
+    read_when: [backlog-triage, task-create, architecture-change]
+
+  - id: task-0057-manifest
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0057/task.yaml
+    type: task-manifest
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close, docs-change]
+
+  - id: task-0057-spec
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0057/spec.md
+    type: task-spec
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close, docs-change]
+
+  - id: task-0057-design
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0057/design.md
+    type: task-design
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, docs-change]
+
+  - id: task-0057-plan
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0057/plan.md
+    type: task-plan
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0057-verification
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0057/verification.md
+    type: verification
+    status: archived
+    scope: framework-productization
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0057-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0057/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: framework-productization
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
 relations:
   - from: root-readme
     to: docs-index
@@ -7331,6 +7395,46 @@ relations:
   - from: task-0056-manifest
     to: document-control-plane
     type: implements_slice_of
+
+  - from: brainstorm-index
+    to: external-project-framework-productization
+    type: indexes
+
+  - from: external-project-framework-productization
+    to: bl-0068-framework-productization
+    type: creates_backlog
+
+  - from: backlog-index
+    to: bl-0068-framework-productization
+    type: indexes
+
+  - from: archived-tasks-index
+    to: task-0057-manifest
+    type: indexes
+
+  - from: task-0057-spec
+    to: task-0057-manifest
+    type: belongs_to
+
+  - from: task-0057-spec
+    to: external-project-framework-productization
+    type: tracks_requirement_from
+
+  - from: task-0057-design
+    to: task-0057-spec
+    type: refines
+
+  - from: task-0057-plan
+    to: task-0057-manifest
+    type: belongs_to
+
+  - from: task-0057-verification
+    to: task-0057-manifest
+    type: verifies
+
+  - from: task-0057-docs-impact
+    to: task-0057-manifest
+    type: reports_on
 
 routing:
   baseline:

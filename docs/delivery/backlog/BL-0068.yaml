@@ -1,0 +1,34 @@
+schema_version: 1
+id: "BL-0068"
+title: "将 Core v2 产品化为可被外部项目直接使用的开发框架"
+kind: "feature"
+status: "triaged"
+priority: "high"
+
+source_refs:
+  - external-project-framework-productization
+affected_areas:
+  - project-manifest
+  - consumer-cli
+  - public-api
+  - plugin-sdk
+  - runtime-distribution
+  - documentation-policy
+  - external-project-acceptance
+  - scm-provider
+
+acceptance_outline:
+  - "定义版本化 .moye/project.yaml、Schema、兼容与迁移策略"
+  - "实现 moye init、doctor、project validate 和 task start/status/watch/open，隐藏内部 Workflow Input"
+  - "形成稳定 Core/Client/CLI/Restate Runtime/Plugin SDK 边界与 SemVer 契约"
+  - "把 Agent、Workspace、Trusted Test、Documentation、SCM、Artifact 和 Knowledge 建模为可替换 Adapter"
+  - "交付可安装 CLI、Moye Service 镜像、完整 Compose、健康检查和升级 Runbook"
+  - "Node、Python 和最小通用 Git 示例无需修改 Moye 源码即可完成真实闭环"
+  - "外部项目产品验收覆盖 Happy、Repair、Reconcile、失败 Closure/Archive 和升级兼容"
+  - "README 与 Architecture 明确区分 Framework MVP、受控本地能力和生产平台能力"
+  - "远程 Git/PR、多 Daemon、Auth/RBAC、多租户、Sandbox/Secrets、跨节点 Artifact 和生产观测按依赖进入后续阶段"
+
+resolution:
+  task_refs: []
+  duplicate_of:
+  reason: "等待下一轮长时开发前按依赖拆分为独立实现 Task"

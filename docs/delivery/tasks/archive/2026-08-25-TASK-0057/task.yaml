@@ -1,0 +1,23 @@
+schema_version: 1
+id: TASK-0057
+title: 持久化外部项目框架化需求基线
+status: seal_prepared
+outcome: null
+backlog_refs: []
+spec_revision: 1
+workflow_id: sealed-task/TASK-0057
+execution_mode: sealed-result-commit
+base_commit: e1d5326b9b4fb12d2e6478c91cd758c1c6d7a544
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-25-TASK-0057
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:bc953600ed650aed9a9f70265d52c12b037bce1da5fa995dc2655221b6bb0a3a
+  base_commit: e1d5326b9b4fb12d2e6478c91cd758c1c6d7a544
+  archive_path: docs/delivery/tasks/archive/2026-08-25-TASK-0057

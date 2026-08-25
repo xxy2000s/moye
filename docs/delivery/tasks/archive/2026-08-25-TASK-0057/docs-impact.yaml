@@ -1,0 +1,68 @@
+schema_version: 1
+task_id: TASK-0057
+graph_revision: 105
+intents: [architecture-change, task-execution, docs-change]
+changed_paths:
+  - docs/delivery/backlog/README.md
+  - docs/delivery/backlog/BL-0068.yaml
+  - docs/delivery/tasks/archive/README.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0057/task.yaml
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0057/spec.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0057/design.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0057/plan.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0057/verification.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0057/docs-impact.yaml
+  - docs/graph.yaml
+  - docs/sources/brainstorm/README.md
+  - docs/sources/brainstorm/external-project-framework-productization.md
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - meta-index
+    - sources-index
+    - brainstorm-index
+    - backlog-index
+    - sources-index
+    - tasks-index
+    - archived-tasks-index
+    - task-runtime-kernel
+    - moye-task-control-skill
+    - adr-0002-doc-lifecycle-roles
+    - external-project-framework-productization
+    - bl-0068-framework-productization
+    - task-0057-manifest
+    - task-0057-spec
+    - task-0057-design
+    - task-0057-plan
+    - task-0057-verification
+    - task-0057-docs-impact
+  reviewed:
+    research-index: { outcome: not_applicable, reason: "本次记录来自用户产品目标和仓库内可执行证据，没有引入外部资料或形成调研结论" }
+    moye-task-control-skill: { outcome: unchanged, reason: "按现有 Standard、Context Route、Docs Impact 和 Seal 规则执行，不改变 Skill" }
+    architecture-overview: { outcome: unchanged, reason: "Brainstorm 明确是候选产品目标，不把规划范围写成当前架构事实；现有 Overview 已正确声明 PoC 边界" }
+    restate-poc-architecture: { outcome: unchanged, reason: "不修改 Restate Service、Workflow、Projection、运行拓扑或当前 PoC 能力声明" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "TASK-0057 复用既有两阶段 Seal，没有改变 Result Commit 或 Archive 协议" }
+    task-spec-document-closure-brainstorm: { outcome: unchanged, reason: "旧 Brainstorm 保留历史需求；新的外部项目框架化目标使用独立 Source，避免改写旧输入" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "没有改变 durable command、Effect、UNKNOWN、Reconcile 或恢复行为" }
+    task-0013-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0014-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0015-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0016-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0017-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0018-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0019-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0020-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0021-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0029-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0002-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0003-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0004-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0005-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0006-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0007-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0001-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0049r1-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0056-manifest: { outcome: unchanged, reason: "分级执行模式保持不变；本任务按 Standard 规则入库需求" }
