@@ -1,0 +1,95 @@
+schema_version: 1
+task_id: TASK-0059
+graph_revision: 109
+intents:
+  - implement-codex-native-session-adapter
+changed_paths:
+  - package.json
+  - src/agent/codex-session-adapter.ts
+  - scripts/codex_session_product_acceptance.ts
+  - tests/unit/codex-session-adapter.test.ts
+  - tests/e2e/codex-session-product.test.ts
+  - docs/knowledge/current/architecture/task-runtime-kernel.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/sources/incidents/2026-08-25-task-0058-verification-status-seal-failure.md
+  - docs/delivery/milestones/m1-agent-session-evidence.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0059/task.yaml
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0059/spec.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0059/design.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0059/plan.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0059/verification.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0059/docs-impact.yaml
+  - docs/delivery/tasks/archive/README.md
+  - docs/graph.yaml
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - task-runtime-kernel
+    - architecture-index
+    - restate-poc-architecture
+    - durable-runtime-pitfalls
+    - tasks-index
+    - milestone-1-agent-session-evidence
+    - bl-0069-agent-session-evidence
+    - finding-core-v2-role-session-uses-cli-stdout
+    - adr-0007-session-transcript-sidecar
+    - incident-task-0058-verification-status-seal-failure
+    - incidents-index
+    - archived-tasks-index
+    - task-0059-manifest
+    - task-0059-spec
+    - task-0059-design
+    - task-0059-plan
+    - task-0059-verification
+    - task-0059-docs-impact
+  reviewed:
+    local-restate-poc-runbook: { outcome: unchanged, reason: "不改变 Restate 本地运行、恢复或部署操作。" }
+    architecture-overview: { outcome: unchanged, reason: "不改变 Task/Workflow 总体所有权；Provider Adapter 是 Sidecar Effect 边界。" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "不改变 Restate PoC 选型。" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "继续使用既定两阶段 Seal。" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "文档类型和归档规则保持不变。" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "Provider Session Artifact 不改变 Worktree 收敛设计。" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "实现已批准 M1 中的 Provider Session 证据，不改变 5+1 Agent 模型。" }
+    document-control-plane: { outcome: unchanged, reason: "新增 Task 文档按既有 Graph 和 Seal 规则登记。" }
+    docs-index: { outcome: unchanged, reason: "不新增稳定文档类别或入口。" }
+    codemap: { outcome: updated, reason: "登记 Codex Session Adapter、产品入口与安全证据。" }
+    task-runtime-kernel: { outcome: updated, reason: "记录 Codex Sidecar Effect 当前可执行边界与未接入 Workflow 的限制。" }
+    restate-poc-architecture: { outcome: unchanged, reason: "本工作包不接入 Restate Workflow；W04 才集成 Capture Effect。" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "实现现有未知副作用、allowlist 和内容一致写入原则，未发现新的稳定陷阱。" }
+    archived-tasks-index: { outcome: updated, reason: "登记 TASK-0059 归档包。" }
+    backlog-index: { outcome: unchanged, reason: "BL-0069 已冻结 W01～W08 映射，本任务不改变排期。" }
+    sources-index: { outcome: unchanged, reason: "不新增 Source；更新既有 Incident 的恢复结果。" }
+    incidents-index: { outcome: unchanged, reason: "既有 Incident 条目仍有效，仅状态从恢复中更新为已解决。" }
+    pitfalls-index: { outcome: unchanged, reason: "没有新增可复用 Pitfall。" }
+    runbooks-index: { outcome: unchanged, reason: "没有改变操作步骤。" }
+    adr-0007-session-transcript-sidecar: { outcome: unchanged, reason: "Adapter 实现既定 Sidecar、隐私和 Provider Home 隔离决策。" }
+    task-0013-manifest: { outcome: unchanged, reason: "不修改确定性控制内核历史。" }
+    task-0014-manifest: { outcome: unchanged, reason: "不修改 Role Attempt 历史。" }
+    task-0015-manifest: { outcome: unchanged, reason: "不修改 Finding 生命周期历史。" }
+    task-0016-manifest: { outcome: unchanged, reason: "不修改预算与恢复分类历史。" }
+    task-0017-manifest: { outcome: unchanged, reason: "不修改 Docs Impact Gate 历史。" }
+    task-0018-manifest: { outcome: unchanged, reason: "不修改 Closure 历史。" }
+    task-0019-manifest: { outcome: unchanged, reason: "不修改真实 Agent 历史。" }
+    task-0020-manifest: { outcome: unchanged, reason: "不修改状态机转换历史。" }
+    task-0021-manifest: { outcome: unchanged, reason: "不修改 Core 单任务闭环历史。" }
+    task-0028-manifest: { outcome: unchanged, reason: "不修改旧 Board 产品入口历史。" }
+    task-0029-manifest: { outcome: unchanged, reason: "不修改 Bootstrap Recovery 历史。" }
+    task-0003-manifest: { outcome: unchanged, reason: "不修改基础 Task 协议。" }
+    task-0004-manifest: { outcome: unchanged, reason: "不修改 Git Effect。" }
+    task-0005-manifest: { outcome: unchanged, reason: "新增独立 Provider Session Adapter，不修改旧 Agent Adapter。" }
+    task-0006-manifest: { outcome: unchanged, reason: "不修改 Workflow 主状态。" }
+    task-0007-manifest: { outcome: unchanged, reason: "不修改 Trace 边界。" }
+    task-0008-manifest: { outcome: unchanged, reason: "不修改旧 Session Viewer 历史。" }
+    task-0009-manifest: { outcome: unchanged, reason: "不修改旧 Agent 产品验收历史。" }
+    task-0001-manifest: { outcome: unchanged, reason: "不修改首个生命周期归档事实。" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "继续使用 TypeScript 和 Node 标准库，无新依赖。" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "Transcript 是业务 Artifact，OTLP 仍仅为诊断副本。" }
+    task-0049r1-manifest: { outcome: unchanged, reason: "继续使用既定 Seal preflight 和 append-only recovery 原则。" }
+    task-0058-manifest: { outcome: unchanged, reason: "不改写 W01 归档包；其 Runtime recovery 事实记录在既有 Incident 与 Milestone。" }
+    task-0058r1-manifest: { outcome: unchanged, reason: "不改写 Recovery Task 归档包。" }
+    task-0002-manifest: { outcome: unchanged, reason: "不修改首个文档控制面自举任务历史。" }
+    task-0056-manifest: { outcome: unchanged, reason: "本任务按既定 full 档位执行，不修改开发模式协议。" }
+    moye-task-control-skill: { outcome: unchanged, reason: "通过 CLI 操作 Sealed Workflow，不修改 Skill。" }

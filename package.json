@@ -17,6 +17,7 @@
     "demo:codex": "MOYE_DEMO_RUNNER=CODEX_EXEC exec tsx scripts/demo.ts",
     "demo:claude": "MOYE_DEMO_RUNNER=CLAUDE_PRINT exec tsx scripts/demo.ts",
     "acceptance:live": "tsx scripts/live_product_acceptance.ts",
+    "acceptance:agent-sessions:codex": "tsx scripts/codex_session_product_acceptance.ts",
     "acceptance:core-v2": "tsx scripts/core_v2_acceptance.ts --mode happy",
     "acceptance:core-v2:faults": "tsx scripts/core_v2_acceptance.ts --mode faults",
     "acceptance:core-v2:recovery": "tsx scripts/core_v2_recovery_acceptance.ts",

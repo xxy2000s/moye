@@ -121,6 +121,18 @@ Daemon 调度、角色 Agent、Worktree、Git、Gate 和知识沉淀都建立在
 
 这一切片不接入 Workflow、不执行 Verification 或 Merge，也不实现 Session Resume。真实 Codex Fixture 调用在端到端 Workflow Task 中验收。
 
+#### Codex Provider 原生 Session Sidecar
+
+`src/agent/codex-session-adapter.ts` 已实现 W01 Sidecar 合同的首个 Provider Adapter。它只消费已冻结 Capture Intent、Prompt Envelope 和 Role Manifest 派生 Binding，不拥有 Task 主状态：
+
+- 以 Role Manifest 已确认的 `thread_id` 为唯一身份，在显式 allowlist 的 Codex Session Root 中定位唯一 rollout JSONL；Provider Home 绝对路径不进入 Manifest 或 Board；
+- 对物理目录、普通文件、`O_NOFOLLOW`、大小上限和读取前后 inode/size/mtime 做 fail-closed 检查；越界配置、符号链接、重复源、坏行、Session 漂移和读取中变化都不会生成可用 Manifest；
+- `full` 策略先保存 exact-byte raw snapshot，再按 Provider 源顺序生成 Prompt/User、Assistant、Tool Call/Result、Provider System/Thinking 和父子 Thread 的 canonical Timeline；Codex 新格式中注入的 developer/user 上下文与真正 rendered Role Prompt 通过 Prompt Envelope 精确字节区分；
+- raw、normalized 和 Manifest 写入 Capture ID 派生的受管目录，使用 create-once 与内容一致重放；冲突字节拒绝。读取端重新校验 Manifest、normalized、raw 的 Digest，因此 Provider 源文件移除后仍可独立读取；
+- Parser name/version/options、Source Locator、Capture Policy 与全部 Task/Revision/Generation/Attempt/Run/Session Binding 都进入 Capture Identity。Parser 语义变化必须产生新 Capture，不能覆盖旧 Artifact。
+
+当前仅完成 Codex Adapter 和真实 Role 产品证据；Prompt 预持久化、Active Locator、Capture Effect/Receipt/UNKNOWN Reconcile 仍由 M1-W04 接入 Workflow，Board 仍不得直接调用本 Adapter 扫描 Provider Home。
+
 ### 5.0.3 当前 PoC 已实现单 Agent 编码 Workflow
 
 `CodingTaskWorkflow/<task_id>` 的产品路径已串联 `CONTEXT(role) → WORKSPACE → IMPLEMENT(agent) → SELF_REVIEW(role) → VERIFY → REVIEW(independent role) → MERGE → DOCS_GATE(role) → CLOSED → ARCHIVE`。`TaskAuthority/<task_id>` 保证通用 TaskWorkflow、CodingTaskWorkflow 与 CoreClosureWorkflow 不会同时认领同一个 Task；同一 Coding owner 只允许单调提升 Spec Revision。Workflow 通过 Observer 独占 Projection 写入并同步 ProjectBoard 查询副本。六个领域 Step、虚拟 Role Step、每个 Attempt/Session/Evidence/Binding 都进入 Projection；每个外部操作经 Restate `ctx.run`，Adapter 只能返回可验证结果。
