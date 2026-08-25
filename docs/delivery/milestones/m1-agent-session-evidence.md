@@ -52,8 +52,8 @@ Task Input
 | Work Package / Task | 依赖 | 交付范围 | 核心验收 |
 |---|---|---|---|
 | `M1-W01 / TASK-0058` Session Evidence Contract | 无 | 已完成；公共 Sidecar 合同、ADR-0007 与旧 Role Manifest 兼容桥已归档；原 Seal 失败由 `TASK-0058R1` 和 append-only successor 合法收敛 | `TASK-0058` 与 `TASK-0058R1` 均为 `CLOSED + ARCHIVED + SUCCEEDED`，失败与 recovery Event 完整保留 |
-| `M1-W02 / TASK-0059` Codex Native Session Adapter | W01 | Seal 准备中；按已确认 `thread_id` 定位、快照并解析 Codex rollout；保留 raw 与 normalized Artifact；解析 Prompt、Assistant、工具、时间戳和父子 Thread | 最终代码再次验收真实 Codex Session `01a03a0c-53fa-71c0-9ed2-4b528fb2fbec`：1 Prompt / 4 Assistant / 2 Tool Call / 2 Tool Result；Unit/E2E 全库门禁通过 |
-| `M1-W03 / TASK-0060` Claude Native Session Adapter | W01 | 按 `sessionId` 定位、快照并解析 Claude Session；规范 text/thinking/tool_use/tool_result、UUID/parentUUID、Subagent 和模型元数据 | 真实 Claude Role 完整采集；工具结果不冒充用户对话；源文件移走后仍可读取；安全检查与 Codex 对称 |
+| `M1-W02 / TASK-0059` Codex Native Session Adapter | W01 | 已完成并 Seal；按已确认 `thread_id` 定位、快照并解析 Codex rollout，保留 raw/normalized/Manifest | 真实 Session `01a03a0c-53fa-71c0-9ed2-4b528fb2fbec`：1 Prompt / 4 Assistant / 2 Tool Call / 2 Tool Result；Runtime `CLOSED + ARCHIVED + SUCCEEDED` |
+| `M1-W03 / TASK-0060` Claude Native Session Adapter | W01 | 验收中；按 `sessionId` 定位、快照并解析 Claude Session；规范 text/thinking/tool_use/tool_result、UUID/parentUUID、Subagent 和模型元数据；真实验收发现并修复 Claude `structured_output` 误解析 | 最终 Parser 重采集真实 Session `a8c3effb-385b-4529-9400-a8b9753bac0d`：1 Prompt / 4 Assistant / 3 Tool Call / 3 Tool Result；原失败证据保留 |
 | `M1-W04 / TASK-0061` Core v2 Runtime Integration | W02、W03 | Agent 启动前持久化 Prompt Envelope；Role 开始前发布 active Run locator；结束后执行幂等 Transcript capture；保存 stderr；中断后只恢复采集、不重复 Agent | 运行中可定位 Session；Prompt 先于外部执行持久化；Intent-only/回执未知不会产生第二个 Agent Run；旧 Attempt 不能绑定新 Revision/Generation |
 | `M1-W05 / TASK-0062` Unified Timeline and Board API | W04 | Runtime 与 Board 共用唯一 Normalizer；API 分离 execution stream、normalized transcript、raw metadata 和 stderr；支持 cursor、刷新和精确错误 | 不再由三套分类器产生漂移；Board 不扫描用户 Home；稳定错误与等待状态可区分 |
 | `M1-W06 / TASK-0063` Agent Session Chatbot UX | W05 | 重构现有弹窗；展示 Prompt/User、Assistant、Tool Call、Tool Result、System、Error/stderr；显示来源、采集策略、父子 Session 和完整性 | Events 仍在弹窗内；桌面和窄屏可用；筛选、自动刷新、键盘操作和长内容折叠通过真实浏览器验收 |
@@ -143,5 +143,5 @@ Fake/Mock 只用于低层 Parser 边界，不得作为 Codex/Claude 产品验收
 
 - 当前结论：项目 Owner 于 2026-08-25 批准 Revision 1，并授权无中途交互的连续执行。
 - 冻结映射：TASK-0058～TASK-0065 分别对应 W01～W08；只允许逐个创建 Active Task。
-- 当前执行：TASK-0059（M1-W02）。
+- 当前执行：TASK-0060（M1-W03）。
 - W01 收敛：`TASK-0058` Result Evidence Commit `339ad003ce52c000ea848a0e13976302d297dc0a`；防复发 Task `TASK-0058R1` Result Commit `a92ce94859a346fbf686fe360c81e2ac11a02fa5`；两者 Runtime 均已归档。

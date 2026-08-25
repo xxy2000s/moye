@@ -26,6 +26,32 @@ const commit = "7".repeat(40);
 const sha = (letter: string) => `sha256:${letter.repeat(64)}`;
 
 describe("Real Core v2 Role Runtime", () => {
+  it("uses Claude result.structured_output instead of parsing the human-readable result text", async () => {
+    const fixture = await realCliFixture();
+    const attempt = startRoleAttemptV2(createRoleAttemptV2({
+      taskId: "TASK-E2E-CLAUDE-STRUCTURED", specRevision: 1, role: "ARCHITECT", phase: "ARCHITECT", generation: 0,
+      runnerKind: "CLAUDE_PRINT", inputDigest: sha("1"), subjectCommit: commit, inputArtifactRefs: ["artifact://spec-r1"],
+      scheduledAt: "2026-08-23T00:00:00.000Z",
+    }), "2026-08-23T00:00:01.000Z");
+    const runtime = new RealRoleRuntimeV2({
+      processRunner: {
+        async run() {
+          return {
+            stdout: `${JSON.stringify({ type: "system", subtype: "init", session_id: "claude-native-session" })}\n${JSON.stringify({
+              type: "result", subtype: "success", session_id: "claude-native-session", result: "PASS in human prose",
+              structured_output: { summary: "real structured result", recommendation: "PASS", artifactRefs: [], findingRefs: [], deliverable: "{\"verified\":true}" },
+            })}\n`,
+            stderr: "", exitCode: 0, signal: null,
+          };
+        },
+      },
+    });
+    const result = await runtime.run({ attempt, scopeRoot: fixture.scope, artifactRoot: fixture.artifacts, instructions: "Return structured output." });
+    expect(result.manifest).toMatchObject({ outcome: "SUCCEEDED", sessionId: "claude-native-session", output: {
+      summary: "real structured result", recommendation: "PASS", deliverable: { verified: true },
+    } });
+  });
+
   it("runs every main Agent class in a real OS process and durably reuses the completed Run", async () => {
     const fixture = await realCliFixture();
     const runtime = new RealRoleRuntimeV2({ codexExecutable: fixture.executable });

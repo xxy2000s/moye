@@ -1,0 +1,20 @@
+schema_version: 1
+id: BL-0071
+title: "修复 Claude Role Runtime 忽略 structured_output"
+kind: bug
+status: converted_to_task
+priority: high
+source_refs:
+  - finding-claude-role-runtime-ignores-structured-output
+affected_areas:
+  - role-runtime-v2
+  - claude-print
+  - agent-session-evidence
+acceptance_outline:
+  - "Claude result 同时含普通文本与 structured_output 时优先验证结构化对象"
+  - "合法 structured_output 形成 SUCCEEDED Role Manifest，普通文本不再导致 INVALID_OUTPUT"
+  - "真实 Claude Role 与 Provider 原生 Session capture 通过"
+resolution:
+  task_refs: [TASK-0060]
+  duplicate_of: null
+  reason: "由 TASK-0060 真实产品验收发现并在同一阻断工作包中修复"

@@ -1,0 +1,123 @@
+schema_version: 1
+task_id: TASK-0060
+graph_revision: 110
+intents:
+  - implement-claude-native-session-adapter
+changed_paths:
+  - package.json
+  - src/agent/claude-session-adapter.ts
+  - src/agent/role-runtime-v2.ts
+  - scripts/claude_session_product_acceptance.ts
+  - tests/unit/claude-session-adapter.test.ts
+  - tests/e2e/claude-session-product.test.ts
+  - tests/e2e/role-runtime-v2.test.ts
+  - docs/knowledge/current/architecture/task-runtime-kernel.md
+  - docs/knowledge/current/architecture/core-v2-agent-lifecycle.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/sources/findings/claude-role-runtime-ignores-structured-output.md
+  - docs/sources/findings/README.md
+  - docs/delivery/backlog/BL-0071.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/milestones/m1-agent-session-evidence.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0060/task.yaml
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0060/spec.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0060/design.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0060/plan.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0060/verification.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0060/docs-impact.yaml
+  - docs/delivery/tasks/archive/README.md
+  - docs/graph.yaml
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - task-runtime-kernel
+    - architecture-index
+    - core-v2-agent-lifecycle
+    - restate-poc-architecture
+    - durable-runtime-pitfalls
+    - finding-claude-role-runtime-ignores-structured-output
+    - findings-index
+    - bl-0071-claude-structured-output
+    - backlog-index
+    - sources-index
+    - tasks-index
+    - archived-tasks-index
+    - milestone-1-agent-session-evidence
+    - bl-0069-agent-session-evidence
+    - adr-0007-session-transcript-sidecar
+    - task-0060-manifest
+    - task-0060-spec
+    - task-0060-design
+    - task-0060-plan
+    - task-0060-verification
+    - task-0060-docs-impact
+  reviewed:
+    local-restate-poc-runbook: { outcome: unchanged, reason: "不改变 Restate 本地运行、恢复或部署操作；W03 仍是 Workflow 外 Adapter。" }
+    architecture-overview: { outcome: unchanged, reason: "不改变 Task/Workflow 总体所有权；Provider capture 是诊断 Sidecar。" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "不改变 Restate PoC 选型。" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "继续使用冻结 Base、唯一 Result Commit 与两阶段 Seal。" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "Finding、Backlog 与 Task 按现有文档生命周期记录。" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "Provider Session Artifact 不改变 Worktree 收敛设计。" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "不改变 5+1 Agent 模型或 Closure Gate。" }
+    task-0013-manifest: { outcome: unchanged, reason: "不修改确定性控制内核历史。" }
+    task-0014-manifest: { outcome: unchanged, reason: "不修改旧 Role Attempt 历史。" }
+    task-0015-manifest: { outcome: unchanged, reason: "不修改旧 Finding 生命周期历史。" }
+    task-0016-manifest: { outcome: unchanged, reason: "不修改预算、Repair 或 Replan 历史。" }
+    task-0017-manifest: { outcome: unchanged, reason: "不修改旧 Docs Impact/Knowledge 历史。" }
+    task-0018-manifest: { outcome: unchanged, reason: "不修改 Closure 历史。" }
+    task-0019-manifest: { outcome: unchanged, reason: "不修改旧真实 Agent 产品历史。" }
+    task-0020-manifest: { outcome: unchanged, reason: "不修改状态机画布历史。" }
+    task-0021-manifest: { outcome: unchanged, reason: "不修改 Core 单任务闭环历史。" }
+    task-0028-manifest: { outcome: unchanged, reason: "不修改旧 Board/Runtime 持久化历史。" }
+    task-0029-manifest: { outcome: unchanged, reason: "不修改 Bootstrap 恢复历史。" }
+    task-0003-manifest: { outcome: unchanged, reason: "不修改基础 Task 协议。" }
+    task-0004-manifest: { outcome: unchanged, reason: "不修改 Git Effect。" }
+    task-0005-manifest: { outcome: unchanged, reason: "新增 Provider Sidecar，不修改旧 AgentRunner Artifact。" }
+    task-0006-manifest: { outcome: unchanged, reason: "不修改 Workflow 主状态。" }
+    task-0007-manifest: { outcome: unchanged, reason: "不修改旧 Trace 边界。" }
+    task-0008-manifest: { outcome: unchanged, reason: "不修改旧 Session Viewer 历史。" }
+    task-0009-manifest: { outcome: unchanged, reason: "不修改旧 Agent 产品验收历史。" }
+    task-0001-manifest: { outcome: unchanged, reason: "不修改首个生命周期归档事实。" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "继续使用 TypeScript 与 Node 标准库，无新增依赖。" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "Transcript 仍是业务 Artifact，OTLP 仍只作诊断副本。" }
+    task-0049r1-manifest: { outcome: unchanged, reason: "继续使用既定 Seal preflight 与 append-only recovery 原则。" }
+    document-control-plane: { outcome: unchanged, reason: "新 Finding、Backlog 与 Task 文档按既有 Graph/Seal 规则登记。" }
+    docs-index: { outcome: unchanged, reason: "不新增文档类别或顶层入口。" }
+    codemap: { outcome: updated, reason: "登记 Claude Session Adapter、真实产品入口及 structured_output 修复。" }
+    task-runtime-kernel: { outcome: updated, reason: "记录 Claude Provider Sidecar 当前可执行边界、时间完整性语义和 W04 限制。" }
+    core-v2-agent-lifecycle: { outcome: updated, reason: "记录 Claude Role structured_output 的权威解析顺序。" }
+    restate-poc-architecture: { outcome: unchanged, reason: "W03 不接入 Restate Workflow；W04 才集成 Capture Effect。" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "复用既有 allowlist、未知副作用和内容一致写入原则，没有新增稳定 Pitfall。" }
+    findings-index: { outcome: updated, reason: "登记真实 Claude structured_output 误解析 Finding。" }
+    backlog-index: { outcome: updated, reason: "登记 BL-0071 并绑定实际修复 Task。" }
+    sources-index: { outcome: unchanged, reason: "Finding 索引已更新，Source 顶层类别不变。" }
+    tasks-index: { outcome: unchanged, reason: "Active/Archive Task 入口结构不变。" }
+    archived-tasks-index: { outcome: updated, reason: "登记 TASK-0060 归档包。" }
+    milestone-1-agent-session-evidence: { outcome: updated, reason: "W02 更新为已完成，W03 记录真实通过/失败证据和当前执行位置。" }
+    bl-0069-agent-session-evidence: { outcome: unchanged, reason: "W01～W08 冻结 Task 映射不变。" }
+    adr-0007-session-transcript-sidecar: { outcome: unchanged, reason: "Claude Adapter 实现既定 Sidecar、隐私与 Provider Home 隔离决策。" }
+    moye-task-control-skill: { outcome: unchanged, reason: "通过 CLI 操作 Sealed Workflow，不修改 Skill。" }
+    adr-0005-core-v2-agent-model: { outcome: unchanged, reason: "不改变已接受的 5+1 Agent 角色与权限模型。" }
+    core-v2-five-plus-one-agent-requirements: { outcome: unchanged, reason: "Claude Session Sidecar 不改变主流程 Agent 数量或责任。" }
+    task-0030-manifest: { outcome: unchanged, reason: "不修改 Core v2 架构冻结历史。" }
+    task-0031-manifest: { outcome: unchanged, reason: "不修改 Lifecycle Artifact 历史。" }
+    task-0032-manifest: { outcome: unchanged, reason: "修复当前 Role Adapter，但不改写原 Role Runtime Task 历史。" }
+    task-0033-manifest: { outcome: unchanged, reason: "不修改 Architect/Design Review 历史。" }
+    task-0034-manifest: { outcome: unchanged, reason: "不修改 Implementation/Repair 历史。" }
+    task-0035-manifest: { outcome: unchanged, reason: "不修改 Documentation Agent 历史。" }
+    task-0036-manifest: { outcome: unchanged, reason: "不修改 Test Verification 历史。" }
+    task-0037-manifest: { outcome: unchanged, reason: "不修改 Final Review/Gate 历史。" }
+    task-0038-manifest: { outcome: unchanged, reason: "不修改 Observer/Knowledge 历史。" }
+    task-0039-manifest: { outcome: unchanged, reason: "W03 不修改 Core v2 Workflow 产品编排。" }
+    task-0040-manifest: { outcome: unchanged, reason: "不修改失败 Closure/Archive 历史。" }
+    task-0041-manifest: { outcome: unchanged, reason: "不修改 Merge Effect 历史。" }
+    task-0042-manifest: { outcome: unchanged, reason: "不修改成功 Closure/Archive 与 recovery 历史。" }
+    task-0043-manifest: { outcome: unchanged, reason: "不修改 Repair/Replan 产品矩阵历史。" }
+    task-0044-manifest: { outcome: unchanged, reason: "不修改 UNKNOWN/中断产品矩阵历史。" }
+    task-0045-manifest: { outcome: unchanged, reason: "不修改预算/Observer/stale fence 历史。" }
+    task-0046-manifest: { outcome: unchanged, reason: "W03 不修改 Board 运行语义或筛选。" }
+    task-0002-manifest: { outcome: unchanged, reason: "不修改文档控制面自举历史。" }
+    task-0056-manifest: { outcome: unchanged, reason: "本任务使用既定 full 档位，不修改执行模式协议。" }

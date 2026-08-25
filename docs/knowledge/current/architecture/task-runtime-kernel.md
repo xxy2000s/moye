@@ -133,6 +133,17 @@ Daemon 调度、角色 Agent、Worktree、Git、Gate 和知识沉淀都建立在
 
 当前仅完成 Codex Adapter 和真实 Role 产品证据；Prompt 预持久化、Active Locator、Capture Effect/Receipt/UNKNOWN Reconcile 仍由 M1-W04 接入 Workflow，Board 仍不得直接调用本 Adapter 扫描 Provider Home。
 
+#### Claude Provider 原生 Session Sidecar
+
+`src/agent/claude-session-adapter.ts` 以同一 W01 Sidecar 合同实现 Claude Provider 边界，但使用独立版本化 Parser：
+
+- 只在显式 Claude Projects allowlist 内按 Role Manifest 已确认 `sessionId` 定位唯一主 Session JSONL，普通文件、`O_NOFOLLOW`、大小、inode/size/mtime 与受管目录约束和 Codex Adapter 相同；
+- 按 `message.content` block 保持源顺序，区分 Prompt/User、Assistant text、Provider-exposed thinking、`tool_use` 与 `tool_result`。Claude 的 Tool Result 虽位于 `role=user` 记录，仍投影为 Tool Actor，不能冒充人的消息；
+- `uuid/parentUuid`、`agentId/isSidechain`、message/model/stop reason 作为规范时间线的因果与 Provider 元数据保留；无时间戳的纯 Provider metadata 不冒充带时间的用户/工具事件；
+- raw、normalized 和 Manifest 采用 Capture ID 派生的 create-once 受管 Artifact，源文件移除后继续按 Manifest Digest 独立读取。
+
+真实 Claude 验收同时发现旧 Role Runtime 忽略 `result.structured_output`。当前解析器优先验证 CLI 的结构化对象，仅在该字段缺失时兼容旧 `result` 文本；原失败 Role/Session 证据保留。W03 仍不接入 Workflow，Prompt 预持久化、Active Locator 和 Capture Reconcile 继续由 M1-W04 负责。
+
 ### 5.0.3 当前 PoC 已实现单 Agent 编码 Workflow
 
 `CodingTaskWorkflow/<task_id>` 的产品路径已串联 `CONTEXT(role) → WORKSPACE → IMPLEMENT(agent) → SELF_REVIEW(role) → VERIFY → REVIEW(independent role) → MERGE → DOCS_GATE(role) → CLOSED → ARCHIVE`。`TaskAuthority/<task_id>` 保证通用 TaskWorkflow、CodingTaskWorkflow 与 CoreClosureWorkflow 不会同时认领同一个 Task；同一 Coding owner 只允许单调提升 Spec Revision。Workflow 通过 Observer 独占 Projection 写入并同步 ProjectBoard 查询副本。六个领域 Step、虚拟 Role Step、每个 Attempt/Session/Evidence/Binding 都进入 Projection；每个外部操作经 Restate `ctx.run`，Adapter 只能返回可验证结果。

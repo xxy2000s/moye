@@ -429,7 +429,7 @@ function parseAgentStream(stdout: string, runnerKind: RealRoleRunnerKind): {
     category: classifyEvent(event),
   }));
   let sessionId: string | undefined;
-  let message: string | undefined;
+  let message: string | Record<string, unknown> | undefined;
   if (runnerKind === "CODEX_EXEC") {
     const start = records.find((event) => event["type"] === "thread.started");
     if (typeof start?.["thread_id"] === "string") sessionId = start["thread_id"];
@@ -441,11 +441,15 @@ function parseAgentStream(stdout: string, runnerKind: RealRoleRunnerKind): {
     const start = records.find((event) => event["type"] === "system" && event["subtype"] === "init");
     if (typeof start?.["session_id"] === "string") sessionId = start["session_id"];
     const result = records.findLast((event) => event["type"] === "result");
-    if (typeof result?.["result"] === "string") message = result["result"];
+    if (typeof result?.["structured_output"] === "object" && result["structured_output"] !== null && !Array.isArray(result["structured_output"])) {
+      message = result["structured_output"] as Record<string, unknown>;
+    } else if (typeof result?.["result"] === "string") {
+      message = result["result"];
+    }
   }
   if (message === undefined) return { events, ...(sessionId === undefined ? {} : { sessionId }), output: null, error: "Role produced no final structured message" };
   try {
-    return { events, ...(sessionId === undefined ? {} : { sessionId }), output: structuredOutput(JSON.parse(message) as unknown) };
+    return { events, ...(sessionId === undefined ? {} : { sessionId }), output: structuredOutput(typeof message === "string" ? JSON.parse(message) as unknown : message) };
   } catch (error) {
     return { events, ...(sessionId === undefined ? {} : { sessionId }), output: null, error: error instanceof Error ? error.message : String(error) };
   }

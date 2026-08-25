@@ -83,6 +83,7 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 | [BL-0068](./BL-0068.yaml) | Triaged | 将 Core v2 产品化为可被外部项目直接使用的开发框架 | — |
 | [BL-0069](./BL-0069.yaml) | Scheduled | 补齐 Core v2 完整 Agent Session 与 Prompt 证据链 | TASK-0058～0065（M1） |
 | [BL-0070](./BL-0070.yaml) | Converted to Task | 恢复 TASK-0058 Seal 失败并前移 Accepted Verification 预检 | TASK-0058R1 |
+| [BL-0071](./BL-0071.yaml) | Converted to Task | 修复 Claude Role Runtime 忽略 structured_output | TASK-0060 |
 
 ## 本轮调度结果
 

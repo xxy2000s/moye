@@ -40,7 +40,7 @@ INTAKE → CONTEXT_PLAN
 
 每次角色执行是内容寻址的 `RoleAttemptV2`，固定 Task、Spec Revision、Role、Phase、Generation、Runner、Permission、Input Artifact refs、Subject Commit 和连续 Event。Attempt 只能 `SCHEDULED → RUNNING → SUCCEEDED | FAILED`，或从 `RUNNING → WAITING_RECONCILE`；终态不能复活。只有失败且已经证明 `NOT_APPLIED` 的 UNKNOWN Attempt 才授权 Workflow 创建 Generation N+1。
 
-`src/agent/role-runtime-v2.ts` 是真实进程 Adapter：先把稳定 `execution-intent.json` 写到 Scope 外的受管 Artifact Root，再用 `shell:false` 的 argv 启动 Codex/Claude。Session、原始 JSONL Event、stderr、结构化 Output、Manifest 和各文件摘要都持久化。完整 Manifest 会逐字段绑定 Attempt/Run/Evidence 并重算文件摘要后复用；仅有 Intent 时返回 `UNKNOWN_SIDE_EFFECT` 与领域统一 Reconcile Token，绝不自动启动第二个进程。`CONFIRMED` 必须提供同一 Run 的 Evidence，`NOT_APPLIED` 必须提供外部对账说明。
+`src/agent/role-runtime-v2.ts` 是真实进程 Adapter：先把稳定 `execution-intent.json` 写到 Scope 外的受管 Artifact Root，再用 `shell:false` 的 argv 启动 Codex/Claude。Session、原始 JSONL Event、stderr、结构化 Output、Manifest 和各文件摘要都持久化。Claude CLI 同时返回普通 `result` 与 `structured_output` 时，Runtime 优先验证后者，避免把面向人的结果文本误判为结构化 JSON。完整 Manifest 会逐字段绑定 Attempt/Run/Evidence 并重算文件摘要后复用；仅有 Intent 时返回 `UNKNOWN_SIDE_EFFECT` 与领域统一 Reconcile Token，绝不自动启动第二个进程。`CONFIRMED` 必须提供同一 Run 的 Evidence，`NOT_APPLIED` 必须提供外部对账说明。
 
 上述 `events.jsonl` 是 CLI execution stream，不是完整 Provider Session Transcript。根据 [ADR-0007](../../decisions/adr/0007-use-sidecar-session-transcript-evidence.md)，新协议使用单向 Sidecar：`PromptEnvelopeV1 → 既有 Role Manifest → SessionTranscriptManifestV1 → SessionTranscriptImportReceiptV1`。旧 Manifest 和 `RoleRunEvidenceV2` 不增加字段、不改变 Digest，也不反向引用 Transcript。Prompt Envelope 精确绑定 rendered Prompt 与真实片段，默认只保留 Digest；`redacted` 与 `full` 必须显式冻结策略。
 
