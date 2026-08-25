@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 105
+graph_revision: 107
 updated_at: "2026-08-25"
 
 entrypoints:
@@ -839,6 +839,22 @@ documents:
     scope: core-v2-productization
     authority: delivery-plan
     read_when: [task-create, task-execution, task-close]
+
+  - id: milestone-1-agent-session-evidence
+    path: docs/delivery/milestones/m1-agent-session-evidence.md
+    type: delivery-plan
+    status: active
+    scope: agent-session-evidence
+    authority: delivery-plan
+    read_when: [task-create, task-execution, task-close]
+
+  - id: milestone-2-framework-release
+    path: docs/delivery/milestones/m2-framework-release.md
+    type: delivery-plan
+    status: approved
+    scope: framework-productization
+    authority: delivery-plan
+    read_when: [task-create, task-execution, task-close, release-planning]
 
   - id: bl-0032-core-v2-architecture
     path: docs/delivery/backlog/BL-0032.yaml
@@ -4263,6 +4279,78 @@ documents:
     authority: task-evidence
     read_when: [task-close, task-archive]
 
+  - id: finding-core-v2-role-session-uses-cli-stdout
+    path: docs/sources/findings/core-v2-role-session-uses-cli-stdout.md
+    type: finding
+    status: confirmed
+    scope: agent-session-evidence
+    authority: observed-defect
+    read_when: [finding-intake, task-create, task-execution]
+
+  - id: bl-0069-agent-session-evidence
+    path: docs/delivery/backlog/BL-0069.yaml
+    type: backlog-item
+    status: scheduled
+    scope: agent-session-evidence
+    authority: delivery-control
+    read_when: [backlog-triage, task-create, task-execution]
+
+  - id: adr-0007-session-transcript-sidecar
+    path: docs/knowledge/decisions/adr/0007-use-sidecar-session-transcript-evidence.md
+    type: adr
+    status: accepted
+    scope: agent-session-evidence
+    authority: accepted-decision
+    read_when: [architecture-change, task-runtime-change, task-execution]
+
+  - id: task-0058-manifest
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0058/task.yaml
+    type: task-manifest
+    status: archived
+    scope: agent-session-evidence
+    authority: task-artifact
+    read_when: [task-execution, task-close, task-archive]
+
+  - id: task-0058-spec
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0058/spec.md
+    type: task-spec
+    status: archived
+    scope: agent-session-evidence
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0058-design
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0058/design.md
+    type: task-design
+    status: archived
+    scope: agent-session-evidence
+    authority: task-artifact
+    read_when: [task-execution, docs-change]
+
+  - id: task-0058-plan
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0058/plan.md
+    type: task-plan
+    status: archived
+    scope: agent-session-evidence
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0058-verification
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0058/verification.md
+    type: verification
+    status: archived
+    scope: agent-session-evidence
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0058-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0058/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: agent-session-evidence
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
 relations:
   - from: root-readme
     to: docs-index
@@ -5395,6 +5483,30 @@ relations:
   - from: delivery-index
     to: core-v2-roadmap
     type: indexes
+
+  - from: delivery-index
+    to: milestone-1-agent-session-evidence
+    type: indexes
+
+  - from: milestone-1-agent-session-evidence
+    to: core-v2-roadmap
+    type: derived_from
+
+  - from: delivery-index
+    to: milestone-2-framework-release
+    type: indexes
+
+  - from: milestone-2-framework-release
+    to: external-project-framework-productization
+    type: derived_from
+
+  - from: milestone-2-framework-release
+    to: bl-0068-framework-productization
+    type: coordinates
+
+  - from: milestone-2-framework-release
+    to: milestone-1-agent-session-evidence
+    type: depends_on
 
   - from: core-v2-roadmap
     to: bl-0031-bootstrap-base-failure-convergence
@@ -7434,6 +7546,70 @@ relations:
 
   - from: task-0057-docs-impact
     to: task-0057-manifest
+    type: reports_on
+
+  - from: findings-index
+    to: finding-core-v2-role-session-uses-cli-stdout
+    type: indexes
+
+  - from: finding-core-v2-role-session-uses-cli-stdout
+    to: bl-0069-agent-session-evidence
+    type: creates_backlog
+
+  - from: backlog-index
+    to: bl-0069-agent-session-evidence
+    type: indexes
+
+  - from: milestone-1-agent-session-evidence
+    to: bl-0069-agent-session-evidence
+    type: coordinates
+
+  - from: milestone-1-agent-session-evidence
+    to: task-0058-manifest
+    type: schedules
+
+  - from: adr-index
+    to: adr-0007-session-transcript-sidecar
+    type: indexes
+
+  - from: adr-0007-session-transcript-sidecar
+    to: core-v2-agent-lifecycle
+    type: governs
+
+  - from: adr-0007-session-transcript-sidecar
+    to: finding-core-v2-role-session-uses-cli-stdout
+    type: resolves
+
+  - from: archived-tasks-index
+    to: task-0058-manifest
+    type: indexes
+
+  - from: task-0058-spec
+    to: task-0058-manifest
+    type: belongs_to
+
+  - from: task-0058-spec
+    to: bl-0069-agent-session-evidence
+    type: consumes
+
+  - from: task-0058-design
+    to: task-0058-spec
+    type: refines
+
+  - from: task-0058-design
+    to: adr-0007-session-transcript-sidecar
+    type: implements_slice_of
+
+  - from: task-0058-plan
+    to: task-0058-manifest
+    type: belongs_to
+
+  - from: task-0058-verification
+    to: task-0058-manifest
+    type: verifies
+
+  - from: task-0058-docs-impact
+    to: task-0058-manifest
     type: reports_on
 
 routing:

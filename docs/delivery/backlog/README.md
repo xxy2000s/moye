@@ -81,6 +81,7 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 | [BL-0066](./BL-0066.yaml) | Converted to Task | 修复 Task 详情 Tab 的 overflow 与焦点显示伪影 | TASK-0055（Seal Prepared） |
 | [BL-0067](./BL-0067.yaml) | Converted to Task | 引入分级开发执行模式 | TASK-0056（Seal Prepared） |
 | [BL-0068](./BL-0068.yaml) | Triaged | 将 Core v2 产品化为可被外部项目直接使用的开发框架 | — |
+| [BL-0069](./BL-0069.yaml) | Scheduled | 补齐 Core v2 完整 Agent Session 与 Prompt 证据链 | TASK-0058～0065（M1） |
 
 ## 本轮调度结果
 

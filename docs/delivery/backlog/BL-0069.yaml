@@ -1,0 +1,38 @@
+schema_version: 1
+id: "BL-0069"
+title: "补齐 Core v2 完整 Agent Session 与 Prompt 证据链"
+kind: "bug"
+status: "scheduled"
+priority: "high"
+
+source_refs:
+  - finding-core-v2-role-session-uses-cli-stdout
+affected_areas:
+  - role-runtime-v2
+  - prompt-envelope
+  - provider-session-adapters
+  - transcript-artifacts
+  - transcript-enrichment-workflow
+  - board-agent-events
+
+acceptance_outline:
+  - "新 Codex 与 Claude Role Run 在 Agent 启动前持久化版本化 Prompt Envelope"
+  - "Provider 原生 Session 被安全快照并规范化为 Moye 受管 Artifact"
+  - "Task、Workflow、Attempt、Revision、Generation、Run、Session、Provider 与 Digest 精确绑定"
+  - "Transcript capture 中断只恢复或对账 Capture Effect，不重复 Agent"
+  - "Board 只连接 Session Evidence Authority 和受管 Artifact，不扫描 Provider Home"
+  - "LIVE-006 七个 Role Session 通过 append-only Receipt 补全且原历史逐字节不变"
+  - "真实 Codex、Claude、恢复、安全错误、历史导入和浏览器产品验收全部通过"
+
+resolution:
+  task_refs:
+    - TASK-0058
+    - TASK-0059
+    - TASK-0060
+    - TASK-0061
+    - TASK-0062
+    - TASK-0063
+    - TASK-0064
+    - TASK-0065
+  duplicate_of:
+  reason: "由已批准的 M1-W01～W08 顺序交付；TASK-0058 先冻结公共证据合同"
