@@ -73,6 +73,9 @@ describe("board static server", () => {
     expect(styles).toContain(".domain-event-raw");
     expect(styles).toContain(".card-timing");
     expect(styles).toContain('.task-detail-tabs button[aria-selected="true"]');
+    expect(styles).toContain("overflow-x: auto; overflow-y: hidden");
+    expect(styles).toContain("bottom: 0; left: 0; height: 2px");
+    expect(styles).toContain(".task-detail-tabs button:focus-visible::after");
     expect(styles).toContain('.task-detail-tab-panels > [role="tabpanel"][hidden]');
     expect(styles).toContain(".execution-ledger-workspace");
     expect(styles).toContain('.ledger-role-tab[aria-selected="true"]');

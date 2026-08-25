@@ -1,0 +1,24 @@
+schema_version: 1
+id: TASK-0055
+title: 修复 Task 详情 Tab 的 overflow 与焦点显示伪影
+status: seal_prepared
+outcome: null
+backlog_refs:
+  - BL-0066
+spec_revision: 1
+workflow_id: sealed-task/TASK-0055
+execution_mode: sealed-result-commit
+base_commit: b7e77b8d153682d49ce1d498be9d77b11e313420
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-25-TASK-0055
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:d8ac34e39324b3a8ae1219ce5ad598fa6194f495d89e1f0dcb16e2c3c8658aa7
+  base_commit: b7e77b8d153682d49ce1d498be9d77b11e313420
+  archive_path: docs/delivery/tasks/archive/2026-08-25-TASK-0055

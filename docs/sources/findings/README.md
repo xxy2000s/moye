@@ -54,5 +54,6 @@ Finding 与 Incident 的边界：
 - [Core v2 审计画布压缩主流程且节点证据层级不清](./core-v2-audit-graph-compresses-path-and-buries-evidence.md)：真实 Happy Path 的 52 条合法边压缩主流程并放大 Recovery 空白，节点与 Domain Event 仍缺少稳定审计层级。
 - [Task Audit 画布仍重复展示状态且通用异常分区过大](./task-audit-canvas-remains-oversized-and-repetitive.md)：最新 Sealed Task 仍重复展示多层归档状态，并命中未压缩的通用黄色异常分区。
 - [角色与交付物 Tab 在简单任务和多角色任务中密度失衡](./task-role-deliverables-ledger-layout-inconsistent.md)：基础 Task 被呈现为空，多角色 Task 默认展开全部 Session 与原始 Artifact，导致信息层级和页面高度失控。
+- [Task 详情 Tab 出现纵向 scrollbar 与被裁剪的键盘焦点竖线](./task-detail-tabs-overflow-focus-artifacts.md)：选中线越过滚动容器边界使宽屏出现纵向 scrollbar，键盘 focus outline 被裁剪后只剩竖边。
 
 不要为了演示目录创建虚构 Bug。

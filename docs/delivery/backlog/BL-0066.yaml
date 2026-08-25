@@ -1,0 +1,14 @@
+schema_version: 1
+id: "BL-0066"
+title: "修复 Task 详情 Tab 的 overflow 与焦点显示伪影"
+kind: "bug"
+status: "converted_to_task"
+priority: "high"
+source_refs: [task-detail-tabs-overflow-focus-artifacts]
+affected_areas: [project-board, task-audit, accessibility, responsive-layout]
+acceptance_outline:
+  - "宽屏 Tab 导航不得出现纵向 scrollbar"
+  - "选中指示线必须完全位于导航容器内并保持水平"
+  - "键盘焦点必须清晰可见且不被裁成单独竖线"
+  - "窄屏仍可横向滚动并保持四个 Tab 可访问"
+resolution: { task_refs: [TASK-0055], duplicate_of: null, reason: "由 TASK-0055 以最小 CSS 修复并进行真实浏览器回归" }

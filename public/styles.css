@@ -130,13 +130,15 @@ dialog > form { position: sticky; top: 0; display: flex; justify-content: flex-e
 .task-detail-content { width: min(1600px, 100%); min-width: 0; min-height: 0; margin: 0 auto; padding: 16px 20px 72px; scroll-padding-top: 96px; }
 .task-detail-loading { display: grid; min-height: 60dvh; place-items: center; color: var(--muted); font: 11px/1.5 "SF Mono", monospace; }
 .task-detail-tabs-shell { min-width: 0; }
-.task-detail-tabs { margin-bottom: 14px; overflow-x: auto; border-bottom: 1px solid #d9dddf; scrollbar-width: thin; }
+.task-detail-tabs { margin-bottom: 14px; overflow-x: auto; overflow-y: hidden; border-bottom: 1px solid #d9dddf; scrollbar-width: thin; }
 .task-detail-tabs [role="tablist"] { display: flex; width: max-content; min-width: 100%; gap: 22px; padding: 0 2px; }
 .task-detail-tabs button { position: relative; flex: 0 0 auto; min-height: 40px; padding: 0 2px 11px; border: 0; color: #7a7f81; background: transparent; cursor: pointer; font-size: 11px; font-weight: 650; white-space: nowrap; }
-.task-detail-tabs button::after { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; background: transparent; content: ""; }
+.task-detail-tabs button::after { position: absolute; right: 0; bottom: 0; left: 0; height: 2px; background: transparent; content: ""; }
 .task-detail-tabs button:hover { color: #39464c; }
 .task-detail-tabs button[aria-selected="true"] { color: #244f63; }
 .task-detail-tabs button[aria-selected="true"]::after { background: #4c7188; }
+.task-detail-tabs button:focus-visible { outline: 0; color: #244f63; background: #f1f6f8; }
+.task-detail-tabs button:focus-visible::after { height: 3px; background: #4c7188; }
 .task-detail-tab-panels { min-width: 0; }
 .task-detail-tab-panels > [role="tabpanel"][hidden] { display: none; }
 .task-tab-surface { margin-top: 0; border: 1px solid var(--line); border-radius: 8px; background: white; }

@@ -78,6 +78,7 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 | [BL-0063](./BL-0063.yaml) | Converted to Task | 补齐 Board Task 时间并重构详情页局部 Tab | TASK-0052（Seal Prepared） |
 | [BL-0064](./BL-0064.yaml) | Converted to Task | 收敛 Task Audit 重复摘要与通用画布空白 | TASK-0053（Seal Prepared） |
 | [BL-0065](./BL-0065.yaml) | Converted to Task | 统一角色与交付物执行台账的自适应布局 | TASK-0054（Seal Prepared） |
+| [BL-0066](./BL-0066.yaml) | Converted to Task | 修复 Task 详情 Tab 的 overflow 与焦点显示伪影 | TASK-0055（Seal Prepared） |
 
 ## 本轮调度结果
 
