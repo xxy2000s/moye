@@ -21,7 +21,8 @@ afterEach(async () => {
 
 describe("board static server", () => {
   it("keeps the Core v2 audit UI focused on runtime facts without hiding the legal definition", async () => {
-    const [script, styles] = await Promise.all([
+    const [index, script, styles] = await Promise.all([
+      readFile(new URL("../../public/index.html", import.meta.url), "utf8"),
       readFile(new URL("../../public/app.js", import.meta.url), "utf8"),
       readFile(new URL("../../public/styles.css", import.meta.url), "utf8"),
     ]);
@@ -65,6 +66,16 @@ describe("board static server", () => {
     expect(script).toContain("Session 与 Attempt 技术标识");
     expect(script).toContain("完整 ID、Digest 与 producer 绑定按需展开");
     expect(script).not.toContain('aria-label="真实角色会话"><div class="trace-heading"');
+    expect(index).toContain('data-agent-session-context');
+    expect(index).toContain('Agent Session Evidence');
+    expect(script).toContain("openManagedSessionDialog");
+    expect(script).toContain('data-agent-session-url');
+    expect(script).toContain('data-agent-timeline-url');
+    expect(script).toContain('data-agent-stderr-url');
+    expect(script).toContain('if (!eventsUrl && !(sessionUrl && timelineUrl))');
+    expect(script).toContain('data-agent-session-filter');
+    expect(script).toContain('event.category === "ASSISTANT"');
+    expect(script).toContain('它不会被标记为完整 Agent 对话');
     expect(styles).toContain(".machine-graph-node.is-filter-muted");
     expect(styles).toContain(".machine-graph-tools");
     expect(styles).toContain(".machine-consistency-alert");
@@ -80,6 +91,9 @@ describe("board static server", () => {
     expect(styles).toContain(".execution-ledger-workspace");
     expect(styles).toContain('.ledger-role-tab[aria-selected="true"]');
     expect(styles).toContain(".system-execution-card");
+    expect(styles).toContain(".agent-session-metadata-grid");
+    expect(styles).toContain(".agent-event.category-prompt");
+    expect(styles).toContain(".agent-event.category-tool_call");
   });
 
   it("serves files inside publicRoot but rejects a symlink to an outside file", async () => {

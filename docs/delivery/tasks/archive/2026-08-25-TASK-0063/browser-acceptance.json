@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "taskId": "TASK-0063",
+  "executedAt": "2026-08-25T20:39:33.130Z",
+  "runtimeTaskId": "TASK-RCV-20260825190550-01-SESSION-CAPTURE",
+  "workflowRef": "restate://CoreV2Workflow/TASK-RCV-20260825190550-01-SESSION-CAPTURE",
+  "role": "ARCHITECT",
+  "attemptId": "TASK-RCV-20260825190550-01-SESSION-CAPTURE.ARCHITECT.r1.g0",
+  "runId": "sha256:1739586f83e83cc87a98efb081bdab7e569a7bcee8ef9d7b3bb8136fa91490e7",
+  "providerSessionId": "01a03a50-92a3-70e1-88ce-93619bab27e5",
+  "captureState": "COMPLETE",
+  "capturePolicy": "full",
+  "sourceRecordCount": 28,
+  "displayedEventCounts": {
+    "all": 29,
+    "promptOrUser": 1,
+    "assistant": 5,
+    "toolCall": 2,
+    "toolResult": 2,
+    "system": 18,
+    "errorOrStderr": 1
+  },
+  "manifestDigest": "sha256:4dec649e2383a0488c7762ecdddecdf6ccce380ef8aa4c43a65e38b6173ed0e4",
+  "receiptDigest": "sha256:aa00cb728ce0362c3c14fff795e8fdaafe5190d773721bdbb0d511364e1ebd6e",
+  "checks": {
+    "desktop1440x1000": "PASS",
+    "narrow390x844": "PASS",
+    "canonicalFilters": "PASS",
+    "rawMetadataWithoutDownload": "PASS",
+    "longContentDisclosure": "PASS",
+    "escapeClosesDialog": "PASS",
+    "focusReturnsToTrigger": "PASS",
+    "networkFailureState": "PASS",
+    "retryRestoresSameSession": "PASS",
+    "consoleErrorsWithoutInjectedFailure": 0
+  },
+  "screenshots": [
+    {
+      "path": "browser-desktop.png",
+      "digest": "sha256:5d355aec8510319edd484ac1bd5ebbb99e0c9171cf6ffc8d47f04166c5b14bc2"
+    },
+    {
+      "path": "browser-narrow.png",
+      "digest": "sha256:347e510577137bdaf3b21b770d96d2b4360139cebe4d0588e3a26e4b47faa612"
+    }
+  ],
+  "note": "The network abort is a browser-only diagnostic of the error/retry renderer; product evidence comes from the real Restate Task and managed Codex Session above."
+}

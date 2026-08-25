@@ -139,7 +139,14 @@ describe("live Role Session Capture Effect", () => {
       evidence,
     };
     const metadata = await readBoardSessionMetadataV1(resolver);
-    expect(metadata).toMatchObject({ state: "COMPLETE", provider: "CODEX", providerSessionId: sessionId });
+    expect(metadata).toMatchObject({
+      state: "COMPLETE",
+      provider: "CODEX",
+      providerSessionId: sessionId,
+      source: { kind: "CODEX_ROLLOUT_JSONL" },
+      relationships: { parentSessionIds: [], childSessionIds: [] },
+      capturedAt: "2026-08-25T18:00:07.000Z",
+    });
     expect(metadata.artifacts).toHaveProperty("raw");
     const firstPage = await readBoardSessionTimelinePageV1({ ...resolver, cursor: 0, limit: 2 });
     const secondPage = await readBoardSessionTimelinePageV1({ ...resolver, cursor: firstPage.nextCursor, limit: 200 });

@@ -564,6 +564,9 @@ function renderCoreV2ExecutionLedger(trace) {
     summary: role.summary,
     findingCount: role.findingCount,
     eventsUrl: role.eventsUrl,
+    sessionUrl: role.sessionUrl,
+    timelineUrl: role.timelineUrl,
+    stderrUrl: role.stderrUrl,
     deliverables: artifacts.filter(artifact => artifact.attemptId === role.attemptId),
   }));
   return renderExecutionLedger({
@@ -678,7 +681,7 @@ function renderLedgerActor(actor) {
     <dl class="ledger-actor-facts"><div><dt>Revision</dt><dd>R${actor.specRevision || "—"}</dd></div>${actor.generation === undefined ? "" : `<div><dt>Generation</dt><dd>G${actor.generation}</dd></div>`}<div><dt>Attempt</dt><dd>${actor.attempt ?? "—"}</dd></div><div><dt>Runner</dt><dd>${escapeHtml(runnerLabel(actor.runnerKind))}</dd></div>${actor.findingCount === undefined ? "" : `<div><dt>Finding</dt><dd>${actor.findingCount}</dd></div>`}</dl>
     <p class="ledger-actor-summary">${escapeHtml(actor.summary || "这个执行实例没有提供摘要。")}</p>
     <section class="ledger-direct-deliverables" aria-label="直接交付物"><div><strong>直接交付物</strong><span>${actor.deliverables.length} 项</span></div>${deliverables}</section>
-    <div class="ledger-actor-actions">${sessionEventsButton({ eventsUrl: actor.eventsUrl, kind: actor.kind, binding, runnerKind: actor.runnerKind, label: "查看 Agent 对话与工具输出" })}</div>
+    <div class="ledger-actor-actions">${sessionEventsButton({ eventsUrl: actor.eventsUrl, sessionUrl: actor.sessionUrl, timelineUrl: actor.timelineUrl, stderrUrl: actor.stderrUrl, kind: actor.kind, binding, runnerKind: actor.runnerKind, label: "查看 Agent 对话与工具输出" })}</div>
     <details class="ledger-technical-identity"><summary>Session 与 Attempt 技术标识</summary><dl><div><dt>Session</dt><dd><code>${escapeHtml(actor.sessionId || "无 Session ID")}</code></dd></div><div><dt>Attempt</dt><dd><code>${escapeHtml(actor.attemptId || "无 Attempt ID")}</code></dd></div><div><dt>Run</dt><dd><code>${escapeHtml(actor.id)}</code></dd></div></dl></details>`;
 }
 
@@ -1150,6 +1153,9 @@ function renderMachineAgentActivity(execution, trace) {
   const summary = role?.summary || review?.summary;
   const eventButton = sessionEventsButton({
     eventsUrl: session.eventsUrl,
+    sessionUrl: session.sessionUrl,
+    timelineUrl: session.timelineUrl,
+    stderrUrl: session.stderrUrl,
     kind,
     binding: `${execution.attemptId || execution.id} · ${execution.sessionId || "等待 Session"}`,
     runnerKind: execution.producer || session.runnerKind,
@@ -1440,9 +1446,9 @@ function executionColor(state) {
   return "blue";
 }
 
-function sessionEventsButton({ eventsUrl, kind, binding, runnerKind, label = "在弹窗查看对话" }) {
-  if (!eventsUrl) return '<span class="session-events-unavailable">Events 尚未就绪</span>';
-  return `<button type="button" class="session-events-trigger" data-agent-events-trigger data-agent-events-url="${escapeAttribute(eventsUrl)}" data-agent-events-kind="${escapeHtml(kind)}" data-agent-events-binding="${escapeHtml(`${binding} · ${runnerLabel(runnerKind)}`)}" data-agent-events-runner="${escapeHtml(runnerKind)}" aria-controls="agent-events-dialog" aria-haspopup="dialog" aria-expanded="false">${escapeHtml(label)}</button>`;
+function sessionEventsButton({ eventsUrl, sessionUrl, timelineUrl, stderrUrl, kind, binding, runnerKind, label = "在弹窗查看对话" }) {
+  if (!eventsUrl && !(sessionUrl && timelineUrl)) return '<span class="session-events-unavailable">Session Evidence 尚未就绪</span>';
+  return `<button type="button" class="session-events-trigger" data-agent-events-trigger${eventsUrl ? ` data-agent-events-url="${escapeAttribute(eventsUrl)}"` : ""}${sessionUrl ? ` data-agent-session-url="${escapeAttribute(sessionUrl)}"` : ""}${timelineUrl ? ` data-agent-timeline-url="${escapeAttribute(timelineUrl)}"` : ""}${stderrUrl ? ` data-agent-stderr-url="${escapeAttribute(stderrUrl)}"` : ""} data-agent-events-kind="${escapeHtml(kind)}" data-agent-events-binding="${escapeHtml(`${binding} · ${runnerLabel(runnerKind)}`)}" data-agent-events-runner="${escapeHtml(runnerKind)}" aria-controls="agent-events-dialog" aria-haspopup="dialog" aria-expanded="false">${escapeHtml(label)}</button>`;
 }
 
 function bindMachineAgentEventPreviews(root) {
@@ -1493,6 +1499,9 @@ function bindAgentEventsDialog(trace, root = elements.detail) {
     trigger.addEventListener("click", () => openAgentEventsDialog(trigger, {
       taskId: trace.task.taskId,
       sourceUrl: trigger.dataset.agentEventsUrl,
+      sessionUrl: trigger.dataset.agentSessionUrl,
+      timelineUrl: trigger.dataset.agentTimelineUrl,
+      stderrUrl: trigger.dataset.agentStderrUrl,
       kind: trigger.dataset.agentEventsKind || "AGENT",
       binding: trigger.dataset.agentEventsBinding || "等待 Session",
       runnerKind: trigger.dataset.agentEventsRunner || "",
@@ -1501,15 +1510,27 @@ function bindAgentEventsDialog(trace, root = elements.detail) {
 }
 
 function openAgentEventsDialog(trigger, source) {
+  if (source.sessionUrl && source.timelineUrl) {
+    openManagedSessionDialog(trigger, source);
+    return;
+  }
+  openExecutionEventsDialog(trigger, source);
+}
+
+function openExecutionEventsDialog(trigger, source) {
   if (!source.sourceUrl) return;
   closeAgentEventsDialog(false);
   const viewer = elements.eventsViewer;
   const dialog = elements.eventsDialog;
+  viewer.dataset.mode = "execution";
   viewer.dataset.sourceUrl = source.sourceUrl;
   viewer.dataset.state = "loading";
-  viewer.querySelector("[data-agent-events-title]").textContent = `${roleLabel(source.kind)} · 交互记录`;
+  viewer.querySelector("[data-agent-events-title]").textContent = `${roleLabel(source.kind)} · Execution Stream`;
   viewer.querySelector("[data-agent-events-task]").textContent = source.taskId;
   viewer.querySelector("[data-agent-events-binding]").textContent = source.binding;
+  const context = viewer.querySelector("[data-agent-session-context]");
+  context.hidden = true;
+  context.replaceChildren();
   viewer.querySelector("[data-agent-events-toolbar]").replaceChildren();
   viewer.querySelector("[data-agent-events-content]").innerHTML = '<div class="agent-events-loading" role="status">正在加载会话消息与工具事件…</div>';
   viewer.querySelector("[data-agent-events-footer]").replaceChildren();
@@ -1565,6 +1586,170 @@ function openAgentEventsDialog(trigger, source) {
   void loadPage(true);
 }
 
+function openManagedSessionDialog(trigger, source) {
+  closeAgentEventsDialog(false);
+  const viewer = elements.eventsViewer;
+  const dialog = elements.eventsDialog;
+  viewer.dataset.mode = "session";
+  viewer.dataset.state = "loading";
+  viewer.querySelector("[data-agent-events-title]").textContent = `${roleLabel(source.kind)} · Session Timeline`;
+  viewer.querySelector("[data-agent-events-task]").textContent = source.taskId;
+  viewer.querySelector("[data-agent-events-binding]").textContent = source.binding;
+  viewer.querySelector("[data-agent-events-toolbar]").replaceChildren();
+  viewer.querySelector("[data-agent-events-content]").innerHTML = '<div class="agent-events-loading" role="status">正在校验 Session Receipt 与 Transcript Manifest…</div>';
+  viewer.querySelector("[data-agent-events-footer]").replaceChildren();
+  const context = viewer.querySelector("[data-agent-session-context]");
+  context.hidden = false;
+  context.innerHTML = '<div class="agent-session-context-loading">正在读取受管 Session Metadata…</div>';
+  setAgentEventsStatus(viewer, "正在校验");
+  agentEventsReturnFocus = trigger;
+  updateAgentEventsTrigger(trigger, true, true);
+  const state = {
+    metadata: undefined,
+    cursor: 0,
+    transcriptTotal: 0,
+    events: [],
+    stderr: undefined,
+    stderrLoaded: false,
+    hasMore: false,
+    filter: "all",
+    loading: false,
+    stopped: false,
+    timer: 0,
+  };
+  stopAgentEventsFollower = () => {
+    state.stopped = true;
+    if (state.timer) window.clearTimeout(state.timer);
+  };
+  const scheduleMetadata = () => {
+    if (state.stopped || !dialog.open) return;
+    state.timer = window.setTimeout(() => void loadMetadata(), 1200);
+  };
+  const loadMetadata = async () => {
+    if (state.loading || state.stopped) return;
+    state.loading = true;
+    viewer.dataset.state = "loading";
+    try {
+      state.metadata = await fetchSessionJson(source.sessionUrl);
+      if (state.stopped) return;
+      renderManagedSessionContext(context, state.metadata);
+      if (["PENDING", "WAITING_RECONCILE"].includes(state.metadata.state)) {
+        viewer.dataset.state = "waiting";
+        setAgentEventsStatus(viewer, sessionStateLabel(state.metadata.state));
+        viewer.querySelector("[data-agent-events-content]").innerHTML = `<div class="agent-events-empty agent-session-waiting"><strong>${escapeHtml(sessionStateLabel(state.metadata.state))}</strong><span>Owning Workflow 尚未确认可读取的 Transcript；页面只刷新同一 Session Evidence，不会触发第二个 Agent Run。</span></div>`;
+        scheduleMetadata();
+        return;
+      }
+      if (!["COMPLETE", "PARTIAL"].includes(state.metadata.state)) {
+        renderManagedSessionUnavailable(viewer, trigger, source, state.metadata);
+        return;
+      }
+      if (!state.stderrLoaded) {
+        state.stderrLoaded = true;
+        try { state.stderr = await fetchSessionJson(source.stderrUrl); }
+        catch (error) { state.stderr = { error: sessionErrorMessage(error) }; }
+      }
+      await loadTimeline(true);
+    } catch (error) {
+      renderManagedSessionError(viewer, error, () => void loadMetadata(), trigger, source);
+    } finally {
+      state.loading = false;
+      if (!state.stopped) updateAgentEventsTrigger(trigger, true);
+    }
+  };
+  const loadTimeline = async drain => {
+    if (state.stopped) return;
+    try {
+      do {
+        const url = new URL(source.timelineUrl, window.location.origin);
+        url.searchParams.set("cursor", String(state.cursor));
+        url.searchParams.set("limit", "200");
+        const page = await fetchSessionJson(url.toString());
+        if (state.stopped) return;
+        const known = new Set(state.events.map(event => event.eventId));
+        state.events.push(...page.events.filter(event => !known.has(event.eventId)));
+        state.cursor = page.nextCursor;
+        state.transcriptTotal = page.total;
+        state.hasMore = page.hasMore;
+        if (!drain) break;
+      } while (state.hasMore);
+      viewer.dataset.state = state.metadata.state.toLowerCase();
+      renderManagedSessionState(viewer, state, loadTimeline);
+    } catch (error) {
+      renderManagedSessionError(viewer, error, () => void loadTimeline(false), trigger, source);
+    }
+  };
+  dialog.showModal();
+  void loadMetadata();
+}
+
+async function fetchSessionJson(input) {
+  const response = await fetch(new URL(input, window.location.origin), { cache: "no-store" });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const detail = body?.error;
+    const error = new Error(detail?.message || `读取失败（HTTP ${response.status}）`);
+    error.code = detail?.code || `HTTP_${response.status}`;
+    error.status = response.status;
+    throw error;
+  }
+  return body;
+}
+
+function renderManagedSessionContext(target, metadata) {
+  target.hidden = false;
+  const completeness = metadata.completeness || {};
+  const relationships = metadata.relationships || { parentSessionIds: [], childSessionIds: [] };
+  const raw = metadata.artifacts?.raw;
+  const stateTone = metadata.state === "COMPLETE" ? "green" : metadata.state === "PARTIAL" ? "yellow" : "red";
+  target.innerHTML = `<div class="agent-session-statusline">
+    <strong class="tag ${stateTone}">${escapeHtml(metadata.state)}</strong>
+    <span>${escapeHtml(metadata.provider || "Provider 未确认")}</span>
+    <code title="${escapeHtml(metadata.providerSessionId || "")}">${escapeHtml(shortSessionId(metadata.providerSessionId))}</code>
+    <span>${escapeHtml(capturePolicyLabel(metadata.capturePolicy))}</span>
+    ${metadata.state === "PARTIAL" ? '<em>该记录不完整，缺失项不会被页面补造。</em>' : ""}
+  </div>
+  <details class="agent-session-metadata">
+    <summary>来源、完整性与 Artifact Metadata</summary>
+    <div class="agent-session-metadata-grid">
+      <dl><div><dt>Provider Session</dt><dd><code>${escapeHtml(metadata.providerSessionId || "未确认")}</code></dd></div><div><dt>Source</dt><dd>${escapeHtml(metadata.source?.kind || "未发布")} · ${metadata.source?.recordCount ?? 0} records</dd></div><div><dt>Parser</dt><dd>${escapeHtml(metadata.parser ? `${metadata.parser.name}@${metadata.parser.version}` : "未发布")}</dd></div><div><dt>Captured</dt><dd>${metadata.capturedAt ? formatTime(metadata.capturedAt) : "—"}</dd></div></dl>
+      <dl><div><dt>Prompt</dt><dd>${escapeHtml(completeness.prompt || "UNAVAILABLE")}</dd></div><div><dt>Messages</dt><dd>${escapeHtml(completeness.messages || "UNAVAILABLE")}</dd></div><div><dt>Tools</dt><dd>${escapeHtml(completeness.tools || "UNAVAILABLE")}</dd></div><div><dt>Raw</dt><dd>${escapeHtml(completeness.raw || "UNAVAILABLE")}</dd></div></dl>
+      <dl><div><dt>Parent Session</dt><dd>${renderSessionIdList(relationships.parentSessionIds)}</dd></div><div><dt>Child Session</dt><dd>${renderSessionIdList(relationships.childSessionIds)}</dd></div>${raw ? `<div><dt>Raw Metadata</dt><dd><code>${escapeHtml(shortDigest(raw.digest))}</code> · ${raw.byteLength} B</dd></div>` : ""}<div><dt>Manifest</dt><dd><code>${escapeHtml(shortDigest(metadata.manifestDigest || metadata.receiptDigest || "—"))}</code></dd></div></dl>
+    </div>
+  </details>`;
+}
+
+function renderSessionIdList(values) {
+  return Array.isArray(values) && values.length ? values.map(value => `<code>${escapeHtml(value)}</code>`).join(" ") : "无";
+}
+
+function renderManagedSessionUnavailable(viewer, trigger, source, metadata) {
+  viewer.dataset.state = "unavailable";
+  setAgentEventsStatus(viewer, sessionStateLabel(metadata.state));
+  viewer.querySelector("[data-agent-events-toolbar]").replaceChildren();
+  viewer.querySelector("[data-agent-events-content]").innerHTML = `<div class="agent-events-error agent-session-unavailable" role="status"><strong>${escapeHtml(sessionStateLabel(metadata.state))}</strong><p>该 Role 没有可验证的完整 Transcript。可以查看独立 Execution Stream 诊断进程输出，但它不会被标记为完整 Agent 对话。</p><button type="button" data-agent-execution-fallback>查看 Execution Stream</button></div>`;
+  viewer.querySelector("[data-agent-events-footer]").replaceChildren();
+  viewer.querySelector("[data-agent-execution-fallback]")?.addEventListener("click", () => openExecutionEventsDialog(trigger, { ...source, sessionUrl: undefined, timelineUrl: undefined, stderrUrl: undefined }));
+}
+
+function renderManagedSessionError(viewer, error, retry, trigger, source) {
+  viewer.dataset.state = "error";
+  const message = sessionErrorMessage(error);
+  const context = viewer.querySelector("[data-agent-session-context]");
+  if (context?.querySelector(".agent-session-context-loading")) {
+    context.hidden = true;
+    context.replaceChildren();
+  }
+  setAgentEventsStatus(viewer, "读取失败");
+  viewer.querySelector("[data-agent-events-content]").innerHTML = `<div class="agent-events-error" role="alert"><strong>Session Evidence 暂时无法读取</strong><p>${escapeHtml(message)}</p><div class="agent-session-error-actions"><button type="button" data-agent-events-retry>重新加载</button><button type="button" data-agent-execution-fallback>查看 Execution Stream</button></div></div>`;
+  viewer.querySelector("[data-agent-events-retry]")?.addEventListener("click", retry, { once: true });
+  viewer.querySelector("[data-agent-execution-fallback]")?.addEventListener("click", () => openExecutionEventsDialog(trigger, { ...source, sessionUrl: undefined, timelineUrl: undefined, stderrUrl: undefined }));
+}
+
+function sessionErrorMessage(error) {
+  return `${error?.code ? `${error.code} · ` : ""}${error instanceof Error ? error.message : String(error)}`;
+}
+
 function closeAgentEventsDialog(restoreFocus = true) {
   shouldRestoreAgentEventsFocus = restoreFocus;
   stopAgentEventsFollower();
@@ -1576,6 +1761,142 @@ function closeAgentEventsDialog(restoreFocus = true) {
   if (returnFocus instanceof HTMLButtonElement) updateAgentEventsTrigger(returnFocus, false);
   agentEventsReturnFocus = undefined;
   shouldRestoreAgentEventsFocus = true;
+}
+
+function renderManagedSessionState(viewer, state, loadTimeline) {
+  const target = viewer.querySelector("[data-agent-events-content]");
+  const events = managedSessionEvents(state);
+  const visible = state.filter === "all" ? events : events.filter(event => managedEventFilter(event) === state.filter);
+  const status = state.metadata.state === "PARTIAL" ? "部分 Transcript" : "完整 Transcript";
+  setAgentEventsStatus(viewer, `已加载 ${state.events.length} / ${state.transcriptTotal} 条 · ${status}`);
+  const categories = [
+    ["all", "全部"],
+    ["human", "Prompt / 用户"],
+    ["assistant", "Assistant"],
+    ["tool_call", "工具调用"],
+    ["tool_result", "工具结果"],
+    ["system", "系统"],
+    ["error", "错误 / stderr"],
+  ];
+  const toolbar = viewer.querySelector("[data-agent-events-toolbar]");
+  toolbar.innerHTML = categories.map(([id, label]) => {
+    const count = id === "all" ? events.length : events.filter(event => managedEventFilter(event) === id).length;
+    return `<button type="button" data-agent-session-filter="${id}" class="${state.filter === id ? "active" : ""}" aria-pressed="${state.filter === id}">${label}<span>${count}</span></button>`;
+  }).join("");
+  toolbar.querySelectorAll("[data-agent-session-filter]").forEach(button => button.addEventListener("click", () => {
+    state.filter = button.dataset.agentSessionFilter;
+    renderManagedSessionState(viewer, state, loadTimeline);
+  }));
+  if (events.length === 0) {
+    target.innerHTML = '<div class="agent-events-empty">Manifest 已确认，但 canonical Timeline 与 stderr 都没有可展示内容。</div>';
+  } else if (visible.length === 0) {
+    target.innerHTML = '<div class="agent-events-empty">这个筛选条件没有事件；切换“全部”可查看完整受管 Timeline。</div>';
+  } else {
+    target.innerHTML = `<ol class="agent-events-list agent-session-list" aria-label="Agent Session canonical 时间线">${visible.map(renderManagedSessionEvent).join("")}</ol>`;
+  }
+  const footer = viewer.querySelector("[data-agent-events-footer]");
+  footer.innerHTML = state.hasMore
+    ? '<button type="button" data-agent-session-more>加载后续 200 条</button><button type="button" data-agent-session-all>加载完整 Timeline</button>'
+    : `<span>${state.metadata.state === "PARTIAL" ? "已到部分 Transcript 末尾；缺失项以 Manifest 为准" : "完整受管 Timeline 已加载"}${state.stderr?.error ? ` · stderr：${escapeHtml(state.stderr.error)}` : ""}</span>`;
+  footer.querySelector("[data-agent-session-more]")?.addEventListener("click", () => void loadTimeline(false));
+  footer.querySelector("[data-agent-session-all]")?.addEventListener("click", () => void loadTimeline(true));
+}
+
+function managedSessionEvents(state) {
+  const events = [...state.events];
+  if (state.stderr?.content) {
+    events.push({
+      schemaVersion: 1,
+      sequence: state.transcriptTotal + 1,
+      eventId: `stderr:${state.stderr.digest}`,
+      eventDigest: state.stderr.digest,
+      occurredAt: state.metadata?.capturedAt,
+      timestampState: state.metadata?.capturedAt ? "PROVIDED" : "MISSING",
+      category: "STDERR",
+      actor: "RUNTIME",
+      origin: "MOYE_RUNTIME",
+      source: { providerType: "role-stderr", recordSequence: 0, partIndex: 0, recordDigest: state.stderr.digest },
+      parts: [{ kind: "TEXT", content: { disposition: "FULL", storedValue: state.stderr.content, originalDigest: state.stderr.digest, contentDigest: state.stderr.digest, originalByteLength: state.stderr.byteLength, storedByteLength: state.stderr.byteLength } }],
+    });
+  }
+  return events;
+}
+
+function managedEventFilter(event) {
+  if (["PROMPT", "USER"].includes(event.category)) return "human";
+  if (event.category === "ASSISTANT") return "assistant";
+  if (event.category === "TOOL_CALL") return "tool_call";
+  if (event.category === "TOOL_RESULT") return "tool_result";
+  if (["ERROR", "STDERR"].includes(event.category)) return "error";
+  return "system";
+}
+
+function renderManagedSessionEvent(event) {
+  const speaker = managedEventSpeaker(event);
+  const sequence = String(event.sequence).padStart(2, "0");
+  const values = (event.parts || []).map(part => part?.content?.storedValue).filter(value => typeof value === "string" && value.length);
+  const joined = values.join("\n\n");
+  const unavailable = (event.parts || []).filter(part => !part?.content?.storedValue);
+  const preview = joined ? truncateManagedContent(joined, 1100) : unavailable.length
+    ? unavailable.map(part => `${contentDispositionLabel(part.content?.disposition)} · ${shortDigest(part.content?.originalDigest || part.content?.contentDigest || "—")}`).join("\n")
+    : "该 canonical Event 没有可展示正文。";
+  const tool = (event.parts || []).find(part => part.toolName || part.toolCallId);
+  const technical = {
+    eventId: event.eventId,
+    eventDigest: event.eventDigest,
+    source: event.source,
+    correlation: event.correlation,
+    parts: (event.parts || []).map(part => ({ kind: part.kind, toolName: part.toolName, toolCallId: part.toolCallId, disposition: part.content?.disposition, originalDigest: part.content?.originalDigest, storedDigest: part.content?.storedDigest })),
+  };
+  const categoryClass = event.category.toLowerCase();
+  return `<li class="agent-event category-${escapeHtml(categoryClass)} speaker-${escapeHtml(speaker.id)}">
+    <span class="agent-event-avatar" aria-hidden="true">${escapeHtml(speaker.mark)}</span>
+    <article class="agent-event-bubble">
+      <div class="agent-event-heading"><strong>${escapeHtml(speaker.label)}</strong><em>${escapeHtml(managedCategoryLabel(event.category))}</em><span>#${sequence}${event.occurredAt ? ` · ${formatTime(event.occurredAt)}` : " · 无时间"}</span></div>
+      <div class="agent-event-origin"><span>${escapeHtml(originLabel(event.origin))}</span>${tool?.toolName ? `<strong>${escapeHtml(tool.toolName)}</strong>` : ""}${tool?.toolCallId ? `<code>${escapeHtml(shortDigest(tool.toolCallId))}</code>` : ""}</div>
+      <p>${escapeHtml(preview)}</p>
+      ${joined.length > 1100 ? `<details class="agent-event-full-content"><summary>展开完整内容 · ${joined.length} 字符</summary><pre>${escapeHtml(joined)}</pre></details>` : ""}
+      <details><summary>Evidence 与内容处置</summary><pre>${escapeHtml(JSON.stringify(technical, null, 2))}</pre></details>
+    </article>
+  </li>`;
+}
+
+function managedEventSpeaker(event) {
+  if (["PROMPT", "USER"].includes(event.category) || event.actor === "USER") return { id: "user", mark: "U", label: event.category === "PROMPT" ? "Moye Prompt" : "用户" };
+  if (event.category === "ASSISTANT" || event.actor === "ASSISTANT") return { id: "agent", mark: "A", label: "Assistant" };
+  if (event.category === "TOOL_CALL") return { id: "tool", mark: "T", label: "工具调用" };
+  if (event.category === "TOOL_RESULT") return { id: "tool-result", mark: "R", label: "工具结果" };
+  if (["ERROR", "STDERR"].includes(event.category)) return { id: "error", mark: "!", label: event.category === "STDERR" ? "Runtime stderr" : "错误" };
+  return { id: "system", mark: "S", label: "系统" };
+}
+
+function managedCategoryLabel(category) {
+  return ({ PROMPT: "Prompt", USER: "用户输入", ASSISTANT: "Assistant", TOOL_CALL: "工具调用", TOOL_RESULT: "工具结果", SYSTEM: "系统", ERROR: "错误", STDERR: "stderr", OTHER: "其他" })[category] || category;
+}
+
+function originLabel(origin) {
+  return ({ MOYE_RENDERED_PROMPT: "Moye 渲染输入", PROVIDER_USER: "Provider 用户记录", PROVIDER_ASSISTANT: "Provider Assistant", PROVIDER_TOOL: "Provider 工具记录", PROVIDER_SYSTEM: "Provider 系统记录", MOYE_RUNTIME: "Moye Runtime", UNKNOWN: "来源未确认" })[origin] || origin || "来源未确认";
+}
+
+function contentDispositionLabel(value) {
+  return ({ FULL: "正文已保存", REDACTED: "正文已脱敏", DIGEST_ONLY: "仅保存摘要" })[value] || "正文不可用";
+}
+
+function truncateManagedContent(value, limit) {
+  return value.length > limit ? `${value.slice(0, limit - 1)}…` : value;
+}
+
+function capturePolicyLabel(value) {
+  return ({ full: "Full capture", redacted: "Redacted capture", digest_only: "Digest-only capture" })[value] || "Capture policy 未发布";
+}
+
+function sessionStateLabel(value) {
+  return ({ COMPLETE: "完整 Transcript", PARTIAL: "部分 Transcript", PENDING: "等待 Transcript Capture", WAITING_RECONCILE: "等待 Capture 对账", UNAVAILABLE: "Transcript 不可用", FAILED: "Transcript Capture 失败" })[value] || value;
+}
+
+function shortSessionId(value) {
+  if (!value) return "Session 未确认";
+  return value.length > 24 ? `${value.slice(0, 10)}…${value.slice(-8)}` : value;
 }
 
 function renderAgentEventsState(viewer, state, loadPage) {

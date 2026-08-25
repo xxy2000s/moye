@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 114
+graph_revision: 115
 updated_at: "2026-08-25"
 
 entrypoints:
@@ -4703,6 +4703,54 @@ documents:
     authority: task-evidence
     read_when: [task-close, task-archive]
 
+  - id: task-0063-manifest
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0063/task.yaml
+    type: task-manifest
+    status: archived
+    scope: agent-session-evidence
+    authority: task-artifact
+    read_when: [task-execution, task-close, task-archive]
+
+  - id: task-0063-spec
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0063/spec.md
+    type: task-spec
+    status: archived
+    scope: agent-session-evidence
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0063-design
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0063/design.md
+    type: task-design
+    status: archived
+    scope: agent-session-evidence
+    authority: task-artifact
+    read_when: [task-execution, docs-change]
+
+  - id: task-0063-plan
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0063/plan.md
+    type: task-plan
+    status: archived
+    scope: agent-session-evidence
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0063-verification
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0063/verification.md
+    type: verification
+    status: archived
+    scope: agent-session-evidence
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0063-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0063/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: agent-session-evidence
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
 relations:
   - from: root-readme
     to: docs-index
@@ -8234,6 +8282,42 @@ relations:
 
   - from: task-0062-docs-impact
     to: task-0062-manifest
+    type: reports_on
+
+  - from: milestone-1-agent-session-evidence
+    to: task-0063-manifest
+    type: schedules
+
+  - from: archived-tasks-index
+    to: task-0063-manifest
+    type: indexes
+
+  - from: task-0063-spec
+    to: bl-0069-agent-session-evidence
+    type: consumes
+
+  - from: task-0063-spec
+    to: task-0063-manifest
+    type: belongs_to
+
+  - from: task-0063-design
+    to: task-0063-spec
+    type: refines
+
+  - from: task-0063-design
+    to: task-runtime-kernel
+    type: implements_slice_of
+
+  - from: task-0063-plan
+    to: task-0063-manifest
+    type: belongs_to
+
+  - from: task-0063-verification
+    to: task-0063-manifest
+    type: verifies
+
+  - from: task-0063-docs-impact
+    to: task-0063-manifest
     type: reports_on
 
 routing:

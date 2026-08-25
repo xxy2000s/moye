@@ -19,7 +19,7 @@ npm run demo
 2. “已归档”显示闭环完成的 Coding Task；
 3. 点击 Task 卡片进入全屏 `/tasks/<task_id>` Task Audit Page；该地址可复制、刷新，浏览器 Back/Forward 可导航，右上角“返回项目”回到 `/`。默认不显示详情侧栏，先在完整画布中核对当前业务/Archive 状态和 `Projection = Event History` 一致性；
 4. 在状态机 Graph 中先选择“本次点亮”，核对粗实线实际路径、当前节点和实际边上的 `#sequence` 徽标；再切换“恢复/回滚”“异常/失败”“归档”，确认 Repair、Replan、Reconcile、失败和 Archive 合法边完整存在，且未发生边不会在总览铺出不可读的小字；
-5. 点击有真实 Session 的 `IMPLEMENT`、`SELF_REVIEW` 或 `REVIEW` 节点，先核对 Inspector 首屏的“Agent 活动”：角色、Runner、状态、Session、耗时、Verdict/Finding、真实分类计数和最近事件预览必须来自该节点绑定的 Run；点击“查看全部 Agent Events”，核对 Chatbot Dialog 中的对话、工具调用、工具结果、系统和错误筛选，并确认关闭后焦点回到原按钮；
+5. 点击有真实 Session 的角色或节点，再点击“查看 Agent 对话与工具输出”。Core v2 Dialog 必须先显示 Session `COMPLETE | PARTIAL | PENDING | WAITING_RECONCILE | UNAVAILABLE`、Provider、capture policy；筛选项必须来自 canonical Timeline 的 Prompt/User、Assistant、Tool Call、Tool Result、System 与独立 stderr。展开 metadata 核对来源、Parser、完整性、父子 Session 和 Digest；raw 只能显示 descriptor，不跳转下载。旧 Workflow 才显示明确标记的 Execution Stream 兼容视图。关闭或按 `Esc` 后焦点应回到原按钮；
 6. 再核对“完整 Domain Event”和“系统控制与结果”。时间线中的每条 Event 必须带 sequence/type/time；有状态转换时显示 `来源 → 目标`，没有转换时明确显示业务事实，原始 detail 只在该条目下方展开。Domain Event 不能混入 Agent 对话；VERIFY 应显示命令与退出码，WORKSPACE/MERGE 应显示 Git Effect，失败或 Reconcile 节点应显示恢复判断和动作。长 Run/Attempt/Evidence ID 应默认收进技术详情；
 7. 对无 Session 的 VERIFY 和本次未经过的节点，确认页面分别显示 `0 Agent` 或零 Event/执行实例，且不出现虚构 Agent、Session/Evidence。展开节点“合法转换”，逐条核对进入/离开的 `来源 → 目标`、转换类型与说明；History 中存在的边必须显示 `本次经过 · #sequence`，其他边必须显示 `合法但未发生`。桌面详情出现在画布右侧，窄屏详情从底部展开且不横向溢出；关闭按钮或 `Esc` 只收起节点详情并把焦点还给节点。展开“实际路径”可再次核对转换文本事实；使用放大、缩小或“适配”查看画布；
 7. 只有排障时再展开“高级诊断”。其中的链接会在 Restate 中按当前 `task_id` 精确过滤；
@@ -27,7 +27,7 @@ npm run demo
 
 Demo 使用隔离 Git Fixture 和确定性 Fake Agent，不修改 Moye 仓库。脚本只管理名为 `moye-restate-demo` 的容器，不删除其他容器；运行数据保存在 `.moye-runtime/demo`。
 
-使用真实本机 CLI 时运行 `npm run demo:codex` 或 `npm run demo:claude`。脚本仍只操作隔离 Fixture，并在 Workflow 发出请求后立即打印看板 URL；打开进行中的 Task，每条 Context、Implementation、Self Review、Review、Replan 与 Docs Gate Session 都可在同一个 Chatbot Dialog 中查看。页面显示 Role、Session、Attempt 与 Runner，支持全部/对话/工具调用/工具结果/系统/错误筛选并实时增长；完成后才开放摘要校验的原始 JSONL 导出。命令复用本机已有认证，不修改用户级 Settings。
+使用真实本机 CLI 时运行 `npm run demo:codex` 或 `npm run demo:claude`。脚本仍只操作隔离 Fixture，并在 Workflow 发出请求后立即打印看板 URL；旧 Coding Role 没有受管 Transcript 时只显示 Execution Stream 兼容视图。Core v2 已绑定 Session Evidence 的 Role 使用 canonical Timeline Dialog；页面不会提供原始 JSONL 下载，完整技术事实按 metadata/Evidence disclosure 展开。命令复用本机已有认证，不修改用户级 Settings。
 
 ### 带 Trace 的可选体验
 
@@ -35,7 +35,7 @@ Demo 使用隔离 Git Fixture 和确定性 Fake Agent，不修改 Moye 仓库。
 npm run demo:trace
 ```
 
-首次运行会拉取 Phoenix 镜像。命令启动可选 Phoenix Profile 后再启动同一个 Demo；终端会同时打印动态 Moye Board URL、动态 Restate URL 和固定的 Phoenix URL `http://127.0.0.1:6006`。在 Moye 已归档 Task 中复制 Trace ID，再打开 Phoenix 查询；点击任一 Session 的“在弹窗查看对话”后，事件在独立 Chatbot Dialog 中呈现，不会打开新页面或默认下载。每条消息可下钻原始 JSON；需要保存完整证据时再导出原始 JSONL。关闭后仍停留在同一 Task Detail，焦点返回原 Session 按钮。检查后停止前台 Demo，并运行：
+首次运行会拉取 Phoenix 镜像。命令启动可选 Phoenix Profile 后再启动同一个 Demo；终端会同时打印动态 Moye Board URL、动态 Restate URL 和固定的 Phoenix URL `http://127.0.0.1:6006`。在 Moye 已归档 Task 中复制 Trace ID，再打开 Phoenix 查询；Session 内容仍在 Moye Dialog 中呈现，不打开新页面或下载 raw。关闭后仍停留在同一 Task Detail，焦点返回原 Session 按钮。检查后停止前台 Demo，并运行：
 
 ```bash
 npm run trace:status
@@ -162,7 +162,7 @@ npm run cli -- core-v2-reconcile TASK-CORE-V2-EXAMPLE --token 'sha256:...' --act
 
 Board 首页可按 outcome、Workflow kind、项目任务/验收历史筛选，并通过“最新成功归档”直达最近的 `SUCCEEDED + ARCHIVED` Task。卡片上的等待对账、归档中、归档失败、失败终态和成功归档来自 Workflow Projection/TaskAuthority 的只读事实；筛选不会向 Runtime 发命令。升级前验收 Task 使用受限兼容标签，新的 acceptance harness 会在 Workflow 输入中声明显式 `acceptanceMetadata`。
 
-Board 访问 `/tasks/<task_id>` 可查看完整状态定义、实际点亮路径、Artifact、确定性 Observer 和每个 Role Session。成功 Task 中没有实际 Event 的 Repair/Replan/Reconcile/Failure/Archive Failed 节点显示“合法但本次未发生”；只有 History 经过的异常节点会点亮。Core v2 Session 查询分四类：`/session` 是状态/完整性/raw metadata，`/timeline` 是 Provider Adapter 生成的 canonical 对话时间线，`/events` 是 CLI execution stream，`/stderr` 是独立错误输出。Board 只读取 Projection 绑定且位于 `MOYE_ARTIFACT_ROOTS` 的受管 Artifact；不把任意路径或 Provider Home 传给这些端点。
+Board 访问 `/tasks/<task_id>` 可查看完整状态定义、实际点亮路径、Artifact、确定性 Observer 和每个 Role Session。成功 Task 中没有实际 Event 的 Repair/Replan/Reconcile/Failure/Archive Failed 节点显示“合法但本次未发生”；只有 History 经过的异常节点会点亮。Core v2 Session 查询分四类：`/session` 是状态/完整性/raw metadata，`/timeline` 是 Provider Adapter 生成的 canonical 对话时间线，`/events` 是 CLI execution stream，`/stderr` 是独立错误输出。Dialog 对 Core v2 默认读取 `/session → /timeline + /stderr`；只有没有 Session URL 的旧 Workflow 或用户主动选择诊断回退时才读取 `/events`。`PENDING/WAITING_RECONCILE` 只轮询同一 Evidence；网络错误保留重试入口，不触发 Agent。Board 只读取 Projection 绑定且位于 `MOYE_ARTIFACT_ROOTS` 的受管 Artifact；不把任意路径或 Provider Home 传给这些端点。
 
 Core v2 真实产品验收使用持久化验收根目录，不删除失败历史，也不重复 Workflow key。Service 的 repository/artifact allowlist 必须覆盖该根目录；只有专用故障验收 Service 可启用窄化的 Prompt 条件：
 

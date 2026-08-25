@@ -44,6 +44,13 @@ export interface BoardSessionMetadataV1 {
   readonly capturePolicy?: "full" | "redacted" | "digest_only";
   readonly completeness?: SessionTranscriptManifestV1["completeness"];
   readonly metrics?: SessionTranscriptManifestV1["metrics"];
+  readonly source?: SessionTranscriptManifestV1["source"];
+  readonly parser?: SessionTranscriptManifestV1["parser"];
+  readonly relationships?: {
+    readonly parentSessionIds: readonly string[];
+    readonly childSessionIds: readonly string[];
+  };
+  readonly capturedAt?: string;
   readonly errors: readonly SessionTranscriptManifestV1["errors"][number][];
   readonly artifacts: {
     readonly promptEnvelope?: ArtifactDescriptorV1;
@@ -120,6 +127,13 @@ export async function readBoardSessionMetadataV1(input: ResolverInput): Promise<
     state: managed.manifest.captureState,
     completeness: managed.manifest.completeness,
     metrics: managed.manifest.metrics,
+    source: managed.manifest.source,
+    parser: managed.manifest.parser,
+    relationships: {
+      parentSessionIds: managed.manifest.parentSessionIds,
+      childSessionIds: managed.manifest.childSessionIds,
+    },
+    capturedAt: managed.manifest.capturedAt,
     errors: managed.manifest.errors,
     artifacts: {
       ...base.artifacts,

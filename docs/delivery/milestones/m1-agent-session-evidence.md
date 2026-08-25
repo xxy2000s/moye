@@ -56,8 +56,8 @@ Task Input
 | `M1-W03 / TASK-0060` Claude Native Session Adapter | W01 | 已完成并 Seal；按 `sessionId` 定位、快照并解析 Claude Session；规范 text/thinking/tool_use/tool_result、UUID/parentUUID、Subagent 和模型元数据；真实验收发现并修复 Claude `structured_output` 误解析 | 最终 Parser 重采集真实 Session `a8c3effb-385b-4529-9400-a8b9753bac0d`：1 Prompt / 4 Assistant / 3 Tool Call / 3 Tool Result；Runtime `CLOSED + ARCHIVED + SUCCEEDED`，原失败证据保留 |
 | `M1-W04 / TASK-0061` Core v2 Runtime Integration | W02、W03 | 已完成实现、真实产品验收与 Seal；Agent 前持久化 Prompt Envelope 和 PREPARED/RUNNING Locator，Agent 后用独立 durable Capture 写 raw/normalized/Manifest/Receipt；Manifest 丢回执只恢复 Capture | `TASK-RCV-20260825190550-01-SESSION-CAPTURE` 七个真实 Role/Session/Receipt 全部 COMPLETE，最终成功归档；Result Commit `87f8d28604d4e572e23497093143fa8238edc85a` |
 | `M1-W04R / TASK-0061R1` Replay/Recovery Hotfix | W04 | 将 replay-sensitive 输入校验固化到既有 `intake-time` durable Run；窄化恢复真实 index-1 HandlerReturn Journal mismatch | 首次失败 Task 保留 5 个 Role/Session，无 Test/Merge 重跑，经 append-only successor 得到 `CLOSED + ARCHIVED + FAILED_TERMINAL` |
-| `M1-W05 / TASK-0062` Unified Timeline and Board API | W04 | Runtime 与 Board 共用唯一 Normalizer；API 分离 execution stream、normalized transcript、raw metadata 和 stderr；支持 cursor、刷新和精确错误 | 不再由三套分类器产生漂移；Board 不扫描用户 Home；稳定错误与等待状态可区分 |
-| `M1-W06 / TASK-0063` Agent Session Chatbot UX | W05 | 重构现有弹窗；展示 Prompt/User、Assistant、Tool Call、Tool Result、System、Error/stderr；显示来源、采集策略、父子 Session 和完整性 | Events 仍在弹窗内；桌面和窄屏可用；筛选、自动刷新、键盘操作和长内容折叠通过真实浏览器验收 |
+| `M1-W05 / TASK-0062` Unified Timeline and Board API | W04 | 已完成并 Seal；Runtime 与 Board 共用唯一 Normalizer，API 分离 execution stream、normalized transcript、raw metadata 和 stderr | 真实 W04 Task 的 7 个 Role、247 条 canonical Event 经 API 产品验收；Runtime `CLOSED + ARCHIVED + SUCCEEDED` |
+| `M1-W06 / TASK-0063` Agent Session Chatbot UX | W05 | 已完成实现与真实浏览器验收；Core v2 弹窗消费 canonical Timeline，展示 Prompt/User、Assistant、Tool Call/Result、System、Error/stderr、来源、策略、父子 Session 和完整性；旧 Workflow 保持明确兼容视图 | 真实 Architect Session 28 canonical Event + 1 stderr；1440×1000 与 390×844、筛选、长内容、Raw metadata、Escape/焦点、网络失败→重试均通过 |
 | `M1-W07 / TASK-0064` Append-only Historical Enrichment | W02、W03、W05 | 新增不推进 Task 主状态的 Transcript Enrichment Workflow/Effect；按旧 Session ID 追加 Import Receipt；补全 LIVE-006 及仍有源文件的历史 Session | 不改旧 Manifest、Projection、Domain Event 或 Outcome；重复导入幂等、冲突拒绝；LIVE-006 7/7 有真实 Import Receipt；缺源明确记录而不伪造 |
 | `M1-W08 / TASK-0065` Product Acceptance, Docs and Deployment | W04～W07 | 增加真实 Codex/Claude、故障恢复、历史导入和 Board 端到端入口；更新 README、Architecture、CodeMap、Runbook、Finding/Backlog 和限制声明；部署验收服务 | `npm run check`、`npm run test:e2e` 和 Session 产品验收全通过；最终服务在 `127.0.0.1:3000`；每个场景有 Task/Run/Session/Digest/页面链接 |
 
@@ -144,5 +144,5 @@ Fake/Mock 只用于低层 Parser 边界，不得作为 Codex/Claude 产品验收
 
 - 当前结论：项目 Owner 于 2026-08-25 批准 Revision 1，并授权无中途交互的连续执行。
 - 冻结映射：TASK-0058～TASK-0065 分别对应 W01～W08；只允许逐个创建 Active Task。
-- 当前执行：TASK-0062（M1-W05 Unified Timeline and Board API）；W04 与 TASK-0061R1 已封存。
+- 当前执行：TASK-0063（M1-W06 Agent Session Chatbot UX）已完成实现与验证，等待唯一 Result Commit、Seal 与 Archive；W05 及之前工作包已封存。
 - W01 收敛：`TASK-0058` Result Evidence Commit `339ad003ce52c000ea848a0e13976302d297dc0a`；防复发 Task `TASK-0058R1` Result Commit `a92ce94859a346fbf686fe360c81e2ac11a02fa5`；两者 Runtime 均已归档。
