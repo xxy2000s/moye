@@ -58,6 +58,6 @@ Finding 与 Incident 的边界：
 - [角色与交付物 Tab 在简单任务和多角色任务中密度失衡](./task-role-deliverables-ledger-layout-inconsistent.md)：基础 Task 被呈现为空，多角色 Task 默认展开全部 Session 与原始 Artifact，导致信息层级和页面高度失控。
 - [Task 详情 Tab 出现纵向 scrollbar 与被裁剪的键盘焦点竖线](./task-detail-tabs-overflow-focus-artifacts.md)：选中线越过滚动容器边界使宽屏出现纵向 scrollbar，键盘 focus outline 被裁剪后只剩竖边。
 - [Codex 当前 item_completed 对话记录被误归为 System](./codex-current-item-completed-dialogue-misclassified.md)：真实 Core v2 Session Capture 暴露当前 Codex `item_completed`/`output_text` 格式兼容缺陷，由 TASK-0061 修复并保留失败 Workflow。
-- [Core v2 重放读取部署开关会产生不可恢复的 Journal mismatch](./core-v2-replay-config-mismatch-not-recoverable.md)：TASK-0061 历史失败恢复发现 pre-dispatch replay 分叉与 recovery 边界缺口。
+- [Core v2 重放读取部署开关会产生不可恢复的 Journal mismatch](./core-v2-replay-config-mismatch-not-recoverable.md)：TASK-0061R1 将校验固化进既有 durable command，并通过 append-only successor 完成真实失败归档。
 
 不要为了演示目录创建虚构 Bug。

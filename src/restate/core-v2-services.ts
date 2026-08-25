@@ -121,17 +121,15 @@ export const coreV2Workflow = restate.workflow({
   name: "CoreV2Workflow", options: { workflowRetention: { days: 30 } }, handlers: {
     run: async (ctx: restate.WorkflowContext<CoreV2WorkflowState>, input: CoreV2WorkflowInput): Promise<CoreV2WorkflowProjection> => {
       if (ctx.key !== input.taskId) throw new restate.TerminalError("Workflow key must equal Task ID", { errorCode: 409 });
-      try {
-        const enabled = process.env["MOYE_ACCEPTANCE_FAULT_INJECTION"] === "enabled";
-        validateCoreV2AcceptanceControl(input.acceptanceControl, enabled);
-        validateCoreV2AcceptanceMetadata(input.acceptanceMetadata, enabled);
-        validateCoreV2RecoveryControl(input.recoveryControl, input.mergeFault, input.artifactRoot, enabled);
-        validateCoreV2ObserverKnowledge(input.observerKnowledge);
-        validateCoreV2SessionEvidence(input.sessionEvidence, input.runnerKind);
-      }
-      catch (error) { throw new restate.TerminalError(error instanceof Error ? error.message : String(error), { errorCode: 403 }); }
       await ctx.objectClient(taskAuthority, input.taskId).claim({ owner: "CORE_V2_WORKFLOW", specRevision: 1 });
-      const startedAt = await durableNow(ctx, "intake-time");
+      const startedAt = await ctx.run("intake-time", () => {
+        try {
+          validateCoreV2Input(input, process.env["MOYE_ACCEPTANCE_FAULT_INJECTION"] === "enabled");
+          return Promise.resolve(new Date().toISOString());
+        } catch (error) {
+          throw new restate.TerminalError(error instanceof Error ? error.message : String(error), { errorCode: 403 });
+        }
+      });
       let projection: CoreV2WorkflowProjection = { schemaVersion: 1, taskId: input.taskId, projectId: input.projectId, title: input.title,
         state: "EXECUTING", currentStep: "ARCHITECT_REQUIRED", lifecycle: createCoreV2Lifecycle({ taskId: input.taskId, specRevision: 1, subjectCommit: input.baseCommit, at: startedAt }),
         attempts: [], roleRuns: [], artifactRoot: input.artifactRoot,
@@ -879,6 +877,13 @@ export function validateCoreV2SessionEvidence(input: CoreV2WorkflowInput["sessio
   if (input.maxSourceBytes !== undefined && (!Number.isSafeInteger(input.maxSourceBytes) || input.maxSourceBytes < 1 || input.maxSourceBytes > 1024 * 1024 * 1024)) {
     throw new Error("Core v2 Session Evidence maxSourceBytes must be between 1 and 1073741824");
   }
+}
+export function validateCoreV2Input(input: CoreV2WorkflowInput, acceptanceEnabled: boolean): void {
+  validateCoreV2AcceptanceControl(input.acceptanceControl, acceptanceEnabled);
+  validateCoreV2AcceptanceMetadata(input.acceptanceMetadata, acceptanceEnabled);
+  validateCoreV2RecoveryControl(input.recoveryControl, input.mergeFault, input.artifactRoot, acceptanceEnabled);
+  validateCoreV2ObserverKnowledge(input.observerKnowledge);
+  validateCoreV2SessionEvidence(input.sessionEvidence, input.runnerKind);
 }
 export function coreV2AcceptanceInstruction(
   control: CoreV2AcceptanceControl | undefined,

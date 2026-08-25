@@ -7,7 +7,8 @@ export interface CoreV2SourceInvocationFact {
   readonly retryCount: number | null;
   readonly lastFailure: string | null;
   readonly lastFailureDigest: string | null;
-  readonly commandType: string;
+  readonly recoveryKind: "DURABLE_RUN" | "PRE_DISPATCH_HANDLER_RETURN_MISMATCH";
+  readonly commandType: "Run" | "HandlerReturn";
   readonly commandName: string;
   readonly commandIndex: number;
   readonly factDigest: string;
@@ -41,17 +42,23 @@ export async function inspectCoreV2SourceInvocation(
   const journalRows = await query(adminUrlInput,
     `SELECT index, entry_type, name FROM sys_journal WHERE id = '${invocationId}' AND entry_type LIKE 'Command:%' ORDER BY index DESC LIMIT 1`);
   const journal = journalRows[0];
-  const commandName = stringOrNull(invocation["last_failure_related_command_name"])
-    ?? stringOrNull(journal?.["name"]);
-  const commandType = stringOrNull(invocation["last_failure_related_command_type"])
-    ?? stringOrNull(journal?.["entry_type"])?.replace(/^Command:\s*/, "")
-    ?? "";
-  const commandIndex = numberOrNull(invocation["last_failure_related_command_index"])
-    ?? numberOrNull(journal?.["index"]);
-  if (commandType !== "Run" || commandName === null || commandIndex === null) {
+  const lastFailure = stringOrNull(invocation["last_failure"]);
+  const relatedIndex = numberOrNull(invocation["last_failure_related_command_index"]);
+  const preDispatchMismatch = relatedIndex === 1 && lastFailure !== null
+    && lastFailure.includes("[570 Journal mismatch]")
+    && lastFailure.includes("'handler return' (index '1')")
+    && lastFailure.includes("'call'");
+  const recoveryKind = preDispatchMismatch ? "PRE_DISPATCH_HANDLER_RETURN_MISMATCH" as const : "DURABLE_RUN" as const;
+  const commandName = preDispatchMismatch ? "pre-dispatch-journal-mismatch"
+    : stringOrNull(invocation["last_failure_related_command_name"]) ?? stringOrNull(journal?.["name"]);
+  const commandType = preDispatchMismatch ? "HandlerReturn" as const
+    : stringOrNull(invocation["last_failure_related_command_type"])
+      ?? stringOrNull(journal?.["entry_type"])?.replace(/^Command:\s*/, "")
+      ?? "";
+  const commandIndex = relatedIndex ?? numberOrNull(journal?.["index"]);
+  if ((commandType !== "Run" && !preDispatchMismatch) || commandName === null || commandIndex === null) {
     throw new Error(`Core v2 source Invocation ${invocationId} is not paused on a durable Run command`);
   }
-  const lastFailure = stringOrNull(invocation["last_failure"]);
   const core = {
     invocationId,
     target,
@@ -59,7 +66,8 @@ export async function inspectCoreV2SourceInvocation(
     retryCount: numberOrNull(invocation["retry_count"]),
     lastFailure,
     lastFailureDigest: lastFailure === null ? null : sha(lastFailure),
-    commandType,
+    recoveryKind,
+    commandType: commandType as "Run" | "HandlerReturn",
     commandName,
     commandIndex,
   };

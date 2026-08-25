@@ -1,7 +1,7 @@
 # Core v2 重放读取部署开关会产生不可恢复的 Journal mismatch
 
 > 文档类型：Finding
-> 状态：Open
+> 状态：Resolved
 > 发现日期：2026-08-25
 > 发现 Task：TASK-0061
 
@@ -10,3 +10,5 @@
 原 owning Invocation `inv_1360ZAEX4nJl3xsrzeiOS0IlUKug0LTSaN` 已用 Restate 正式 Pause 保留。Projection 仍是 `EXECUTING / TEST_EXECUTION_REQUIRED`，此前五个 Role、Attempt、Session 和 Artifact 均未删除或覆盖。现有 append-only Failure Recovery Inspector 只接受暂停在 durable `Run` command 的 Invocation，不能为暂停在 `HandlerReturn` mismatch 的源 Workflow 形成合法 Failure Closure/Archive。
 
 这证明验收授权开关不能在 Workflow replay 的非持久化分支中直接改变代码路径；同时，已经发生的 pre-dispatch Journal mismatch 需要可验证的 append-only recovery successor，不能靠取消、重提 key 或修改 Projection 收敛。
+
+TASK-0061R1 把校验并入既有首个 `intake-time` durable Run，在不改变已开始 Workflow Journal 命令序列的前提下冻结校验结果；同时只为精确的 index-1 HandlerReturn 570 mismatch 增加 Recovery Fact。原 Task 已经由 `CoreV2FailureRecoveryWorkflow` 形成失败 Artifact、`none` Knowledge Disposition、Failure Closure 与 Archive Receipt，最终为 `CLOSED + ARCHIVED + FAILED_TERMINAL`。

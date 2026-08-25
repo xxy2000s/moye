@@ -1,0 +1,71 @@
+schema_version: 1
+task_id: TASK-0061R1
+graph_revision: 113
+intents: [recover-core-v2-pre-dispatch-journal-mismatch]
+changed_paths:
+  - src/restate/core-v2-services.ts
+  - src/restate/invocation-inspector.ts
+  - tests/unit/core-v2-workflow.test.ts
+  - tests/unit/core-v2-invocation-inspector.test.ts
+  - docs/sources/findings/core-v2-replay-config-mismatch-not-recoverable.md
+  - docs/sources/findings/README.md
+  - docs/delivery/backlog/BL-0073.yaml
+  - docs/delivery/backlog/README.md
+  - docs/knowledge/current/architecture/task-runtime-kernel.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - docs/delivery/milestones/m1-agent-session-evidence.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0061R1/task.yaml
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0061R1/spec.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0061R1/design.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0061R1/plan.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0061R1/verification.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0061R1/docs-impact.yaml
+  - docs/delivery/tasks/archive/README.md
+  - docs/graph.yaml
+docs:
+  read: [agent-contract, docs-index, codemap, document-control-plane, task-runtime-kernel, restate-poc-architecture, adr-0001-restate-poc, durable-runtime-pitfalls, finding-core-v2-replay-config-mismatch-not-recoverable, bl-0073-core-v2-replay-config-recovery, tasks-index, findings-index, backlog-index, local-restate-poc-runbook, milestone-1-agent-session-evidence, sources-index, architecture-index, runbooks-index, archived-tasks-index, task-0061r1-manifest, task-0061r1-spec, task-0061r1-design, task-0061r1-plan, task-0061r1-verification, task-0061r1-docs-impact, moye-task-control-skill, adr-0002-doc-lifecycle-roles, task-0002-manifest, task-0056-manifest]
+  reviewed:
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "既有未知副作用先对账、旧执行者 fencing 与 Journal 不可改写原则已覆盖本故障。" }
+    architecture-overview: { outcome: unchanged, reason: "不改变 Task/Workflow/Authority 总体所有权。" }
+    durable-workflow-research: { outcome: unchanged, reason: "不改变 durable runtime 选型研究。" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "继续使用唯一 Result Commit 与两阶段 Seal。" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "不改变 Worktree 收敛设计。" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "Failure Recovery 不改变 5+1 Agent 模型。" }
+    task-0013-manifest: { outcome: unchanged, reason: "不修改确定性控制内核历史。" }
+    task-0014-manifest: { outcome: unchanged, reason: "不修改旧 Role Attempt 历史。" }
+    task-0015-manifest: { outcome: unchanged, reason: "不修改 Finding 生命周期历史。" }
+    task-0016-manifest: { outcome: unchanged, reason: "不修改 Retry/Repair/Replan 历史。" }
+    task-0017-manifest: { outcome: unchanged, reason: "不修改 Knowledge/Docs Impact 历史。" }
+    task-0018-manifest: { outcome: unchanged, reason: "不修改 Closure 历史。" }
+    task-0019-manifest: { outcome: unchanged, reason: "不修改真实 Agent 产品历史。" }
+    task-0020-manifest: { outcome: unchanged, reason: "不修改状态机画布历史。" }
+    task-0021-manifest: { outcome: unchanged, reason: "不修改 Core 单任务闭环历史。" }
+    task-0028-manifest: { outcome: unchanged, reason: "不修改旧 Board 持久化历史。" }
+    task-0029-manifest: { outcome: unchanged, reason: "不修改 Bootstrap 恢复历史。" }
+    task-0003-manifest: { outcome: unchanged, reason: "不修改基础 Task 协议。" }
+    task-0004-manifest: { outcome: unchanged, reason: "不修改 Git Effect。" }
+    task-0005-manifest: { outcome: unchanged, reason: "不修改旧 Agent Runner。" }
+    task-0006-manifest: { outcome: unchanged, reason: "只修正 Core v2 Workflow replay boundary。" }
+    task-0007-manifest: { outcome: unchanged, reason: "不修改旧 Trace 历史。" }
+    task-0008-manifest: { outcome: unchanged, reason: "不修改旧 Session Viewer 历史。" }
+    task-0009-manifest: { outcome: unchanged, reason: "不修改旧 Agent 产品验收。" }
+    task-0001-manifest: { outcome: unchanged, reason: "不修改首个生命周期归档事实。" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "无新增依赖或语言变化。" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "不改变 OTel 诊断边界。" }
+    task-0049r1-manifest: { outcome: unchanged, reason: "继续使用 Seal preflight 与 append-only recovery。" }
+    document-control-plane: { outcome: unchanged, reason: "Finding、Backlog、Task 与 Seal 遵循现有控制面。" }
+    docs-index: { outcome: unchanged, reason: "不新增文档类别。" }
+    codemap: { outcome: updated, reason: "登记 durable validation 与 HandlerReturn mismatch Inspector/Recovery 边界。" }
+    task-runtime-kernel: { outcome: updated, reason: "记录既有 intake-time Journal 兼容与窄化 recovery fact。" }
+    restate-poc-architecture: { outcome: unchanged, reason: "不改变 Restate PoC 选型或 Workflow 所有权。" }
+    local-restate-poc-runbook: { outcome: updated, reason: "补充 index-1 570 mismatch 的精确诊断与恢复步骤。" }
+    findings-index: { outcome: updated, reason: "将真实 replay mismatch Finding 标为已由 TASK-0061R1 收敛。" }
+    backlog-index: { outcome: updated, reason: "BL-0073 转为 TASK-0061R1。" }
+    tasks-index: { outcome: unchanged, reason: "Task 索引结构不变。" }
+    archived-tasks-index: { outcome: updated, reason: "Seal Stage 登记 TASK-0061R1。" }
+    milestone-1-agent-session-evidence: { outcome: updated, reason: "登记 W04 Seal 和独立真实 recovery hotfix。" }
+    moye-task-control-skill: { outcome: unchanged, reason: "继续执行 Full、Context Route、真实恢复、唯一 Result Commit 和两阶段 Seal。" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "Finding、Backlog 和 recovery Task 遵循既有 Source→Backlog→Task→Archive 生命周期。" }
+    task-0002-manifest: { outcome: unchanged, reason: "不修改文档控制面自举历史。" }
+    task-0056-manifest: { outcome: unchanged, reason: "本 Core replay/recovery 修复继续使用 Full，不改变执行模式协议。" }

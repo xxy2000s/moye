@@ -2,7 +2,7 @@ schema_version: 1
 id: BL-0073
 title: "消除 Core v2 重放配置分叉并恢复 pre-dispatch Journal mismatch"
 kind: bug
-status: ready
+status: converted_to_task
 priority: critical
 source_refs:
   - finding-core-v2-replay-config-mismatch-not-recoverable
@@ -16,6 +16,6 @@ acceptance_outline:
   - "暂停在 pre-dispatch HandlerReturn/Journal mismatch 的 owning Invocation 可由合法 append-only successor 完成 Failure Closure 与 Archive"
   - "TASK-RCV-20260825185538-01-SESSION-CAPTURE 保留原历史并得到唯一可查询归档终态"
 resolution:
-  task_refs: []
+  task_refs: [TASK-0061R1]
   duplicate_of: null
-  reason: "TASK-0061 真实恢复验收发现；在其 Seal 后调度独立 recovery Task"
+  reason: "TASK-0061R1 修复 replay-sensitive validation，并用合法 successor 收敛真实暂停 Invocation"

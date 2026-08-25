@@ -85,7 +85,7 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 | [BL-0070](./BL-0070.yaml) | Converted to Task | 恢复 TASK-0058 Seal 失败并前移 Accepted Verification 预检 | TASK-0058R1 |
 | [BL-0071](./BL-0071.yaml) | Converted to Task | 修复 Claude Role Runtime 忽略 structured_output | TASK-0060 |
 | [BL-0072](./BL-0072.yaml) | Converted to Task | 兼容 Codex 当前 item_completed 对话记录 | TASK-0061 |
-| [BL-0073](./BL-0073.yaml) | Ready | 消除 Core v2 重放配置分叉并恢复 pre-dispatch Journal mismatch | 待 TASK-0061 Seal 后调度 |
+| [BL-0073](./BL-0073.yaml) | Converted to Task | 消除 Core v2 重放配置分叉并恢复 pre-dispatch Journal mismatch | TASK-0061R1 |
 
 ## 本轮调度结果
 

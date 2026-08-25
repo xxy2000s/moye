@@ -7,7 +7,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { createCoreV2Lifecycle } from "../../src/domain/core-v2-lifecycle.js";
-import { coreV2AcceptanceInstruction, coreV2AssessmentPrompt, coreV2ReviewBoundary, ensureGitCheckpoint, normalizeArchitectDeliverableV2, validateCoreV2AcceptanceControl, validateCoreV2AcceptanceMetadata, validateCoreV2ObserverKnowledge, validateCoreV2RecoveryControl, validateCoreV2SessionEvidence } from "../../src/restate/core-v2-services.js";
+import { coreV2AcceptanceInstruction, coreV2AssessmentPrompt, coreV2ReviewBoundary, ensureGitCheckpoint, normalizeArchitectDeliverableV2, validateCoreV2AcceptanceControl, validateCoreV2AcceptanceMetadata, validateCoreV2Input, validateCoreV2ObserverKnowledge, validateCoreV2RecoveryControl, validateCoreV2SessionEvidence } from "../../src/restate/core-v2-services.js";
 import type { CoreV2WorkflowProjection } from "../../src/restate/core-v2-services.js";
 import { buildCoreV2StateMachine } from "../../src/trace/state-machine.js";
 
@@ -32,6 +32,17 @@ describe("Core v2 Workflow control-plane", () => {
     expect(() => validateCoreV2AcceptanceMetadata(metadata, false)).toThrow("product acceptance metadata is disabled");
     expect(() => validateCoreV2AcceptanceMetadata(metadata, true)).not.toThrow();
     expect(() => validateCoreV2AcceptanceMetadata({ ...metadata, scenario: "" }, true)).toThrow("metadata is invalid");
+  });
+
+  it("validates every replay-sensitive Core v2 input through one deterministic boundary", () => {
+    const input = {
+      taskId: "TASK-DURABLE-VALIDATION", projectId: "moye", title: "durable validation", objective: "validate",
+      acceptanceCriteria: ["valid"], repositoryRoot: "/tmp/repository", artifactRoot: "/tmp/artifacts",
+      baseCommit: "a".repeat(40), runnerKind: "CODEX_EXEC" as const, testCommands: [["npm", "test"]],
+      acceptanceMetadata: { kind: "PRODUCT_ACCEPTANCE" as const, suite: "core-v2", scenario: "DURABLE_VALIDATION" },
+    };
+    expect(() => validateCoreV2Input(input, false)).toThrow("product acceptance metadata is disabled");
+    expect(() => validateCoreV2Input(input, true)).not.toThrow();
   });
 
   it("rejects recovery process exits before TaskAuthority claim unless explicitly enabled and scoped", () => {

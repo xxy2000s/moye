@@ -12,7 +12,7 @@
 | `src/index.ts` | 同时启动 Restate HTTP/2 Endpoint 和 Board HTTP Server | 无 |
 | `src/cli/index.ts` | backlog sync、validate、route、TaskAuthority-aware create/status/wait、close、Bootstrap/Seal recovery、seal start/status/stage/submit、archive、reconcile-task、graph | 只提交/查询或解析显式 Seal/Recovery/Reconcile；`seal-start` 在发送前复用 Intent 校验器，`seal-submit` 本地验证 Commit 对象，`seal-stage` 只准备 Git package |
 | `scripts/core_v2_full_acceptance.ts`、`scripts/core_v2_*_acceptance.ts`、`src/acceptance/core-v2-matrix-*` | 16 场景真实产品矩阵、受控故障/恢复、显式 suite/scenario Manifest 与实时交叉审计 | 不扫描目录挑选结果；补跑必须显式绑定原场景根，re-audit 不提交 Workflow 或重跑副作用 |
-| `src/restate/services.ts` | TaskAuthority、TaskWorkflow、SealedTaskWorkflow、Bootstrap/Seal/Core v2 Failure Recovery Authority、ArchiveWorkflow、ProjectBoard | Authority 冻结并查询主 Workflow/append-only successor chain；Workflow 拥有 Task/Archive 流转与 durable signal |
+| `src/restate/services.ts`、`src/restate/core-v2-services.ts`、`src/restate/invocation-inspector.ts` | TaskAuthority、Task/Sealed/Core v2 Workflow、Bootstrap/Seal/Core v2 Failure Recovery、Archive 与 ProjectBoard | Core v2 replay-sensitive 输入在既有首个 durable Run 固化；Inspector 只接受 paused durable Run 或精确 index-1 HandlerReturn 570 mismatch，Authority 冻结 append-only successor chain |
 | `src/restate/coding-services.ts` | CodingTaskWorkflow、Board 映射、Spec Revision 主权更新、Durable Reconcile Signal、成功/失败 Archive 子流程 | Workflow 独占 Coding Projection |
 | `src/restate/core-services.ts` | CoreClosureWorkflow 与只读 status | Workflow 独占 Core Projection；Scenario Adapter 只返回可验证 Artifact |
 | `src/product/live-task.ts` | 校验 CLI/API 真实任务、仓库白名单与 Git refs，并冻结真实多角色 Coding Workflow 输入 | 不推进状态；只构造提交材料；产品入口拒绝 Fake |
@@ -133,7 +133,7 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 | `src/product/live-task.ts`、`src/review/live-review.ts`、`src/agent/live-role.ts` | Fake 混入产品入口、仓库越界、ref 冲突、角色 Session 混用、Finding 未触发 Repair/Replan、未知结果盲重跑 | Live Task/Role unit + `npm run acceptance:live` 真实 Codex Context/Implementation/Self Review/Review/Docs Gate 验收 |
 | `src/coding/workflow.ts`、`src/trace/state-machine.ts`、`src/verification/gate.ts`、`src/git/merge-effect.ts` | Event 倒序补写、Repair 复用旧 Attempt、虚构 traversed 边、Gate 重放、Commit 漂移、Expected Base TOCTOU、状态越权、未知 Agent/Workspace/Merge 误判 | Coding/State Machine unit + Worker restart/unknown Merge Restate E2E + Codex Fixture evidence |
 | `src/effects/counter.ts` | Step 确认前中断造成副作用重复 | `tests/unit/counter.test.ts`、E2E 计数断言 |
-| `src/restate/services.ts` | 重放、错误分类、Bootstrap 派发前污染、失败 successor 越权、投影漂移 | `tests/e2e/restate-recovery.test.ts` |
+| `src/restate/services.ts`、`src/restate/core-v2-services.ts`、`src/restate/invocation-inspector.ts` | 重放配置分叉、Journal mismatch、错误分类、Bootstrap 派发前污染、失败 successor 越权、投影漂移 | Core v2 Workflow/Invocation Inspector unit + `tests/e2e/restate-recovery.test.ts` + TASK-0061R1 真实 paused Invocation recovery |
 | `src/trace/coding-trace.ts`、`telemetry.ts`、`src/board/server.ts` | 状态源混淆、OTLP 关联漂移、UNKNOWN 恢复建议越权、Artifact/静态路径逃逸 | Trace/OTLP/Board unit + Coding/Legacy Restate E2E、只读派生、realpath + digest 校验 |
 | `src/demo/coding-fixture.ts`、`scripts/demo.ts` | 演示误改真实仓库、缺少 Coding 证据、残留 Worktree 或容器 | Demo Fixture unit + 真实 Restate Demo E2E |
 | `docs/graph.yaml` | 入口遗漏与关联文档漏更新 | `scripts/docs_graph.rb validate[-impact]` |
