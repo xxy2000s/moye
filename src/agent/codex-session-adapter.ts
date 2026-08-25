@@ -76,6 +76,11 @@ export interface ReadManagedCodexSessionRequestV1 {
   readonly manifestDigest: string;
 }
 
+export interface InspectManagedCodexSessionRequestV1 {
+  readonly managedArtifactRoot: string;
+  readonly captureId: string;
+}
+
 interface ParsedRecord {
   readonly lineNumber: number;
   readonly rawLine: string;
@@ -268,6 +273,34 @@ export async function readManagedCodexSessionV1(request: ReadManagedCodexSession
   return Object.freeze({ manifest, timeline });
 }
 
+export async function inspectManagedCodexSessionV1(request: InspectManagedCodexSessionRequestV1): Promise<{
+  readonly manifest: SessionTranscriptManifestV1;
+  readonly timeline: readonly NormalizedTimelineEventV1[];
+} | null> {
+  const root = path.resolve(request.managedArtifactRoot);
+  let managedRoot: string;
+  try {
+    managedRoot = await physicalDirectory(root, "managedArtifactRoot");
+  } catch (error) {
+    if (isMissing(error)) return null;
+    throw error;
+  }
+  const captureDirectory = path.join(managedRoot, captureDirectoryName(request.captureId));
+  let manifestBytes: Buffer;
+  try {
+    await assertContainedDirectory(managedRoot, captureDirectory);
+    manifestBytes = await readManagedFile(captureDirectory, "session-transcript.manifest.json");
+  } catch (error) {
+    if (isMissing(error)) return null;
+    throw error;
+  }
+  let value: unknown;
+  try { value = JSON.parse(manifestBytes.toString("utf8")); }
+  catch (error) { throw failure("MALFORMED", "Managed Codex Transcript Manifest is malformed", error); }
+  const digest = required(record(value)["manifestDigest"], "manifestDigest");
+  return readManagedCodexSessionV1({ managedArtifactRoot: managedRoot, captureId: request.captureId, manifestDigest: digest });
+}
+
 function parseCodexRollout(input: {
   readonly bytes: Buffer;
   readonly intent: SessionTranscriptCaptureIntentV1;
@@ -367,6 +400,24 @@ function normalizeRecord(source: ParsedRecord, outerType: string, payloadType: s
     if (isPromptRecord) return { category: "PROMPT", actor: "USER", origin: "MOYE_RENDERED_PROMPT", kind: "TEXT", value: required(promptTextFromResponseItem(payload, renderedPromptDigest), `line ${source.lineNumber} rendered Prompt`) };
     return { category: "SYSTEM", actor: "SYSTEM", origin: "PROVIDER_SYSTEM", kind: "JSON", value: stableJson(source.value) };
   }
+  if (outerType === "event_msg" && payloadType === "item_completed") {
+    const item = record(payload["item"]);
+    const itemType = stringOrUndefined(item["type"]);
+    const value = messageContentText(item["content"]);
+    if (itemType === "UserMessage" && value !== undefined) {
+      if (isPromptRecord) return { category: "PROMPT", actor: "USER", origin: "MOYE_RENDERED_PROMPT", kind: "TEXT", value };
+      return renderedPromptDigest !== undefined && sha256(value) === renderedPromptDigest
+        ? { category: "SYSTEM", actor: "SYSTEM", origin: "PROVIDER_SYSTEM", kind: "JSON", value: stableJson(source.value) }
+        : { category: "USER", actor: "USER", origin: "PROVIDER_USER", kind: "TEXT", value };
+    }
+    if (itemType === "AgentMessage" && value !== undefined) {
+      return { category: "ASSISTANT", actor: "ASSISTANT", origin: "PROVIDER_ASSISTANT", kind: "TEXT", value };
+    }
+  }
+  if (outerType === "response_item" && payloadType === "message" && payload["role"] === "assistant") {
+    const value = messageContentText(payload["content"]);
+    if (value !== undefined) return { category: "ASSISTANT", actor: "ASSISTANT", origin: "PROVIDER_ASSISTANT", kind: "TEXT", value };
+  }
   if (outerType === "event_msg" && payloadType === "agent_message") {
     return { category: "ASSISTANT", actor: "ASSISTANT", origin: "PROVIDER_ASSISTANT", kind: "TEXT", value: stringValue(payload["message"]) };
   }
@@ -401,11 +452,32 @@ function findPromptRecordLine(records: readonly ParsedRecord[], renderedPromptDi
     return promptTextFromResponseItem(payload, renderedPromptDigest) !== undefined;
   });
   if (responseItem !== undefined) return responseItem.lineNumber;
+  const completedItem = records.find((source) => {
+    if (source.value["type"] !== "event_msg") return false;
+    const payload = record(source.value["payload"]);
+    if (payload["type"] !== "item_completed") return false;
+    const item = record(payload["item"]);
+    const value = item["type"] === "UserMessage" ? messageContentText(item["content"]) : undefined;
+    return value !== undefined && sha256(value) === renderedPromptDigest;
+  });
+  if (completedItem !== undefined) return completedItem.lineNumber;
   return records.find((source) => {
     if (source.value["type"] !== "event_msg") return false;
     const payload = record(source.value["payload"]);
     return payload["type"] === "user_message" && typeof payload["message"] === "string" && sha256(payload["message"]) === renderedPromptDigest;
   })?.lineNumber;
+}
+
+function messageContentText(value: unknown): string | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const parts = value.flatMap((part) => {
+    if (!isRecord(part)) return [];
+    const type = part["type"];
+    return (type === "text" || type === "input_text" || type === "output_text" || type === "Text") && typeof part["text"] === "string"
+      ? [part["text"]]
+      : [];
+  });
+  return parts.length === 0 ? undefined : parts.join("");
 }
 
 function promptTextFromResponseItem(payload: Record<string, unknown>, renderedPromptDigest: string | undefined): string | undefined {
@@ -593,4 +665,8 @@ function failure(code: string, message: string, cause?: unknown): MoyeError {
 
 function isNodeError(value: unknown): value is NodeJS.ErrnoException {
   return value instanceof Error && "code" in value;
+}
+
+function isMissing(value: unknown): boolean {
+  return (isNodeError(value) && value.code === "ENOENT") || (value instanceof MoyeError && value.code === "SOURCE_MISSING");
 }

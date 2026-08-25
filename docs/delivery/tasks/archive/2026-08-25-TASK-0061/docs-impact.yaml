@@ -1,0 +1,79 @@
+schema_version: 1
+task_id: TASK-0061
+graph_revision: 112
+intents: [integrate-session-evidence-into-core-v2-runtime]
+changed_paths:
+  - package.json
+  - scripts/core_v2_recovery_acceptance.ts
+  - src/agent/claude-session-adapter.ts
+  - src/agent/codex-session-adapter.ts
+  - src/agent/session-capture-effect.ts
+  - src/restate/core-v2-services.ts
+  - tests/unit/codex-session-adapter.test.ts
+  - tests/unit/core-v2-workflow.test.ts
+  - tests/unit/session-capture-effect.test.ts
+  - docs/knowledge/current/architecture/task-runtime-kernel.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - docs/sources/findings/codex-current-item-completed-dialogue-misclassified.md
+  - docs/sources/findings/core-v2-replay-config-mismatch-not-recoverable.md
+  - docs/sources/findings/README.md
+  - docs/delivery/backlog/BL-0072.yaml
+  - docs/delivery/backlog/BL-0073.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/milestones/m1-agent-session-evidence.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0061/task.yaml
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0061/spec.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0061/design.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0061/plan.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0061/verification.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0061/docs-impact.yaml
+  - docs/delivery/tasks/archive/README.md
+  - docs/graph.yaml
+docs:
+  read: [agent-contract, docs-index, codemap, document-control-plane, task-runtime-kernel, restate-poc-architecture, adr-0001-restate-poc, durable-runtime-pitfalls, tasks-index, local-restate-poc-runbook, findings-index, backlog-index, milestone-1-agent-session-evidence, architecture-index, runbooks-index, sources-index, archived-tasks-index, finding-codex-current-item-completed-dialogue-misclassified, finding-core-v2-replay-config-mismatch-not-recoverable, bl-0072-codex-current-dialogue-format, bl-0073-core-v2-replay-config-recovery, task-0061-manifest, task-0061-spec, task-0061-design, task-0061-plan, task-0061-verification, task-0061-docs-impact, adr-0007-session-transcript-sidecar, task-0002-manifest, task-0056-manifest, moye-task-control-skill]
+  reviewed:
+    local-restate-poc-runbook: { outcome: updated, reason: "登记可重复执行的真实 Core v2 Session Capture 中断验收入口与证据语义。" }
+    architecture-overview: { outcome: unchanged, reason: "不改变 Task/Workflow 总体所有权；Transcript 仍是诊断旁路证据。" }
+    durable-workflow-research: { outcome: unchanged, reason: "不改变既有调研结论。" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "继续使用两阶段 Seal。" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "不改变文档生命周期。" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "不改变 Worktree 设计。" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "不改变 5+1 Agent 模型。" }
+    task-0013-manifest: { outcome: unchanged, reason: "不修改历史。" }
+    task-0014-manifest: { outcome: unchanged, reason: "不修改历史。" }
+    task-0015-manifest: { outcome: unchanged, reason: "不修改历史。" }
+    task-0016-manifest: { outcome: unchanged, reason: "不修改历史。" }
+    task-0017-manifest: { outcome: unchanged, reason: "不修改历史。" }
+    task-0018-manifest: { outcome: unchanged, reason: "不修改历史。" }
+    task-0019-manifest: { outcome: unchanged, reason: "不修改历史。" }
+    task-0020-manifest: { outcome: unchanged, reason: "不修改历史。" }
+    task-0021-manifest: { outcome: unchanged, reason: "不修改历史。" }
+    task-0028-manifest: { outcome: unchanged, reason: "不修改历史。" }
+    task-0029-manifest: { outcome: unchanged, reason: "不修改历史。" }
+    task-0003-manifest: { outcome: unchanged, reason: "不修改历史。" }
+    task-0004-manifest: { outcome: unchanged, reason: "不修改历史。" }
+    task-0005-manifest: { outcome: unchanged, reason: "不修改历史。" }
+    task-0006-manifest: { outcome: unchanged, reason: "不修改历史。" }
+    task-0007-manifest: { outcome: unchanged, reason: "不修改历史。" }
+    task-0008-manifest: { outcome: unchanged, reason: "不修改历史。" }
+    task-0009-manifest: { outcome: unchanged, reason: "不修改历史。" }
+    task-0001-manifest: { outcome: unchanged, reason: "不修改历史。" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "无新依赖。" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "Transcript 不替代 OTel。" }
+    task-0049r1-manifest: { outcome: unchanged, reason: "复用 Seal preflight。" }
+    document-control-plane: { outcome: unchanged, reason: "Finding、Backlog、Task 与 Seal 继续遵循现有文档控制面。" }
+    docs-index: { outcome: unchanged, reason: "不新增文档类别或顶层入口。" }
+    codemap: { outcome: updated, reason: "登记 Session Capture Effect、Provider inspect 能力、Core v2 集成点与真实验收入口。" }
+    task-runtime-kernel: { outcome: updated, reason: "记录 LIVE Session Capture 的 Prompt/Locator/Effect/Receipt 恢复协议和 Evidence 权限边界。" }
+    restate-poc-architecture: { outcome: unchanged, reason: "沿用 Restate owning Workflow 与 durable command，不改变 PoC 选型。" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "复用未知副作用先对账、create-once 与旧 Attempt fencing 原则。" }
+    findings-index: { outcome: updated, reason: "登记真实 Codex current item_completed 格式误分类 Finding。" }
+    backlog-index: { outcome: updated, reason: "登记 BL-0072 并绑定 TASK-0061 的真实修复。" }
+    tasks-index: { outcome: unchanged, reason: "Active/Archive Task 索引结构不变；Seal Stage 只登记本 Task 归档。" }
+    archived-tasks-index: { outcome: updated, reason: "Seal Stage 登记 TASK-0061 归档包。" }
+    milestone-1-agent-session-evidence: { outcome: updated, reason: "登记 W03 已封存及 W04 的真实实现与产品验收状态。" }
+    moye-task-control-skill: { outcome: unchanged, reason: "继续使用 Full、Context Route、唯一 Result Commit 与两阶段 Seal；不修改 Skill。" }
+    task-0002-manifest: { outcome: unchanged, reason: "不修改文档控制面自举历史。" }
+    task-0056-manifest: { outcome: unchanged, reason: "继续使用既定 auto/lite/standard/full 分级，不改变执行模式协议。" }
+    adr-0007-session-transcript-sidecar: { outcome: unchanged, reason: "实现 Accepted 的单向 Sidecar、诊断权限和 Capture UNKNOWN 不重跑 Agent 决策。" }

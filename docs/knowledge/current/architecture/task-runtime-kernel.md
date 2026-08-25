@@ -131,7 +131,7 @@ Daemon 调度、角色 Agent、Worktree、Git、Gate 和知识沉淀都建立在
 - raw、normalized 和 Manifest 写入 Capture ID 派生的受管目录，使用 create-once 与内容一致重放；冲突字节拒绝。读取端重新校验 Manifest、normalized、raw 的 Digest，因此 Provider 源文件移除后仍可独立读取；
 - Parser name/version/options、Source Locator、Capture Policy 与全部 Task/Revision/Generation/Attempt/Run/Session Binding 都进入 Capture Identity。Parser 语义变化必须产生新 Capture，不能覆盖旧 Artifact。
 
-当前仅完成 Codex Adapter 和真实 Role 产品证据；Prompt 预持久化、Active Locator、Capture Effect/Receipt/UNKNOWN Reconcile 仍由 M1-W04 接入 Workflow，Board 仍不得直接调用本 Adapter 扫描 Provider Home。
+Core v2 现在可在显式启用 `sessionEvidence` 时把本 Adapter 接到每个真实 Role：Agent 进程启动前先持久化 Prompt Envelope 并发布 PREPARED/RUNNING Locator；Role Manifest 确认后再由独立 durable Capture command 固化 Transcript Manifest 与 Receipt。当前 Codex 的 `event_msg/item_completed` UserMessage/AgentMessage 和 `response_item/message` Assistant `output_text` 已纳入版本化解析，真实格式回归不再把 Assistant 误归为 System。Board 仍不得直接调用本 Adapter 扫描 Provider Home。
 
 #### Claude Provider 原生 Session Sidecar
 
@@ -142,7 +142,19 @@ Daemon 调度、角色 Agent、Worktree、Git、Gate 和知识沉淀都建立在
 - `uuid/parentUuid`、`agentId/isSidechain`、message/model/stop reason 作为规范时间线的因果与 Provider 元数据保留；无时间戳的纯 Provider metadata 不冒充带时间的用户/工具事件；
 - raw、normalized 和 Manifest 采用 Capture ID 派生的 create-once 受管 Artifact，源文件移除后继续按 Manifest Digest 独立读取。
 
-真实 Claude 验收同时发现旧 Role Runtime 忽略 `result.structured_output`。当前解析器优先验证 CLI 的结构化对象，仅在该字段缺失时兼容旧 `result` 文本；原失败 Role/Session 证据保留。W03 仍不接入 Workflow，Prompt 预持久化、Active Locator 和 Capture Reconcile 继续由 M1-W04 负责。
+真实 Claude 验收同时发现旧 Role Runtime 忽略 `result.structured_output`。当前解析器优先验证 CLI 的结构化对象，仅在该字段缺失时兼容旧 `result` 文本；原失败 Role/Session 证据保留。Core v2 的同一 Session Evidence 配置可选择 Claude Projects allowlist，并沿用相同 Prompt/Locator/Capture/Receipt 权限边界。
+
+#### Core v2 LIVE Session Capture
+
+`src/agent/session-capture-effect.ts` 与 `CoreV2Workflow` 实现 W04 的运行时连接，但不增加第二个 Task 状态机：
+
+- Workflow 以真正传给 CLI 的四段 renderer 输入创建 `PromptEnvelopeV1`，create-once 写入 Role Run 受管目录；PREPARED Locator 不伪造 Provider Session 或 Role Manifest，RUNNING 在 Agent durable command 前发布；
+- Agent durable command、Locator command 和 Capture durable command彼此分离。Role 完成后 Locator 单调推进 `AGENT_COMPLETED → CAPTURE_PENDING`，Projection 同时保留 execution events 与 stderr 原引用；
+- Capture Effect 先写冻结 Intent，再按 Role Manifest 确认的 Provider Session 读取 allowlist 源，写 raw/normalized/Manifest/Receipt。Manifest 已写但 Receipt 丢失时从 Capture ID 派生的受管目录恢复，不回到 Role Runtime；已有 Receipt 重放返回同一 Digest，冲突字节 fail closed；
+- Projection 只保存 Prompt descriptor、版本化 Locator、Session Evidence Authority、Receipt 和摘要，不保存 Provider Home 物理路径。Receipt 固定 `DIAGNOSTIC_SUPPLEMENT_ONLY`，不参与 Test、Verification、Merge、Closure 或 Archive Gate；
+- 产品验收 `npm run acceptance:core-v2:sessions` 用真实 Restate、真实 Codex、隔离 Git、Trusted Runner、双父 Merge 和七个 Role Session，在首个 Transcript Manifest 后强制终止 Service。恢复后七个 Receipt 全部 COMPLETE、Agent/Session/Commit/Test/Merge 均唯一，Task 最终 `CLOSED + ARCHIVED + SUCCEEDED`。
+
+W04 只实现新 Role 的 LIVE capture。Board Timeline API、Chatbot UI 与历史 append-only enrichment 分别由 M1-W05～W07 交付。
 
 ### 5.0.3 当前 PoC 已实现单 Agent 编码 Workflow
 

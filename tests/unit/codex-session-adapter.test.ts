@@ -97,6 +97,17 @@ describe("CodexNativeSessionAdapterV1", () => {
     expect(captured.managedPaths).not.toHaveProperty("raw");
     expect(captured.timeline.find((event) => event.category === "PROMPT")?.parts[0]?.content).not.toHaveProperty("storedValue");
   });
+
+  it("parses current Codex item_completed and response_item message records as dialogue", async () => {
+    const fixture = await setup();
+    await writeRollout(fixture.sessionsRoot, threadId, currentCodexRollout());
+    const { prompt, intent } = contract();
+    const captured = await new CodexNativeSessionAdapterV1({ providerSessionsRoot: fixture.sessionsRoot, managedArtifactRoot: fixture.artifactRoot })
+      .capture({ intent, promptEnvelope: prompt, capturedAt: "2026-08-25T17:30:00.000Z" });
+    expect(captured.manifest.captureState).toBe("COMPLETE");
+    expect(captured.manifest.completeness.messages).toBe("COMPLETE");
+    expect(captured.timeline.some((event) => event.category === "ASSISTANT" && event.parts[0]?.content.storedValue === "完成")).toBe(true);
+  });
 });
 
 async function setup() {
@@ -127,6 +138,19 @@ function completeRollout(): string {
     { timestamp: "2026-08-25T17:00:05.000Z", type: "event_msg", payload: { type: "sub_agent_activity", agent_thread_id: "child-thread-1", kind: "started" } },
     { timestamp: "2026-08-25T17:00:06.000Z", type: "event_msg", payload: { type: "agent_message", message: "完成", phase: "final_answer" } },
     { timestamp: "2026-08-25T17:00:07.000Z", type: "event_msg", payload: { type: "task_complete", turn_id: "turn-1", completed_at: 1787677207 } },
+  ];
+  return `${rows.map((row) => JSON.stringify(row)).join("\n")}\n`;
+}
+
+function currentCodexRollout(): string {
+  const rows = [
+    { timestamp: "2026-08-25T17:00:00.000Z", type: "session_meta", payload: { id: threadId } },
+    { timestamp: "2026-08-25T17:00:01.000Z", type: "response_item", payload: { type: "message", role: "user", content: [{ type: "input_text", text: promptText }] } },
+    { timestamp: "2026-08-25T17:00:02.000Z", type: "event_msg", payload: { type: "item_completed", item: { type: "UserMessage", content: [{ type: "text", text: promptText }] } } },
+    { timestamp: "2026-08-25T17:00:03.000Z", type: "response_item", payload: { type: "message", role: "assistant", content: [{ type: "output_text", text: "完成" }] } },
+    { timestamp: "2026-08-25T17:00:04.000Z", type: "event_msg", payload: { type: "item_completed", item: { type: "AgentMessage", content: [{ type: "Text", text: "完成" }] } } },
+    { timestamp: "2026-08-25T17:00:05.000Z", type: "event_msg", payload: { type: "token_count", info: { total_token_usage: { total_tokens: 10 } } } },
+    { timestamp: "2026-08-25T17:00:06.000Z", type: "event_msg", payload: { type: "task_complete" } },
   ];
   return `${rows.map((row) => JSON.stringify(row)).join("\n")}\n`;
 }

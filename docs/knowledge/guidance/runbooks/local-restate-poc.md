@@ -176,6 +176,7 @@ export MOYE_ACCEPTANCE_FAULT_INJECTION=enabled
 npm run acceptance:core-v2
 npm run acceptance:core-v2:faults
 npm run acceptance:core-v2:recovery
+npm run acceptance:core-v2:sessions
 npm run acceptance:core-v2:guards
 npm run acceptance:core-v2:matrix
 ```
@@ -191,6 +192,8 @@ npm run acceptance:core-v2:audit -- --file /absolute/path/to/audit-input.json --
 Harness 只通过真实 `CoreV2Workflow` 输入改变指定 Revision/Generation/Phase 的 Agent 指令或开启窄化回执故障点，不替换 Role Runtime、Codex、Restate、Git、Trusted Runner、Gate、Merge、Closure 或 Archive。每次运行保留 `task-input.json`、submission receipt、最终 Projection/Trace、每个 Role Event/Manifest 引用、Trusted Test argv/exit code、Git DAG 和 `evidence-summary.json`。恢复矩阵还保存 WAITING_RECONCILE token、故障 marker、测试执行账本和 Service 日志，并断言 Attempt/Run/Session、测试命令、Candidate 和 Merge 没有重复。若真实 Reviewer 发现验收条件之外的缺陷，让该 Task 按正式状态机失败并归档；修复后必须使用新 key 重跑，不得覆盖原 Session 或 Projection。
 
 `acceptance:core-v2:recovery` 会自己启动并注册专用 Service，在 Test Intent/Manifest、Role Manifest、Candidate Commit 和 Merge ref update 后实施受控进程终止，再以同一 deployment URI 恢复。Test `NOT_APPLIED` 场景会先证明错误 token 被拒绝，再验证相同 Evidence 幂等和冲突 Evidence 拒绝；`CONFIRMED` 场景只能使用已落盘且摘要匹配的真实 Manifest。不要删除 marker、Journal 或执行账本来让重跑通过。
+
+`acceptance:core-v2:sessions` 只选择 Session Capture Recovery 产品场景：它要求本机真实 Codex 认证和可读的 `${CODEX_HOME:-$HOME/.codex}/sessions`，为七个主流程 Role 显式开启 `sessionEvidence`，并在首个 Transcript Manifest 已落盘但 Receipt 尚未确认时终止 Service。重启后必须从受管 Manifest 完成同一 Capture，不得产生第二个 Role Run；最终摘要逐一核对 Prompt、Session、Receipt、execution events、stderr、Trusted Test、Merge、Closure 与 Archive。该命令消耗真实模型额度，失败记录和 Artifact 不应删除。
 
 `acceptance:core-v2:guards` 创建 Repair budget、Replan budget、Observer timeout 和 Stale Fencing 四个独立真实 Task。两个预算 Task 必须完成 Failure Closure/Archive，且预算后不能出现下游 Agent、Trusted Test 或 Merge；Stale Task 使用旧 Generation 的真实 Attempt ID 与 Manifest Digest 调用 `auditAttemptFence`，先验证错误 Digest 拒绝，再验证 stale 结果与幂等重放，最后比较审计前后的 Projection、Success Closure 与 Failure Closure Digest。Observer Task 必须保存真实超时 Session/Event/Manifest、`deferred` Knowledge Disposition，同时主流程继续到成功 Archive。`MOYE_CORE_V2_GUARD_SCENARIOS` 只用于显式选择补跑场景；`MOYE_CORE_V2_GUARD_REAUDIT_ROOT` 只附着既有 Task 重做只读审计，不能提交 Workflow 或重跑副作用。
 

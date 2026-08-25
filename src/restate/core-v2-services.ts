@@ -7,6 +7,8 @@ import * as restate from "@restatedev/restate-sdk";
 import { SpawnAgentProcessRunner } from "../agent/codex-exec.js";
 import { RealRoleRuntimeV2, inspectRealRoleRunV2, prepareRealRoleRunV2, writeRealRoleRunIntentV2 } from "../agent/role-runtime-v2.js";
 import type { RoleRunManifestV2 } from "../agent/role-runtime-v2.js";
+import { advanceAndPersistLiveRoleLocatorV1, captureLiveRoleSessionV1, prepareLiveRoleSessionEvidenceV1 } from "../agent/session-capture-effect.js";
+import type { LiveSessionCaptureConfigV1, LiveSessionCaptureResultV1, PreparedLiveRoleSessionEvidenceV1 } from "../agent/session-capture-effect.js";
 import { persistCoreV2FailureArchiveReceipt, persistCoreV2FailureArtifact, persistCoreV2FailureClosure } from "../archive/core-v2-failure.js";
 import { persistCoreV2SuccessArchiveReceipt, persistCoreV2SuccessClosure } from "../archive/core-v2-success.js";
 import { loadConfig } from "../config.js";
@@ -24,6 +26,7 @@ import type { TrustedTestReconcileInput, TrustedTestRunManifest } from "../testi
 import { projectBoard, taskAuthority } from "./services.js";
 import type { TaskProjection } from "../domain/task.js";
 import type { TaskHistoryKind, TaskHistoryKindSource } from "../domain/task.js";
+import type { ActiveRoleRunLocatorV1, ArtifactDescriptorV1, SessionEvidenceAuthorityV1, SessionTranscriptImportReceiptV1, SessionTranscriptManifestV1 } from "../domain/session-transcript.js";
 import { inspectCoreV2SourceInvocation, inspectFailedRecoveryInvocation } from "./invocation-inspector.js";
 import type { CoreV2SourceInvocationFact } from "./invocation-inspector.js";
 
@@ -38,6 +41,7 @@ export interface CoreV2WorkflowInput {
   readonly acceptanceControl?: CoreV2AcceptanceControl;
   readonly recoveryControl?: CoreV2RecoveryControl;
   readonly observerKnowledge?: { readonly enabled: boolean; readonly timeoutMs?: number };
+  readonly sessionEvidence?: ({ readonly enabled: true } & LiveSessionCaptureConfigV1);
   readonly acceptanceMetadata?: { readonly kind: "PRODUCT_ACCEPTANCE"; readonly suite: string; readonly scenario: string };
 }
 export interface CoreV2RecoveryControl {
@@ -46,6 +50,7 @@ export interface CoreV2RecoveryControl {
   readonly testExitAfterIntentOnceAt?: string;
   readonly testExitAfterManifestOnceAt?: string;
   readonly checkpointExitAfterCommitOnceAt?: string;
+  readonly captureExitAfterManifestOnceAt?: string;
 }
 export type CoreV2AcceptanceProfile = "IMPLEMENTATION_SELF_REVIEW" | "FINAL_REVIEW" | "DOCUMENTATION" | "TEST_FAILURE" | "DESIGN_REPLAN" | "REPAIR_BUDGET" | "REPLAN_BUDGET";
 export interface CoreV2AcceptanceControl { readonly profile: CoreV2AcceptanceProfile }
@@ -68,6 +73,7 @@ export interface CoreV2WorkflowProjection {
   readonly schemaVersion: 1; readonly taskId: string; readonly projectId: string; readonly title: string;
   readonly state: "EXECUTING" | "WAITING_RECONCILE" | "CLOSED" | "FAILED_TERMINAL" | "ARCHIVE_PENDING" | "ARCHIVE_FAILED"; readonly currentStep: string;
   readonly lifecycle: CoreV2LifecycleProjection; readonly attempts: readonly RoleAttemptV2[]; readonly roleRuns: readonly RoleRunManifestV2[];
+  readonly sessionEvidence?: readonly CoreV2SessionEvidenceRecordV1[];
   readonly artifactRoot: string;
   readonly sourceWorkflowRef?: string; readonly workflowRef?: string;
   readonly recovery?: CoreV2RecoveryRecord;
@@ -78,6 +84,17 @@ export interface CoreV2WorkflowProjection {
   };
   readonly lastReconciliation?: CoreV2ReconcileInput;
   readonly startedAt: string; readonly completedAt: string | null; readonly outcome: "SUCCEEDED" | "FAILED_TERMINAL" | null; readonly error: string | null;
+}
+export interface CoreV2SessionEvidenceRecordV1 {
+  readonly attemptId: string;
+  readonly runId: string;
+  readonly promptEnvelope: ArtifactDescriptorV1;
+  readonly locator: ActiveRoleRunLocatorV1;
+  readonly executionEventsRef: string;
+  readonly stderrRef: string;
+  readonly authority?: SessionEvidenceAuthorityV1;
+  readonly receipt?: SessionTranscriptImportReceiptV1;
+  readonly summary?: LiveSessionCaptureResultV1["summary"];
 }
 export interface CoreV2ReconcileInput extends TrustedTestReconcileInput {}
 export interface CoreV2ArchiveRetryInput { readonly token: string; readonly evidence: string }
@@ -110,6 +127,7 @@ export const coreV2Workflow = restate.workflow({
         validateCoreV2AcceptanceMetadata(input.acceptanceMetadata, enabled);
         validateCoreV2RecoveryControl(input.recoveryControl, input.mergeFault, input.artifactRoot, enabled);
         validateCoreV2ObserverKnowledge(input.observerKnowledge);
+        validateCoreV2SessionEvidence(input.sessionEvidence, input.runnerKind);
       }
       catch (error) { throw new restate.TerminalError(error instanceof Error ? error.message : String(error), { errorCode: 403 }); }
       await ctx.objectClient(taskAuthority, input.taskId).claim({ owner: "CORE_V2_WORKFLOW", specRevision: 1 });
@@ -582,6 +600,26 @@ async function runRole(ctx: restate.WorkflowContext<CoreV2WorkflowState>, input:
     inputDigest: projection.lifecycle.projectionDigest, subjectCommit, inputArtifactRefs: projection.lifecycle.artifacts.map((item) => item.artifactDigest), scheduledAt: await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-scheduled-g${generation}`) });
   const running = startRoleAttemptV2(scheduled, await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-started-g${generation}`));
   const roleInput = { attempt: running, scopeRoot: await realpath(input.repositoryRoot), artifactRoot: `${input.artifactRoot}/roles`, instructions };
+  let workingProjection = projection;
+  let preparedSession: PreparedLiveRoleSessionEvidenceV1 | undefined;
+  if (input.sessionEvidence !== undefined) {
+    const preparedAt = await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-session-prepared-at-g${generation}`);
+    preparedSession = await ctx.run(`session-prepare-${phase.toLowerCase()}-r${projection.lifecycle.specRevision}-g${generation}`, async () => {
+      const request = await prepareRealRoleRunV2(roleInput);
+      return prepareLiveRoleSessionEvidenceV1({
+        request,
+        sourceWorkflowRef: `restate://CoreV2Workflow/${input.taskId}`,
+        capturePolicy: input.sessionEvidence!.capturePolicy,
+        createdAt: preparedAt,
+      });
+    });
+    workingProjection = await publish(ctx, input, upsertSessionEvidence(workingProjection, sessionEvidenceRecord(preparedSession)));
+    const runningAt = await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-session-running-at-g${generation}`);
+    const runningLocator = await ctx.run(`session-running-${phase.toLowerCase()}-r${projection.lifecycle.specRevision}-g${generation}`, () =>
+      advanceAndPersistLiveRoleLocatorV1({ runRoot: roleRunRoot(roleInput.artifactRoot, preparedSession!.locator.binding.runId), current: preparedSession!.locator, stage: "RUNNING", updatedAt: runningAt }));
+    preparedSession = { ...preparedSession, locator: runningLocator };
+    workingProjection = await publish(ctx, input, upsertSessionEvidence(workingProjection, sessionEvidenceRecord(preparedSession)));
+  }
   const result = await ctx.run(`role-${phase.toLowerCase()}-r${projection.lifecycle.specRevision}-g${generation}`, async () => {
     try {
       const intentMarker = phase === "ARCHITECT" || phase === "IMPLEMENTATION" || phase === "FINAL_REVIEW"
@@ -609,12 +647,14 @@ async function runRole(ctx: restate.WorkflowContext<CoreV2WorkflowState>, input:
     }
   });
   if (result.state === "COMPLETED") {
-    return { attempt: completeRoleAttemptV2(running, result.executed.evidence, await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-completed-g${generation}`)), manifest: result.executed.manifest };
+    const evidence = await completeLiveSessionEvidence(ctx, input, workingProjection, preparedSession, result.executed.manifest, phase, generation);
+    return { attempt: completeRoleAttemptV2(running, result.executed.evidence, await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-completed-g${generation}`)), manifest: result.executed.manifest,
+      ...(evidence === undefined ? {} : { sessionEvidence: evidence }) };
   }
   const unknownAt = await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-unknown-g${generation}`);
   const waiting = markRoleAttemptUnknownV2(running, { runId: result.runId, operationId: result.operationId, reason: result.reason }, unknownAt);
   const waitingLifecycle = workflowWaitForRoleReconcileV2(projection.lifecycle, { phase, token: result.reconcileToken, reason: result.reason, at: unknownAt });
-  await publish(ctx, input, { ...projection, lifecycle: waitingLifecycle, attempts: upsertAttempt(projection.attempts, waiting), state: "WAITING_RECONCILE", currentStep: "WAITING_RECONCILE",
+  await publish(ctx, input, { ...workingProjection, lifecycle: waitingLifecycle, attempts: upsertAttempt(workingProjection.attempts, waiting), state: "WAITING_RECONCILE", currentStep: "WAITING_RECONCILE",
     error: result.reconcileToken, pendingReconcile: { kind: "ROLE", token: result.reconcileToken, operationId: result.operationId,
       attemptId: waiting.attemptId, phase, runId: result.runId, resumeState: projection.lifecycle.state } });
   const reconciliation = await ctx.promise<CoreV2ReconcileInput>(reconcilePromiseName(result.reconcileToken)).get();
@@ -622,7 +662,7 @@ async function runRole(ctx: restate.WorkflowContext<CoreV2WorkflowState>, input:
     const notAppliedAt = await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-not-applied-g${generation}`);
     const failed = reconcileRoleAttemptV2(waiting, { token: reconciliation.token, action: "NOT_APPLIED", externalEvidence: reconciliation.evidence }, notAppliedAt);
     const failedLifecycle = workflowRecordRoleNotAppliedV2(waitingLifecycle, { phase, token: reconciliation.token, evidence: reconciliation.evidence, at: notAppliedAt });
-    await publish(ctx, input, { ...projection, lifecycle: failedLifecycle, attempts: upsertAttempt(projection.attempts, failed), state: "WAITING_RECONCILE", currentStep: "WAITING_RECONCILE",
+    await publish(ctx, input, { ...workingProjection, lifecycle: failedLifecycle, attempts: upsertAttempt(workingProjection.attempts, failed), state: "WAITING_RECONCILE", currentStep: "WAITING_RECONCILE",
       error: result.reconcileToken, pendingReconcile: { kind: "ROLE", token: result.reconcileToken, operationId: result.operationId,
         attemptId: waiting.attemptId, phase, runId: result.runId, resumeState: projection.lifecycle.state }, lastReconciliation: reconciliation });
     throw new restate.TerminalError(`${phase} Role effect reconciled NOT_APPLIED; automatic Role replay is not authorized`, { errorCode: 409 });
@@ -637,12 +677,93 @@ async function runRole(ctx: restate.WorkflowContext<CoreV2WorkflowState>, input:
     runEvidence: confirmed.evidence }, await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-reconciled-g${generation}`));
   const resumedLifecycle = workflowResumeRoleReconcileV2(waitingLifecycle, { resumeState: projection.lifecycle.state, phase,
     token: reconciliation.token, evidence: reconciliation.evidence, at: await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-resumed-g${generation}`) });
-  return { attempt: reconciled, manifest: confirmed.manifest, lifecycle: resumedLifecycle };
+  const evidence = await completeLiveSessionEvidence(ctx, input, workingProjection, preparedSession, confirmed.manifest, phase, generation);
+  return { attempt: reconciled, manifest: confirmed.manifest, lifecycle: resumedLifecycle,
+    ...(evidence === undefined ? {} : { sessionEvidence: evidence }) };
 }
-function addRun(p: CoreV2WorkflowProjection, result: { attempt: RoleAttemptV2; manifest: RoleRunManifestV2; lifecycle?: CoreV2LifecycleProjection }): CoreV2WorkflowProjection {
+async function completeLiveSessionEvidence(
+  ctx: restate.WorkflowContext<CoreV2WorkflowState>,
+  input: CoreV2WorkflowInput,
+  projection: CoreV2WorkflowProjection,
+  prepared: PreparedLiveRoleSessionEvidenceV1 | undefined,
+  manifest: RoleRunManifestV2,
+  phase: RolePhaseV2,
+  generation: number,
+): Promise<CoreV2SessionEvidenceRecordV1 | undefined> {
+  if (prepared === undefined || input.sessionEvidence === undefined) return undefined;
+  if (manifest.sessionId === undefined) throw new restate.TerminalError(`${phase} Role Manifest has no Provider Session ID for live capture`, { errorCode: 409 });
+  const providerSessionId = manifest.sessionId;
+  let currentProjection = projection;
+  const completedAt = await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-session-agent-completed-at-g${generation}`);
+  const completedLocator = await ctx.run(`session-agent-completed-${phase.toLowerCase()}-r${projection.lifecycle.specRevision}-g${generation}`, () =>
+    advanceAndPersistLiveRoleLocatorV1({
+      runRoot: roleRunRoot(`${input.artifactRoot}/roles`, prepared!.locator.binding.runId),
+      current: prepared!.locator,
+      stage: "AGENT_COMPLETED",
+      providerSessionId,
+      updatedAt: completedAt,
+    }));
+  prepared = { ...prepared, locator: completedLocator };
+  currentProjection = await publish(ctx, input, upsertSessionEvidence(currentProjection, sessionEvidenceRecord(prepared)));
+  const pendingAt = await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-session-capture-pending-at-g${generation}`);
+  const pendingLocator = await ctx.run(`session-capture-pending-${phase.toLowerCase()}-r${projection.lifecycle.specRevision}-g${generation}`, () =>
+    advanceAndPersistLiveRoleLocatorV1({
+      runRoot: roleRunRoot(`${input.artifactRoot}/roles`, prepared!.locator.binding.runId),
+      current: prepared!.locator,
+      stage: "CAPTURE_PENDING",
+      updatedAt: pendingAt,
+    }));
+  prepared = { ...prepared, locator: pendingLocator };
+  currentProjection = await publish(ctx, input, upsertSessionEvidence(currentProjection, sessionEvidenceRecord(prepared)));
+  const requestedAt = await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-session-capture-requested-at-g${generation}`);
+  const capturedAt = await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-session-captured-at-g${generation}`);
+  const startedAt = await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-session-capture-started-at-g${generation}`);
+  const finishedAt = await durableNow(ctx, `${phase}-r${projection.lifecycle.specRevision}-session-capture-finished-at-g${generation}`);
+  const capture = await ctx.run(`session-capture-${phase.toLowerCase()}-r${projection.lifecycle.specRevision}-g${generation}`, () => captureLiveRoleSessionV1({
+    sourceWorkflowRef: `restate://CoreV2Workflow/${input.taskId}`,
+    roleManifest: manifest,
+    promptEnvelope: prepared!.promptEnvelope,
+    promptEnvelopeDescriptor: prepared!.promptEnvelopeDescriptor,
+    managedArtifactRoot: `${input.artifactRoot}/session-evidence`,
+    config: input.sessionEvidence!,
+    requestedAt,
+    capturedAt,
+    startedAt,
+    finishedAt,
+    executorId: `core-v2:${input.taskId}:${phase}:r${projection.lifecycle.specRevision}:g${generation}`,
+    ...(input.recoveryControl?.captureExitAfterManifestOnceAt === undefined ? {} : {
+      afterManifest: async (capturedManifest: SessionTranscriptManifestV1) => {
+        await exitOnce(input.recoveryControl?.captureExitAfterManifestOnceAt, `${phase} transcript manifest ${capturedManifest.manifestDigest}`);
+      },
+    }),
+  }));
+  return sessionEvidenceRecord(prepared, capture);
+}
+function sessionEvidenceRecord(prepared: PreparedLiveRoleSessionEvidenceV1, capture?: LiveSessionCaptureResultV1): CoreV2SessionEvidenceRecordV1 {
+  return {
+    attemptId: prepared.locator.binding.attemptId,
+    runId: prepared.locator.binding.runId,
+    promptEnvelope: prepared.promptEnvelopeDescriptor,
+    locator: prepared.locator,
+    executionEventsRef: prepared.locator.expectedExecutionEventsRef,
+    stderrRef: prepared.locator.expectedStderrRef,
+    ...(capture === undefined ? {} : { authority: capture.authority, receipt: capture.receipt, summary: capture.summary }),
+  };
+}
+function upsertSessionEvidence(projection: CoreV2WorkflowProjection, record: CoreV2SessionEvidenceRecordV1): CoreV2WorkflowProjection {
+  return { ...projection, sessionEvidence: upsertSessionEvidenceRecord(projection.sessionEvidence ?? [], record) };
+}
+function upsertSessionEvidenceRecord(records: readonly CoreV2SessionEvidenceRecordV1[], record: CoreV2SessionEvidenceRecordV1): readonly CoreV2SessionEvidenceRecordV1[] {
+  return [...records.filter((item) => item.attemptId !== record.attemptId), record];
+}
+function roleRunRoot(artifactRoot: string, runId: string): string {
+  return resolve(artifactRoot, `run-${runId.slice("sha256:".length)}`);
+}
+function addRun(p: CoreV2WorkflowProjection, result: { attempt: RoleAttemptV2; manifest: RoleRunManifestV2; lifecycle?: CoreV2LifecycleProjection; sessionEvidence?: CoreV2SessionEvidenceRecordV1 }): CoreV2WorkflowProjection {
   const { pendingReconcile: _pending, ...rest } = p;
   return { ...rest, state: "EXECUTING", error: null, lifecycle: result.lifecycle ?? p.lifecycle, attempts: upsertAttempt(p.attempts, result.attempt),
-    roleRuns: [...p.roleRuns.filter((item) => item.attemptId !== result.manifest.attemptId), result.manifest] };
+    roleRuns: [...p.roleRuns.filter((item) => item.attemptId !== result.manifest.attemptId), result.manifest],
+    ...(result.sessionEvidence === undefined ? {} : { sessionEvidence: upsertSessionEvidenceRecord(p.sessionEvidence ?? [], result.sessionEvidence) }) };
 }
 function upsertAttempt(attempts: readonly RoleAttemptV2[], attempt: RoleAttemptV2): readonly RoleAttemptV2[] {
   return [...attempts.filter((item) => item.attemptId !== attempt.attemptId), attempt];
@@ -730,6 +851,7 @@ export function validateCoreV2RecoveryControl(
     control?.testExitAfterIntentOnceAt,
     control?.testExitAfterManifestOnceAt,
     control?.checkpointExitAfterCommitOnceAt,
+    control?.captureExitAfterManifestOnceAt,
     ...Object.values(control?.roleExitAfterIntentOnceAt ?? {}),
     ...Object.values(control?.roleExitAfterManifestOnceAt ?? {}),
     mergeFault?.loseAcknowledgementOnceAt,
@@ -745,6 +867,17 @@ export function validateCoreV2ObserverKnowledge(input: CoreV2WorkflowInput["obse
   if (input.enabled !== true) throw new Error("Core v2 Observer/Knowledge config must be omitted or explicitly enabled");
   if (input.timeoutMs !== undefined && (!Number.isSafeInteger(input.timeoutMs) || input.timeoutMs < 1 || input.timeoutMs > 60 * 60 * 1000)) {
     throw new Error("Core v2 Observer/Knowledge timeoutMs must be between 1 and 3600000");
+  }
+}
+export function validateCoreV2SessionEvidence(input: CoreV2WorkflowInput["sessionEvidence"], runnerKind: RealRoleRunnerKind): void {
+  if (input === undefined) return;
+  if (input.enabled !== true || !(["digest_only", "full"] as const).includes(input.capturePolicy as "digest_only" | "full")) {
+    throw new Error("Core v2 Session Evidence requires enabled:true and capturePolicy digest_only|full");
+  }
+  const providerRoot = runnerKind === "CODEX_EXEC" ? input.codexSessionsRoot : input.claudeProjectsRoot;
+  if (typeof providerRoot !== "string" || !providerRoot.trim()) throw new Error(`Core v2 Session Evidence requires the ${runnerKind} Provider session root`);
+  if (input.maxSourceBytes !== undefined && (!Number.isSafeInteger(input.maxSourceBytes) || input.maxSourceBytes < 1 || input.maxSourceBytes > 1024 * 1024 * 1024)) {
+    throw new Error("Core v2 Session Evidence maxSourceBytes must be between 1 and 1073741824");
   }
 }
 export function coreV2AcceptanceInstruction(

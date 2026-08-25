@@ -3,12 +3,13 @@
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { appendFile, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import net from "node:net";
+import os from "node:os";
 import path from "node:path";
 
 import type { CoreV2WorkflowInput, CoreV2WorkflowProjection } from "../src/restate/core-v2-services.js";
 import { IngressError, invoke, send } from "../src/restate/ingress.js";
 
-type Scenario = "TEST_CONFIRMED" | "TEST_NOT_APPLIED" | "ROLE_WORKER_RECOVERY" | "CHECKPOINT_UNKNOWN" | "MERGE_UNKNOWN" | "ROLE_NOT_APPLIED";
+type Scenario = "TEST_CONFIRMED" | "TEST_NOT_APPLIED" | "ROLE_WORKER_RECOVERY" | "CHECKPOINT_UNKNOWN" | "MERGE_UNKNOWN" | "ROLE_NOT_APPLIED" | "SESSION_CAPTURE_RECOVERY";
 const ingressUrl = process.env["MOYE_CORE_V2_ACCEPTANCE_INGRESS"] ?? "http://127.0.0.1:50889";
 const adminUrl = process.env["MOYE_CORE_V2_ACCEPTANCE_ADMIN"] ?? "http://127.0.0.1:50890";
 const projectId = process.env["MOYE_CORE_V2_ACCEPTANCE_PROJECT"] ?? "moye";
@@ -31,8 +32,9 @@ await registerService();
 const summaries: unknown[] = [];
 try {
   const allScenarios = ["TEST_CONFIRMED", "TEST_NOT_APPLIED", "ROLE_WORKER_RECOVERY", "CHECKPOINT_UNKNOWN", "MERGE_UNKNOWN", "ROLE_NOT_APPLIED"] as const;
+  const selectableScenarios: readonly Scenario[] = [...allScenarios, "SESSION_CAPTURE_RECOVERY"];
   const selectedScenarios = cleanupSmoke ? [] : requestedScenarios.length === 0 ? [...allScenarios]
-    : allScenarios.filter((scenario) => requestedScenarios.includes(scenario));
+    : selectableScenarios.filter((scenario) => requestedScenarios.includes(scenario));
   if (!cleanupSmoke && requestedScenarios.length > 0 && (selectedScenarios.length === 0 || selectedScenarios.length !== requestedScenarios.length)) {
     throw new Error("MOYE_CORE_V2_RECOVERY_SCENARIOS contains an unknown or duplicate scenario");
   }
@@ -57,6 +59,7 @@ async function executeScenario(scenario: Scenario, index: number) {
     CHECKPOINT_UNKNOWN: "CHECKPOINT-UNKNOWN",
     MERGE_UNKNOWN: "MERGE-UNKNOWN",
     ROLE_NOT_APPLIED: "ROLE-NOT-APPLIED",
+    SESSION_CAPTURE_RECOVERY: "SESSION-CAPTURE",
   };
   const taskId = `TASK-RCV-${stamp}-${String(index + 1).padStart(2, "0")}-${scenarioCode[scenario]}`;
   assert(/^TASK-[A-Z0-9][A-Z0-9-]{0,63}$/.test(taskId), `invalid generated Task ID: ${taskId}`);
@@ -68,6 +71,7 @@ async function executeScenario(scenario: Scenario, index: number) {
   await createFixture(repositoryRoot, executionLedger);
   const baseCommit = git(repositoryRoot, "rev-parse", "HEAD");
   const marker = (name: string) => path.join(artifactRoot, `${name}.marker`);
+  const codexHome = process.env["CODEX_HOME"] ?? path.join(os.homedir(), ".codex");
   const input: CoreV2WorkflowInput = {
     taskId, projectId, title: `Core v2 real recovery acceptance: ${scenario}`,
     objective: "Create src/value.txt whose complete content is exactly `accepted-value\\n`; add a README line exactly `## Accepted behavior`; create SECURITY.md whose complete content is exactly `# Security\\n` (the period ends this sentence and is not file content).",
@@ -80,6 +84,15 @@ async function executeScenario(scenario: Scenario, index: number) {
     } } } : {}),
     ...(scenario === "ROLE_NOT_APPLIED" ? { recoveryControl: { roleExitAfterIntentOnceAt: { FINAL_REVIEW: marker("role-final-review-intent") } } } : {}),
     ...(scenario === "CHECKPOINT_UNKNOWN" ? { recoveryControl: { checkpointExitAfterCommitOnceAt: marker("checkpoint") } } : {}),
+    ...(scenario === "SESSION_CAPTURE_RECOVERY" ? {
+      sessionEvidence: {
+        enabled: true as const,
+        capturePolicy: "full" as const,
+        codexSessionsRoot: process.env["MOYE_CODEX_SESSIONS_ROOT"] ?? path.join(codexHome, "sessions"),
+        maxSourceBytes: 64 * 1024 * 1024,
+      },
+      recoveryControl: { captureExitAfterManifestOnceAt: marker("session-capture-manifest") },
+    } : {}),
     acceptanceMetadata: { kind: "PRODUCT_ACCEPTANCE" as const, suite: "core-v2-recovery", scenario },
     ...(scenario === "MERGE_UNKNOWN" ? { mergeFault: { exitAfterRefUpdateOnceAt: marker("merge") } } : {}),
   };
@@ -134,6 +147,19 @@ async function persistSummary(root: string, scenario: Scenario, projection: Core
   assert(new Set(projection.roleRuns.map((run) => run.attemptId)).size === projection.roleRuns.length, `${projection.taskId} duplicate logical Attempt`);
   assert(new Set(projection.roleRuns.map((run) => run.runId)).size === projection.roleRuns.length, `${projection.taskId} duplicate Role Run`);
   assert(new Set(projection.roleRuns.map((run) => run.sessionId)).size === projection.roleRuns.length, `${projection.taskId} duplicate Session`);
+  if (scenario === "SESSION_CAPTURE_RECOVERY") {
+    const sessionEvidence = projection.sessionEvidence ?? [];
+    assert(sessionEvidence.length === projection.roleRuns.length, `${projection.taskId} does not have one Session Evidence record per Role Run`);
+    for (const run of projection.roleRuns) {
+      const captured = sessionEvidence.find((item) => item.attemptId === run.attemptId);
+      assert(captured !== undefined, `${projection.taskId} missing Session Evidence for ${run.attemptId}`);
+      assert(captured.runId === run.runId && captured.locator.stage === "CAPTURE_PENDING", `${projection.taskId} Session locator identity/stage mismatch`);
+      assert(captured.executionEventsRef === run.eventsRef && captured.stderrRef === run.stderrRef, `${projection.taskId} execution stream refs were replaced by Transcript evidence`);
+      assert(captured.receipt?.captureState === "COMPLETE" && captured.receipt.authorityScope === "DIAGNOSTIC_SUPPLEMENT_ONLY", `${projection.taskId} Session Receipt is not a complete diagnostic sidecar`);
+      assert(captured.summary?.state === "COMPLETE" && captured.authority?.headReceiptDigest === captured.receipt.receiptDigest, `${projection.taskId} Session Evidence Authority is incomplete`);
+    }
+    assert(new Set(sessionEvidence.map((item) => item.receipt?.receiptDigest)).size === sessionEvidence.length, `${projection.taskId} duplicate Session Receipt`);
+  }
   const executions = (await readFile(ledger, "utf8")).trim().split("\n").filter(Boolean);
   assert(executions.length === 1 && projection.lifecycle.trustedTestRuns.length === 1, `${projection.taskId} test executed more than once`);
   const repositoryRoot = path.dirname(ledger) + "/repository";
@@ -157,6 +183,9 @@ async function persistSummary(root: string, scenario: Scenario, projection: Core
       phase: pending.pendingReconcile?.phase, attemptId: pending.pendingReconcile?.attemptId, runId: pending.pendingReconcile?.runId,
       operationId: pending.pendingReconcile?.operationId, eventCount: pending.lifecycle.events.length }, state: projection.state, outcome: projection.outcome,
     archiveStatus: projection.lifecycle.archive?.status, roleRuns: projection.roleRuns.map((run) => ({ phase: run.phase, attemptId: run.attemptId, sessionId: run.sessionId, runId: run.runId, manifestDigest: run.manifestDigest })),
+    sessionEvidence: (projection.sessionEvidence ?? []).map((item) => ({ attemptId: item.attemptId, runId: item.runId, locatorStage: item.locator.stage,
+      promptEnvelopeDigest: item.promptEnvelope.digest, receiptDigest: item.receipt?.receiptDigest, manifestDigest: item.summary?.manifestDigest,
+      captureState: item.summary?.state, executionEventsRef: item.executionEventsRef, stderrRef: item.stderrRef })),
     testRun: projection.lifecycle.trustedTestRuns[0], candidateCommit: projection.lifecycle.candidateCommit, mergeCommit,
     mergeReceipt: projection.lifecycle.mergeReceipt, verificationGateDigest: projection.lifecycle.verificationGateDigest,
     closureDigest: projection.lifecycle.successClosure?.closureDigest, archiveReceiptDigest: projection.lifecycle.archive?.receiptDigest,

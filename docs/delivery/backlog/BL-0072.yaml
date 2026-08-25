@@ -1,0 +1,20 @@
+schema_version: 1
+id: BL-0072
+title: "兼容 Codex 当前 item_completed 对话记录"
+kind: bug
+status: converted_to_task
+priority: high
+source_refs:
+  - finding-codex-current-item-completed-dialogue-misclassified
+affected_areas:
+  - codex-session-adapter
+  - agent-session-evidence
+  - core-v2-runtime
+acceptance_outline:
+  - "item_completed UserMessage/AgentMessage 正确分类为 Prompt/User/Assistant"
+  - "response_item assistant output_text 正确分类为 Assistant"
+  - "真实 Core v2 Session Capture 不因真实消息被误归类而停滞"
+resolution:
+  task_refs: [TASK-0061]
+  duplicate_of: null
+  reason: "由 TASK-0061 真实中断验收发现并在同一阻断 Runtime Integration 工作包中修复"

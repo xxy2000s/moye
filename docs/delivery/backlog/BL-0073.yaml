@@ -1,0 +1,21 @@
+schema_version: 1
+id: BL-0073
+title: "消除 Core v2 重放配置分叉并恢复 pre-dispatch Journal mismatch"
+kind: bug
+status: ready
+priority: critical
+source_refs:
+  - finding-core-v2-replay-config-mismatch-not-recoverable
+affected_areas:
+  - core-v2-workflow
+  - restate-replay
+  - failure-recovery
+acceptance_outline:
+  - "验收授权配置不得在 Workflow replay 时改变 durable Journal 路径"
+  - "错误部署配置必须在提交前或持久化边界内被稳定拒绝"
+  - "暂停在 pre-dispatch HandlerReturn/Journal mismatch 的 owning Invocation 可由合法 append-only successor 完成 Failure Closure 与 Archive"
+  - "TASK-RCV-20260825185538-01-SESSION-CAPTURE 保留原历史并得到唯一可查询归档终态"
+resolution:
+  task_refs: []
+  duplicate_of: null
+  reason: "TASK-0061 真实恢复验收发现；在其 Seal 后调度独立 recovery Task"

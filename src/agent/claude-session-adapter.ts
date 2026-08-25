@@ -79,6 +79,11 @@ export interface ReadManagedClaudeSessionRequestV1 {
   readonly manifestDigest: string;
 }
 
+export interface InspectManagedClaudeSessionRequestV1 {
+  readonly managedArtifactRoot: string;
+  readonly captureId: string;
+}
+
 interface ParsedRecord {
   readonly lineNumber: number;
   readonly rawLine: string;
@@ -271,6 +276,34 @@ export async function readManagedClaudeSessionV1(request: ReadManagedClaudeSessi
     }
   }
   return Object.freeze({ manifest, timeline });
+}
+
+export async function inspectManagedClaudeSessionV1(request: InspectManagedClaudeSessionRequestV1): Promise<{
+  readonly manifest: SessionTranscriptManifestV1;
+  readonly timeline: readonly NormalizedTimelineEventV1[];
+} | null> {
+  const root = path.resolve(request.managedArtifactRoot);
+  let managedRoot: string;
+  try {
+    managedRoot = await physicalDirectory(root, "managedArtifactRoot");
+  } catch (error) {
+    if (isMissing(error)) return null;
+    throw error;
+  }
+  const captureDirectory = path.join(managedRoot, captureDirectoryName(request.captureId));
+  let manifestBytes: Buffer;
+  try {
+    await assertContainedDirectory(managedRoot, captureDirectory);
+    manifestBytes = await readManagedFile(captureDirectory, "session-transcript.manifest.json");
+  } catch (error) {
+    if (isMissing(error)) return null;
+    throw error;
+  }
+  let value: unknown;
+  try { value = JSON.parse(manifestBytes.toString("utf8")); }
+  catch (error) { throw failure("MALFORMED", "Managed Claude Transcript Manifest is malformed", error); }
+  const digest = required(record(value)["manifestDigest"], "manifestDigest");
+  return readManagedClaudeSessionV1({ managedArtifactRoot: managedRoot, captureId: request.captureId, manifestDigest: digest });
 }
 
 function parseClaudeSession(input: {
@@ -587,4 +620,8 @@ function failure(code: string, message: string, cause?: unknown): MoyeError {
 
 function isNodeError(value: unknown): value is NodeJS.ErrnoException {
   return value instanceof Error && "code" in value;
+}
+
+function isMissing(value: unknown): boolean {
+  return (isNodeError(value) && value.code === "ENOENT") || (value instanceof MoyeError && value.code === "SOURCE_MISSING");
 }

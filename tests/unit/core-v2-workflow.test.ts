@@ -7,7 +7,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { createCoreV2Lifecycle } from "../../src/domain/core-v2-lifecycle.js";
-import { coreV2AcceptanceInstruction, coreV2AssessmentPrompt, coreV2ReviewBoundary, ensureGitCheckpoint, normalizeArchitectDeliverableV2, validateCoreV2AcceptanceControl, validateCoreV2AcceptanceMetadata, validateCoreV2ObserverKnowledge, validateCoreV2RecoveryControl } from "../../src/restate/core-v2-services.js";
+import { coreV2AcceptanceInstruction, coreV2AssessmentPrompt, coreV2ReviewBoundary, ensureGitCheckpoint, normalizeArchitectDeliverableV2, validateCoreV2AcceptanceControl, validateCoreV2AcceptanceMetadata, validateCoreV2ObserverKnowledge, validateCoreV2RecoveryControl, validateCoreV2SessionEvidence } from "../../src/restate/core-v2-services.js";
 import type { CoreV2WorkflowProjection } from "../../src/restate/core-v2-services.js";
 import { buildCoreV2StateMachine } from "../../src/trace/state-machine.js";
 
@@ -49,6 +49,14 @@ describe("Core v2 Workflow control-plane", () => {
     expect(() => validateCoreV2ObserverKnowledge({ enabled: true, timeoutMs: 250 })).not.toThrow();
     expect(() => validateCoreV2ObserverKnowledge({ enabled: false })).toThrow("explicitly enabled");
     expect(() => validateCoreV2ObserverKnowledge({ enabled: true, timeoutMs: 0 })).toThrow("between 1 and 3600000");
+  });
+
+  it("requires an explicit Provider source root for live Session Evidence capture", () => {
+    expect(() => validateCoreV2SessionEvidence(undefined, "CODEX_EXEC")).not.toThrow();
+    expect(() => validateCoreV2SessionEvidence({ enabled: true, capturePolicy: "full", codexSessionsRoot: "/managed/codex/sessions" }, "CODEX_EXEC")).not.toThrow();
+    expect(() => validateCoreV2SessionEvidence({ enabled: true, capturePolicy: "digest_only", claudeProjectsRoot: "/managed/claude/projects" }, "CLAUDE_PRINT")).not.toThrow();
+    expect(() => validateCoreV2SessionEvidence({ enabled: true, capturePolicy: "full" }, "CODEX_EXEC")).toThrow("Provider session root");
+    expect(() => validateCoreV2SessionEvidence({ enabled: true, capturePolicy: "redacted", codexSessionsRoot: "/managed" }, "CODEX_EXEC")).toThrow("capturePolicy");
   });
 
   it("targets acceptance conditions to one real Role phase, Revision and Generation", () => {
