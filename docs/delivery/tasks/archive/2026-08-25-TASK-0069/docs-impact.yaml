@@ -1,0 +1,78 @@
+schema_version: 1
+task_id: TASK-0069
+graph_revision: 122
+intents: [m2-plugin-sdk]
+changed_paths:
+  - README.md
+  - package.json
+  - src/framework/plugin-sdk.ts
+  - src/framework/builtin-adapters.ts
+  - scripts/plugin_sdk_contracts.ts
+  - tests/unit/plugin-sdk.test.ts
+  - docs/knowledge/current/architecture/framework-product-boundary.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/delivery/backlog/BL-0068.yaml
+  - docs/delivery/milestones/m2-framework-release.md
+  - docs/delivery/tasks/README.md
+  - docs/delivery/tasks/archive/README.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0069/task.yaml
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0069/spec.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0069/design.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0069/plan.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0069/verification.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0069/docs-impact.yaml
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0069/plugin-contract-evidence.json
+  - docs/graph.yaml
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - task-runtime-kernel
+    - framework-product-boundary
+    - architecture-index
+    - root-readme
+    - bl-0068-framework-productization
+    - backlog-index
+    - sources-index
+    - milestone-2-framework-release
+    - tasks-index
+    - archived-tasks-index
+    - adr-0008-framework-release-boundary
+    - task-0069-manifest
+    - task-0069-spec
+    - task-0069-design
+    - task-0069-plan
+    - task-0069-verification
+    - task-0069-docs-impact
+  reviewed:
+    architecture-overview: { outcome: unchanged, reason: "Plugin SDK 位于已冻结 Framework 边界内，不改变总体 Harness。" }
+    moye-task-control-skill: { outcome: unchanged, reason: "继续执行 Full 与两阶段 Seal，不改变 Skill。" }
+    restate-poc-architecture: { outcome: unchanged, reason: "没有改变 Restate handler 或 Projection 所有权。" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "文档生命周期角色不变。" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "使用唯一 Result Commit Seal。" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "UNKNOWN/Reconcile 约束复用既有陷阱，不产生新的稳定反模式。" }
+    task-0013-manifest: { outcome: unchanged, reason: "不修改 Core Control 历史。" }
+    task-0014-manifest: { outcome: unchanged, reason: "不修改 Role 协议历史。" }
+    task-0015-manifest: { outcome: unchanged, reason: "不修改 Review/Finding 历史。" }
+    task-0016-manifest: { outcome: unchanged, reason: "不修改预算/恢复历史。" }
+    task-0017-manifest: { outcome: unchanged, reason: "不修改 Observer/Documentation 历史。" }
+    task-0018-manifest: { outcome: unchanged, reason: "不修改 Closure 历史。" }
+    task-0019-manifest: { outcome: unchanged, reason: "不修改产品入口历史。" }
+    task-0020-manifest: { outcome: unchanged, reason: "不修改 Board 历史。" }
+    task-0021-manifest: { outcome: unchanged, reason: "不修改多角色历史。" }
+    task-0029-manifest: { outcome: unchanged, reason: "不修改 Bootstrap recovery 历史。" }
+    task-0002-manifest: { outcome: unchanged, reason: "不修改 Backlog 同步历史。" }
+    task-0003-manifest: { outcome: unchanged, reason: "不修改 Task/Attempt 协议历史。" }
+    task-0004-manifest: { outcome: unchanged, reason: "内建 bridge 复用 Git Effect，不修改历史。" }
+    task-0005-manifest: { outcome: unchanged, reason: "内建 bridge 复用 Agent Runner，不修改历史。" }
+    task-0006-manifest: { outcome: unchanged, reason: "不修改 Coding Workflow 历史。" }
+    task-0007-manifest: { outcome: unchanged, reason: "不修改故障矩阵历史。" }
+    task-0001-manifest: { outcome: unchanged, reason: "不修改首个 PoC 历史。" }
+    task-0049r1-manifest: { outcome: unchanged, reason: "只复用 Seal 流程。" }
+    task-0056-manifest: { outcome: unchanged, reason: "Full profile 选择不变。" }
+    task-0061r1-design: { outcome: unchanged, reason: "Plugin 契约不改变 replay-sensitive 输入冻结。" }
+    task-0062-design: { outcome: unchanged, reason: "Plugin 契约不改变 Session API。" }
+    task-0063-design: { outcome: unchanged, reason: "Plugin 契约不改变 Session UX。" }
+    adr-0008-framework-release-boundary: { outcome: unchanged, reason: "实现其 pluginApiVersion 1、权限和对账决策。" }

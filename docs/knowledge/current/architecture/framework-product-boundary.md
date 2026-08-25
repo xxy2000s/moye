@@ -47,6 +47,10 @@ Project Manifest v1 已由 `src/framework/project-manifest.ts` 实现，并以 `
 
 消费级 `MoyeClient` 与 CLI 已实现：公共 start request 只有 Manifest 路径、需求、验收标准和可选 Task ID；内部自动冻结 clean HEAD、存在且等于 base 的 target ref、测试 argv、Runner 和仓库外 Artifact namespace，再单次提交 keyed `CoreV2Workflow`。status/watch 每次经 TaskAuthority 附着 owning Workflow，open 只生成稳定 Board URL。doctor 只读检查 Manifest、Git、target、Agent、test executable、Artifact 权限、Docker、Restate 和 Board。
 
-默认 Transcript policy 已收紧为 `none`；只有项目同时显式选择 `digest_only | full` 并允许 Prompt capture 时 Client 才构造 Session Evidence。`redacted` 等待 W04 capability/plugin 支持，不能静默降级。
+默认 Transcript policy 已收紧为 `none`；只有项目同时显式选择 `digest_only | full` 并允许 Prompt capture 时 Client 才构造 Session Evidence。`redacted` 仍未实现，不能静默降级。
 
-Plugin、Documentation Policy、分发、包流水线、示例和外部产品矩阵仍由 TASK-0069～TASK-0075 顺序实现。在这些证据完成前，Moye 仍不能声明 Framework MVP 已公开发布。
+Plugin SDK v1 已由 `src/framework/plugin-sdk.ts` 实现：七类 Adapter 共享版本化 Descriptor、Operation Context、内容寻址 `COMPLETE | UNKNOWN | FAILED` Result 和 capability negotiation。公共 Context 不包含 Projection、Reducer、Authority、Workflow dispatch 或 Runtime journal；相关 capability 前缀会被 fail closed 拒绝。`RECONCILABLE` Adapter 必须同时声明 `effect.reconcile` 和 handler，UNKNOWN token 绑定 operation/idempotency key/intent，重复 execute/reconcile 必须返回相同字节。
+
+`src/framework/builtin-adapters.ts` 把现有 Agent Runner、Workspace/Git、Trusted Test、Docs Graph、Local SCM、Filesystem Artifact 和 Observer/Knowledge 实现登记为七个 bridge；统一契约入口会加载并验证真实 export，而不是给 Plugin 状态推进权限。当前只冻结 SDK 和内建 bridge，动态第三方代码加载、Sandbox/Secrets、市场和 owning Workflow 的可配置 dispatch 不在 W04 范围。
+
+Documentation Policy、分发、包流水线、示例和外部产品矩阵仍由 TASK-0070～TASK-0075 顺序实现。在这些证据完成前，Moye 仍不能声明 Framework MVP 已公开发布。

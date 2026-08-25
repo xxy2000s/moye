@@ -1,0 +1,20 @@
+{
+  "pluginApiVersion": 1,
+  "adapterCount": 7,
+  "passed": true,
+  "command": "npm run acceptance:framework:plugins",
+  "unitTests": { "file": "tests/unit/plugin-sdk.test.ts", "passed": 8 },
+  "adapters": [
+    { "id": "moye.agent-runner.core-v2", "kind": "AGENT_RUNNER", "effectModel": "RECONCILABLE", "reportDigest": "sha256:975441dd11b50471e9d9ab2341f169a3b532d8620ec0e95f7ba6c4528769507a" },
+    { "id": "moye.workspace-git.local", "kind": "WORKSPACE_GIT", "effectModel": "RECONCILABLE", "reportDigest": "sha256:bf520e47bc388c48cbda8adced64351d841104ec2bfaa1dced00212d0fc59e75" },
+    { "id": "moye.trusted-test.argv", "kind": "TRUSTED_TEST", "effectModel": "RECONCILABLE", "reportDigest": "sha256:ddfeba1a939cb7b26fadf73219c8bc0acc0449e9b47be5f3a29a44d06bde2de1" },
+    { "id": "moye.documentation.graph", "kind": "DOCUMENTATION", "effectModel": "IDEMPOTENT", "reportDigest": "sha256:3da5a9b353bb0c46ba6a976432f1b37baf3a5d9275131aaebdaea71b5288369f" },
+    { "id": "moye.scm.local-git", "kind": "SCM", "effectModel": "RECONCILABLE", "reportDigest": "sha256:c3c43a29a17c80fde279bd54167438c09c58f4d00fc5712f112aad4f17d2b6e4" },
+    { "id": "moye.artifact-store.filesystem", "kind": "ARTIFACT_STORE", "effectModel": "IDEMPOTENT", "reportDigest": "sha256:05b09fc1b7f0c9715211af18ca91bd548838700e7ef1befdd8690176202cba51" },
+    { "id": "moye.knowledge.observer", "kind": "KNOWLEDGE_SINK", "effectModel": "NONE", "reportDigest": "sha256:cf92c455238c13112d948e88fa4ebc61e2250830c4c13c82888067a60c41342d" }
+  ],
+  "limitations": [
+    "W04 verifies the versioned SDK and built-in implementation bridges; configurable third-party Workflow dispatch is deferred.",
+    "Dynamic plugin loading, sandboxing, secrets governance and a plugin marketplace are not implemented."
+  ]
+}

@@ -88,5 +88,6 @@ YYYY-MM-DD-TASK-NNNN
 | [TASK-0066](./2026-08-25-TASK-0066/spec.md) | Seal Prepared；业务终态见 Runtime | 2026-08-25 | Framework MVP 公共边界、版本、兼容窗口与发布 ADR |
 | [TASK-0067](./2026-08-25-TASK-0067/spec.md) | Seal Prepared；业务终态见 Runtime | 2026-08-25 | Project Manifest v1、显式迁移、init/validate 与安全边界 |
 | [TASK-0068](./2026-08-25-TASK-0068/spec.md) | Seal Prepared；业务终态见 Runtime | 2026-08-25 | Consumer Client/CLI、doctor 与真实外部项目完整闭环 |
+| [TASK-0069](./2026-08-25-TASK-0069/spec.md) | Seal Prepared；业务终态见 Runtime | 2026-08-25 | Plugin SDK v1、七类内建 Adapter bridge、能力协商与 UNKNOWN/Reconcile 契约 |
 
 Bootstrap Task 的 `task.yaml` 冻结在 Archive 开始前，因此其中 `archive.status: pending` 描述的是冻结点；最终 `ARCHIVED` 事实由目录位置、`archive-manifest.json` 和 ProjectBoard Projection 共同证明。Sealed Task 的 Git package 固定为 `seal_prepared`，上表的 `Succeeded + Archived` 来自 2026-08-24 对 owning Workflow/合法 recovery successor 的只读 Runtime 查询；精确 Result Commit 与 Package Digest 见 [Core v2 Roadmap](../../core-v2-roadmap.md)。TASK-0002 归档后文档图门禁曾发现 Spec 的 Active 相对链接因目录层级变化而失效，控制面只修正了该链接；修正前内容仍由 Result Commit `ff1954f4e4360e85276cf22aa30d6f5e8e396f84` 保存。后续 Task 使用不随 Active/Archive 深度变化的稳定引用。
