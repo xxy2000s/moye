@@ -5,6 +5,7 @@ export interface MoyeConfig {
   readonly servicePort: number;
   readonly boardPort: number;
   readonly artifactRoots: readonly string[];
+  readonly sessionSourceRoots: readonly string[];
   readonly liveRuntimeRoot: string;
   readonly repositoryRoots: readonly string[];
   readonly observability: {
@@ -35,6 +36,7 @@ export function loadConfig(
     servicePort: parsePort(environment["RESTATE_SERVICE_PORT"], 9080),
     boardPort: parsePort(environment["MOYE_BOARD_PORT"], 3000),
     artifactRoots: parsePaths(environment["MOYE_ARTIFACT_ROOTS"]),
+    sessionSourceRoots: parsePaths(environment["MOYE_SESSION_SOURCE_ROOTS"]),
     liveRuntimeRoot,
     repositoryRoots: parsePaths(environment["MOYE_REPOSITORY_ROOTS"] ?? process.cwd()),
     observability: {

@@ -18,6 +18,7 @@ import {
 import { codingTaskWorkflow } from "./restate/coding-services.js";
 import { coreClosureWorkflow } from "./restate/core-services.js";
 import { coreV2FailureRecoveryAttemptWorkflow, coreV2FailureRecoveryWorkflow, coreV2Workflow } from "./restate/core-v2-services.js";
+import { sessionEvidenceRegistry, transcriptEnrichmentWorkflow } from "./restate/transcript-enrichment-services.js";
 
 const config = loadConfig();
 const endpoint = createServer(
@@ -36,6 +37,8 @@ const endpoint = createServer(
       coreV2Workflow,
       coreV2FailureRecoveryWorkflow,
       coreV2FailureRecoveryAttemptWorkflow,
+      sessionEvidenceRegistry,
+      transcriptEnrichmentWorkflow,
     ],
   }),
 );

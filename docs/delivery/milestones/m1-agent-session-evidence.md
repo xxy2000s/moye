@@ -58,7 +58,7 @@ Task Input
 | `M1-W04R / TASK-0061R1` Replay/Recovery Hotfix | W04 | 将 replay-sensitive 输入校验固化到既有 `intake-time` durable Run；窄化恢复真实 index-1 HandlerReturn Journal mismatch | 首次失败 Task 保留 5 个 Role/Session，无 Test/Merge 重跑，经 append-only successor 得到 `CLOSED + ARCHIVED + FAILED_TERMINAL` |
 | `M1-W05 / TASK-0062` Unified Timeline and Board API | W04 | 已完成并 Seal；Runtime 与 Board 共用唯一 Normalizer，API 分离 execution stream、normalized transcript、raw metadata 和 stderr | 真实 W04 Task 的 7 个 Role、247 条 canonical Event 经 API 产品验收；Runtime `CLOSED + ARCHIVED + SUCCEEDED` |
 | `M1-W06 / TASK-0063` Agent Session Chatbot UX | W05 | 已完成实现与真实浏览器验收；Core v2 弹窗消费 canonical Timeline，展示 Prompt/User、Assistant、Tool Call/Result、System、Error/stderr、来源、策略、父子 Session 和完整性；旧 Workflow 保持明确兼容视图 | 真实 Architect Session 28 canonical Event + 1 stderr；1440×1000 与 390×844、筛选、长内容、Raw metadata、Escape/焦点、网络失败→重试均通过 |
-| `M1-W07 / TASK-0064` Append-only Historical Enrichment | W02、W03、W05 | 新增不推进 Task 主状态的 Transcript Enrichment Workflow/Effect；按旧 Session ID 追加 Import Receipt；补全 LIVE-006 及仍有源文件的历史 Session | 不改旧 Manifest、Projection、Domain Event 或 Outcome；重复导入幂等、冲突拒绝；LIVE-006 7/7 有真实 Import Receipt；缺源明确记录而不伪造 |
+| `M1-W07 / TASK-0064` Append-only Historical Enrichment | W02、W03、W05 | 已完成实现和真实产品验收；新增不推进 Task 主状态的 Transcript Enrichment Workflow/Effect 与 `runId` Registry；Board 显式 join 历史 Receipt | LIVE-006 7/7 真实 Codex Session、172 canonical Event、7 个 append-only Receipt；原 Projection Digest 前后一致；重复导入幂等、冲突拒绝、缺源形成 `UNAVAILABLE` |
 | `M1-W08 / TASK-0065` Product Acceptance, Docs and Deployment | W04～W07 | 增加真实 Codex/Claude、故障恢复、历史导入和 Board 端到端入口；更新 README、Architecture、CodeMap、Runbook、Finding/Backlog 和限制声明；部署验收服务 | `npm run check`、`npm run test:e2e` 和 Session 产品验收全通过；最终服务在 `127.0.0.1:3000`；每个场景有 Task/Run/Session/Digest/页面链接 |
 
 ## 4. 固定执行顺序
@@ -144,5 +144,6 @@ Fake/Mock 只用于低层 Parser 边界，不得作为 Codex/Claude 产品验收
 
 - 当前结论：项目 Owner 于 2026-08-25 批准 Revision 1，并授权无中途交互的连续执行。
 - 冻结映射：TASK-0058～TASK-0065 分别对应 W01～W08；只允许逐个创建 Active Task。
-- 当前执行：TASK-0063（M1-W06 Agent Session Chatbot UX）已完成实现与验证，等待唯一 Result Commit、Seal 与 Archive；W05 及之前工作包已封存。
+- 当前执行：TASK-0064（M1-W07 Append-only Historical Enrichment）已完成实现、真实 Restate E2E 与 LIVE-006 7/7 产品验收，等待全库门禁、唯一 Result Commit、Seal 与 Archive；TASK-0063 及之前工作包已封存。
+- W07 实证：`TASK-CORE-V2-LIVE-006` 原 Projection Digest 前后均为 `sha256:7e883797e7d08c25ba0acc1fb4d699940334b32cd7f0d55e7013efe831a673a4`；七个 Receipt 及 Session/Run 映射见 TASK-0064 `session-history-acceptance.json`。旧任务没有 pre-execution Prompt Envelope，因此诚实标记 `PARTIAL + UNVERIFIED`，但 Provider 原始 Prompt 正文、Assistant、Tool 与 System Event 均已受管保存。
 - W01 收敛：`TASK-0058` Result Evidence Commit `339ad003ce52c000ea848a0e13976302d297dc0a`；防复发 Task `TASK-0058R1` Result Commit `a92ce94859a346fbf686fe360c81e2ac11a02fa5`；两者 Runtime 均已归档。

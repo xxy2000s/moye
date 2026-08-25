@@ -29,6 +29,7 @@ import type {
 import type { SealedTaskStatus } from "../restate/services.js";
 import type { CoreV2ArchiveRetryInput, CoreV2FailureRecoveryInput, CoreV2ReconcileInput, CoreV2WorkflowInput, CoreV2WorkflowProjection } from "../restate/core-v2-services.js";
 import { inspectCoreV2SourceInvocation } from "../restate/invocation-inspector.js";
+import type { TranscriptEnrichmentInputV1, TranscriptEnrichmentProjectionV1 } from "../restate/transcript-enrichment-services.js";
 
 const [command = "help", ...args] = process.argv.slice(2);
 const config = loadConfig();
@@ -150,6 +151,26 @@ try {
       if (action !== "CONFIRMED" && action !== "NOT_APPLIED") throw new Error("--action must be CONFIRMED or NOT_APPLIED");
       const input: CoreV2ReconcileInput = { token: requiredOption(args, "--token"), action, evidence: requiredOption(args, "--evidence") };
       print(await invoke<CoreV2WorkflowProjection>(config.restateIngressUrl, "CoreV2Workflow", taskId, "reconcile", input));
+      break;
+    }
+    case "session-enrich-start": {
+      const input = await loadJson<TranscriptEnrichmentInputV1>(requiredOption(args, "--file"));
+      print({
+        accepted: true,
+        enrichmentId: input.enrichmentId,
+        workflow: "TranscriptEnrichmentWorkflow",
+        ...await send(config.restateIngressUrl, "TranscriptEnrichmentWorkflow", input.enrichmentId, "run", input),
+      });
+      break;
+    }
+    case "session-enrich-status": {
+      const enrichmentId = requiredArgument(args, "enrichment id");
+      print(await invoke<TranscriptEnrichmentProjectionV1 | null>(
+        config.restateIngressUrl,
+        "TranscriptEnrichmentWorkflow",
+        enrichmentId,
+        "status",
+      ));
       break;
     }
     case "close": {
@@ -407,6 +428,8 @@ Usage:
   moye core-v2-recover-failure --file recovery.json
   moye core-v2-retry-archive TASK-ID --token TOKEN --evidence TEXT
   moye core-v2-reconcile TASK-ID --token TOKEN --action CONFIRMED|NOT_APPLIED --evidence TEXT
+  moye session-enrich-start --file enrichment.json
+  moye session-enrich-status ENRICHMENT-ID
   moye close --file task.json
   moye recover-bootstrap-failure --file recovery.json
   moye seal-start --file sealed-task.json

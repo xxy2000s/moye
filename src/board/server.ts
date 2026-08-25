@@ -18,6 +18,7 @@ import type { AgentArtifactFile } from "../agent/runner.js";
 import { buildLiveCodingTask, listLiveCapabilities } from "../product/live-task.js";
 import { MoyeError } from "../domain/errors.js";
 import type { CoreV2WorkflowProjection } from "../restate/core-v2-services.js";
+import type { HistoricalSessionEvidenceRecordV1 } from "../restate/transcript-enrichment-services.js";
 import { createCoreV2ObserverReport } from "../domain/core-v2-observer.js";
 import {
   readBoardSessionMetadataV1,
@@ -235,12 +236,16 @@ async function route(
         return;
       }
       const evidence = projection.sessionEvidence?.find((item) => item.runId === runId && item.attemptId === run.attemptId);
+      const historicalEvidence = evidence === undefined && !roleStderrRequest
+        ? await invoke<HistoricalSessionEvidenceRecordV1 | null>(options.ingressUrl, "SessionEvidenceRegistry", runId, "get")
+        : null;
       const resolver = {
         artifactRoots: options.artifactRoots ?? [],
         declaredArtifactRoot: projection.artifactRoot,
         taskId,
         run,
         ...(evidence === undefined ? {} : { evidence }),
+        ...(historicalEvidence === null ? {} : { historicalEvidence }),
       };
       try {
         if (roleSessionRequest) {

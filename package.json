@@ -24,6 +24,7 @@
     "acceptance:core-v2:recovery": "tsx scripts/core_v2_recovery_acceptance.ts",
     "acceptance:core-v2:sessions": "MOYE_CORE_V2_RECOVERY_SCENARIOS=SESSION_CAPTURE_RECOVERY tsx scripts/core_v2_recovery_acceptance.ts",
     "acceptance:core-v2:session-api": "tsx scripts/session_timeline_acceptance.ts",
+    "acceptance:agent-sessions:history": "tsx scripts/session_history_acceptance.ts",
     "acceptance:core-v2:guards": "tsx scripts/core_v2_guards_acceptance.ts",
     "acceptance:core-v2:audit": "tsx scripts/core_v2_matrix_audit.ts",
     "acceptance:core-v2:matrix": "tsx scripts/core_v2_full_acceptance.ts",

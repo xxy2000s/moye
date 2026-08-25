@@ -15,6 +15,7 @@ describe("Moye observability configuration", () => {
       captureRawModelIo: false,
     });
     expect(config.artifactRoots).toEqual([]);
+    expect(config.sessionSourceRoots).toEqual([]);
   });
 
   it("parses explicit trace and privacy switches without touching settings files", () => {
@@ -26,6 +27,7 @@ describe("Moye observability configuration", () => {
       MOYE_CLAUDE_NATIVE_TELEMETRY: "1",
       MOYE_CAPTURE_RAW_MODEL_IO: "true",
       MOYE_ARTIFACT_ROOTS: "/tmp/a:/tmp/b",
+      MOYE_SESSION_SOURCE_ROOTS: "/tmp/c:/tmp/d",
     });
     expect(config.observability).toMatchObject({
       enabled: true,
@@ -36,6 +38,7 @@ describe("Moye observability configuration", () => {
       captureRawModelIo: true,
     });
     expect(config.artifactRoots).toEqual(["/tmp/a", "/tmp/b"]);
+    expect(config.sessionSourceRoots).toEqual(["/tmp/c", "/tmp/d"]);
     expect(() => loadConfig({ MOYE_OBSERVABILITY_ENABLED: "sometimes" })).toThrow(/Invalid boolean/);
   });
 });

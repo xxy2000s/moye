@@ -1707,13 +1707,14 @@ function renderManagedSessionContext(target, metadata) {
     <span>${escapeHtml(metadata.provider || "Provider 未确认")}</span>
     <code title="${escapeHtml(metadata.providerSessionId || "")}">${escapeHtml(shortSessionId(metadata.providerSessionId))}</code>
     <span>${escapeHtml(capturePolicyLabel(metadata.capturePolicy))}</span>
+    <span>${escapeHtml(sessionImportModeLabel(metadata.importMode))}</span>
     ${metadata.state === "PARTIAL" ? '<em>该记录不完整，缺失项不会被页面补造。</em>' : ""}
   </div>
   <details class="agent-session-metadata">
     <summary>来源、完整性与 Artifact Metadata</summary>
     <div class="agent-session-metadata-grid">
       <dl><div><dt>Provider Session</dt><dd><code>${escapeHtml(metadata.providerSessionId || "未确认")}</code></dd></div><div><dt>Source</dt><dd>${escapeHtml(metadata.source?.kind || "未发布")} · ${metadata.source?.recordCount ?? 0} records</dd></div><div><dt>Parser</dt><dd>${escapeHtml(metadata.parser ? `${metadata.parser.name}@${metadata.parser.version}` : "未发布")}</dd></div><div><dt>Captured</dt><dd>${metadata.capturedAt ? formatTime(metadata.capturedAt) : "—"}</dd></div></dl>
-      <dl><div><dt>Prompt</dt><dd>${escapeHtml(completeness.prompt || "UNAVAILABLE")}</dd></div><div><dt>Messages</dt><dd>${escapeHtml(completeness.messages || "UNAVAILABLE")}</dd></div><div><dt>Tools</dt><dd>${escapeHtml(completeness.tools || "UNAVAILABLE")}</dd></div><div><dt>Raw</dt><dd>${escapeHtml(completeness.raw || "UNAVAILABLE")}</dd></div></dl>
+      <dl><div><dt>Prompt</dt><dd>${escapeHtml(completeness.prompt || "UNAVAILABLE")} · ${escapeHtml(metadata.promptBinding || "UNVERIFIED")}</dd></div><div><dt>Messages</dt><dd>${escapeHtml(completeness.messages || "UNAVAILABLE")}</dd></div><div><dt>Tools</dt><dd>${escapeHtml(completeness.tools || "UNAVAILABLE")}</dd></div><div><dt>Raw</dt><dd>${escapeHtml(completeness.raw || "UNAVAILABLE")}</dd></div></dl>
       <dl><div><dt>Parent Session</dt><dd>${renderSessionIdList(relationships.parentSessionIds)}</dd></div><div><dt>Child Session</dt><dd>${renderSessionIdList(relationships.childSessionIds)}</dd></div>${raw ? `<div><dt>Raw Metadata</dt><dd><code>${escapeHtml(shortDigest(raw.digest))}</code> · ${raw.byteLength} B</dd></div>` : ""}<div><dt>Manifest</dt><dd><code>${escapeHtml(shortDigest(metadata.manifestDigest || metadata.receiptDigest || "—"))}</code></dd></div></dl>
     </div>
   </details>`;
@@ -1888,6 +1889,10 @@ function truncateManagedContent(value, limit) {
 
 function capturePolicyLabel(value) {
   return ({ full: "Full capture", redacted: "Redacted capture", digest_only: "Digest-only capture" })[value] || "Capture policy 未发布";
+}
+
+function sessionImportModeLabel(value) {
+  return ({ LIVE: "实时证据", HISTORICAL_ENRICHMENT: "历史补全 Sidecar" })[value] || "证据来源未发布";
 }
 
 function sessionStateLabel(value) {

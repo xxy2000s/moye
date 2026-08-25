@@ -1,0 +1,24 @@
+schema_version: 1
+id: TASK-0064
+title: Append-only Historical Session Enrichment
+status: seal_prepared
+outcome: null
+backlog_refs:
+  - BL-0069
+spec_revision: 1
+workflow_id: sealed-task/TASK-0064
+execution_mode: sealed-result-commit
+base_commit: 9dc8d9d43af8da2bb678f911f1a4ace01f5737d7
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-25-TASK-0064
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:c0cf4333e5f61bab2657be794748c0be44f1bdc25818d6e109fde6a51dc6b178
+  base_commit: 9dc8d9d43af8da2bb678f911f1a4ace01f5737d7
+  archive_path: docs/delivery/tasks/archive/2026-08-25-TASK-0064

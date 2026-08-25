@@ -1,0 +1,79 @@
+schema_version: 1
+task_id: TASK-0064
+graph_revision: 117
+intents: [implement-append-only-historical-session-enrichment]
+changed_paths:
+  - src/restate/transcript-enrichment-services.ts
+  - src/agent/session-capture-effect.ts
+  - src/agent/codex-session-adapter.ts
+  - src/agent/claude-session-adapter.ts
+  - src/board/session-timeline.ts
+  - src/board/server.ts
+  - src/config.ts
+  - src/cli/index.ts
+  - src/index.ts
+  - public/app.js
+  - scripts/session_history_acceptance.ts
+  - package.json
+  - tests/fixtures/historical-core-v2-service.ts
+  - tests/e2e/transcript-enrichment-restate.test.ts
+  - tests/unit/session-capture-effect.test.ts
+  - tests/unit/board-server.test.ts
+  - tests/unit/config.test.ts
+  - docs/knowledge/current/architecture/task-runtime-kernel.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - docs/delivery/milestones/m1-agent-session-evidence.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0064/task.yaml
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0064/spec.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0064/design.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0064/plan.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0064/verification.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0064/docs-impact.yaml
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0064/session-history-acceptance.json
+  - docs/delivery/tasks/README.md
+  - docs/delivery/tasks/archive/README.md
+  - docs/graph.yaml
+docs:
+  read: [agent-contract, docs-index, codemap, document-control-plane, task-runtime-kernel, restate-poc-architecture, adr-0001-restate-poc, durable-runtime-pitfalls, architecture-index, local-restate-poc-runbook, runbooks-index, milestone-1-agent-session-evidence, adr-0007-session-transcript-sidecar, task-0064-manifest, task-0064-spec, task-0064-design, task-0064-plan, task-0064-verification, task-0064-docs-impact, tasks-index, archived-tasks-index]
+  reviewed:
+    architecture-overview: { outcome: unchanged, reason: "新增 Sidecar 遵循既有 Task/Workflow 单写者与诊断面边界，不改变总体组件关系。" }
+    moye-task-control-skill: { outcome: unchanged, reason: "继续使用 Full、Context Route、Docs Impact、唯一 Result Commit 与两阶段 Seal；不修改 Skill。" }
+    durable-workflow-research: { outcome: unchanged, reason: "实现使用已接受的 Restate/Sidecar 决策，不改变候选方案研究结论。" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "不改变文档生命周期角色或治理规则。" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "继续使用已接受的两阶段 Seal，不重写 ADR。" }
+    adr-0007-session-transcript-sidecar: { outcome: unchanged, reason: "实现其已接受的单向 Sidecar、Authority 与候选 Prompt 证据边界，不改写 ADR 历史。" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "历史 Session Sidecar 不改变 Worktree/Git 收敛方案。" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "不改变 5+1 Agent 主流程、验证或 Closure Gate。" }
+    tasks-index: { outcome: updated, reason: "TASK-0064 从 Active 移入 Archive。" }
+    task-0013-manifest: { outcome: unchanged, reason: "不修改历史 Core Task。" }
+    task-0014-manifest: { outcome: unchanged, reason: "不修改历史 Core Task。" }
+    task-0015-manifest: { outcome: unchanged, reason: "不修改历史 Core Task。" }
+    task-0016-manifest: { outcome: unchanged, reason: "不修改历史 Core Task。" }
+    task-0017-manifest: { outcome: unchanged, reason: "不修改历史 Core Task。" }
+    task-0018-manifest: { outcome: unchanged, reason: "不修改历史 Core Task。" }
+    task-0019-manifest: { outcome: unchanged, reason: "不修改历史 Core Task。" }
+    task-0020-manifest: { outcome: unchanged, reason: "不修改历史 Core Task。" }
+    task-0021-manifest: { outcome: unchanged, reason: "不修改历史 Core Task。" }
+    task-0028-manifest: { outcome: unchanged, reason: "不修改历史失败 Task。" }
+    task-0029-manifest: { outcome: unchanged, reason: "不修改历史 recovery successor。" }
+    task-0002-manifest: { outcome: unchanged, reason: "不修改文档控制面自举历史。" }
+    task-0003-manifest: { outcome: unchanged, reason: "不修改历史 Task。" }
+    task-0004-manifest: { outcome: unchanged, reason: "不修改历史 Task。" }
+    task-0005-manifest: { outcome: unchanged, reason: "不修改历史 Task。" }
+    task-0006-manifest: { outcome: unchanged, reason: "不修改历史 Task。" }
+    task-0007-manifest: { outcome: unchanged, reason: "不修改历史 Task。" }
+    task-0008-manifest: { outcome: unchanged, reason: "不修改历史 Task。" }
+    task-0009-manifest: { outcome: unchanged, reason: "不修改历史 Task。" }
+    task-0001-manifest: { outcome: unchanged, reason: "不修改历史 Task。" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "无新增依赖或语言决策。" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "Session Sidecar 不替代 Trace/OTel。" }
+    task-0049r1-manifest: { outcome: unchanged, reason: "仅复用既有 Seal preflight。" }
+    task-0056-manifest: { outcome: unchanged, reason: "Full profile 选择符合既有分级，不修改执行模式。" }
+    task-0061r1-design: { outcome: unchanged, reason: "不改变已封存的 live Capture replay/recovery 设计。" }
+    task-0062-design: { outcome: unchanged, reason: "复用 W05 API contract，不改写已封存设计。" }
+    task-0063-design: { outcome: unchanged, reason: "复用 W06 canonical Chatbot，不改写已封存设计。" }
+    task-runtime-kernel: { outcome: updated, reason: "登记 Historical Baseline、Registry fencing、旧 Archive Event proof、UNVERIFIED Prompt 与只读 Board join。" }
+    codemap: { outcome: updated, reason: "登记 Transcript Enrichment Service、历史 Board resolver 分支和自动验收入口。" }
+    local-restate-poc-runbook: { outcome: updated, reason: "登记历史 enrichment CLI/acceptance、Provider/Artifact allowlist 与 PARTIAL/UNAVAILABLE 操作语义。" }
+    milestone-1-agent-session-evidence: { outcome: updated, reason: "登记 W07 实现及 LIVE-006 7/7 真实验收证据。" }

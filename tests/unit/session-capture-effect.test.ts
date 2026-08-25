@@ -7,10 +7,19 @@ import { afterEach, describe, expect, it } from "vitest";
 import { RealRoleRuntimeV2, prepareRealRoleRunV2 } from "../../src/agent/role-runtime-v2.js";
 import {
   advanceAndPersistLiveRoleLocatorV1,
+  captureHistoricalRoleSessionV1,
   captureLiveRoleSessionV1,
   prepareLiveRoleSessionEvidenceV1,
 } from "../../src/agent/session-capture-effect.js";
 import { createRoleAttemptV2, renderRoleAgentPromptV2, startRoleAttemptV2 } from "../../src/domain/role-runtime-v2.js";
+import {
+  claimSessionTranscriptCaptureV1,
+  createHistoricalEnrichmentBaselineV1,
+  createSessionEvidenceAuthorityV1,
+  createSessionEvidenceBindingFromRoleManifestV2,
+  recordSessionTranscriptReceiptV1,
+  sessionEvidenceBoardSummaryV1,
+} from "../../src/domain/session-transcript.js";
 import {
   readBoardSessionMetadataV1,
   readBoardSessionStderrV1,
@@ -160,6 +169,93 @@ describe("live Role Session Capture Effect", () => {
     await expect(readBoardSessionTimelinePageV1({ ...resolver, evidence: pendingEvidence, cursor: 0, limit: 20 }))
       .rejects.toMatchObject({ code: "SESSION_CAPTURE_PENDING", status: 409 });
   });
+
+  it("captures append-only historical Provider evidence, exposes it through the Board resolver, and records missing sources", async () => {
+    const fixture = await setup();
+    const attempt = startRoleAttemptV2(createRoleAttemptV2({
+      taskId, specRevision: 1, role: "ARCHITECT", phase: "ARCHITECT", generation: 0, runnerKind: "CODEX_EXEC",
+      inputDigest: sha("2"), subjectCommit: commit, inputArtifactRefs: ["artifact://spec"],
+      scheduledAt: "2026-08-25T19:00:00.000Z",
+    }), "2026-08-25T19:00:01.000Z");
+    const roleInput = { attempt, scopeRoot: fixture.scope, artifactRoot: fixture.roles, instructions: "Historical role" };
+    const role = await new RealRoleRuntimeV2({
+      processRunner: { async run() { return {
+        stdout: [
+          JSON.stringify({ type: "thread.started", thread_id: sessionId }),
+          JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: JSON.stringify({ summary: "done", recommendation: "PASS", artifactRefs: [], findingRefs: [], deliverable: "{}" }) } }),
+          JSON.stringify({ type: "turn.completed" }), "",
+        ].join("\n"),
+        stderr: "historical stderr", exitCode: 0, signal: null,
+      }; } },
+    }).run(roleInput);
+    await writeRollout(fixture.sessions, "legacy Provider prompt");
+    const sourceWorkflowRef = `restate://CoreV2Workflow/${taskId}`;
+    const baseline = createHistoricalEnrichmentBaselineV1({
+      taskId,
+      sourceWorkflowRef,
+      runId: role.manifest.runId,
+      roleManifestDigest: role.manifest.manifestDigest,
+      workflowProjectionDigest: sha("3"),
+      domainEventHistoryDigest: sha("4"),
+      roleManifestSnapshotDigest: sha("5"),
+      outcome: "SUCCEEDED",
+      archiveStatus: "ARCHIVED",
+      observedAt: "2026-08-25T19:00:02.000Z",
+    });
+    const historicalRoot = path.join(fixture.root, "historical-session-evidence");
+    const input = {
+      enrichmentId: "history:TASK-0061:architect",
+      sourceWorkflowRef,
+      roleManifest: role.manifest,
+      historicalBaseline: baseline,
+      captureAttempt: 1,
+      promptBinding: "UNVERIFIED" as const,
+      managedArtifactRoot: historicalRoot,
+      config: { capturePolicy: "full" as const, codexSessionsRoot: fixture.sessions },
+      requestedAt: "2026-08-25T19:00:03.000Z",
+      capturedAt: "2026-08-25T19:00:03.000Z",
+      startedAt: "2026-08-25T19:00:03.000Z",
+      finishedAt: "2026-08-25T19:00:03.000Z",
+      executorId: "history-worker:TASK-0061",
+    };
+    const captured = await captureHistoricalRoleSessionV1(input);
+    const replay = await captureHistoricalRoleSessionV1(input);
+    expect(captured).toMatchObject({ recovery: "EXECUTED", receipt: { importMode: "HISTORICAL_ENRICHMENT", captureState: "PARTIAL", promptBinding: "UNVERIFIED", errors: [{ code: "UNSUPPORTED_FORMAT" }] } });
+    expect(replay).toMatchObject({ recovery: "REUSED_RECEIPT", receipt: { receiptDigest: captured.receipt.receiptDigest } });
+
+    if (captured.manifest === undefined) throw new Error("expected historical Manifest");
+    const binding = createSessionEvidenceBindingFromRoleManifestV2({ sourceWorkflowRef, manifest: role.manifest });
+    const claimed = claimSessionTranscriptCaptureV1(createSessionEvidenceAuthorityV1(binding), captured.intent, 0);
+    const authority = recordSessionTranscriptReceiptV1(claimed, captured.intent, captured.receipt, 1, captured.manifest);
+    const historicalEvidence = {
+      schemaVersion: 1 as const,
+      taskId,
+      attemptId: role.manifest.attemptId,
+      runId: role.manifest.runId,
+      taskArtifactRoot: fixture.taskArtifacts,
+      managedArtifactRoot: historicalRoot,
+      authority,
+      intent: captured.intent,
+      receipt: captured.receipt,
+      manifest: captured.manifest,
+      summary: sessionEvidenceBoardSummaryV1(authority),
+      recordDigest: sha("6"),
+    };
+    const resolver = { artifactRoots: [fixture.root], declaredArtifactRoot: fixture.taskArtifacts, taskId, run: role.manifest, historicalEvidence };
+    expect(await readBoardSessionMetadataV1(resolver)).toMatchObject({ state: "PARTIAL", provider: "CODEX", providerSessionId: sessionId });
+    const timeline = await readBoardSessionTimelinePageV1({ ...resolver, cursor: 0, limit: 200 });
+    expect(timeline.events.some((event) => event.category === "USER" && event.origin === "PROVIDER_USER")).toBe(true);
+    expect((await readBoardSessionStderrV1(resolver)).content).toBe("historical stderr");
+
+    const missing = await captureHistoricalRoleSessionV1({
+      ...input,
+      enrichmentId: "history:TASK-0061:architect-missing",
+      managedArtifactRoot: path.join(fixture.root, "missing-history"),
+      config: { capturePolicy: "full", codexSessionsRoot: path.join(fixture.root, "empty-sessions") },
+    });
+    expect(missing).toMatchObject({ recovery: "RECORDED_UNAVAILABLE", receipt: { captureState: "UNAVAILABLE", errors: [{ code: "SOURCE_MISSING", scope: "SOURCE" }] } });
+    expect(missing.manifest).toBeUndefined();
+  });
 });
 
 async function setup() {
@@ -170,7 +266,7 @@ async function setup() {
   const roles = path.join(taskArtifacts, "roles");
   const sessions = path.join(root, "sessions");
   const sessionArtifacts = path.join(taskArtifacts, "session-evidence");
-  await Promise.all([mkdir(scope), mkdir(sessions)]);
+  await Promise.all([mkdir(scope), mkdir(sessions), mkdir(path.join(root, "empty-sessions"))]);
   return { root, scope, roles, sessions, sessionArtifacts, taskArtifacts };
 }
 

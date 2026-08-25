@@ -8,6 +8,7 @@ import type { RoleRunManifestV2 } from "../agent/role-runtime-v2.js";
 import {
   parseActiveRoleRunLocatorV1,
   parseSessionEvidenceAuthorityV1,
+  parseSessionTranscriptCaptureIntentV1,
   parseSessionTranscriptImportReceiptV1,
   type ArtifactDescriptorV1,
   type NormalizedTimelineEventV1,
@@ -15,6 +16,7 @@ import {
   type TranscriptTerminalStateV1,
 } from "../domain/session-transcript.js";
 import type { CoreV2SessionEvidenceRecordV1 } from "../restate/core-v2-services.js";
+import type { HistoricalSessionEvidenceRecordV1 } from "../restate/transcript-enrichment-services.js";
 
 export type BoardSessionState = TranscriptTerminalStateV1 | "PENDING" | "WAITING_RECONCILE";
 
@@ -42,6 +44,9 @@ export interface BoardSessionMetadataV1 {
   readonly providerSessionId?: string;
   readonly state: BoardSessionState;
   readonly capturePolicy?: "full" | "redacted" | "digest_only";
+  readonly importMode?: "LIVE" | "HISTORICAL_ENRICHMENT";
+  readonly promptBinding?: "PROMPT_ENVELOPE_V1" | "PROVIDER_NATIVE_OBSERVED" | "UNVERIFIED";
+  readonly authorityScope?: "DIAGNOSTIC_SUPPLEMENT_ONLY";
   readonly completeness?: SessionTranscriptManifestV1["completeness"];
   readonly metrics?: SessionTranscriptManifestV1["metrics"];
   readonly source?: SessionTranscriptManifestV1["source"];
@@ -96,29 +101,41 @@ interface ResolverInput {
   readonly taskId: string;
   readonly run: RoleRunManifestV2;
   readonly evidence?: CoreV2SessionEvidenceRecordV1;
+  readonly historicalEvidence?: HistoricalSessionEvidenceRecordV1;
 }
 
 export async function readBoardSessionMetadataV1(input: ResolverInput): Promise<BoardSessionMetadataV1> {
   assertRunBinding(input);
   const evidence = input.evidence;
-  const state = evidence === undefined ? "UNAVAILABLE" : evidenceState(evidence);
+  const historical = input.historicalEvidence;
+  const resolved = evidence ?? historical;
+  const receipt = resolved?.receipt;
+  const provider = evidence?.locator.binding.provider ?? receipt?.binding.provider;
+  const providerSessionId = evidence?.locator.providerSessionId ?? receipt?.binding.providerSessionId;
+  const state = resolved === undefined ? "UNAVAILABLE" : evidenceState(resolved);
   const base = {
     schemaVersion: 1 as const,
     taskId: input.taskId,
     runId: input.run.runId,
     attemptId: input.run.attemptId,
     runnerKind: input.run.runnerKind,
-    ...(evidence?.locator.binding.provider === undefined ? {} : { provider: evidence.locator.binding.provider }),
-    ...(evidence?.locator.providerSessionId === undefined ? {} : { providerSessionId: evidence.locator.providerSessionId }),
+    ...(provider === undefined ? {} : { provider }),
+    ...(providerSessionId === undefined ? {} : { providerSessionId }),
     state,
-    ...(evidence?.receipt === undefined ? {} : { capturePolicy: evidence.receipt.capturePolicy }),
-    errors: evidence?.receipt?.errors ?? [],
+    ...(receipt === undefined ? {} : { capturePolicy: receipt.capturePolicy }),
+    ...(receipt === undefined ? {} : {
+      importMode: receipt.importMode,
+      promptBinding: receipt.promptBinding,
+      authorityScope: receipt.authorityScope,
+    }),
+    errors: receipt?.errors ?? [],
     artifacts: {
       ...(evidence === undefined ? {} : { promptEnvelope: evidence.promptEnvelope }),
-      ...(evidence?.receipt?.manifest === undefined ? {} : { manifest: evidence.receipt.manifest }),
+      ...(receipt?.promptEnvelope === undefined ? {} : { promptEnvelope: receipt.promptEnvelope }),
+      ...(receipt?.manifest === undefined ? {} : { manifest: receipt.manifest }),
       stderr: { ref: input.run.stderrRef, digest: input.run.stderrDigest },
     },
-    ...(evidence?.receipt === undefined ? {} : { receiptDigest: evidence.receipt.receiptDigest }),
+    ...(receipt === undefined ? {} : { receiptDigest: receipt.receiptDigest }),
   };
   if (state !== "COMPLETE" && state !== "PARTIAL") return base;
   const managed = await loadManaged(input);
@@ -152,7 +169,7 @@ export async function readBoardSessionTimelinePageV1(input: ResolverInput & {
       || input.limit < 1 || input.limit > 200) {
     throw new SessionTimelineError("SESSION_CURSOR_INVALID", 400, "cursor must be non-negative and limit must be between 1 and 200");
   }
-  assertReadable(input.evidence);
+  assertReadable(input.evidence ?? input.historicalEvidence);
   const managed = await loadManaged(input);
   const events = managed.timeline.slice(input.cursor, input.cursor + input.limit);
   const nextCursor = input.cursor + events.length;
@@ -195,13 +212,13 @@ export async function readBoardSessionStderrV1(input: ResolverInput): Promise<Bo
   };
 }
 
-function evidenceState(evidence: CoreV2SessionEvidenceRecordV1): BoardSessionState {
+function evidenceState(evidence: Pick<CoreV2SessionEvidenceRecordV1, "authority" | "receipt">): BoardSessionState {
   if (evidence.authority?.pendingUnknown !== undefined && evidence.authority.reconcileDecision === undefined) return "WAITING_RECONCILE";
   if (evidence.receipt === undefined) return "PENDING";
   return evidence.receipt.captureState;
 }
 
-function assertReadable(evidence: CoreV2SessionEvidenceRecordV1 | undefined): asserts evidence is CoreV2SessionEvidenceRecordV1 & { readonly receipt: NonNullable<CoreV2SessionEvidenceRecordV1["receipt"]> } {
+function assertReadable(evidence: Pick<CoreV2SessionEvidenceRecordV1, "authority" | "receipt"> | undefined): asserts evidence is Pick<CoreV2SessionEvidenceRecordV1, "authority" | "receipt"> & { readonly receipt: NonNullable<CoreV2SessionEvidenceRecordV1["receipt"]> } {
   if (evidence === undefined) throw new SessionTimelineError("SESSION_EVIDENCE_NOT_FOUND", 404, "No Session Evidence is bound to this Role Run");
   const state = evidenceState(evidence);
   if (state === "PENDING") throw new SessionTimelineError("SESSION_CAPTURE_PENDING", 409, "Session capture has not produced a Receipt yet");
@@ -212,11 +229,13 @@ function assertReadable(evidence: CoreV2SessionEvidenceRecordV1 | undefined): as
 
 async function loadManaged(input: ResolverInput): Promise<{ readonly manifest: SessionTranscriptManifestV1; readonly timeline: readonly NormalizedTimelineEventV1[] }> {
   assertRunBinding(input);
-  assertReadable(input.evidence);
-  const receipt = parseSessionTranscriptImportReceiptV1(input.evidence.receipt, input.evidence.receipt.receiptDigest);
-  if (input.evidence.authority !== undefined) parseSessionEvidenceAuthorityV1(input.evidence.authority, input.evidence.authority.stateDigest);
-  const taskRoot = await allowedTaskRoot(input.artifactRoots, input.declaredArtifactRoot);
-  const managedRoot = path.join(taskRoot, "session-evidence");
+  const evidence = input.evidence ?? input.historicalEvidence;
+  assertReadable(evidence);
+  const receipt = parseSessionTranscriptImportReceiptV1(evidence.receipt, evidence.receipt.receiptDigest);
+  if (evidence.authority !== undefined) parseSessionEvidenceAuthorityV1(evidence.authority, evidence.authority.stateDigest);
+  const managedRoot = input.historicalEvidence === undefined
+    ? path.join(await allowedTaskRoot(input.artifactRoots, input.declaredArtifactRoot), "session-evidence")
+    : await allowedTaskRoot(input.artifactRoots, input.historicalEvidence.managedArtifactRoot);
   const managed = receipt.binding.provider === "CODEX"
     ? await inspectManagedCodexSessionV1({ managedArtifactRoot: managedRoot, captureId: receipt.captureId })
     : await inspectManagedClaudeSessionV1({ managedArtifactRoot: managedRoot, captureId: receipt.captureId });
@@ -234,7 +253,24 @@ async function loadManaged(input: ResolverInput): Promise<{ readonly manifest: S
 
 function assertRunBinding(input: ResolverInput): void {
   if (input.run.taskId !== input.taskId) throw integrity("Role Run does not belong to the requested Task");
-  if (input.evidence === undefined) return;
+  if (input.evidence === undefined && input.historicalEvidence === undefined) return;
+  if (input.evidence === undefined) {
+    const historical = input.historicalEvidence!;
+    const authority = parseSessionEvidenceAuthorityV1(historical.authority, historical.authority.stateDigest);
+    const intent = historical.intent;
+    parseSessionTranscriptCaptureIntentV1(intent, intent.intentDigest);
+    const receipt = historical.receipt === undefined ? undefined
+      : parseSessionTranscriptImportReceiptV1(historical.receipt, historical.receipt.receiptDigest);
+    const binding = receipt?.binding ?? authority.binding;
+    if (historical.taskId !== input.taskId || historical.runId !== input.run.runId || historical.attemptId !== input.run.attemptId
+        || authority.binding.runId !== input.run.runId || intent.binding.runId !== input.run.runId
+        || binding.taskId !== input.taskId || binding.attemptId !== input.run.attemptId
+        || binding.roleManifestDigest !== input.run.manifestDigest || binding.providerSessionId !== input.run.sessionId
+        || path.resolve(historical.taskArtifactRoot) !== path.resolve(input.declaredArtifactRoot)) {
+      throw integrity("Historical Session Evidence does not match the archived Role Run");
+    }
+    return;
+  }
   parseActiveRoleRunLocatorV1(input.evidence.locator, input.evidence.locator.locatorDigest);
   if (input.evidence.authority !== undefined) {
     parseSessionEvidenceAuthorityV1(input.evidence.authority, input.evidence.authority.stateDigest);

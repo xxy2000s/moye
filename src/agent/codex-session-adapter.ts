@@ -175,12 +175,17 @@ export class CodexNativeSessionAdapterV1 {
       byteLength: source.bytes.byteLength,
       mediaType: "application/x-ndjson",
     }) : undefined;
+    const historicalPromptGap = intent.promptBinding === "PROMPT_ENVELOPE_V1" ? undefined : {
+      code: "UNSUPPORTED_FORMAT" as const,
+      scope: "PARSER" as const,
+      detailDigest: sha256(`historical-prompt-binding:${intent.promptBinding}`),
+    };
     const manifest = createSessionTranscriptManifestV1({
       captureId: intent.captureId,
       captureOperationId: intent.captureOperationId,
       binding: intent.binding,
       capturePolicy: intent.capturePolicy,
-      captureState: "COMPLETE",
+      captureState: historicalPromptGap === undefined ? "COMPLETE" : "PARTIAL",
       parser: CODEX_SESSION_PARSER_V1,
       source: {
         kind: "CODEX_ROLLOUT_JSONL",
@@ -197,7 +202,9 @@ export class CodexNativeSessionAdapterV1 {
         normalized: normalized.descriptor,
       },
       completeness: {
-        prompt: parsed.promptCount === 1 ? "COMPLETE" : "UNAVAILABLE",
+        prompt: intent.promptBinding === "PROMPT_ENVELOPE_V1"
+          ? (parsed.promptCount === 1 ? "COMPLETE" : "UNAVAILABLE")
+          : intent.promptBinding === "PROVIDER_NATIVE_OBSERVED" ? "PROVIDER_OBSERVED" : "UNVERIFIED",
         messages: parsed.messageCount > 0 ? "COMPLETE" : "UNAVAILABLE",
         tools: parsed.toolCount > 0 ? "COMPLETE" : "NOT_EXPOSED",
         timestamps: parsed.timestampCount === parsed.records.length ? "COMPLETE" : "PARTIAL",
@@ -214,7 +221,7 @@ export class CodexNativeSessionAdapterV1 {
       },
       parentSessionIds: parsed.parentSessionIds,
       childSessionIds: parsed.childSessionIds,
-      errors: [],
+      errors: historicalPromptGap === undefined ? [] : [historicalPromptGap],
       capturedAt: request.capturedAt,
     });
     assertTranscriptIntentManifestV1(intent, manifest);
@@ -383,7 +390,9 @@ function parseCodexRollout(input: {
       ...(shape.correlation === undefined ? {} : { correlation: shape.correlation }),
     }));
   }
-  if (promptCount !== 1) throw failure("SESSION_MISMATCH", `Codex rollout must contain exactly one rendered Prompt event; found ${promptCount}`);
+  if (input.intent.promptBinding !== "UNVERIFIED" && promptCount !== 1) {
+    throw failure("SESSION_MISMATCH", `Codex rollout must contain exactly one bound Prompt event; found ${promptCount}`);
+  }
   if (!terminalMarkerPresent) throw failure("SOURCE_CHANGED", "Codex rollout has no terminal task_complete marker");
   if (timestampCount !== records.length) throw failure("MALFORMED", "Every Codex rollout record must contain a valid timestamp");
   return Object.freeze({ records, timeline, parentSessionIds: [...parentIds].sort(), childSessionIds: [...childIds].sort(), terminalMarkerPresent, promptCount, messageCount, toolCount, timestampCount });

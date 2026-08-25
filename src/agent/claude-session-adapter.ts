@@ -180,12 +180,17 @@ export class ClaudeNativeSessionAdapterV1 {
       byteLength: source.bytes.byteLength,
       mediaType: "application/x-ndjson",
     }) : undefined;
+    const historicalPromptGap = intent.promptBinding === "PROMPT_ENVELOPE_V1" ? undefined : {
+      code: "UNSUPPORTED_FORMAT" as const,
+      scope: "PARSER" as const,
+      detailDigest: sha256(`historical-prompt-binding:${intent.promptBinding}`),
+    };
     const manifest = createSessionTranscriptManifestV1({
       captureId: intent.captureId,
       captureOperationId: intent.captureOperationId,
       binding: intent.binding,
       capturePolicy: intent.capturePolicy,
-      captureState: "COMPLETE",
+      captureState: historicalPromptGap === undefined ? "COMPLETE" : "PARTIAL",
       parser: CLAUDE_SESSION_PARSER_V1,
       source: {
         kind: "CLAUDE_SESSION_JSONL",
@@ -202,7 +207,9 @@ export class ClaudeNativeSessionAdapterV1 {
         normalized: normalized.descriptor,
       },
       completeness: {
-        prompt: parsed.promptCount === 1 ? "COMPLETE" : "UNAVAILABLE",
+        prompt: intent.promptBinding === "PROMPT_ENVELOPE_V1"
+          ? (parsed.promptCount === 1 ? "COMPLETE" : "UNAVAILABLE")
+          : intent.promptBinding === "PROVIDER_NATIVE_OBSERVED" ? "PROVIDER_OBSERVED" : "UNVERIFIED",
         messages: parsed.messageCount > 0 ? "COMPLETE" : "UNAVAILABLE",
         tools: parsed.toolCount > 0 ? "COMPLETE" : "NOT_EXPOSED",
         timestamps: parsed.coreTimestampCount === parsed.coreEventCount ? "COMPLETE" : "PARTIAL",
@@ -219,7 +226,7 @@ export class ClaudeNativeSessionAdapterV1 {
       },
       parentSessionIds: parsed.parentSessionIds,
       childSessionIds: parsed.childSessionIds,
-      errors: [],
+      errors: historicalPromptGap === undefined ? [] : [historicalPromptGap],
       capturedAt: request.capturedAt,
     });
     assertTranscriptIntentManifestV1(intent, manifest);
@@ -390,7 +397,9 @@ function parseClaudeSession(input: {
       }));
     }
   }
-  if (promptCount !== 1) throw failure("SESSION_MISMATCH", `Claude session must contain exactly one rendered Prompt event; found ${promptCount}`);
+  if (input.intent.promptBinding !== "UNVERIFIED" && promptCount !== 1) {
+    throw failure("SESSION_MISMATCH", `Claude session must contain exactly one bound Prompt event; found ${promptCount}`);
+  }
   if (!terminalMarkerPresent) throw failure("SOURCE_CHANGED", "Claude session has no terminal assistant end_turn marker");
   return Object.freeze({ records, timeline, parentSessionIds: [...parentIds].sort(), childSessionIds: [...childIds].sort(), terminalMarkerPresent, promptCount, messageCount, toolCount, timestampCount, coreTimestampCount, coreEventCount });
 }

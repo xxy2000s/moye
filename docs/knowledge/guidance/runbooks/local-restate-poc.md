@@ -59,6 +59,27 @@ npm run acceptance:live
 
 当前成功标准：全部单元测试与类型检查通过，真实 Restate E2E 覆盖归档恢复、Backlog 同步、唯一 Merge、事件流、Trace、Verification 失败、未知结果对账与 Worker 重启；Live Acceptance 另外证明页面产品路径没有用 Fake/Mock 冒充成功。
 
+历史 Core v2 Role 没有 live Session Evidence 时，使用独立 Sidecar 补全，不能编辑旧 Projection 或把 Provider Home 暴露给 Board：
+
+```bash
+MOYE_SESSION_HISTORY_TASK_ID=TASK-CORE-V2-LIVE-006 \
+MOYE_SESSION_HISTORY_INGRESS=http://127.0.0.1:8080 \
+MOYE_SESSION_HISTORY_BOARD=http://127.0.0.1:3000 \
+MOYE_SESSION_HISTORY_ARTIFACT_ROOT=/absolute/allowlisted/history-artifacts \
+MOYE_CODEX_SESSIONS_ROOT=/absolute/allowlisted/codex/sessions \
+MOYE_SESSION_SOURCE_ROOTS=/absolute/allowlisted/codex/sessions \
+npm run acceptance:agent-sessions:history
+```
+
+命令从 `TaskAuthority` 找 owning Workflow，只接受已经归档的 terminal Projection；遗留 Core v2 可由同一 owning Event History 中的 `ArchiveArchived(task_id)` 提供 archive proof。它为每个显式 Role Run 提交唯一 `TranscriptEnrichmentWorkflow`，重复执行只读取相同 Receipt。输出报告默认位于 `.moye-runtime/acceptance/<task>-session-history.json`。Service 的 `MOYE_SESSION_SOURCE_ROOTS` 必须覆盖显式 Provider Session Root；Board 的 `MOYE_ARTIFACT_ROOTS` 必须覆盖 `MOYE_SESSION_HISTORY_ARTIFACT_ROOT` 与旧 Task Artifact Root，否则请求会按安全边界拒绝。
+
+旧 Session 没有执行前 Prompt Envelope 时，报告和页面显示 `PARTIAL + UNVERIFIED`；Provider user record 正文仍可查看，但不能称为 `COMPLETE`。首版拒绝外部提交 `PROVIDER_NATIVE_OBSERVED`，避免未由 Workflow 独立推导的 Legacy Evidence 冒充强绑定。源文件不存在时 Workflow 正常收敛到 `UNAVAILABLE` Receipt；这不是重试 Agent 的理由。CLI 也可对单个显式 Run 操作：
+
+```bash
+npm run cli -- session-enrich-start --file enrichment.json
+npm run cli -- session-enrich-status <enrichment-id>
+```
+
 TASK-0011 已通过 `npm run demo:codex` 再次执行真实 Codex 隔离 Fixture：运行中事件从 4 条增长至 13 条，完成时冻结 17 条，包含命令执行、文件修改、Git Commit、工具结果和最终回答，并通过 Verification、唯一 Merge 与 Archive。自动化回归仍使用 Fake/受控进程，避免每次测试消耗模型额度。
 
 ## 3. 手工启动

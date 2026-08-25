@@ -27,6 +27,7 @@ import {
   createSessionEvidenceBindingFromRoleManifestV2,
   createSessionTranscriptCaptureIntentV1,
   createSessionTranscriptImportReceiptV1,
+  parseSessionTranscriptCaptureIntentV1,
   parseSessionTranscriptImportReceiptV1,
   recordSessionTranscriptReceiptV1,
   sessionEvidenceBoardSummaryV1,
@@ -34,6 +35,8 @@ import {
 import type {
   ActiveRoleRunLocatorV1,
   ArtifactDescriptorV1,
+  HistoricalEnrichmentBaselineV1,
+  LegacyPromptBindingEvidenceV1,
   PromptEnvelopeV1,
   SessionCapturePolicyV1,
   SessionEvidenceAuthorityV1,
@@ -64,6 +67,192 @@ export interface LiveSessionCaptureResultV1 {
   readonly receipt: SessionTranscriptImportReceiptV1;
   readonly authority: SessionEvidenceAuthorityV1;
   readonly summary: ReturnType<typeof sessionEvidenceBoardSummaryV1>;
+}
+
+export interface HistoricalSessionCaptureResultV1 {
+  readonly recovery: "EXECUTED" | "RECOVERED_MANIFEST" | "REUSED_RECEIPT" | "RECORDED_UNAVAILABLE";
+  readonly intent: SessionTranscriptCaptureIntentV1;
+  readonly manifest?: SessionTranscriptManifestV1;
+  readonly receipt: SessionTranscriptImportReceiptV1;
+}
+
+export interface HistoricalSessionCaptureInputV1 {
+  readonly enrichmentId: string;
+  readonly sourceWorkflowRef: string;
+  readonly roleManifest: RoleRunManifestV2;
+  readonly historicalBaseline: HistoricalEnrichmentBaselineV1;
+  readonly captureAttempt: number;
+  readonly predecessorReceiptDigest?: string;
+  readonly promptBinding: "PROVIDER_NATIVE_OBSERVED" | "UNVERIFIED";
+  readonly legacyPromptEvidence?: LegacyPromptBindingEvidenceV1;
+  readonly managedArtifactRoot: string;
+  readonly config: LiveSessionCaptureConfigV1;
+  readonly requestedAt: string;
+  readonly capturedAt: string;
+  readonly startedAt: string;
+  readonly finishedAt: string;
+  readonly executorId: string;
+  readonly preparedIntent?: SessionTranscriptCaptureIntentV1;
+}
+
+export function prepareHistoricalRoleSessionCaptureV1(input: HistoricalSessionCaptureInputV1): SessionTranscriptCaptureIntentV1 {
+  const binding = createSessionEvidenceBindingFromRoleManifestV2({
+    sourceWorkflowRef: input.sourceWorkflowRef,
+    manifest: input.roleManifest,
+  });
+  const parser = binding.provider === "CODEX" ? CODEX_SESSION_PARSER_V1 : CLAUDE_SESSION_PARSER_V1;
+  const sourceLocatorDigest = binding.provider === "CODEX"
+    ? codexSessionSourceLocatorDigestV1(binding.providerSessionId)
+    : claudeSessionSourceLocatorDigestV1(binding.providerSessionId);
+  const artifactPrefix = `artifact://session-transcript/${input.enrichmentId}`;
+  return createSessionTranscriptCaptureIntentV1({
+    importMode: "HISTORICAL_ENRICHMENT",
+    enrichmentId: input.enrichmentId,
+    workflowRef: `restate://TranscriptEnrichmentWorkflow/${input.enrichmentId}`,
+    captureAttempt: input.captureAttempt,
+    binding,
+    capturePolicy: input.config.capturePolicy,
+    parser,
+    sourceLocatorDigest,
+    maxSourceBytes: input.config.maxSourceBytes ?? 64 * 1024 * 1024,
+    promptBinding: input.promptBinding,
+    ...(input.legacyPromptEvidence === undefined ? {} : { legacyPromptEvidence: input.legacyPromptEvidence }),
+    historicalBaseline: input.historicalBaseline,
+    ...(input.config.capturePolicy === "full" ? { expectedRawRef: `${artifactPrefix}/raw.jsonl` } : {}),
+    expectedNormalizedRef: `${artifactPrefix}/normalized.jsonl`,
+    expectedManifestRef: `${artifactPrefix}/manifest.json`,
+    expectedReceiptRef: `${artifactPrefix}/receipt.json`,
+    ...(input.predecessorReceiptDigest === undefined ? {} : { predecessorReceiptDigest: input.predecessorReceiptDigest }),
+    requestedAt: input.requestedAt,
+  });
+}
+
+export async function captureHistoricalRoleSessionV1(input: HistoricalSessionCaptureInputV1): Promise<HistoricalSessionCaptureResultV1> {
+  const binding = createSessionEvidenceBindingFromRoleManifestV2({
+    sourceWorkflowRef: input.sourceWorkflowRef,
+    manifest: input.roleManifest,
+  });
+  const expectedIntent = prepareHistoricalRoleSessionCaptureV1(input);
+  const intent = input.preparedIntent === undefined
+    ? expectedIntent
+    : parseSessionTranscriptCaptureIntentV1(input.preparedIntent, input.preparedIntent.intentDigest);
+  if (intent.intentDigest !== expectedIntent.intentDigest) {
+    throw conflict("SESSION_PREPARED_INTENT_MISMATCH", "Prepared historical Capture Intent does not match the execution input");
+  }
+  const operationRoot = path.join(path.resolve(input.managedArtifactRoot), `operation-${sha256(intent.captureOperationId).slice(7)}`);
+  await mkdir(operationRoot, { recursive: true });
+  await writeContentChecked(path.join(operationRoot, "capture-intent.json"), Buffer.from(`${stableJson(intent)}\n`, "utf8"));
+  const receiptPath = path.join(operationRoot, "capture-receipt.json");
+  const existingReceipt = await readJsonIfPresent(receiptPath);
+  if (existingReceipt !== undefined) {
+    const receiptDigest = requiredString((existingReceipt as Record<string, unknown>)["receiptDigest"], "receiptDigest");
+    const receipt = parseSessionTranscriptImportReceiptV1(existingReceipt, receiptDigest);
+    if (receipt.captureIntentDigest !== intent.intentDigest) {
+      throw conflict("SESSION_RECEIPT_INTENT_CONFLICT", "Existing historical Receipt belongs to a different Capture Intent");
+    }
+    if (receipt.manifest === undefined) return Object.freeze({ recovery: "REUSED_RECEIPT", intent, receipt });
+    const managed = await inspectManaged(binding.provider, input.managedArtifactRoot, intent.captureId);
+    if (managed === null || managed.manifest.manifestDigest !== receipt.manifest.digest) {
+      throw conflict("SESSION_RECEIPT_WITHOUT_MANIFEST", "Historical Receipt exists but its managed Manifest is missing or changed");
+    }
+    return Object.freeze({ recovery: "REUSED_RECEIPT", intent, manifest: managed.manifest, receipt });
+  }
+
+  let managed = await inspectManaged(binding.provider, input.managedArtifactRoot, intent.captureId);
+  let recovery: HistoricalSessionCaptureResultV1["recovery"] = "RECOVERED_MANIFEST";
+  if (managed === null) {
+    try {
+      const providerSessionsRoot = binding.provider === "CODEX"
+        ? requiredString(input.config.codexSessionsRoot, "codexSessionsRoot")
+        : requiredString(input.config.claudeProjectsRoot, "claudeProjectsRoot");
+      const captured = binding.provider === "CODEX"
+        ? await new CodexNativeSessionAdapterV1({ providerSessionsRoot, managedArtifactRoot: input.managedArtifactRoot })
+          .capture({ intent, capturedAt: input.capturedAt })
+        : await new ClaudeNativeSessionAdapterV1({ providerSessionsRoot, managedArtifactRoot: input.managedArtifactRoot })
+          .capture({ intent, capturedAt: input.capturedAt });
+      managed = { manifest: captured.manifest, timeline: captured.timeline };
+      recovery = "EXECUTED";
+    } catch (error) {
+      const failure = transcriptFailure(error);
+      const receipt = historicalReceipt(input, intent, binding, {
+        captureState: failure.state,
+        errors: [{ code: failure.code, scope: failure.scope, detailDigest: sha256(failure.detail) }],
+      });
+      await writeContentChecked(receiptPath, Buffer.from(`${stableJson(receipt)}\n`, "utf8"));
+      return Object.freeze({ recovery: "RECORDED_UNAVAILABLE", intent, receipt });
+    }
+  }
+  const manifestPath = managedManifestPath(input.managedArtifactRoot, intent.captureId);
+  const receipt = historicalReceipt(input, intent, binding, {
+    captureState: managed.manifest.captureState,
+    manifest: createArtifactDescriptorV1({
+      ref: intent.expectedManifestRef,
+      digest: managed.manifest.manifestDigest,
+      byteLength: (await stat(manifestPath)).size,
+      mediaType: "application/json",
+    }),
+    sourceDigest: managed.manifest.source.sourceDigest,
+    errors: managed.manifest.errors,
+  });
+  await writeContentChecked(receiptPath, Buffer.from(`${stableJson(receipt)}\n`, "utf8"));
+  return Object.freeze({ recovery, intent, manifest: managed.manifest, receipt });
+}
+
+function historicalReceipt(
+  input: HistoricalSessionCaptureInputV1,
+  intent: SessionTranscriptCaptureIntentV1,
+  binding: SessionTranscriptCaptureIntentV1["binding"],
+  result: Pick<SessionTranscriptImportReceiptV1, "captureState" | "errors"> & {
+    readonly manifest?: ArtifactDescriptorV1;
+    readonly sourceDigest?: string;
+  },
+): SessionTranscriptImportReceiptV1 {
+  return createSessionTranscriptImportReceiptV1({
+    enrichmentId: intent.enrichmentId,
+    workflowRef: intent.workflowRef,
+    receiptRef: intent.expectedReceiptRef,
+    importMode: "HISTORICAL_ENRICHMENT",
+    captureOperationId: intent.captureOperationId,
+    captureId: intent.captureId,
+    capturePolicy: intent.capturePolicy,
+    parserVersion: intent.parser.version,
+    parserOptionsDigest: intent.parser.optionsDigest,
+    captureIntentDigest: intent.intentDigest,
+    captureAttempt: intent.captureAttempt,
+    binding,
+    promptBinding: intent.promptBinding,
+    ...(intent.legacyPromptEvidence === undefined ? {} : { legacyPromptEvidence: intent.legacyPromptEvidence }),
+    historicalBaseline: input.historicalBaseline,
+    captureState: result.captureState,
+    ...(result.manifest === undefined ? {} : { manifest: result.manifest }),
+    ...(result.sourceDigest === undefined ? {} : { sourceDigest: result.sourceDigest }),
+    errors: result.errors,
+    reconciledAfterUnknown: false,
+    ...(intent.predecessorReceiptDigest === undefined ? {} : { predecessorReceiptDigest: intent.predecessorReceiptDigest }),
+    startedAt: input.startedAt,
+    finishedAt: input.finishedAt,
+    executorId: input.executorId,
+  });
+}
+
+function transcriptFailure(error: unknown): {
+  readonly state: "UNAVAILABLE" | "FAILED";
+  readonly code: SessionTranscriptImportReceiptV1["errors"][number]["code"];
+  readonly scope: SessionTranscriptImportReceiptV1["errors"][number]["scope"];
+  readonly detail: string;
+} {
+  const code = error instanceof MoyeError && [
+    "SOURCE_MISSING", "SOURCE_AMBIGUOUS", "OUTSIDE_ALLOWLIST", "ACCESS_DENIED", "UNSAFE_FILE_TYPE", "TOO_LARGE",
+    "SESSION_MISMATCH", "SOURCE_CHANGED", "MALFORMED", "UNSUPPORTED_PROVIDER", "UNSUPPORTED_FORMAT", "PARSER_FAILED",
+    "DIGEST_MISMATCH", "ARTIFACT_CONFLICT", "CAPTURE_UNKNOWN", "INTERNAL",
+  ].includes(error.code) ? error.code as SessionTranscriptImportReceiptV1["errors"][number]["code"] : "INTERNAL";
+  const unavailable = ["SOURCE_MISSING", "SOURCE_AMBIGUOUS", "OUTSIDE_ALLOWLIST", "ACCESS_DENIED", "UNSAFE_FILE_TYPE", "TOO_LARGE"].includes(code);
+  return {
+    state: unavailable ? "UNAVAILABLE" : "FAILED",
+    code,
+    scope: ["SOURCE_MISSING", "SOURCE_AMBIGUOUS", "OUTSIDE_ALLOWLIST", "ACCESS_DENIED", "UNSAFE_FILE_TYPE", "TOO_LARGE", "SESSION_MISMATCH", "SOURCE_CHANGED"].includes(code) ? "SOURCE" : code === "ARTIFACT_CONFLICT" ? "ARTIFACT" : code === "INTERNAL" ? "INTERNAL" : "PARSER",
+    detail: error instanceof Error ? error.message : String(error),
+  };
 }
 
 export async function prepareLiveRoleSessionEvidenceV1(input: {

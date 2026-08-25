@@ -166,6 +166,17 @@ Core v2 现在可在显式启用 `sessionEvidence` 时把本 Adapter 接到每�
 
 W05 不改变 Transcript 的 `DIAGNOSTIC_SUPPLEMENT_ONLY` 权限，也不推进 Task。Chatbot UI 与历史 append-only enrichment 分别由 M1-W06～W07 交付。
 
+#### 历史 Session 的 append-only Enrichment
+
+`TranscriptEnrichmentWorkflow/<enrichment-id>` 与 `SessionEvidenceRegistry/<run-id>` 实现 W07 的历史补全边界。它们是诊断 Sidecar，不是第二个 Task 状态机：
+
+- Workflow 先从 `TaskAuthority` 解析原 `CoreV2Workflow` 或合法 failure-recovery successor，再读取 owning Projection 中唯一 Role Run。只有 `CLOSED`、terminal outcome 且拥有 owning Workflow Archive Receipt，或遗留版本中同一 Event History 已记录 `ArchiveArchived(task_id)` 的 Projection可以进入补全；调用方不能提交 Historical Baseline；
+- Baseline 同时冻结完整 Workflow Projection、Domain Event History、Role Manifest snapshot、Role Manifest Digest、Outcome 与 Archive proof。Capture 完成后重新读取 owning Workflow 并逐项比较；任何变化都会拒绝 Registry publish，旧 Projection、Event、Manifest、Commit 与 Board Projection 都不被写入；
+- Registry 以 `runId` 为唯一 key 保存 `SessionEvidenceAuthorityV1`、Capture Intent 和 Receipt。claim/record 使用 Authority Version fencing；同 Intent/Receipt 重放幂等，不同 Workflow、Artifact target 或 predecessor 链冲突 fail closed。Registry 没有 Task、Gate、Test、Merge、Closure 或 Archive 写入口；
+- 历史 Effect 只接受 `MOYE_SESSION_SOURCE_ROOTS` 中的 Provider Root，受管输出也必须位于 `MOYE_ARTIFACT_ROOTS | MOYE_LIVE_RUNTIME_ROOT`；随后复用 Provider Adapter 的物理文件、稳定快照、create-once Artifact 与 Digest 校验。源缺失形成 `UNAVAILABLE` Receipt，解析/绑定失败形成 `FAILED` Receipt；两者都不会重跑旧 Agent。Board 只通过明确的 Registry key join，不扫描 Provider Home 或验收目录；
+- 没有 pre-execution `PromptEnvelopeV1` 的旧 Session 只能标记 `PROVIDER_NATIVE_OBSERVED | UNVERIFIED`。首版 Workflow 只开放 `UNVERIFIED`；在它能从受管 execution intent 与 Provider record 自行推导全部 Legacy Evidence 前，拒绝调用方提交 `PROVIDER_NATIVE_OBSERVED` 声明。当前 LIVE-006 的 Provider 原始 user record 正文完整展示，但 Manifest/Receipt 为 `PARTIAL`，明确表示无法证明它在执行前由 Moye 持久化；这不是数据缺失，也不能升级成 `COMPLETE`；
+- `npm run acceptance:agent-sessions:history` 对指定 archived Core v2 Task 的显式 Role Runs 启动 Sidecar Workflow，逐一校验 Registry、Board `/session|timeline|events|stderr`、幂等重放及 source Projection 前后 Digest。产品验收 `TASK-CORE-V2-LIVE-006` 七个真实 Codex Session 已得到 7/7 Receipt，共 172 条 canonical Provider Event，原 Projection Digest 保持 `sha256:7e883797…673a4`。
+
 ### 5.0.3 当前 PoC 已实现单 Agent 编码 Workflow
 
 `CodingTaskWorkflow/<task_id>` 的产品路径已串联 `CONTEXT(role) → WORKSPACE → IMPLEMENT(agent) → SELF_REVIEW(role) → VERIFY → REVIEW(independent role) → MERGE → DOCS_GATE(role) → CLOSED → ARCHIVE`。`TaskAuthority/<task_id>` 保证通用 TaskWorkflow、CodingTaskWorkflow 与 CoreClosureWorkflow 不会同时认领同一个 Task；同一 Coding owner 只允许单调提升 Spec Revision。Workflow 通过 Observer 独占 Projection 写入并同步 ProjectBoard 查询副本。六个领域 Step、虚拟 Role Step、每个 Attempt/Session/Evidence/Binding 都进入 Projection；每个外部操作经 Restate `ctx.run`，Adapter 只能返回可验证结果。

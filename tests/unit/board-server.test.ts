@@ -64,6 +64,8 @@ describe("board static server", () => {
     expect(script).toContain('data-ledger-actor="${escapeHtml(actor.id)}"');
     expect(script).not.toContain('data-ledger-actor="${escapeAttribute(actor.id)}"');
     expect(script).toContain("Session 与 Attempt 技术标识");
+    expect(script).toContain("历史补全 Sidecar");
+    expect(script).toContain("metadata.promptBinding");
     expect(script).toContain("完整 ID、Digest 与 producer 绑定按需展开");
     expect(script).not.toContain('aria-label="真实角色会话"><div class="trace-heading"');
     expect(index).toContain('data-agent-session-context');
