@@ -1,0 +1,15 @@
+schema_version: 1
+id: "BL-0067"
+title: "引入分级开发执行模式"
+kind: "feature"
+status: "converted_to_task"
+priority: "high"
+source_refs: []
+affected_areas: [agent-contract, task-control-skill, document-control-plane]
+acceptance_outline:
+  - "auto 默认选择 lite、standard 或 full 中最小且安全的档位"
+  - "lite 允许低风险改动跳过 Context Route、Task 文档、Docs Impact 与 Runtime Seal"
+  - "standard 保留 Context Route、最小 Task、Docs Impact 与单 Result Commit，但不强制多 Agent"
+  - "full 用于 Core、持久化、副作用、安全、迁移与架构变更并保留完整闭环"
+  - "执行中发现风险边界扩大时必须自动升级，不能降级绕过门禁"
+resolution: { task_refs: [TASK-0056], duplicate_of: null, reason: "由 TASK-0056 更新仓库 Agent 契约、Task Control Skill 与文档控制面事实" }

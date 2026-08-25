@@ -1,0 +1,24 @@
+schema_version: 1
+id: TASK-0056
+title: 引入分级开发执行模式
+status: seal_prepared
+outcome: null
+backlog_refs:
+  - BL-0067
+spec_revision: 1
+workflow_id: sealed-task/TASK-0056
+execution_mode: sealed-result-commit
+base_commit: 71e8b50baa48c4ab7b2fabc622833348a7da75dc
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-25-TASK-0056
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:51ebb190db82b118d32cb661a36158df9d7e07453762fd09d9ee416b8ed598b7
+  base_commit: 71e8b50baa48c4ab7b2fabc622833348a7da75dc
+  archive_path: docs/delivery/tasks/archive/2026-08-25-TASK-0056

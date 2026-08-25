@@ -23,6 +23,10 @@ PoC 使用 Restate。真实 `SIGKILL` 恢复测试已经验证“目录移动完
 
 ## 快速验证
 
+### 开发执行档位
+
+仓库 Agent 默认使用 `auto` 选择满足风险约束的最低档位：`lite` 用于静态视觉、文案和其他低风险局部变更，只要求定向验证而不创建 Task/Docs Impact/Seal；`standard` 用于普通功能和 Bug，保留最小 Task、Context Route、Docs Impact 与单 Result Commit；`full` 用于 Core、持久化、副作用、安全、迁移和架构变更，执行完整闭环。Agent 开始工作时必须声明档位，执行中发现风险扩大只能升级。精确白名单和门禁见 [AGENTS.md](./AGENTS.md) 与 [moye-task-control Skill](./.agents/skills/moye-task-control/SKILL.md)。
+
 ### 第一次使用：一条命令体验
 
 需要 Node.js 22 和正在运行的 Docker Desktop：

@@ -5,9 +5,45 @@ description: Control Moye development tasks and documentation dependencies. Use 
 
 # Moye Task Control
 
-Use the repository CLI and document graph as gates. Never infer lifecycle state from a directory move or edit Task state directly.
+Use the repository CLI and document graph as gates for Standard/Full work; Lite follows the explicit exemption below. Never infer lifecycle state from a directory move or edit Task state directly.
 
-## Start or resume work
+## Select the development profile
+
+Use `auto` by default. `auto` is a selector, not a fourth profile: choose the smallest safe profile and announce the selected profile plus the reason before task actions. A user may request a stricter profile. Never honor a lower profile when the actual change triggers a stricter one; announce the escalation first.
+
+The normative profiles are `lite`, `standard`, and `full`. `performance` is an orthogonal execution strategy such as parallel agents or caching. `ultimate` is not a profile.
+
+### Lite
+
+Choose Lite only when every condition is true: the change is local and easily reversible; it is limited to static presentation, copy, comments, test maintenance, formatting, or a proven behavior-preserving refactor; and it does not touch a public contract, business rule, state machine, Workflow, persisted Schema, Event, Artifact, dependency, security boundary, build/deploy/recovery path, migration, or external side effect.
+
+Lite procedure:
+
+1. Read `AGENTS.md`, inspect the worktree, and read only the directly relevant source and tests.
+2. Implement the smallest bounded change while preserving unrelated user changes.
+3. Run targeted tests or static checks proportional to the change. For visual changes, verify the real page in a browser at relevant desktop and narrow widths, including keyboard behavior when applicable.
+4. Run `git diff --check` and review the final diff.
+5. Report changed files, verification evidence, and remaining limitations. Create at most one ordinary Commit when requested or expected by the active repository workflow.
+
+Lite must not create lifecycle-only Finding, Backlog, Task package, Docs Impact, Document Graph, or Seal artifacts. It must not invoke Context Route or a Runtime Workflow merely to manufacture process evidence. Editing a document that is itself the requested target is allowed. If the scope crosses any Lite boundary, stop expanding the change, announce escalation, and continue under Standard or Full.
+
+### Standard
+
+Use Standard for ordinary bugs, bounded product behavior, and component work that changes behavior without touching Full triggers.
+
+1. Read the repository baseline and run Context Route.
+2. Create a minimal Task package. A direct user requirement does not need a synthetic Finding or Backlog; create Source/Backlog only when work needs durable intake, deduplication, scheduling, or follow-up.
+3. Read all `required_read` documents and disposition every `required_review` item in Docs Impact.
+4. Implement and run targeted tests plus the relevant repository gate. Do not require multi-agent execution or a fault matrix unless the risk calls for them.
+5. Use the existing single Result Commit and two-phase Seal protocol when the repository task is committed and closed.
+
+### Full
+
+Use Full for Core state machines and invariants, Runtime/Workflow behavior, persisted Schema, Event or Artifact protocols, UNKNOWN effects and Reconcile, Git/Merge correctness, permissions/security, migrations, dependencies/infrastructure, cross-module architecture boundaries, production release, or any request for a complete product fault matrix.
+
+Follow the complete Source/Backlog/Task, Spec/Design/Plan, role isolation, implementation, documentation, independent test/review, Docs Impact, Result Commit, Verification, Closure and Archive path. Use real product evidence whenever the acceptance criteria require it; Fake/Mock evidence remains supplemental.
+
+## Start or resume Standard or Full work
 
 1. Read `AGENTS.md`, `docs/README.md`, `docs/graph.yaml`, and `docs/knowledge/current/codemap/README.md`.
 2. Route the intended changes:
@@ -17,7 +53,7 @@ Use the repository CLI and document graph as gates. Never infer lifecycle state 
    ```
 
 3. Read every `required_read` document. Record every `required_review` node in the Task's `docs-impact.yaml` before completion.
-4. Find the Active Task under `docs/delivery/tasks/TASK-*`. If no approved Task covers the requested implementation, create or update a Backlog item and Task package before changing code.
+4. Find the Active Task under `docs/delivery/tasks/TASK-*`. If no approved Task covers the requested implementation, create a Task package; create or update Source/Backlog first only when intake, deduplication, scheduling, incident handling, or follow-up requires it.
 5. On handoff, use the Task package plus Runtime status as authority; do not rely on chat history or Worker-local state.
 
 ## Operate a durable task

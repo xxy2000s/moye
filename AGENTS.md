@@ -2,7 +2,44 @@
 
 本文件是所有在 Moye 仓库中工作的编码 Agent 的仓库级操作契约。它描述进入仓库后的阅读顺序、事实来源、变更纪律和完成标准。
 
-## 1. 开始任何任务前
+## 0. 开发执行档位
+
+Moye 使用 `lite`、`standard`、`full` 三个执行档位。`auto` 是默认选择器，不是第四个档位：Agent 在开始工作时选择满足风险约束的最低档位，并在第一条工作进度中声明“档位 + 理由”。用户可以要求更高档位；如果用户指定的档位低于实际风险，Agent 必须说明触发条件并升级，不能降级绕过门禁。
+
+`performance` 表示并行 Agent、缓存或其他加速策略，与档位正交；`ultimate` 不属于规范枚举。
+
+### 0.1 Lite
+
+只有同时满足以下条件时才能使用 `lite`：
+
+- 变更局部、易回滚，预计影响范围可以直接从少量相关文件确认；
+- 只涉及静态视觉、文案、注释、测试维护、格式，或可以证明语义不变的局部重构；
+- 不改变公共 API、Schema、持久化数据、业务规则、状态机、Workflow、Event、Artifact、权限或安全边界；
+- 不增加或升级依赖，不改变构建、部署、恢复、迁移或外部副作用；
+- 用户没有要求正式 Spec、完整 Evidence、真实故障矩阵或发布级验收。
+
+Lite 是显式的治理豁免，不创建研发 Task 聚合，因此：
+
+- 不执行 Context Route；
+- 不创建仅为流程服务的 Finding、Backlog、Task package、Docs Impact 或 Document Graph 节点；
+- 不启动 Sealed/Core Runtime Workflow，不要求多 Agent；
+- 如果目标本身是 README、说明文字等文档，可以直接修改该目标文档，但仍不生成生命周期文档。
+
+Lite 仍必须：检查当前 worktree 并保护用户改动；阅读直接相关源码；执行与改动成比例的定向测试或静态检查；视觉变更使用真实浏览器验证；结束前运行 `git diff --check`；在结果中列出修改、验证和剩余限制。需要提交时只创建普通 Commit，不为获得流程证据启动 Seal。
+
+执行中一旦发现影响扩展到任一非 Lite 条件，立即停止扩大修改，声明升级为 `standard` 或 `full`，再补齐对应入口和门禁。
+
+### 0.2 Standard
+
+普通 Bug、局部产品行为、组件能力和可控范围的代码变更使用 `standard`。Standard 执行 Context Route，创建最小 Task package，完成实际相关的文档更新、Docs Impact、测试和单 Result Commit；不强制多 Agent、完整故障矩阵或与风险无关的文档。直接用户需求可以直接形成 Task；只有需要排队、去重或后续消费的工作才必须先建 Source/Backlog。
+
+### 0.3 Full
+
+以下任一条件默认使用 `full`：Core 状态机或架构不变量、Runtime/Workflow、持久化 Schema、Event/Artifact 协议、未知外部副作用与 Reconcile、Git/Merge 正确性、权限安全、数据迁移、依赖或基础设施选型、跨模块架构边界、生产发布，以及用户明确要求的完整闭环或产品级故障验收。
+
+Full 使用完整 Source/Backlog/Task、Spec/Design/Plan、角色隔离、验证与 Review、Docs Impact、Result Commit、Seal/Closure/Archive；具体角色和故障矩阵按风险选择，但不得用低层 Fake/Mock 冒充要求的真实产品证据。
+
+## 1. 开始 Standard 或 Full 任务前
 
 按顺序阅读：
 
@@ -26,7 +63,7 @@ ruby scripts/docs_graph.rb route --intent <intent> --path <planned-path>
 npm run cli -- route --intent <intent> --path <planned-path>
 ```
 
-必须阅读输出中的 `required_read`；`required_review` 在任务结束前逐项判断影响。入口不是从 README 进入时，也必须执行该路由。
+必须阅读输出中的 `required_read`；`required_review` 在任务结束前逐项判断影响。入口不是从 README 进入时，也必须执行该路由。Lite 按第 0 节的白名单和验证流程执行，不适用本节的 Context Route 与 Task 文档要求。
 
 ## 2. 事实来源
 
@@ -66,7 +103,7 @@ npm run cli -- route --intent <intent> --path <planned-path>
 
 ## 4. 文档影响检查
 
-每次代码变更结束前，明确判断以下文档是否需要更新：
+Standard 和 Full 代码变更结束前，明确判断以下文档是否需要更新：
 
 | 变化 | 必须检查 |
 |---|---|
@@ -80,7 +117,7 @@ npm run cli -- route --intent <intent> --path <planned-path>
 | 发现稳定复现的陷阱或反模式 | Pitfalls |
 | 改变构建、部署、恢复或排障步骤 | Runbooks、README、AGENTS |
 
-如果不需要更新，仍要在 Docs Impact Report 中为关联文档记录 `unchanged` 或 `not_applicable` 及原因，而不是写一个无法验证的全局 `docs-impact: none`。
+如果不需要更新，仍要在 Docs Impact Report 中为关联文档记录 `unchanged` 或 `not_applicable` 及原因，而不是写一个无法验证的全局 `docs-impact: none`。Lite 不生成 Docs Impact Report；若发现必须更新 Architecture、ADR、CodeMap、Pitfall 或 Runbook，应先升级档位。
 
 ## 5. 文档写入规则
 
@@ -136,17 +173,17 @@ PoC 不负责证明 Restate 是最终生产选型。
 
 ## 8. 完成标准
 
-一次实现任务只有在以下条件满足后才算完成：
+所有档位只有在目标行为已经实现、相关验证通过、没有留下未说明的临时状态或后台进程，并在结果中列出证据和剩余限制后才算完成。
 
-- 目标行为已经实现；
-- 相关测试或可重复验证命令通过；
+Standard 和 Full 还必须满足：
+
 - 失败路径按风险得到验证；
-- 没有留下未说明的临时状态和后台进程；
 - 文档影响检查完成；
 - Docs Impact Report 覆盖 Router 计算出的所有 `required_review`；
 - CodeMap 与实际目录一致；
 - 重要决策、风险或故障进入正确文档类型；
-- 结果中列出验证证据和剩余限制。
+
+Lite 的完成证据是受控 diff、定向验证、适用时的真实浏览器结果和 `git diff --check`；不以补造 Task 文档或 Runtime Projection 作为完成条件。
 
 Core v2 自举 Task 还必须满足：Result Commit 的唯一父提交是 Manifest 冻结的 `base_commit`；代码、文档、验证、Docs Impact 和 sealed Archive package 位于同一个 Commit；Seal Gate 通过后工作树仍为 clean。Result Commit SHA 记录在 Runtime Receipt，不写回同一 Commit。
 
@@ -162,4 +199,4 @@ npm run check
 npm run test:e2e
 ```
 
-本地 Runtime 操作遵循 `docs/knowledge/guidance/runbooks/local-restate-poc.md`。直接运行代码前仍必须先完成 Context Route。
+本地 Runtime 操作遵循 `docs/knowledge/guidance/runbooks/local-restate-poc.md`。Standard/Full 直接运行代码前必须先完成 Context Route；Lite 按第 0 节执行。

@@ -1,0 +1,69 @@
+schema_version: 1
+task_id: TASK-0056
+graph_revision: 104
+intents: [task-execution, docs-change]
+changed_paths:
+  - .agents/skills/moye-task-control/SKILL.md
+  - AGENTS.md
+  - README.md
+  - docs/delivery/backlog/README.md
+  - docs/delivery/backlog/BL-0067.yaml
+  - docs/delivery/tasks/archive/README.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0056/task.yaml
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0056/spec.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0056/design.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0056/plan.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0056/verification.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0056/docs-impact.yaml
+  - docs/graph.yaml
+  - docs/knowledge/current/architecture/document-control-plane.md
+  - tests/unit/repository-development-profiles.test.ts
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - meta-index
+    - adr-0002-doc-lifecycle-roles
+    - moye-task-control-skill
+    - root-readme
+    - architecture-index
+    - task-runtime-kernel
+    - bl-0067-development-execution-profiles
+    - backlog-index
+    - sources-index
+    - tasks-index
+    - archived-tasks-index
+    - task-0056-manifest
+    - task-0056-spec
+    - task-0056-design
+    - task-0056-plan
+    - task-0056-verification
+    - task-0056-docs-impact
+  reviewed:
+    architecture-overview: { outcome: unchanged, reason: "Harness 内的正式研发 Task 仍以 Task 为聚合根；Lite 只覆盖不进入 Runtime 的仓库维护变更" }
+    tasks-index: { outcome: unchanged, reason: "TASK-0056 在同一 Result Commit 内登记并 seal-stage，最终 Active 索引仍为空；Archive 索引已更新" }
+    restate-poc-architecture: { outcome: unchanged, reason: "不修改 Restate Service、Workflow、Projection、CLI 或运行拓扑" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "Standard/Full 继续使用既有 Seal；Lite 明确不创建正式 Runtime Task，未改变协议本身" }
+    task-spec-document-closure-brainstorm: { outcome: unchanged, reason: "正式 Task 的 Spec、文档和外围闭环仍保持；Lite 被明确限定为 Task 生命周期之外的低风险维护" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "没有改变 durable command、Effect、Reconcile 或 Runtime 恢复行为" }
+    task-0013-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0014-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0015-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0016-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0017-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0018-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0019-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0020-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0021-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0029-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0002-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0003-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0004-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0005-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0006-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0007-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0001-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0049r1-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0056-manifest: { outcome: updated, reason: "当前 Task package 已按 Seal Intent 准备并移入 Archive" }

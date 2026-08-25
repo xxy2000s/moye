@@ -59,6 +59,16 @@ Source 可以产生多个 Backlog；Backlog 被调度后才创建 Task。Task Ru
 
 目录组织决策见 [ADR-0002](../../decisions/adr/0002-organize-docs-by-lifecycle-role.md)。
 
+### 2.2 开发执行档位与 Lite 豁免
+
+Document Control Plane 只对进入正式研发 Task 生命周期的 `standard` 和 `full` 工作强制执行完整 Router、Task package、Docs Impact 与 Archive Gate。`auto` 是 Agent 的默认选择器，不是持久化 Runtime 状态；它从 `lite / standard / full` 中选择满足风险约束的最低档位。
+
+`lite` 用于局部、易回滚且不改变公共契约、业务规则、Runtime 事实、持久化 Schema、依赖、安全、部署或外部副作用的维护变更。Lite 不创建研发 Task 聚合，因此不生成仅为流程服务的 Finding、Backlog、Task package、Graph 节点、Docs Impact 或 Seal Receipt；其证据由受控 Git diff、定向测试、适用时的真实浏览器结果和普通 Commit 承担。目标本身是文档时可以直接编辑该文档，但不补造生命周期文档。
+
+这项豁免不是由 Agent 任意跳过 Gate：白名单由 `AGENTS.md` 定义，Skill 负责执行；执行中出现契约、状态机、数据、副作用或架构影响时必须升级到 Standard/Full，并从升级点补齐 Context Route 与文档控制面。用户可以要求更高档位，不能要求以 Lite 绕过更高风险门禁。
+
+`performance` 只描述并行 Agent、缓存等执行策略，与文档治理档位正交；`ultimate` 不进入规范枚举。
+
 ## 3. 为什么不能只依赖 README
 
 不同 Agent、IDE 和自动化入口对 README 的读取行为并不一致。即使读取了 README，也不能保证继续打开第二层或第三层关联文档。
@@ -179,7 +189,7 @@ ContextPlan:
 
 Router 合并四类输入：
 
-1. Baseline：每个 Agent Task 都要读取；
+1. Baseline：每个进入 Standard/Full 的 Agent Task 都要读取；
 2. Intent：例如 `restate-poc`、`incident-response`；
 3. Path Rule：根据预计或实际修改路径；
 4. Graph Neighbor：沿指定关系扩展一跳影响面。
@@ -188,7 +198,7 @@ PoC 阶段只扩展一跳，避免上下文爆炸。更深依赖通过后续 Rou
 
 ## 6. Docs Impact Report
 
-Task 完成时必须提交 Docs Impact Report，而不是简单回答“是否更新文档”。
+Standard/Full Task 完成时必须提交 Docs Impact Report，而不是简单回答“是否更新文档”。Lite 使用第 2.2 节的显式豁免和轻量证据，不生成空报告。
 
 ```yaml
 task_id: "task-..."
@@ -222,7 +232,7 @@ docs:
 
 ### 7.1 开始 Gate
 
-Task 从 `SCOPED` 进入 `PLANNED/EXECUTING` 前：
+Standard/Full Task 从 `SCOPED` 进入 `PLANNED/EXECUTING` 前：
 
 1. 识别 Intent；
 2. 预测变更路径或模块；
@@ -295,7 +305,7 @@ README、目录索引和相对链接。
 
 ### Level 1：Agent 契约
 
-`AGENTS.md` 要求执行 Router 和 Docs Impact 检查。
+`AGENTS.md` 要求 Standard/Full 执行 Router 和 Docs Impact 检查，并为符合严格白名单的 Lite 维护变更定义显式豁免。
 
 ### Level 2：本地工具
 
