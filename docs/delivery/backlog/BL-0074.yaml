@@ -1,0 +1,17 @@
+schema_version: 1
+id: BL-0074
+title: 在 Framework Task 派发前验证目标 Git ref
+kind: bug
+status: converted_to_task
+priority: high
+source_refs: [finding-framework-client-missing-target-ref]
+affected_areas: [consumer-cli, project-manifest, git-merge]
+acceptance_outline:
+  - 缺失 target ref 在 Workflow 派发前稳定拒绝
+  - target ref 必须等于 frozen base
+  - init 自动采用当前 symbolic branch
+  - doctor 显示 target ref 检查
+resolution:
+  task_refs: [TASK-0068]
+  duplicate_of:
+  reason: TASK-0068 已实现 pre-dispatch target ref gate 并通过第二条真实 Task 验收

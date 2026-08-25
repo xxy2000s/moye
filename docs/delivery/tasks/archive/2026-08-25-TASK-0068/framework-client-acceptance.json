@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "validationKind": "REAL_FRAMEWORK_CLIENT_ACCEPTANCE",
+  "taskId": "TASK-FRAMEWORK-20260825224122",
+  "workflowRef": "restate://CoreV2Workflow/TASK-FRAMEWORK-20260825224122",
+  "invocationId": "inv_18iBRMBeY1ii4Vi2ICWmfXxyUT7lDRpxZs",
+  "manifestDigest": "sha256:4a24f26a2d45c7709feeb0fed7803e2a44d30d9b09376d0239ab0a6cb19cd838",
+  "baseCommit": "e6b84d6ed6e74a546e0f8bb2658791f15dc7e555",
+  "candidateCommit": "2e26be5123575f3fc3963e952472e00c2e8d68c8",
+  "mergeCommit": "457fd545e12d4bb3cde7994899303cde6f9c897f",
+  "verificationGateDigest": "sha256:d2061fb134fc7d021b07d00f845ec38d6789e0836baa40d8cf1011641ec90756",
+  "trustedTestManifestDigest": "sha256:847067f8278a43e9a677ea04282be47b017a2385606d84698e48b5f804e4d0ca",
+  "archiveReceiptDigest": "sha256:43f15cbb3ab874cc96759e8bdedbd480f62889a6e470a2f07915466129643d24",
+  "state": "CLOSED",
+  "archiveStatus": "ARCHIVED",
+  "outcome": "SUCCEEDED",
+  "startedAt": "2026-08-25T22:41:23.314Z",
+  "completedAt": "2026-08-25T22:46:21.605Z",
+  "boardUrl": "http://127.0.0.1:3000/tasks/TASK-FRAMEWORK-20260825224122",
+  "doctorChecks": ["manifest", "git", "git-clean", "git-target", "agent", "test:node-test", "artifacts", "docker", "restate", "board"],
+  "roles": [
+    { "phase": "ARCHITECT", "attemptId": "TASK-FRAMEWORK-20260825224122.ARCHITECT.r1.g0", "runId": "sha256:6724d21c0416d6b14d1193c8040f27b3ad52c6994be0ecf4b0ebe0c566725545", "sessionId": "01a03b15-e3af-70d0-9da5-5f65ab200e48" },
+    { "phase": "DESIGN_REVIEW", "attemptId": "TASK-FRAMEWORK-20260825224122.DESIGN_REVIEW.r1.g0", "sessionId": "01a03b16-96ae-7f80-a540-bd689fc0bbe7" },
+    { "phase": "IMPLEMENTATION", "attemptId": "TASK-FRAMEWORK-20260825224122.IMPLEMENTATION.r1.g0", "sessionId": "01a03b16-edb7-7921-9193-0f75bc49fa66" },
+    { "phase": "DOCUMENTATION", "attemptId": "TASK-FRAMEWORK-20260825224122.DOCUMENTATION.r1.g0", "sessionId": "01a03b17-b6f5-7542-966a-e802d4ed65a1" },
+    { "phase": "TEST_PLAN", "attemptId": "TASK-FRAMEWORK-20260825224122.TEST_PLAN.r1.g0", "sessionId": "01a03b19-48fe-7730-9975-d9862212b133" },
+    { "phase": "TEST_ASSESSMENT", "attemptId": "TASK-FRAMEWORK-20260825224122.TEST_ASSESSMENT.r1.g0", "sessionId": "01a03b19-832d-7cb2-8d5c-b6c7150bb2a1" },
+    { "phase": "FINAL_REVIEW", "attemptId": "TASK-FRAMEWORK-20260825224122.FINAL_REVIEW.r1.g0", "sessionId": "01a03b19-ad0f-75d1-97c2-2f79df9f1dc6" }
+  ]
+}

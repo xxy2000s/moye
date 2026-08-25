@@ -80,12 +80,13 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 | [BL-0065](./BL-0065.yaml) | Converted to Task | 统一角色与交付物执行台账的自适应布局 | TASK-0054（Seal Prepared） |
 | [BL-0066](./BL-0066.yaml) | Converted to Task | 修复 Task 详情 Tab 的 overflow 与焦点显示伪影 | TASK-0055（Seal Prepared） |
 | [BL-0067](./BL-0067.yaml) | Converted to Task | 引入分级开发执行模式 | TASK-0056（Seal Prepared） |
-| [BL-0068](./BL-0068.yaml) | Scheduled（M2 执行中） | 将 Core v2 产品化为可被外部项目直接使用的开发框架 | TASK-0066～0067；TASK-0068～0075（Frozen） |
+| [BL-0068](./BL-0068.yaml) | Scheduled（M2 执行中） | 将 Core v2 产品化为可被外部项目直接使用的开发框架 | TASK-0066～0068；TASK-0069～0075（Frozen） |
 | [BL-0069](./BL-0069.yaml) | Converted to Task | 补齐 Core v2 完整 Agent Session 与 Prompt 证据链 | TASK-0058～0065（M1，已归档） |
 | [BL-0070](./BL-0070.yaml) | Converted to Task | 恢复 TASK-0058 Seal 失败并前移 Accepted Verification 预检 | TASK-0058R1 |
 | [BL-0071](./BL-0071.yaml) | Converted to Task | 修复 Claude Role Runtime 忽略 structured_output | TASK-0060 |
 | [BL-0072](./BL-0072.yaml) | Converted to Task | 兼容 Codex 当前 item_completed 对话记录 | TASK-0061 |
 | [BL-0073](./BL-0073.yaml) | Converted to Task | 消除 Core v2 重放配置分叉并恢复 pre-dispatch Journal mismatch | TASK-0061R1 |
+| [BL-0074](./BL-0074.yaml) | Converted to Task | 在 Framework Task 派发前验证目标 Git ref | TASK-0068 |
 
 ## 本轮调度结果
 

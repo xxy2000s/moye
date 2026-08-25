@@ -11,6 +11,8 @@ Finding 与 Incident 的边界：
 
 ## 当前 Finding
 
+- [Framework Client 在目标 ref 不存在时仍派发任务](./framework-client-dispatched-missing-target-ref.md)：已由 TASK-0068 增加 pre-dispatch target gate，并用第二条真实任务复核。
+
 - [Claude Role Runtime 忽略 CLI 的 structured_output](./claude-role-runtime-ignores-structured-output.md)：真实 Claude Role 已返回合法结构化对象，但旧解析器读取普通结果文本并误标 `INVALID_OUTPUT`，由 TASK-0060 修复。
 - [Core v2 Role Session 只保存 CLI stdout，缺少完整 Prompt 与 Provider 原生时间线](./core-v2-role-session-uses-cli-stdout.md)：已由 M1 TASK-0058～0065 完成 Prompt Envelope、Provider Transcript、恢复、历史补全和 Board 产品验收。
 - [Core v2 Recovery / Exception 分区仍占据大块空白](./core-v2-recovery-lane-remains-oversized.md)：TASK-0050 缩短了画布，但黄色异常背景仍横跨大半画布。

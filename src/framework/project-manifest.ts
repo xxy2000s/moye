@@ -1,8 +1,12 @@
 import { createHash } from "node:crypto";
+import { execFile } from "node:child_process";
 import { access, lstat, mkdir, readFile, realpath, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { promisify } from "node:util";
 
 import { parse, stringify } from "yaml";
+
+const execFileAsync = promisify(execFile);
 
 export const PROJECT_SCHEMA_VERSION = 1 as const;
 export const PROJECT_API_VERSION = 1 as const;
@@ -66,7 +70,7 @@ export function defaultProjectManifest(projectId: string): ProjectManifestV1 {
     project: Object.freeze({ id: assertProjectId(projectId) }),
     repository: Object.freeze({ root: ".", baseRef: "HEAD", targetRef: "refs/heads/main" }),
     workflow: Object.freeze({ profile: "core-v2", repairBudget: 1, replanBudget: 1 }),
-    agent: Object.freeze({ runner: "codex", captureTranscripts: "digest_only" }),
+    agent: Object.freeze({ runner: "codex", captureTranscripts: "none" }),
     tests: Object.freeze([]),
     documentation: Object.freeze({ policy: "conventional" }),
     artifacts: Object.freeze({ root: ".moye/artifacts" }),
@@ -80,7 +84,12 @@ export async function initializeProjectManifest(
 ): Promise<LoadedProjectManifest> {
   const projectRoot = await realpath(directoryInput);
   const projectId = options.projectId ?? path.basename(projectRoot).toLowerCase().replace(/[^a-z0-9-]+/g, "-");
-  const manifest = defaultProjectManifest(projectId);
+  const defaults = defaultProjectManifest(projectId);
+  const detectedTargetRef = await detectTargetRef(projectRoot);
+  const manifest: ProjectManifestV1 = detectedTargetRef === undefined ? defaults : {
+    ...defaults,
+    repository: { ...defaults.repository, targetRef: detectedTargetRef },
+  };
   const directory = path.join(projectRoot, ".moye");
   const manifestPath = path.join(directory, "project.yaml");
   await mkdir(directory, { recursive: true });
@@ -327,6 +336,14 @@ function canonicalJson(value: unknown): string {
 
 async function exists(target: string): Promise<boolean> {
   try { await access(target); return true; } catch (error) { if (isMissing(error)) return false; throw error; }
+}
+
+async function detectTargetRef(projectRoot: string): Promise<string | undefined> {
+  try {
+    const result = await execFileAsync("git", ["-C", projectRoot, "symbolic-ref", "--quiet", "HEAD"], { timeout: 10_000 });
+    const value = result.stdout.trim();
+    return value.startsWith("refs/heads/") ? value : undefined;
+  } catch { return undefined; }
 }
 
 function isMissing(error: unknown): boolean {

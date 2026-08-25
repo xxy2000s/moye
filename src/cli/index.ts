@@ -31,6 +31,8 @@ import type { CoreV2ArchiveRetryInput, CoreV2FailureRecoveryInput, CoreV2Reconci
 import { inspectCoreV2SourceInvocation } from "../restate/invocation-inspector.js";
 import type { TranscriptEnrichmentInputV1, TranscriptEnrichmentProjectionV1 } from "../restate/transcript-enrichment-services.js";
 import { initializeProjectManifest, loadProjectManifest } from "../framework/project-manifest.js";
+import { MoyeClient } from "../framework/client.js";
+import { runProjectDoctor } from "../framework/doctor.js";
 
 const [command = "help", ...args] = process.argv.slice(2);
 const config = loadConfig();
@@ -65,6 +67,49 @@ try {
         documentationPolicy: loaded.manifest.documentation.policy,
         ...(loaded.migratedFrom === undefined ? {} : { migratedFrom: loaded.migratedFrom }),
       });
+      break;
+    }
+    case "doctor": {
+      const report = await runProjectDoctor({
+        manifestPath: resolve(optionalOption(args, "--file") ?? ".moye/project.yaml"),
+        ingressUrl: config.restateIngressUrl,
+        boardUrl: frameworkBoardUrl(),
+        ...(process.env["MOYE_FRAMEWORK_RUNTIME_ROOT"] === undefined ? {} : { runtimeRoot: process.env["MOYE_FRAMEWORK_RUNTIME_ROOT"] }),
+      });
+      print(report);
+      if (!report.ok) process.exitCode = 1;
+      break;
+    }
+    case "task": {
+      const subcommand = args[0];
+      const taskArgs = args.slice(1);
+      const client = frameworkClient();
+      if (subcommand === "start") {
+        const objectiveFile = optionalOption(taskArgs, "--objective-file");
+        const objective = objectiveFile === undefined
+          ? requiredOption(taskArgs, "--objective")
+          : (await readFile(resolve(objectiveFile), "utf8")).trim();
+        const receipt = await client.startTask({
+          manifestPath: resolve(optionalOption(taskArgs, "--file") ?? ".moye/project.yaml"),
+          objective,
+          acceptanceCriteria: repeatedOptions(taskArgs, "--accept"),
+          ...(optionalOption(taskArgs, "--title") === undefined ? {} : { title: optionalOption(taskArgs, "--title")! }),
+          ...(optionalOption(taskArgs, "--task-id") === undefined ? {} : { taskId: optionalOption(taskArgs, "--task-id")! }),
+        });
+        print(receipt);
+      } else if (subcommand === "status") {
+        print(await client.status(requiredArgument(taskArgs, "task id")));
+      } else if (subcommand === "watch") {
+        const taskId = requiredArgument(taskArgs, "task id");
+        const timeoutMs = Number(optionalOption(taskArgs, "--timeout-ms") ?? "3600000");
+        for await (const status of client.watch(taskId, { timeoutMs })) process.stdout.write(`${JSON.stringify(status)}\n`);
+      } else if (subcommand === "open") {
+        const url = client.taskUrl(requiredArgument(taskArgs, "task id"));
+        if (!taskArgs.includes("--print")) launchUrl(url);
+        print({ url, launched: !taskArgs.includes("--print") });
+      } else {
+        throw new Error(`Unknown task command: ${subcommand ?? ""}`);
+      }
       break;
     }
     case "validate": {
@@ -408,6 +453,41 @@ function requiredArgument(args: readonly string[], label: string): string {
   return value;
 }
 
+function repeatedOptions(args: readonly string[], name: string): readonly string[] {
+  const values: string[] = [];
+  for (let index = 0; index < args.length; index += 1) {
+    if (args[index] !== name) continue;
+    const value = args[index + 1];
+    if (value === undefined || value.startsWith("--")) throw new Error(`${name} requires a value`);
+    values.push(value);
+  }
+  return values;
+}
+
+function frameworkBoardUrl(): string {
+  return process.env["MOYE_BOARD_URL"] ?? `http://127.0.0.1:${config.boardPort}`;
+}
+
+function frameworkClient(): MoyeClient {
+  const runtimeRoot = process.env["MOYE_FRAMEWORK_RUNTIME_ROOT"];
+  return new MoyeClient({
+    ingressUrl: config.restateIngressUrl,
+    boardUrl: frameworkBoardUrl(),
+    ...(runtimeRoot === undefined ? {} : { runtimeRoot }),
+    providerRoots: {
+      ...(process.env["MOYE_CODEX_SESSIONS_ROOT"] === undefined ? {} : { codexSessions: process.env["MOYE_CODEX_SESSIONS_ROOT"] }),
+      ...(process.env["MOYE_CLAUDE_PROJECTS_ROOT"] === undefined ? {} : { claudeProjects: process.env["MOYE_CLAUDE_PROJECTS_ROOT"] }),
+    },
+  });
+}
+
+function launchUrl(url: string): void {
+  const command = process.platform === "darwin" ? "open" : process.platform === "win32" ? "cmd" : "xdg-open";
+  const args = process.platform === "win32" ? ["/c", "start", "", url] : [url];
+  const child = spawn(command, args, { detached: true, stdio: "ignore", shell: false });
+  child.unref();
+}
+
 async function runDocsGraph(subcommand: string, args: readonly string[]): Promise<void> {
   const exitCode = await new Promise<number>((resolveExit, reject) => {
     const child = spawn("ruby", ["scripts/docs_graph.rb", subcommand, ...args], {
@@ -449,6 +529,11 @@ function helpText(): string {
 Usage:
   moye init [--dir PATH] [--project-id ID] [--force]
   moye project validate [--file .moye/project.yaml]
+  moye doctor [--file .moye/project.yaml]
+  moye task start --objective TEXT --accept TEXT [--accept TEXT] [--file .moye/project.yaml] [--title TEXT] [--task-id TASK-ID]
+  moye task status TASK-ID
+  moye task watch TASK-ID [--timeout-ms N]
+  moye task open TASK-ID [--print]
   moye backlog sync [--dir PATH] [--project PROJECT-ID]
   moye validate --file task.json
   moye route --intent NAME --path PATH

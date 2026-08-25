@@ -25,7 +25,7 @@ describe("project manifest", () => {
     const second = await loadProjectManifest(path.join(root, ".moye/project.yaml"));
 
     expect(first.manifest.project.id).toBe("demo-project");
-    expect(first.manifest.agent.captureTranscripts).toBe("digest_only");
+    expect(first.manifest.agent.captureTranscripts).toBe("none");
     expect(first.manifest.privacy.capturePrompts).toBe(false);
     expect(first.digest).toBe(second.digest);
     await expect(initializeProjectManifest(root)).rejects.toMatchObject({ code: "PROJECT_MANIFEST_EXISTS" });

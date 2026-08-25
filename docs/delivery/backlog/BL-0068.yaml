@@ -32,5 +32,6 @@ resolution:
   task_refs:
     - TASK-0066
     - TASK-0067
+    - TASK-0068
   duplicate_of:
-  reason: "M2 已批准；TASK-0066 公共边界与 TASK-0067 Project Manifest 已交付，后续 TASK-0068～0075 按依赖创建后追加登记。"
+  reason: "M2 已批准；TASK-0066～0068 已交付公共边界、Manifest 和消费级 Client/CLI，后续 TASK-0069～0075 按依赖创建。"

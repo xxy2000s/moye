@@ -57,6 +57,22 @@ npm run cli -- project validate --file /absolute/path/to/project/.moye/project.y
 
 `project validate` 会展开默认值并返回 canonical Digest、Schema/API/Plugin 版本和解析后的仓库根。Manifest 路径必须是仓库内可移植相对路径；测试和 custom docs 命令必须是 argv 数组。shell、破坏性 executable、inline eval、词法越界和 symlink escape 会在任何 Workflow 派发前拒绝。只有用户明确要求替换配置时才使用 `init --force`。
 
+提交前先把 `.moye/project.yaml` 和项目基线 Commit，并确保 `repository.targetRef` 已存在且指向当前 HEAD：
+
+```bash
+npm run cli -- doctor --file /absolute/path/project/.moye/project.yaml
+npm run cli -- task start \
+  --file /absolute/path/project/.moye/project.yaml \
+  --objective "实现需求" \
+  --accept "项目测试通过" \
+  --accept "文档与行为一致"
+npm run cli -- task status TASK-ID
+npm run cli -- task watch TASK-ID
+npm run cli -- task open TASK-ID --print
+```
+
+默认受管 Runtime Root 是 `~/.moye/runtime`，可用 `MOYE_FRAMEWORK_RUNTIME_ROOT` 指向仓库外目录。`doctor` 不安装依赖、不修改 Git、不启动服务；`task start` 在任何 Restate 派发前拒绝 dirty worktree、缺失/偏离 base 的 target ref、空测试计划、Runtime/Repository 重叠和未授权 Prompt capture。真实回归入口为 `npm run acceptance:framework:client`。
+
 Docker daemon 可用时，以下命令会启动隔离容器、注册服务、提交 Task、强杀 Worker、重启、验证结果并自动清理：
 
 ```bash
