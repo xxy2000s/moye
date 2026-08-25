@@ -1,0 +1,77 @@
+schema_version: 1
+task_id: TASK-0058R1
+graph_revision: 108
+intents:
+  - recover-task-0058-seal-and-preflight-verification-status
+changed_paths:
+  - src/archive/sealed-result-commit.ts
+  - tests/unit/sealed-result-commit.test.ts
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0058/verification.md
+  - docs/sources/incidents/2026-08-25-task-0058-verification-status-seal-failure.md
+  - docs/sources/incidents/README.md
+  - docs/delivery/backlog/BL-0070.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0058R1/task.yaml
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0058R1/spec.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0058R1/design.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0058R1/plan.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0058R1/verification.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0058R1/docs-impact.yaml
+  - docs/delivery/tasks/archive/README.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - docs/knowledge/guidance/pitfalls/durable-task-runtime.md
+  - docs/graph.yaml
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - task-runtime-kernel
+    - incidents-index
+    - backlog-index
+    - sources-index
+    - tasks-index
+    - incident-task-0058-verification-status-seal-failure
+    - bl-0070-task-0058-seal-recovery
+    - archived-tasks-index
+    - task-0058-verification
+    - local-restate-poc-runbook
+    - runbooks-index
+    - durable-runtime-pitfalls
+    - pitfalls-index
+    - task-0058r1-manifest
+    - task-0058r1-spec
+    - task-0058r1-design
+    - task-0058r1-plan
+    - task-0058r1-verification
+    - task-0058r1-docs-impact
+  reviewed:
+    durable-runtime-pitfalls: { outcome: updated, reason: "把既有精确 Accepted 检测建议收敛为 seal-stage 强制预检。" }
+    pitfalls-index: { outcome: unchanged, reason: "既有 Pitfall 19 已覆盖该稳定陷阱，不新增重复条目。" }
+    runbooks-index: { outcome: unchanged, reason: "只更新既有本地 Restate Runbook。" }
+    architecture-overview: { outcome: unchanged, reason: "不改变 Task/Workflow 总体边界。" }
+    restate-poc-architecture: { outcome: unchanged, reason: "不改变两阶段 Seal 与 append-only recovery 架构。" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "实现既定 Verification/Result Commit Gate 的前移预检。" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "Incident、Backlog 与 Task 分工遵循既定文档生命周期。" }
+    task-0013-manifest: { outcome: unchanged, reason: "不修改确定性控制内核历史。" }
+    task-0014-manifest: { outcome: unchanged, reason: "不修改 Role Attempt 历史。" }
+    task-0015-manifest: { outcome: unchanged, reason: "不修改 Finding 生命周期历史。" }
+    task-0016-manifest: { outcome: unchanged, reason: "不修改预算与恢复分类历史。" }
+    task-0017-manifest: { outcome: unchanged, reason: "不修改 Docs Impact Gate 历史。" }
+    task-0018-manifest: { outcome: unchanged, reason: "不修改 Closure 历史。" }
+    task-0019-manifest: { outcome: unchanged, reason: "不修改真实 Agent 历史。" }
+    task-0020-manifest: { outcome: unchanged, reason: "不修改状态机转换历史。" }
+    task-0021-manifest: { outcome: unchanged, reason: "不修改 Core 单任务闭环历史。" }
+    task-0029-manifest: { outcome: unchanged, reason: "复用历史恢复纪律，不改 Bootstrap 事实。" }
+    task-0003-manifest: { outcome: unchanged, reason: "不修改基础 Task 协议。" }
+    task-0004-manifest: { outcome: unchanged, reason: "不修改 Git Effect。" }
+    task-0005-manifest: { outcome: unchanged, reason: "不修改 Agent Adapter。" }
+    task-0006-manifest: { outcome: unchanged, reason: "不修改 Workflow 主状态。" }
+    task-0007-manifest: { outcome: unchanged, reason: "不修改 Trace 边界。" }
+    task-0001-manifest: { outcome: unchanged, reason: "不修改首个生命周期归档事实。" }
+    task-0049r1-manifest: { outcome: unchanged, reason: "复用 seal-start 派发前 preflight 原则。" }
+    moye-task-control-skill: { outcome: unchanged, reason: "继续通过 CLI 和 append-only recovery 操作 Runtime，不修改 Skill。" }
+    task-0002-manifest: { outcome: unchanged, reason: "不改变 Bootstrap Backlog/Closure 历史。" }
+    task-0056-manifest: { outcome: unchanged, reason: "Recovery 使用 standard 纪律，不修改开发模式协议。" }

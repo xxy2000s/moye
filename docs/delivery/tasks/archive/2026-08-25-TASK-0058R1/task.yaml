@@ -1,0 +1,24 @@
+schema_version: 1
+id: TASK-0058R1
+title: 恢复 TASK-0058 Verification 状态 Seal 失败并补齐预检
+status: seal_prepared
+outcome: null
+backlog_refs:
+  - BL-0070
+spec_revision: 1
+workflow_id: sealed-task/TASK-0058R1
+execution_mode: sealed-result-commit
+base_commit: b7d969a59c9706b716a8aee14c7b0262ef74141f
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-25-TASK-0058R1
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:02f1097a62477e54ed1e3ad9ba073ad0b686c3de1f04a123c4d72e86995fa998
+  base_commit: b7d969a59c9706b716a8aee14c7b0262ef74141f
+  archive_path: docs/delivery/tasks/archive/2026-08-25-TASK-0058R1

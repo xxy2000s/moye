@@ -132,7 +132,7 @@ npm run cli -- seal-submit TASK-EXAMPLE \
 npm run cli -- wait TASK-EXAMPLE
 ```
 
-`seal-start` 的本地 preflight、Workflow 第一条 durable command 和最终 Result Commit Gate 是三层同源防线；CLI 不拥有状态推进权。升级前或旧版本中若第一条 command 已经 completed Failure、且 `seal-status`、Authority、Board 均为空，这表示业务 Task 从未创建，不能套用 rejected-Evidence Recovery，也不能重提相同 Workflow key；保留 Invocation 并创建新的 replacement Task。`seal-submit` 会先在本地执行 `git cat-file -e <sha>^{commit}`；不要手工补全短 SHA。如果错误 Evidence 已经被 Runtime 消费并形成 `FAILED_TERMINAL`，保留原 Workflow，准备包含原 rejected Commit、corrected Evidence 和 source Workflow ref 的 JSON，再执行：
+`seal-start` 的本地 preflight、Workflow 第一条 durable command 和最终 Result Commit Gate 是三层同源防线；`seal-stage` 还会在移动 Active package 前拒绝缺少精确 `> 状态：Accepted` 的 Verification。CLI 不拥有状态推进权。升级前或旧版本中若第一条 command 已经 completed Failure、且 `seal-status`、Authority、Board 均为空，这表示业务 Task 从未创建，不能套用 rejected-Evidence Recovery，也不能重提相同 Workflow key；保留 Invocation 并创建新的 replacement Task。`seal-submit` 会先在本地执行 `git cat-file -e <sha>^{commit}`；不要手工补全短 SHA。如果错误 Evidence 已经被 Runtime 消费并形成 `FAILED_TERMINAL`，保留原 Workflow，准备包含原 rejected Commit、corrected Evidence 和 source Workflow ref 的 JSON，再执行：
 
 ```bash
 npm run cli -- recover-sealed-failure --file /path/to/seal-recovery.json

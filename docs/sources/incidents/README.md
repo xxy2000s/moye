@@ -30,3 +30,4 @@ YYYY-MM-DD-short-title.md
 - [Core v2 全矩阵首轮因 Restate OOM 暴露 Role 回执未知](./2026-08-23-core-v2-matrix-restate-oom-and-role-result-unknown.md)：首个新 Happy Task 保留为失败归档历史，并推动 Role UNKNOWN 正式进入业务对账状态。
 - [TASK-0042 Verification 状态格式导致 Seal 失败](./2026-08-23-task-0042-verification-status-seal-failure.md)：机器字段附加说明导致 Gate 拒绝，原失败保留并由 TASK-0042R1 append-only 恢复。
 - [TASK-0049 在 Active package 落盘前启动 Seal](./2026-08-24-task-0049-seal-start-before-package.md)：原 Invocation 在首个 durable command 失败且未创建业务 Projection；保留失败历史，由新 Task 增加派发前 preflight。
+- [TASK-0058 Verification 状态导致 Seal 失败](./2026-08-25-task-0058-verification-status-seal-failure.md)：非规范机器状态通过 stage 后被最终 Gate 拒绝，由 TASK-0058R1 前移预检并 append-only 恢复。

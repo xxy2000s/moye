@@ -1,6 +1,8 @@
 # TASK-0058 Verification
 
-> 状态：Verified；Seal prepared
+> 状态：Accepted
+
+Seal 首次提交因本行曾使用非规范机器状态而被拒绝；原失败证据保留，合法收敛见 TASK-0058R1 与 Runtime successor。
 
 ## Requirement → Evidence
 

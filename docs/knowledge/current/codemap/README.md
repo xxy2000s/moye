@@ -100,7 +100,7 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 - `review/live-review.ts` 使用与 Implementation 独立的 CLI Session 和只读权限生成结构化 Verdict/Finding；Intent 已存在而 Manifest 缺失时返回 UNKNOWN，不盲目重跑；
 - `backlog/document-sync.ts` 先验证全部 YAML，再形成单个 ProjectBoard 批次；
 - `archive/file-archive.ts` 只依赖领域输入和文件系统；`bootstrap-closure.ts` 以同一基线检查支持 CLI/Workflow Preflight、最终 Gate、成功/失败 Artifact 和稳定写入；
-- `archive/sealed-result-commit.ts` 从冻结 Base 和 Active manifest 生成内容寻址 Seal Intent；同一只读校验器由 CLI 派发前和 Workflow 第一条 durable command 调用。普通 Gate 校验唯一父提交、HEAD、clean worktree、Manifest/Intent、Accepted Verification、Docs Impact/changed paths。历史 Recovery Gate 额外要求 Result 是 HEAD 祖先，并在该 Commit 的 detached worktree 内验证当时的 Graph Revision，避免拿新图谱误判旧证据；
+- `archive/sealed-result-commit.ts` 从冻结 Base 和 Active manifest 生成内容寻址 Seal Intent；同一只读校验器由 CLI 派发前和 Workflow 第一条 durable command 调用。`seal-stage` 在移动 package 前即要求精确 Accepted Verification；普通 Gate 再校验唯一父提交、HEAD、clean worktree、Manifest/Intent、Accepted Verification、Docs Impact/changed paths。历史 Recovery Gate 额外要求 Result 是 HEAD 祖先，并在该 Commit 的 detached worktree 内验证当时的 Graph Revision，避免拿新图谱误判旧证据；
 - `git/workspace-effect.ts` 通过 argv-only Git Adapter 管理隔离 Worktree；写操作前后都以 Branch、Worktree HEAD 和 ancestry 对账，Checkpoint 固定 Commit 与 Tree Object ID；
 - `coding/workflow.ts` 编排产品主路径并记录 Spec Revision/Step/Attempt/Role Session/Evidence/Binding；Blocking Finding 按 Recommended Action 创建 Repair Generation N+1 或 Replan Envelope Revision N+1，后续 Checkpoint/Verification 绑定新 Revision；未知外部结果等待 Durable Reconcile Signal；确定性成功/失败都进入 Archive；
 - `TaskAuthority` 保证同一 Task 只能由一个主 Workflow 推进，并允许相同 Coding owner 单调提升 Spec Revision；升级前遗留的已知 Bootstrap 故障只允许追加一次 recovery successor，原 Workflow 保持只读历史；ProjectBoard 是二级查询投影；

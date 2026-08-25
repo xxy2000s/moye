@@ -134,7 +134,7 @@
 
 - 触发：把 `> 状态：Accepted` 写成 `> 状态：Accepted（Seal Pending）` 或在同一行附加其他说明。
 - 后果：测试和 Docs Impact 可以全部通过，但 Sealed Result Commit Gate 按精确协议拒绝，Task 进入 `FAILED_TERMINAL + ArchiveFailed`。
-- 检测：Seal stage 后直接运行与 `verifySealedResultCommit` 相同的 Verification 状态解析，确认存在独立、精确的 `> 状态：Accepted` 行。
+- 检测：`seal-stage` 会在移动 Active package 前运行与 `verifySealedResultCommit` 相同的 Verification 状态解析；非精确 `> 状态：Accepted` 必须立即失败并保留 Active package。
 - 规避：机器字段只写规范枚举，证据边界和 Seal 阶段说明另起普通段落；失败后保留 rejected Commit，通过 corrected sibling Commit 与 append-only successor 恢复，禁止 amend 或重交同一 Evidence。
 
 ## 20. 让 durable command 吞掉 UNKNOWN 业务结果

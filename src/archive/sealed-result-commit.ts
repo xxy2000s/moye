@@ -117,9 +117,11 @@ export async function stageSealedTaskPackage(
     }
     await assertPhysicalDirectory(repositoryRoot, intent.archivePath);
     await assertPreparedManifest(target, intent);
+    await assertAcceptedVerification(repositoryRoot, intent.verificationPath);
     return;
   }
   await assertPhysicalDirectory(repositoryRoot, intent.activePath);
+  await assertAcceptedVerification(repositoryRoot, `${intent.activePath}/verification.md`);
   const manifestPath = await containedFile(repositoryRoot, `${intent.activePath}/task.yaml`);
   const manifest = parse(await readFile(manifestPath, "utf8"), { maxAliasCount: 0 }) as Record<string, unknown>;
   assertManifestIdentity(manifest, intent);
@@ -143,6 +145,14 @@ export async function stageSealedTaskPackage(
   await writeFile(manifestPath, prepared);
   await mkdir(path.dirname(target), { recursive: true });
   await rename(source, target);
+}
+
+async function assertAcceptedVerification(repositoryRoot: string, relativePath: string): Promise<void> {
+  const verificationPath = await containedFile(repositoryRoot, relativePath);
+  const verification = await readFile(verificationPath, "utf8");
+  if (!/^> 状态：Accepted\s*$/mu.test(verification)) {
+    throw sealError("SEAL_VERIFICATION_NOT_ACCEPTED", "Verification Artifact must contain the exact Accepted machine status before Seal staging");
+  }
 }
 
 export async function verifySealedResultCommit(

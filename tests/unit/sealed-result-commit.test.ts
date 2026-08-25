@@ -54,6 +54,16 @@ describe("sealed result commit", () => {
     }, "2026-08-23T01:00:00.000Z")).rejects.toThrow(/does not match the frozen Seal Intent/);
   });
 
+  it("rejects a non-canonical Verification status before moving the active package", async () => {
+    const fixture = await sealFixture("TASK-SEAL-VERIFICATION-PREFLIGHT");
+    const intent = await createSealIntent(fixture.root, fixture.input);
+    await writeFile(path.join(fixture.root, intent.activePath, "verification.md"), "> 状态：Verified；Seal prepared\n");
+
+    await expect(stageSealedTaskPackage(fixture.root, intent)).rejects.toThrow(/exact Accepted machine status/);
+    expect(await readFile(path.join(fixture.root, intent.activePath, "task.yaml"), "utf8")).toContain("status: received");
+    await expect(readFile(path.join(fixture.root, intent.archivePath, "task.yaml"), "utf8")).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
   it("rejects an incomplete Docs Impact instead of accepting an opaque commit", async () => {
     const fixture = await sealFixture("TASK-SEAL-IMPACT", false);
     const intent = await createSealIntent(fixture.root, fixture.input);
