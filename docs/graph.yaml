@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 101
+graph_revision: 102
 updated_at: "2026-08-24"
 
 entrypoints:
@@ -4015,6 +4015,70 @@ documents:
     authority: task-evidence
     read_when: [task-close, task-archive]
 
+  - id: finding-task-role-deliverables-ledger-layout-inconsistent
+    path: docs/sources/findings/task-role-deliverables-ledger-layout-inconsistent.md
+    type: finding
+    status: accepted
+    scope: board-task-audit-ux
+    authority: observed-fact
+    read_when: [finding-intake, task-execution, task-close, ui-change]
+
+  - id: bl-0065-role-deliverables-ledger-layout
+    path: docs/delivery/backlog/BL-0065.yaml
+    type: backlog-item
+    status: converted-to-task
+    scope: board-task-audit-ux
+    authority: delivery-control
+    read_when: [task-create, task-execution, ui-change]
+
+  - id: task-0054-manifest
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0054/task.yaml
+    type: task-manifest
+    status: archived
+    scope: board-task-audit-ux
+    authority: task-artifact
+    read_when: [task-execution, task-close, ui-change]
+
+  - id: task-0054-spec
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0054/spec.md
+    type: task-spec
+    status: archived
+    scope: board-task-audit-ux
+    authority: task-artifact
+    read_when: [task-execution, task-close, ui-change]
+
+  - id: task-0054-design
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0054/design.md
+    type: task-design
+    status: archived
+    scope: board-task-audit-ux
+    authority: task-artifact
+    read_when: [task-execution, ui-change]
+
+  - id: task-0054-plan
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0054/plan.md
+    type: task-plan
+    status: archived
+    scope: board-task-audit-ux
+    authority: task-artifact
+    read_when: [task-execution]
+
+  - id: task-0054-verification
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0054/verification.md
+    type: verification
+    status: archived
+    scope: board-task-audit-ux
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0054-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0054/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: board-task-audit-ux
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
 relations:
   - from: root-readme
     to: docs-index
@@ -7022,6 +7086,50 @@ relations:
 
   - from: task-0053-manifest
     to: task-0052-manifest
+    type: refines
+
+  - from: findings-index
+    to: finding-task-role-deliverables-ledger-layout-inconsistent
+    type: indexes
+
+  - from: finding-task-role-deliverables-ledger-layout-inconsistent
+    to: bl-0065-role-deliverables-ledger-layout
+    type: creates_backlog
+
+  - from: backlog-index
+    to: bl-0065-role-deliverables-ledger-layout
+    type: indexes
+
+  - from: bl-0065-role-deliverables-ledger-layout
+    to: task-0054-manifest
+    type: schedules_into
+
+  - from: archived-tasks-index
+    to: task-0054-manifest
+    type: indexes
+
+  - from: task-0054-spec
+    to: task-0054-manifest
+    type: belongs_to
+
+  - from: task-0054-design
+    to: task-0054-spec
+    type: refines
+
+  - from: task-0054-plan
+    to: task-0054-manifest
+    type: belongs_to
+
+  - from: task-0054-verification
+    to: task-0054-manifest
+    type: verifies
+
+  - from: task-0054-docs-impact
+    to: task-0054-manifest
+    type: reports_on
+
+  - from: task-0054-manifest
+    to: task-0053-manifest
     type: refines
 
 routing:

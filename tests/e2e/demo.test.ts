@@ -142,7 +142,7 @@ describe("npm run demo", () => {
     expect(app).toContain('nodeId === "DOCS" && execution.step === "DOCS_GATE"');
     expect(app).toContain("trigger.dataset.agentEventsBound");
     expect(app).toContain('class="machine-history-drawer"');
-    expect(app).toContain('class="task-evidence-panel task-tab-surface"');
+    expect(app).toContain('class="execution-ledger task-tab-surface"');
     expect(app).toContain('role="tab"');
     expect(app).toContain('role="tabpanel"');
     expect(styles).toContain('.machine-graph-stage[data-inspector-open="true"]');

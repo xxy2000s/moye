@@ -1,0 +1,17 @@
+schema_version: 1
+id: "BL-0065"
+title: "统一角色与交付物执行台账的自适应布局"
+kind: "bug"
+status: "converted_to_task"
+priority: "high"
+source_refs: [task-role-deliverables-ledger-layout-inconsistent]
+affected_areas: [project-board, task-audit, agent-sessions, lifecycle-artifacts]
+acceptance_outline:
+  - "基础 Task 使用紧凑系统执行摘要，不再展示大面积空状态"
+  - "多角色 Task 默认只展开一个选中角色，其余角色保持紧凑可扫读"
+  - "角色与其交付物建立同屏关联，完整 Artifact 台账按需展开"
+  - "Coding Journey 和关联链不再与画布及 Header 重复占据主区域"
+  - "Agent Events 继续使用现有弹窗，完整 Session、Attempt、Artifact 与 Digest 仍可查询"
+  - "桌面使用主从布局，窄屏使用横向角色选择与单列详情"
+resolution: { task_refs: [TASK-0054], duplicate_of: null, reason: "由 TASK-0054 统一三类 Trace 的角色与交付物只读执行台账" }
+

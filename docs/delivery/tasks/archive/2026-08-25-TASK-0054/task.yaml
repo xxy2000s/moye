@@ -1,0 +1,24 @@
+schema_version: 1
+id: TASK-0054
+title: 统一角色与交付物执行台账布局
+status: seal_prepared
+outcome: null
+backlog_refs:
+  - BL-0065
+spec_revision: 1
+workflow_id: sealed-task/TASK-0054
+execution_mode: sealed-result-commit
+base_commit: ed6772174661a2891cf97bd70e0cf42a4e3af4d7
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-25-TASK-0054
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:c23db1a645ceb00ec5658fb321b6357071887566bd53c0fd9f7eb8b146a57a01
+  base_commit: ed6772174661a2891cf97bd70e0cf42a4e3af4d7
+  archive_path: docs/delivery/tasks/archive/2026-08-25-TASK-0054

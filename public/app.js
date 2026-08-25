@@ -54,6 +54,7 @@ let agentEventsReturnFocus;
 let shouldRestoreAgentEventsFocus = true;
 let machineGraphUiState = { filter: "ACTUAL", zoom: undefined, selectedId: undefined, inspectorOpen: false, scrollLeft: 0, scrollTop: 0 };
 let taskDetailTabUiState = { taskId: undefined, activeId: "canvas" };
+let executionLedgerUiState = { taskId: undefined, actorId: undefined };
 let closeMachineGraphInspector = () => false;
 let latestBoardSnapshot;
 const boardFilters = { outcome: "ALL", workflow: "ALL", history: "ALL" };
@@ -323,6 +324,7 @@ async function openTask(summary) {
   openedTaskTraceSignature = "";
   machineGraphUiState = { filter: "ACTUAL", zoom: undefined, selectedId: undefined, inspectorOpen: false, scrollLeft: 0, scrollTop: 0 };
   taskDetailTabUiState = { taskId: summary.taskId, activeId: "canvas" };
+  executionLedgerUiState = { taskId: summary.taskId, actorId: undefined };
   renderTaskDetailHeader(summary, summary.title, [
     ["状态", taskStateLabel(summary.state)],
     ["归档", archiveStatusLabel(summary.archiveStatus)],
@@ -478,11 +480,12 @@ function renderTaskTrace(trace) {
   elements.detail.innerHTML = renderTaskDetailTabs(task.taskId, {
     canvas: `${task.error ? `<p class="error-box">${escapeHtml(task.error)}</p>` : ""}
       ${renderStateMachine(trace.stateMachine, trace)}`,
-    deliverables: `<section class="task-tab-surface"><div class="trace-heading"><div><p class="eyebrow">System Workflow</p><h3>角色与交付物</h3></div><span>无 Agent Session</span></div><p class="trace-note">这个基础 TaskWorkflow 没有 Agent 角色或代码 Artifact；页面不会补造不存在的执行者。</p>${task.archivePath ? `<p class="result-ref"><span>归档结果</span><code>${escapeHtml(task.archivePath)}</code></p>` : ""}</section>`,
+    deliverables: renderSystemExecutionLedger(task, trace.stateMachine.workflow),
     workflow: renderWorkflowStatePanel(task.events, trace.stateMachine),
     diagnostics: `<section class="advanced-panel task-tab-surface"><div class="advanced-content"><section><p class="subheading">Restate Journal</p><code class="wide-code">${escapeHtml(trace.durableRuntime.workflowRef || `TaskWorkflow/${task.taskId}`)}</code>${trace.durableRuntime.invocationsUrl ? `<a class="runtime-link" href="${escapeAttribute(trace.durableRuntime.invocationsUrl)}" target="_blank" rel="noreferrer">在 Restate 中核对 Journal ↗</a>` : ""}</section></div></section>`,
   });
   bindTaskDetailTabs(task.taskId);
+  bindExecutionLedger(task.taskId);
   bindStateMachineGraph(trace.stateMachine, trace);
 }
 
@@ -493,15 +496,6 @@ function renderCoreV2Trace(trace) {
   const succeeded = task.outcome === "SUCCEEDED" && task.archiveStatus === "ARCHIVED";
   const failed = task.outcome === "FAILED_TERMINAL";
   const closure = renderCoreV2Closure(trace);
-  const roleSessions = trace.roles.map(role => `
-    <li><strong>${escapeHtml(roleLabel(role.kind))}</strong><code>${escapeHtml(role.sessionId || "无 Session ID")}</code><span>R${role.specRevision} · G${role.generation} · ${escapeHtml(role.verdict || role.outcome)}</span><p>${escapeHtml(role.summary)}</p>${sessionEventsButton({
-      eventsUrl: role.eventsUrl,
-      kind: role.kind,
-      binding: `${role.attemptId} · ${role.sessionId || "等待 Session"}`,
-      runnerKind: role.runnerKind,
-      label: "查看 Agent 对话与工具输出",
-    })}</li>`).join("");
-  const artifacts = lifecycle.artifacts.map(artifact => `<li><div><strong>${escapeHtml(artifact.kind)}</strong><span>R${artifact.specRevision} · ${escapeHtml(shortSha(artifact.subjectCommit))}</span></div><code>${escapeHtml(artifact.artifactId)}</code><small>${escapeHtml(shortDigest(artifact.artifactDigest))} · ${escapeHtml(artifact.producer.role)} / ${escapeHtml(artifact.producer.phase)}</small></li>`).join("");
   renderTaskDetailHeader(task, task.title, [
     ["状态", failed ? "失败终态" : succeeded ? "完整闭环" : stepLabel(task.currentStep), failed ? "danger" : succeeded ? "success" : "progress"],
     ["规格", `R${task.specRevision}`],
@@ -515,18 +509,228 @@ function renderCoreV2Trace(trace) {
       ${failed ? closure : ""}
       ${renderStateMachine(trace.stateMachine, trace)}
       ${failed ? "" : closure}`,
-    deliverables: `<section class="task-evidence-panel task-tab-surface"><div class="task-evidence-content">
-        <div class="tab-panel-heading"><span>角色会话与交付物</span><small>${trace.roles.length} 个 Session · ${lifecycle.artifacts.length} 个不可变 Artifact</small></div>
-        <section class="journey-section" aria-label="真实角色会话"><div class="trace-heading"><div><p class="eyebrow">Role / Agent Sessions</p><h3>每个 Agent 的对话与工具事件</h3></div><span>支持按事件类别筛选</span></div><ul class="action-list">${roleSessions || "<li>等待首个 Agent Session</li>"}</ul></section>
-        <section class="journey-section" aria-label="生命周期交付物"><div class="trace-heading"><div><p class="eyebrow">Immutable Artifacts</p><h3>Spec、Design、Documentation、Test 与 Review 证据</h3></div><span>绑定 Revision 与 Commit</span></div><ul class="artifact-list">${artifacts || "<li>等待 Artifact</li>"}</ul></section>
-        <div class="correlation-strip" aria-label="任务关联链">${correlationNode("Task", task.taskId)}<span aria-hidden="true">→</span>${correlationNode("Workflow", trace.durableRuntime.workflowRef)}<span aria-hidden="true">→</span>${correlationNode("Candidate", lifecycle.candidateCommit || "等待生成")}<span aria-hidden="true">→</span>${correlationNode("Gate", lifecycle.verificationGateDigest || "等待验证")}<span aria-hidden="true">→</span>${correlationNode("Merge", lifecycle.mergeReceipt?.mergeCommit || "等待合入")}</div>
-      </div></section>`,
+    deliverables: renderCoreV2ExecutionLedger(trace),
     workflow: renderWorkflowStatePanel(trace.business.events, trace.stateMachine),
-    diagnostics: `<section class="advanced-panel task-tab-surface"><div class="tab-panel-heading"><span>高级诊断</span><small>确定性 Observer、Restate Journal 与完整 Lifecycle Projection</small></div><div class="advanced-content"><section><p class="subheading">确定性 Observer</p><dl class="machine-node-facts"><div><dt>Event</dt><dd>${trace.observer.facts.events}</dd></div><div><dt>Attempt</dt><dd>${trace.observer.facts.attempts}</dd></div><div><dt>Failure / UNKNOWN</dt><dd>${trace.observer.facts.failures} / ${trace.observer.facts.unknown}</dd></div><div><dt>Repair / Replan</dt><dd>${trace.observer.facts.repairs} / ${trace.observer.facts.replans}</dd></div></dl><code class="wide-code">${escapeHtml(trace.observer.reportDigest)}</code></section><section><p class="subheading">Restate Journal</p><code class="wide-code">${escapeHtml(trace.durableRuntime.workflowRef)}</code><a class="runtime-link" href="${escapeAttribute(trace.durableRuntime.invocationsUrl)}" target="_blank" rel="noreferrer">在 Restate 中核对 Journal ↗</a></section><section><p class="subheading">Projection Digest</p><code class="wide-code">${escapeHtml(lifecycle.projectionDigest)}</code></section></div></section>`,
+    diagnostics: `<section class="advanced-panel task-tab-surface"><div class="tab-panel-heading"><span>高级诊断</span><small>确定性 Observer、Restate Journal 与完整 Lifecycle Projection</small></div><div class="advanced-content"><section><p class="subheading">任务关联链</p><div class="correlation-strip" aria-label="任务关联链">${correlationNode("Task", task.taskId)}<span aria-hidden="true">→</span>${correlationNode("Workflow", trace.durableRuntime.workflowRef)}<span aria-hidden="true">→</span>${correlationNode("Candidate", lifecycle.candidateCommit || "等待生成")}<span aria-hidden="true">→</span>${correlationNode("Gate", lifecycle.verificationGateDigest || "等待验证")}<span aria-hidden="true">→</span>${correlationNode("Merge", lifecycle.mergeReceipt?.mergeCommit || "等待合入")}</div></section><section><p class="subheading">确定性 Observer</p><dl class="machine-node-facts"><div><dt>Event</dt><dd>${trace.observer.facts.events}</dd></div><div><dt>Attempt</dt><dd>${trace.observer.facts.attempts}</dd></div><div><dt>Failure / UNKNOWN</dt><dd>${trace.observer.facts.failures} / ${trace.observer.facts.unknown}</dd></div><div><dt>Repair / Replan</dt><dd>${trace.observer.facts.repairs} / ${trace.observer.facts.replans}</dd></div></dl><code class="wide-code">${escapeHtml(trace.observer.reportDigest)}</code></section><section><p class="subheading">Restate Journal</p><code class="wide-code">${escapeHtml(trace.durableRuntime.workflowRef)}</code><a class="runtime-link" href="${escapeAttribute(trace.durableRuntime.invocationsUrl)}" target="_blank" rel="noreferrer">在 Restate 中核对 Journal ↗</a></section><section><p class="subheading">Projection Digest</p><code class="wide-code">${escapeHtml(lifecycle.projectionDigest)}</code></section></div></section>`,
   });
   bindTaskDetailTabs(task.taskId);
+  bindExecutionLedger(task.taskId);
   bindStateMachineGraph(trace.stateMachine, trace);
   bindAgentEventsDialog(trace);
+}
+
+function renderSystemExecutionLedger(task, workflow) {
+  const outputs = [
+    ["Result Commit", task.seal?.resultCommit ? shortSha(task.seal.resultCommit) : "等待 Result Commit", task.seal?.resultCommit || ""],
+    ["Task Package", task.seal?.archivePath || task.archivePath || "等待封存", task.seal?.archivePath || task.archivePath || ""],
+    ["Archive", archiveStatusLabel(task.archiveStatus), task.archiveStatus],
+  ];
+  return `<section class="execution-ledger system-execution-ledger task-tab-surface" aria-label="系统执行与交付物">
+    <header class="execution-ledger-overview">
+      <div><span class="execution-ledger-kicker">System execution</span><strong>系统执行任务</strong><p>展示 ${escapeHtml(workflow)} 的封存结果与归档事实。</p></div>
+      <span class="execution-ledger-count">系统路径 · ${outputs.length} 项事实</span>
+    </header>
+    <div class="system-execution-card">
+      <div class="system-execution-owner"><span class="system-owner-mark" aria-hidden="true">S</span><div><small>执行主体</small><strong>${escapeHtml(workflow)}</strong><span>无 Agent Session</span></div></div>
+      <dl class="system-output-list">${outputs.map(([label, value, fullValue]) => `<div><dt>${escapeHtml(label)}</dt><dd title="${escapeHtml(fullValue || value)}">${escapeHtml(value)}</dd></div>`).join("")}</dl>
+    </div>
+  </section>`;
+}
+
+function renderCoreV2ExecutionLedger(trace) {
+  const artifacts = trace.lifecycle.artifacts.map(artifact => ({
+    kind: artifact.kind,
+    id: artifact.artifactId,
+    digest: artifact.artifactDigest,
+    subject: artifact.subjectCommit,
+    revision: artifact.specRevision,
+    producer: artifact.producer.role,
+    phase: artifact.producer.phase,
+    attemptId: artifact.producer.attemptId,
+    generation: artifact.producer.generation,
+  }));
+  const actors = trace.roles.map(role => ({
+    id: role.runId || role.attemptId,
+    kind: role.kind,
+    label: roleLabel(role.kind),
+    runnerKind: role.runnerKind,
+    sessionId: role.sessionId,
+    specRevision: role.specRevision,
+    generation: role.generation,
+    attempt: role.attempt,
+    attemptId: role.attemptId,
+    outcome: role.outcome,
+    verdict: role.verdict,
+    summary: role.summary,
+    findingCount: role.findingCount,
+    eventsUrl: role.eventsUrl,
+    deliverables: artifacts.filter(artifact => artifact.attemptId === role.attemptId),
+  }));
+  return renderExecutionLedger({
+    taskId: trace.task.taskId,
+    actors,
+    artifacts,
+    artifactLabel: "不可变 Artifact",
+  });
+}
+
+function renderCodingExecutionLedger(trace) {
+  const artifacts = trace.technical.artifacts.map(artifact => ({
+    kind: artifact.kind,
+    id: artifact.artifactRef,
+    digest: artifact.contentDigest,
+    bytes: artifact.bytes,
+    downloadUrl: artifact.downloadUrl && artifact.kind !== "agent-events" ? artifact.downloadUrl : undefined,
+    producer: "Technical Evidence",
+  }));
+  const implementations = (trace.agents?.length ? trace.agents : trace.agent ? [trace.agent] : []).map((agent, index) => ({
+    id: agent.runId || agent.attemptId || agent.sessionId || `implementation-${index}`,
+    kind: "IMPLEMENTATION",
+    label: roleLabel("IMPLEMENTATION"),
+    runnerKind: agent.runnerKind,
+    sessionId: agent.sessionId,
+    specRevision: agent.specRevision || trace.task.specRevision,
+    attemptId: agent.attemptId,
+    outcome: agent.outcome,
+    verdict: agent.verdict,
+    summary: agent.summary || "Implementation Agent 执行与结果由当前 Attempt 绑定。",
+    eventsUrl: agent.eventsUrl,
+    deliverables: [],
+  }));
+  const roles = (trace.roles || []).map((role, index) => ({
+    id: role.runId || role.attemptId || role.sessionId || `role-${index}`,
+    kind: role.kind,
+    label: roleLabel(role.kind),
+    runnerKind: role.runnerKind,
+    sessionId: role.sessionId,
+    specRevision: role.specRevision,
+    attempt: role.attempt,
+    attemptId: role.attemptId,
+    outcome: role.outcome,
+    verdict: role.verdict,
+    summary: role.summary,
+    findingCount: role.findingCount,
+    eventsUrl: role.eventsUrl,
+    deliverables: [],
+  }));
+  const reviews = (trace.reviews || []).map((review, index) => ({
+    id: review.runId || review.attemptId || review.sessionId || `review-${index}`,
+    kind: "INDEPENDENT_REVIEW",
+    label: roleLabel("INDEPENDENT_REVIEW"),
+    runnerKind: review.runnerKind,
+    sessionId: review.sessionId,
+    specRevision: review.specRevision || trace.task.specRevision,
+    attempt: review.attempt,
+    attemptId: review.attemptId,
+    outcome: review.outcome,
+    verdict: review.verdict,
+    summary: review.summary,
+    findingCount: review.findingCount,
+    eventsUrl: review.eventsUrl,
+    deliverables: [],
+  }));
+  const journey = PIPELINE_STAGES.map((definition, index) => renderJourneyStage(trace, definition, index)).join("");
+  return renderExecutionLedger({
+    taskId: trace.task.taskId,
+    actors: [...implementations, ...roles, ...reviews],
+    artifacts,
+    artifactLabel: "技术 Artifact",
+    supplemental: `<details class="ledger-register ledger-attempt-register"><summary><span>Workflow Attempt 台账 <strong>${PIPELINE_STAGES.length}</strong></span><small>按需核对每个阶段的 Attempt 与 Evidence</small></summary><div class="journey">${journey}</div></details>`,
+  });
+}
+
+function renderExecutionLedger({ taskId, actors, artifacts, artifactLabel, supplemental = "" }) {
+  if (actors.length === 0) {
+    return `<section class="execution-ledger task-tab-surface"><div class="ledger-no-actors"><strong>尚无角色会话</strong><span>Workflow 还没有发布可查询的 Agent Session。</span></div>${renderLedgerArtifactRegister(artifacts, artifactLabel)}</section>`;
+  }
+  if (executionLedgerUiState.taskId !== taskId) executionLedgerUiState = { taskId, actorId: undefined };
+  const selectedIndex = Math.max(0, actors.findIndex(actor => actor.id === executionLedgerUiState.actorId));
+  const selected = actors[selectedIndex] || actors[0];
+  executionLedgerUiState = { taskId, actorId: selected.id };
+  const tabs = actors.map((actor, index) => {
+    const selectedActor = index === selectedIndex;
+    const result = actor.verdict || actor.outcome || "等待结果";
+    return `<button type="button" class="ledger-role-tab" role="tab" id="ledger-role-${index}" aria-controls="ledger-role-panel-${index}" aria-selected="${selectedActor}" tabindex="${selectedActor ? "0" : "-1"}" data-ledger-actor="${escapeHtml(actor.id)}" data-ledger-index="${index}">
+      <span class="ledger-role-state tone-${ledgerTone(result)}" aria-hidden="true"></span>
+      <span class="ledger-role-copy"><strong>${escapeHtml(actor.label)}</strong><small>R${actor.specRevision || "—"}${actor.generation === undefined ? "" : ` · G${actor.generation}`} · ${escapeHtml(result)}</small></span>
+      <span class="ledger-role-artifact-count">${actor.deliverables.length}</span>
+    </button>`;
+  }).join("");
+  const panels = actors.map((actor, index) => `<section class="ledger-actor-panel" role="tabpanel" id="ledger-role-panel-${index}" aria-labelledby="ledger-role-${index}" data-ledger-panel="${index}"${index === selectedIndex ? "" : " hidden"}>${renderLedgerActor(actor)}</section>`).join("");
+  return `<section class="execution-ledger task-tab-surface" data-execution-ledger data-task-id="${escapeHtml(taskId)}">
+    <header class="execution-ledger-overview"><div><span class="execution-ledger-kicker">Execution ledger</span><strong>实际角色与交付结果</strong><p>选择一个角色查看本次结论、Session 与直接交付物。</p></div><span class="execution-ledger-count">${actors.length} Session · ${artifacts.length} ${escapeHtml(artifactLabel)}</span></header>
+    <div class="execution-ledger-workspace">
+      <nav class="ledger-role-list" role="tablist" aria-label="实际角色会话" aria-orientation="vertical">${tabs}</nav>
+      <div class="ledger-role-panels">${panels}</div>
+    </div>
+    ${renderLedgerArtifactRegister(artifacts, artifactLabel)}
+    ${supplemental}
+  </section>`;
+}
+
+function renderLedgerActor(actor) {
+  const result = actor.verdict || actor.outcome || "等待结果";
+  const binding = [actor.attemptId, actor.sessionId || "等待 Session"].filter(Boolean).join(" · ");
+  const deliverables = actor.deliverables.length
+    ? `<ul class="ledger-deliverable-chips">${actor.deliverables.map(item => `<li><strong>${escapeHtml(item.kind)}</strong><span>${escapeHtml(shortDigest(item.digest))}</span></li>`).join("")}</ul>`
+    : `<p class="ledger-no-deliverable">当前 Trace 没有把一等 Artifact 直接绑定到这个 Session；完整技术产物仍保留在下方台账。</p>`;
+  return `<header class="ledger-actor-heading"><div><span>${escapeHtml(actor.kind)}</span><h3>${escapeHtml(actor.label)}</h3></div><strong class="tag ${ledgerTone(result)}">${escapeHtml(result)}</strong></header>
+    <dl class="ledger-actor-facts"><div><dt>Revision</dt><dd>R${actor.specRevision || "—"}</dd></div>${actor.generation === undefined ? "" : `<div><dt>Generation</dt><dd>G${actor.generation}</dd></div>`}<div><dt>Attempt</dt><dd>${actor.attempt ?? "—"}</dd></div><div><dt>Runner</dt><dd>${escapeHtml(runnerLabel(actor.runnerKind))}</dd></div>${actor.findingCount === undefined ? "" : `<div><dt>Finding</dt><dd>${actor.findingCount}</dd></div>`}</dl>
+    <p class="ledger-actor-summary">${escapeHtml(actor.summary || "这个执行实例没有提供摘要。")}</p>
+    <section class="ledger-direct-deliverables" aria-label="直接交付物"><div><strong>直接交付物</strong><span>${actor.deliverables.length} 项</span></div>${deliverables}</section>
+    <div class="ledger-actor-actions">${sessionEventsButton({ eventsUrl: actor.eventsUrl, kind: actor.kind, binding, runnerKind: actor.runnerKind, label: "查看 Agent 对话与工具输出" })}</div>
+    <details class="ledger-technical-identity"><summary>Session 与 Attempt 技术标识</summary><dl><div><dt>Session</dt><dd><code>${escapeHtml(actor.sessionId || "无 Session ID")}</code></dd></div><div><dt>Attempt</dt><dd><code>${escapeHtml(actor.attemptId || "无 Attempt ID")}</code></dd></div><div><dt>Run</dt><dd><code>${escapeHtml(actor.id)}</code></dd></div></dl></details>`;
+}
+
+function renderLedgerArtifactRegister(artifacts, label) {
+  if (artifacts.length === 0) return "";
+  const rows = artifacts.map(artifact => `<li>
+    <div class="ledger-artifact-copy"><strong>${escapeHtml(artifact.kind)}</strong><span>${escapeHtml([artifact.producer, artifact.phase, artifact.revision ? `R${artifact.revision}` : undefined, artifact.subject ? shortSha(artifact.subject) : undefined].filter(Boolean).join(" · "))}</span></div>
+    <code title="${escapeAttribute(artifact.digest || artifact.id)}">${escapeHtml(shortDigest(artifact.digest || artifact.id))}</code>
+    ${artifact.downloadUrl ? `<a href="${escapeAttribute(artifact.downloadUrl)}" target="_blank" rel="noreferrer">打开 ↗</a>` : ""}
+    <details><summary>技术标识</summary><dl><div><dt>Artifact</dt><dd><code>${escapeHtml(artifact.id)}</code></dd></div>${artifact.digest ? `<div><dt>Digest</dt><dd><code>${escapeHtml(artifact.digest)}</code></dd></div>` : ""}${artifact.attemptId ? `<div><dt>Attempt</dt><dd><code>${escapeHtml(artifact.attemptId)}</code></dd></div>` : ""}${artifact.bytes === undefined ? "" : `<div><dt>Bytes</dt><dd>${artifact.bytes}</dd></div>`}</dl></details>
+  </li>`).join("");
+  return `<details class="ledger-register"><summary><span>全部${escapeHtml(label)} <strong>${artifacts.length}</strong></span><small>完整 ID、Digest 与 producer 绑定按需展开</small></summary><ul class="ledger-artifact-register">${rows}</ul></details>`;
+}
+
+function bindExecutionLedger(taskId) {
+  const root = elements.detail.querySelector("[data-execution-ledger]");
+  if (!(root instanceof HTMLElement)) return;
+  const tabs = [...root.querySelectorAll("[data-ledger-actor]")];
+  const panels = [...root.querySelectorAll("[data-ledger-panel]")];
+  const activate = (index, moveFocus = false) => {
+    const target = tabs[index];
+    if (!(target instanceof HTMLButtonElement)) return;
+    tabs.forEach((tab, tabIndex) => {
+      const selected = tabIndex === index;
+      tab.setAttribute("aria-selected", String(selected));
+      tab.tabIndex = selected ? 0 : -1;
+    });
+    panels.forEach((panel, panelIndex) => { panel.hidden = panelIndex !== index; });
+    executionLedgerUiState = { taskId, actorId: target.dataset.ledgerActor };
+    if (moveFocus) target.focus();
+  };
+  tabs.forEach((tab, index) => {
+    tab.addEventListener("click", () => activate(index));
+    tab.addEventListener("keydown", event => {
+      let next = index;
+      if (["ArrowRight", "ArrowDown"].includes(event.key)) next = (index + 1) % tabs.length;
+      else if (["ArrowLeft", "ArrowUp"].includes(event.key)) next = (index - 1 + tabs.length) % tabs.length;
+      else if (event.key === "Home") next = 0;
+      else if (event.key === "End") next = tabs.length - 1;
+      else return;
+      event.preventDefault();
+      activate(next, true);
+    });
+  });
+}
+
+function ledgerTone(value) {
+  const normalized = String(value || "").toUpperCase();
+  if (["PASS", "PASSED", "SUCCEEDED", "ACCEPTED"].includes(normalized)) return "green";
+  if (["FAIL", "FAILED", "FAILED_TERMINAL", "BLOCKING", "FINDINGS"].includes(normalized)) return "red";
+  if (["RUNNING", "EXECUTING", "PENDING"].includes(normalized)) return "blue";
+  return "yellow";
 }
 
 function renderCoreV2Closure(trace) {
@@ -558,33 +762,11 @@ function renderCodingTrace(trace, summary) {
   const workflowRef = `${trace.durableRuntime.workflowService}/${trace.durableRuntime.workflowKey}`;
   const sessionRef = trace.agent?.sessionId || "等待 Agent Session";
   const mergeRef = trace.git.mergeCommit ? shortSha(trace.git.mergeCommit) : "等待合入";
-  const journey = PIPELINE_STAGES.map((definition, index) => renderJourneyStage(trace, definition, index)).join("");
   const artifacts = trace.technical.artifacts.map(artifact => `
     <li><span>${escapeHtml(artifact.kind)}</span><code>${escapeHtml(artifact.artifactRef)}</code><small>${escapeHtml(shortDigest(artifact.contentDigest))}${artifact.bytes === undefined ? "" : ` · ${artifact.bytes} B`}</small>${artifact.downloadUrl && artifact.kind !== "agent-events" ? `<a href="${escapeAttribute(artifact.downloadUrl)}" target="_blank" rel="noreferrer">打开 ↗</a>` : ""}</li>`).join("");
   const rawModelIo = trace.technical.artifacts.find(artifact => artifact.kind === "raw-model-io" && artifact.downloadUrl);
   const actions = trace.recovery.actions.map(action => `
     <li><strong>${escapeHtml(action.label)}</strong><span class="tag ${action.automatic ? "blue" : "yellow"}">${action.automatic ? "自动" : "人工"}</span><p>${escapeHtml(action.reason)}</p></li>`).join("");
-  const roleSessions = (trace.roles || []).map(role => `
-    <li><strong>${escapeHtml(role.kind)}</strong><code>${escapeHtml(role.sessionId || "无 Session ID")}</code><span>R${role.specRevision} · #${role.attempt} · ${escapeHtml(role.verdict || role.outcome)}</span><p>${escapeHtml(role.summary)}</p>${sessionEventsButton({
-      eventsUrl: role.eventsUrl,
-      kind: role.kind,
-      binding: `R${role.specRevision} · Attempt #${role.attempt} · ${role.sessionId || "等待 Session"}`,
-      runnerKind: role.runnerKind,
-    })}</li>`).join("");
-  const implementationSessions = (trace.agents || []).map(agent => `
-    <li><strong>IMPLEMENTATION</strong><code>${escapeHtml(agent.sessionId || "无 Session ID")}</code><span>R${agent.specRevision} · ${escapeHtml(agent.attemptId)} · ${escapeHtml(agent.outcome)}</span>${sessionEventsButton({
-      eventsUrl: agent.eventsUrl,
-      kind: "IMPLEMENTATION",
-      binding: `R${agent.specRevision} · ${agent.attemptId} · ${agent.sessionId || "等待 Session"}`,
-      runnerKind: agent.runnerKind,
-    })}</li>`).join("");
-  const reviewSessions = (trace.reviews || []).map(review => `
-    <li><strong>INDEPENDENT_REVIEW</strong><code>${escapeHtml(review.sessionId || "无 Session ID")}</code><span>#${review.attempt} · ${escapeHtml(review.verdict || review.outcome)}</span><p>${escapeHtml(review.summary)}</p>${sessionEventsButton({
-      eventsUrl: review.eventsUrl,
-      kind: "INDEPENDENT_REVIEW",
-      binding: `Attempt #${review.attempt} · ${review.sessionId || "等待 Session"}`,
-      runnerKind: review.runnerKind,
-    })}</li>`).join("");
 
   renderTaskDetailHeader(task, summary.title || task.taskId, [
     ["状态", taskStateLabel(task.state), task.state === "CLOSED" ? "success" : task.state === "FAILED" ? "danger" : "progress"],
@@ -596,15 +778,10 @@ function renderCodingTrace(trace, summary) {
   elements.detail.innerHTML = renderTaskDetailTabs(task.taskId, {
     canvas: `${task.error ? `<p class="error-box"><strong>失败原因：</strong>${escapeHtml(task.error)}<br><span>下一步：${escapeHtml(trace.recovery.summary)}</span></p>` : ""}
       ${renderStateMachine(trace.stateMachine, trace)}`,
-    deliverables: `<section class="task-evidence-panel task-tab-surface"><div class="task-evidence-content">
-        <div class="tab-panel-heading"><span>角色与交付物</span><small>${PIPELINE_STAGES.length} 个阶段 · ${(trace.roles || []).length + (trace.reviews || []).length + (trace.agent ? 1 : 0)} 个真实执行会话</small></div>
-        <div class="correlation-strip" aria-label="任务关联链">${correlationNode("任务", task.taskId)}<span aria-hidden="true">→</span>${correlationNode("工作流", workflowRef)}<span aria-hidden="true">→</span>${correlationNode("Agent 会话", sessionRef)}<span aria-hidden="true">→</span>${correlationNode("合入提交", mergeRef)}</div>
-        <section class="journey-section" aria-labelledby="journey-title"><div class="trace-heading"><div><p class="eyebrow">Step / Attempt Evidence</p><h3 id="journey-title">按阶段核对 Attempt 与 Evidence</h3></div><span>状态由 Workflow Event History 证明</span></div><div class="journey">${journey}</div></section>
-        <section class="journey-section" aria-label="真实角色会话"><div class="trace-heading"><div><p class="eyebrow">Role / Agent Sessions</p><h3>角色、会话、版本与结论</h3></div><span>${(trace.roles || []).length + (trace.reviews || []).length + (trace.agent ? 1 : 0)} 个真实执行会话</span></div><ul class="action-list">${implementationSessions + roleSessions + reviewSessions || "<li>尚无角色会话</li>"}</ul></section>
-        <section class="journey-section" aria-label="任务交付物"><div class="trace-heading"><div><p class="eyebrow">Artifacts</p><h3>提交、Manifest 与执行产物</h3></div><span>内容摘要绑定</span></div><ul class="artifact-list">${artifacts || "<li>尚无技术 Artifact</li>"}</ul></section>
-      </div></section>`,
+    deliverables: renderCodingExecutionLedger(trace),
     workflow: renderWorkflowStatePanel(trace.business.events, trace.stateMachine),
     diagnostics: `<section class="advanced-panel task-tab-surface"><div class="tab-panel-heading"><span>高级诊断</span><small>Restate Journal、恢复建议、Trace 与原始定位信息</small></div><div class="advanced-content">
+        <section><p class="subheading">任务关联链</p><div class="correlation-strip" aria-label="任务关联链">${correlationNode("任务", task.taskId)}<span aria-hidden="true">→</span>${correlationNode("工作流", workflowRef)}<span aria-hidden="true">→</span>${correlationNode("Agent 会话", sessionRef)}<span aria-hidden="true">→</span>${correlationNode("合入提交", mergeRef)}</div></section>
         <section class="diagnostic-actions" aria-label="诊断入口"><div><small>Trace ID</small><code>${escapeHtml(trace.observability.traceId)}</code></div>${trace.observability.enabled && trace.observability.uiBaseUrl ? `<a href="${escapeAttribute(trace.observability.uiBaseUrl)}" target="_blank" rel="noreferrer">打开 Trace（Phoenix）↗</a>` : `<span class="diagnostic-disabled">Trace 后端未启用</span>`}${rawModelIo ? `<a class="sensitive-link" href="${escapeAttribute(rawModelIo.downloadUrl)}" target="_blank" rel="noreferrer">查看 Raw Model IO（敏感）↗</a>` : ""}</section>
         <section><div class="trace-heading"><div><p class="eyebrow">Restate 定位</p><h3>耐久执行与中断恢复</h3></div><span>执行证据</span></div><p class="trace-note">Restate Journal 负责记录执行与重放；任务是否完成，以 Moye 的业务投影为准。</p><code class="wide-code">${escapeHtml(trace.durableRuntime.workflowRef)}</code>${trace.durableRuntime.invocationsUrl ? `<a class="runtime-link" href="${escapeAttribute(trace.durableRuntime.invocationsUrl)}" target="_blank" rel="noreferrer">在 Restate 中打开这个任务 ↗</a>` : ""}</section>
         <section class="recovery ${trace.recovery.classification === "NONE" ? "settled" : "attention"}"><div class="trace-heading"><div><p class="eyebrow">恢复判断</p><h3>${escapeHtml(recoveryLabel(trace.recovery.classification))}</h3></div><span>只读建议</span></div><p>${escapeHtml(trace.recovery.summary)}</p>${actions ? `<ul class="action-list">${actions}</ul>` : ""}</section>
@@ -613,6 +790,7 @@ function renderCodingTrace(trace, summary) {
   });
 
   bindTaskDetailTabs(task.taskId);
+  bindExecutionLedger(task.taskId);
   bindStateMachineGraph(trace.stateMachine, trace);
   bindAgentEventsDialog(trace);
 }
@@ -1612,11 +1790,18 @@ function runnerLabel(kind) {
 function roleLabel(kind) {
   return ({
     CONTEXT: "Context",
+    ARCHITECT: "Architect",
+    DESIGN_REVIEW: "Design Review",
     IMPLEMENTATION: "Implementation",
     SELF_REVIEW: "Self Review",
     INDEPENDENT_REVIEW: "Independent Review",
     REPLAN: "Replan",
+    DOCUMENTATION: "Documentation",
     DOCS_GATE: "Docs Gate",
+    TEST_PLAN: "Test Plan",
+    TEST_ASSESSMENT: "Test Assessment",
+    FINAL_REVIEW: "Final Review",
+    OBSERVER_KNOWLEDGE: "Observer / Knowledge",
   })[String(kind || "").toUpperCase()] || kind || "Agent";
 }
 

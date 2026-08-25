@@ -126,7 +126,8 @@ Coding Task 出现在看板后，点击卡片会路由到可直达和刷新的�
 2. 一张完整状态机 Graph 画布：默认只强调本次实际路径和 Event sequence，Core v2、Coding 与基础 Task 使用各自紧凑几何；基础 Task 不绘制不存在的 Recovery 背景，其他 Workflow 的恢复/异常容器只包围相关节点簇。切换“完整状态机”后可核对 normal、Repair、Replan、Reconcile、failure、archive 全部合法边。未发生节点仍保留在 Definition 中但降低强调，不会冒充本次失败；窄屏保持节点可读并允许横向滚动，不继续缩小成不可读小字；
 3. 点击节点才打开详情：桌面在画布右侧显示 Inspector，窄屏在底部显示 Bottom Sheet；有真实 Session 的节点先展示 Agent 活动、分类计数、最近事件预览和“查看全部 Agent Events”主入口，再按系统管控、Workflow 状态流转、本次节点路径、技术 Evidence 与完整合法转换分层。没有 Session 的 Workflow、Gate、Trusted Runner、Merge、Closure 与 Archive 节点会明确标记“系统执行节点”并展示对应控制事实，不补造 Agent。Domain Event 是 Workflow 写入的业务事实，不是 Agent 对话或工具日志；实际进入/离开路径始终可见，完整合法转换按需展开并把 traversed 边排在前面。`Esc` 关闭节点详情并把焦点还给节点；
 4. 完整 Domain Event 使用纵向时间线逐条展示 sequence、业务摘要、`来源 → 目标`、event type 和 time；原始 detail 只在单条 disclosure 中按需显示，没有状态转换的业务事实会明确标记，不伪造 `from/to`。“实际路径”、执行实例、完整合法边、角色会话和高级诊断默认折叠，需要时再展开；
-5. 每条 Context、Implementation、Self Review、Review、Replan 与 Docs Gate Session 都在同一个 Chatbot 弹窗中展示；可按对话、工具调用、工具结果、系统和错误筛选，运行中增量跟随；Events 不跳转下载。直接打开 `/tasks/<task_id>` 时会先读取该 Task Trace，不等待体积更大的项目 Board Projection。
+5. “角色与交付物”使用统一 Execution Ledger：Core v2 与 Coding Task 在桌面显示紧凑角色索引和一个选中角色详情，窄屏改为横向角色选择与单列详情，不再默认纵向展开全部 Session。选中角色只突出 Revision、Generation、Attempt、Verdict、摘要和直接交付物；完整 Session/Artifact ID、Digest、全部 Artifact Register 与 Coding Journey 按需展开。没有 Agent 的基础/Sealed Task 显示真实 Workflow、Result Commit、Task Package 与 Archive 系统事实，不渲染空角色卡，也不补造 Agent；
+6. 每条 Context、Implementation、Self Review、Review、Replan 与 Docs Gate Session 都在同一个 Chatbot 弹窗中展示；可按对话、工具调用、工具结果、系统和错误筛选，运行中增量跟随；Events 不跳转下载。直接打开 `/tasks/<task_id>` 时会先读取该 Task Trace，不等待体积更大的项目 Board Projection。
 
 Restate Journal、恢复建议、技术 Artifact 与原始事件收在“高级诊断”中。进入 Restate 的链接已经按 `CodingTaskWorkflow + task_id` 过滤；Restate 负责执行排障，Moye Board 才是任务业务视图。
 

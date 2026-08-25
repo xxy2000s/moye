@@ -55,6 +55,16 @@ describe("board static server", () => {
     expect(script).toContain('role="tab"');
     expect(script).toContain('role="tabpanel"');
     expect(script).toContain('event.key === "ArrowRight"');
+    expect(script).toContain("renderSystemExecutionLedger");
+    expect(script).toContain("renderCoreV2ExecutionLedger");
+    expect(script).toContain("renderCodingExecutionLedger");
+    expect(script).toContain('class="execution-ledger-workspace"');
+    expect(script).toContain('data-execution-ledger');
+    expect(script).toContain('data-ledger-actor="${escapeHtml(actor.id)}"');
+    expect(script).not.toContain('data-ledger-actor="${escapeAttribute(actor.id)}"');
+    expect(script).toContain("Session 与 Attempt 技术标识");
+    expect(script).toContain("完整 ID、Digest 与 producer 绑定按需展开");
+    expect(script).not.toContain('aria-label="真实角色会话"><div class="trace-heading"');
     expect(styles).toContain(".machine-graph-node.is-filter-muted");
     expect(styles).toContain(".machine-graph-tools");
     expect(styles).toContain(".machine-consistency-alert");
@@ -64,6 +74,9 @@ describe("board static server", () => {
     expect(styles).toContain(".card-timing");
     expect(styles).toContain('.task-detail-tabs button[aria-selected="true"]');
     expect(styles).toContain('.task-detail-tab-panels > [role="tabpanel"][hidden]');
+    expect(styles).toContain(".execution-ledger-workspace");
+    expect(styles).toContain('.ledger-role-tab[aria-selected="true"]');
+    expect(styles).toContain(".system-execution-card");
   });
 
   it("serves files inside publicRoot but rejects a symlink to an outside file", async () => {

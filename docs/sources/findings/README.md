@@ -53,5 +53,6 @@ Finding 与 Incident 的边界：
 - [seal-start 在 Active package 预检前提交 Runtime Invocation](./seal-start-dispatches-before-active-package-preflight.md)：真实 TASK-0049 在第一条 durable command 因 package 不存在而完成失败，且未形成可恢复的业务 Projection。
 - [Core v2 审计画布压缩主流程且节点证据层级不清](./core-v2-audit-graph-compresses-path-and-buries-evidence.md)：真实 Happy Path 的 52 条合法边压缩主流程并放大 Recovery 空白，节点与 Domain Event 仍缺少稳定审计层级。
 - [Task Audit 画布仍重复展示状态且通用异常分区过大](./task-audit-canvas-remains-oversized-and-repetitive.md)：最新 Sealed Task 仍重复展示多层归档状态，并命中未压缩的通用黄色异常分区。
+- [角色与交付物 Tab 在简单任务和多角色任务中密度失衡](./task-role-deliverables-ledger-layout-inconsistent.md)：基础 Task 被呈现为空，多角色 Task 默认展开全部 Session 与原始 Artifact，导致信息层级和页面高度失控。
 
 不要为了演示目录创建虚构 Bug。

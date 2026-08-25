@@ -1,0 +1,83 @@
+schema_version: 1
+task_id: TASK-0054
+graph_revision: 102
+intents: [task-execution, ui-change, docs-change]
+changed_paths:
+  - README.md
+  - docs/delivery/backlog/README.md
+  - docs/delivery/backlog/BL-0065.yaml
+  - docs/delivery/tasks/README.md
+  - docs/delivery/tasks/archive/README.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0054/task.yaml
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0054/spec.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0054/design.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0054/plan.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0054/verification.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0054/docs-impact.yaml
+  - docs/graph.yaml
+  - docs/knowledge/current/codemap/README.md
+  - docs/sources/findings/README.md
+  - docs/sources/findings/task-role-deliverables-ledger-layout-inconsistent.md
+  - public/app.js
+  - public/styles.css
+  - tests/e2e/demo.test.ts
+  - tests/unit/board-server.test.ts
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - meta-index
+    - adr-0002-doc-lifecycle-roles
+    - restate-poc-architecture
+    - task-runtime-kernel
+    - durable-runtime-pitfalls
+    - root-readme
+    - finding-task-role-deliverables-ledger-layout-inconsistent
+    - findings-index
+    - bl-0065-role-deliverables-ledger-layout
+    - backlog-index
+    - sources-index
+    - task-0054-manifest
+    - task-0054-spec
+    - task-0054-design
+    - task-0054-plan
+    - task-0054-verification
+    - task-0054-docs-impact
+    - tasks-index
+    - archived-tasks-index
+  reviewed:
+    local-restate-poc-runbook: { outcome: unchanged, reason: "Runtime 启停、注册、恢复和排障流程不变；浏览器验收与 Seal 均使用现有持久化 Runtime" }
+    architecture-overview: { outcome: unchanged, reason: "只重组 Board 的只读 Trace 信息层级，不改变系统边界、数据流或状态所有权" }
+    tasks-index: { outcome: updated, reason: "TASK-0054 通过 seal-stage 从 Active package 移入 Archive，Active 索引恢复为空" }
+    moye-task-control-skill: { outcome: unchanged, reason: "继续使用既有 Context Route、Finding/Backlog/Task、Docs Impact 和两阶段 Seal 门禁" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "不改变 Restate 选型、Workflow durability 或 PoC 边界" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "继续使用冻结 Base、唯一 Result Commit、Runtime Intent 与 Evidence 的既有协议" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: not_applicable, reason: "不改变 Worktree、Git Candidate、Merge 或 Artifact 生命周期" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "不改变 5+1 Agent、Gate、Closure 或旁路 Observer；页面只压缩实际 Session 与交付物的展示" }
+    task-spec-document-closure-brainstorm: { outcome: unchanged, reason: "Task Spec、Verification 与 Docs Impact 仍按既有生命周期封存" }
+    task-0013-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0014-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0015-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0016-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0017-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0018-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0019-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0020-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0021-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0028-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0029-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0002-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0003-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0004-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0005-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0006-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0007-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0008-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0009-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0001-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "继续使用既有无框架 TypeScript/JavaScript Board 实现" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "不改变 Trace、OTLP 或 Agent Event 数据边界" }
+    task-0049r1-manifest: { outcome: unchanged, reason: "已封存历史 Task 不重写" }
+    task-0053-manifest: { outcome: unchanged, reason: "TASK-0054 修复其页面呈现，但不修改 TASK-0053 的封存材料或 Runtime 历史" }
