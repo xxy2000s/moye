@@ -1,0 +1,102 @@
+schema_version: 1
+task_id: TASK-0065
+graph_revision: 118
+intents: [complete-agent-session-product-acceptance-and-m1-deployment]
+changed_paths:
+  - scripts/agent_session_full_acceptance.ts
+  - tests/unit/agent-session-full-acceptance.test.ts
+  - package.json
+  - README.md
+  - docs/knowledge/current/architecture/task-runtime-kernel.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - docs/sources/findings/core-v2-role-session-uses-cli-stdout.md
+  - docs/sources/findings/README.md
+  - docs/delivery/backlog/BL-0069.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/milestones/m1-agent-session-evidence.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0065/task.yaml
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0065/spec.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0065/design.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0065/plan.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0065/verification.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0065/docs-impact.yaml
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0065/browser-acceptance.json
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0065/agent-session-product-acceptance.json
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0065/agent-session-product-acceptance-3000.json
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0065/session-history-rerun.json
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0065/session-history-3000.json
+  - docs/delivery/tasks/README.md
+  - docs/delivery/tasks/archive/README.md
+  - docs/graph.yaml
+  - output/playwright/TASK-0065/live006-session-desktop.png
+  - output/playwright/TASK-0065/live006-history-prompt-desktop.png
+  - output/playwright/TASK-0065/live006-history-prompt-mobile.png
+  - output/playwright/TASK-0065/session-recovery-canvas-desktop.png
+  - output/playwright/TASK-0065/session-recovery-live-complete.png
+  - output/playwright/TASK-0065/final-3000-desktop.png
+  - output/playwright/TASK-0065/final-3000-mobile.png
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - task-runtime-kernel
+    - root-readme
+    - architecture-index
+    - local-restate-poc-runbook
+    - runbooks-index
+    - finding-core-v2-role-session-uses-cli-stdout
+    - findings-index
+    - bl-0069-agent-session-evidence
+    - backlog-index
+    - sources-index
+    - milestone-1-agent-session-evidence
+    - tasks-index
+    - archived-tasks-index
+    - task-0065-manifest
+    - task-0065-spec
+    - task-0065-design
+    - task-0065-plan
+    - task-0065-verification
+    - task-0065-docs-impact
+  reviewed:
+    architecture-overview: { outcome: unchanged, reason: "聚合门禁与 Session Sidecar 保持既有组件边界，不改变总体架构。" }
+    restate-poc-architecture: { outcome: unchanged, reason: "继续使用已验证的本地 Restate PoC，不扩大最终生产选型结论。" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "TASK-0065 继续执行两阶段 Seal 与唯一 Result Commit。" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "Finding、Backlog、Task、Knowledge 的生命周期角色未改变。" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "部署漂移由最新进程重启和浏览器复核处置，未形成新的稳定 Runtime 反模式。" }
+    moye-task-control-skill: { outcome: unchanged, reason: "继续使用 Full、Context Route、Docs Impact、唯一 Result Commit 与两阶段 Seal，不修改 Skill。" }
+    task-0013-manifest: { outcome: unchanged, reason: "不修改早期 Core Control Task 历史。" }
+    task-0014-manifest: { outcome: unchanged, reason: "不修改早期 Role 协议 Task 历史。" }
+    task-0015-manifest: { outcome: unchanged, reason: "不修改早期 Review/Finding Task 历史。" }
+    task-0016-manifest: { outcome: unchanged, reason: "不修改 Retry/Repair/Replan Task 历史。" }
+    task-0017-manifest: { outcome: unchanged, reason: "不修改 Observer/Docs Task 历史。" }
+    task-0018-manifest: { outcome: unchanged, reason: "不修改 Closure Task 历史。" }
+    task-0019-manifest: { outcome: unchanged, reason: "不修改早期产品路径 Task 历史。" }
+    task-0020-manifest: { outcome: unchanged, reason: "不修改状态机展示 Task 历史。" }
+    task-0021-manifest: { outcome: unchanged, reason: "不修改首个多角色产品 Task 历史。" }
+    task-0029-manifest: { outcome: unchanged, reason: "不修改 Bootstrap recovery Task 历史。" }
+    task-0003-manifest: { outcome: unchanged, reason: "不修改 Task/Attempt 基础协议历史。" }
+    task-0004-manifest: { outcome: unchanged, reason: "不修改 Git Effect 基础历史。" }
+    task-0005-manifest: { outcome: unchanged, reason: "不修改 AgentRunner 基础历史。" }
+    task-0006-manifest: { outcome: unchanged, reason: "不修改 Coding Workflow 基础历史。" }
+    task-0007-manifest: { outcome: unchanged, reason: "不修改故障验收基础历史。" }
+    task-0001-manifest: { outcome: unchanged, reason: "不修改首个 Runtime PoC 历史。" }
+    task-0002-manifest: { outcome: unchanged, reason: "不修改 Backlog 同步自举历史。" }
+    task-0049r1-manifest: { outcome: unchanged, reason: "只复用已接受的 Seal preflight，不修改历史。" }
+    task-0056-manifest: { outcome: unchanged, reason: "Full profile 选择符合已封存执行分级，不修改其历史。" }
+    task-0061r1-design: { outcome: unchanged, reason: "聚合入口验证既有 replay/capture 恢复，不改变其设计。" }
+    task-0062-design: { outcome: unchanged, reason: "重新消费统一 Timeline API，不改变已封存合同。" }
+    task-0063-design: { outcome: unchanged, reason: "真实浏览器复核既有 Chatbot UX，不改变其设计。" }
+    root-readme: { outcome: updated, reason: "登记 M1 Session 产品证据、统一入口和明确剩余限制。" }
+    task-runtime-kernel: { outcome: updated, reason: "登记显式恢复 summary、Provider resume 与聚合门禁边界。" }
+    codemap: { outcome: updated, reason: "登记新的聚合验收脚本与只读权限。" }
+    local-restate-poc-runbook: { outcome: updated, reason: "登记总体验收、显式 Provider resume 和 Session source allowlist。" }
+    finding-core-v2-role-session-uses-cli-stdout: { outcome: updated, reason: "以真实产品证据关闭原 Finding 并保留生产限制。" }
+    findings-index: { outcome: updated, reason: "索引标明 Finding 已由 M1 解决。" }
+    bl-0069-agent-session-evidence: { outcome: updated, reason: "TASK-0058～0065 全部交付后转为规范状态 CONVERTED_TO_TASK，并由 resolution 记录已归档范围。" }
+    backlog-index: { outcome: updated, reason: "同步 BL-0069 Converted to Task 与已归档状态。" }
+    milestone-1-agent-session-evidence: { outcome: updated, reason: "登记 W08 证据和预定 annotated tag。" }
+    tasks-index: { outcome: updated, reason: "TASK-0065 从 Active 移入 Archive。" }

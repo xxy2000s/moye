@@ -1,0 +1,24 @@
+schema_version: 1
+id: TASK-0065
+title: Agent Session Product Acceptance and M1 Deployment
+status: seal_prepared
+outcome: null
+backlog_refs:
+  - BL-0069
+spec_revision: 1
+workflow_id: sealed-task/TASK-0065
+execution_mode: sealed-result-commit
+base_commit: 56d094b8de8f9625169f1cc8da4c870befa2e6d8
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-25-TASK-0065
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:352252614ec7e38fd243a9ced5bc5d095212b5e9d18af2f3093daf5f74a15598
+  base_commit: 56d094b8de8f9625169f1cc8da4c870befa2e6d8
+  archive_path: docs/delivery/tasks/archive/2026-08-25-TASK-0065

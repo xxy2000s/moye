@@ -73,6 +73,19 @@ npm run acceptance:agent-sessions:history
 
 命令从 `TaskAuthority` 找 owning Workflow，只接受已经归档的 terminal Projection；遗留 Core v2 可由同一 owning Event History 中的 `ArchiveArchived(task_id)` 提供 archive proof。它为每个显式 Role Run 提交唯一 `TranscriptEnrichmentWorkflow`，重复执行只读取相同 Receipt。输出报告默认位于 `.moye-runtime/acceptance/<task>-session-history.json`。Service 的 `MOYE_SESSION_SOURCE_ROOTS` 必须覆盖显式 Provider Session Root；Board 的 `MOYE_ARTIFACT_ROOTS` 必须覆盖 `MOYE_SESSION_HISTORY_ARTIFACT_ROOT` 与旧 Task Artifact Root，否则请求会按安全边界拒绝。
 
+M1 的总体验收必须显式绑定已经产生的真实 Capture Recovery summary；入口不会扫描 `.moye-runtime` 选择最新结果：
+
+```bash
+MOYE_AGENT_SESSION_RECOVERY_SUMMARY=/absolute/path/to/session_capture_recovery/evidence-summary.json \
+MOYE_AGENT_SESSION_ACCEPTANCE_BOARD=http://127.0.0.1:3000 \
+MOYE_AGENT_SESSION_ACCEPTANCE_REPORT=/absolute/path/to/agent-session-product-acceptance.json \
+MOYE_SESSION_HISTORY_INGRESS=http://127.0.0.1:8080 \
+MOYE_SESSION_HISTORY_BOARD=http://127.0.0.1:3000 \
+npm run acceptance:agent-sessions
+```
+
+默认会新执行一次真实 Codex 与 Claude Role Run。若下游 Board/History Gate 失败而两个 Provider 已经完成，可分别用 `MOYE_AGENT_SESSION_CODEX_RESULT`、`MOYE_AGENT_SESSION_CLAUDE_RESULT` 显式指向它们的 `acceptance-summary.json`；Harness 会重新读取受管 Transcript 并校验 Manifest/Digest，而不是重复 Agent。任何 summary 缺 Phase、重复 Session、非 COMPLETE Receipt、Runtime/Board 漂移或历史 Projection 变化都会非零退出。
+
 旧 Session 没有执行前 Prompt Envelope 时，报告和页面显示 `PARTIAL + UNVERIFIED`；Provider user record 正文仍可查看，但不能称为 `COMPLETE`。首版拒绝外部提交 `PROVIDER_NATIVE_OBSERVED`，避免未由 Workflow 独立推导的 Legacy Evidence 冒充强绑定。源文件不存在时 Workflow 正常收敛到 `UNAVAILABLE` Receipt；这不是重试 Agent 的理由。CLI 也可对单个显式 Run 操作：
 
 ```bash
@@ -296,6 +309,7 @@ npm run cli -- reconcile-task TASK-EXAMPLE \
 | `MOYE_ARTIFACT_ROOTS` | 空 | 允许 Board 下载 Agent Artifact 的受管根；多个路径按平台 path delimiter 分隔 |
 | `MOYE_REPOSITORY_ROOTS` | 当前工作目录 | 页面允许提交的 Git 仓库根；多个路径按平台 path delimiter 分隔 |
 | `MOYE_LIVE_RUNTIME_ROOT` | `.moye-runtime/live` | 页面任务的 Task Package、Artifact 与 Worktree 受管根；必须位于目标仓库之外 |
+| `MOYE_SESSION_SOURCE_ROOTS` | 空 | 历史 Transcript Enrichment 可读取的 Provider Session 根；不影响 Board，多个路径按平台 delimiter 分隔 |
 | `MOYE_OBSERVABILITY_ENABLED` | `false` | 开启 Moye OTLP Trace 导出 |
 | `MOYE_OTLP_TRACES_ENDPOINT` | `http://127.0.0.1:6006/v1/traces` | OTLP/HTTP protobuf traces endpoint |
 | `MOYE_TRACE_UI_URL` | `http://127.0.0.1:6006` | Board 显示的诊断 UI 入口 |

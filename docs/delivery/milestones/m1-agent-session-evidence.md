@@ -1,7 +1,7 @@
 # Milestone 1：完整 Agent Session 与 Prompt 证据链
 
 > 文档类型：Delivery Plan
-> 状态：Approved / In execution
+> 状态：Completed / Tagged as `moye-m1-agent-session-evidence-r1`
 > 计划基线：2026-08-25
 > 冻结 Revision：1
 > 前置事实：Core v2 关键状态机矩阵已经通过；当前缺口位于 Agent Session 的采集、持久化、查询和历史补全，不得把现有 CLI stdout Viewer 描述为完整 Transcript。
@@ -59,7 +59,7 @@ Task Input
 | `M1-W05 / TASK-0062` Unified Timeline and Board API | W04 | 已完成并 Seal；Runtime 与 Board 共用唯一 Normalizer，API 分离 execution stream、normalized transcript、raw metadata 和 stderr | 真实 W04 Task 的 7 个 Role、247 条 canonical Event 经 API 产品验收；Runtime `CLOSED + ARCHIVED + SUCCEEDED` |
 | `M1-W06 / TASK-0063` Agent Session Chatbot UX | W05 | 已完成实现与真实浏览器验收；Core v2 弹窗消费 canonical Timeline，展示 Prompt/User、Assistant、Tool Call/Result、System、Error/stderr、来源、策略、父子 Session 和完整性；旧 Workflow 保持明确兼容视图 | 真实 Architect Session 28 canonical Event + 1 stderr；1440×1000 与 390×844、筛选、长内容、Raw metadata、Escape/焦点、网络失败→重试均通过 |
 | `M1-W07 / TASK-0064` Append-only Historical Enrichment | W02、W03、W05 | 已完成实现和真实产品验收；新增不推进 Task 主状态的 Transcript Enrichment Workflow/Effect 与 `runId` Registry；Board 显式 join 历史 Receipt | LIVE-006 7/7 真实 Codex Session、172 canonical Event、7 个 append-only Receipt；原 Projection Digest 前后一致；重复导入幂等、冲突拒绝、缺源形成 `UNAVAILABLE` |
-| `M1-W08 / TASK-0065` Product Acceptance, Docs and Deployment | W04～W07 | 增加真实 Codex/Claude、故障恢复、历史导入和 Board 端到端入口；更新 README、Architecture、CodeMap、Runbook、Finding/Backlog 和限制声明；部署验收服务 | `npm run check`、`npm run test:e2e` 和 Session 产品验收全通过；最终服务在 `127.0.0.1:3000`；每个场景有 Task/Run/Session/Digest/页面链接 |
+| `M1-W08 / TASK-0065` Product Acceptance, Docs and Deployment | W04～W07 | 已完成统一 fail-closed 入口、真实 Codex/Claude、故障恢复、历史导入、Board 浏览器验收、文档与 3000 部署 | 聚合报告 `sha256:7a9e335a…55854`；桌面/390px、Prompt/Tool/Error 筛选、Escape/focus 与实时/历史来源均通过；全库门禁通过 |
 
 ## 4. 固定执行顺序
 
@@ -144,6 +144,7 @@ Fake/Mock 只用于低层 Parser 边界，不得作为 Codex/Claude 产品验收
 
 - 当前结论：项目 Owner 于 2026-08-25 批准 Revision 1，并授权无中途交互的连续执行。
 - 冻结映射：TASK-0058～TASK-0065 分别对应 W01～W08；只允许逐个创建 Active Task。
-- 当前执行：TASK-0064（M1-W07 Append-only Historical Enrichment）已完成实现、真实 Restate E2E 与 LIVE-006 7/7 产品验收，等待全库门禁、唯一 Result Commit、Seal 与 Archive；TASK-0063 及之前工作包已封存。
+- 当前执行：TASK-0058～TASK-0065 已全部以唯一 Result Commit Seal 并归档；M1 由 annotated tag `moye-m1-agent-session-evidence-r1` 冻结。
 - W07 实证：`TASK-CORE-V2-LIVE-006` 原 Projection Digest 前后均为 `sha256:7e883797e7d08c25ba0acc1fb4d699940334b32cd7f0d55e7013efe831a673a4`；七个 Receipt 及 Session/Run 映射见 TASK-0064 `session-history-acceptance.json`。旧任务没有 pre-execution Prompt Envelope，因此诚实标记 `PARTIAL + UNVERIFIED`，但 Provider 原始 Prompt 正文、Assistant、Tool 与 System Event 均已受管保存。
+- W08 实证：真实 Codex Session `01a03ae1-7f4c-7bc0-affe-067f02482db9`、Claude Session `2c28cacf-461c-497b-93d1-f10fa55cc551`，七角色 Capture Recovery Task `TASK-RCV-20260825190550-01-SESSION-CAPTURE` 为 `CLOSED + ARCHIVED + SUCCEEDED`；聚合报告 `sha256:7a9e335a934849935c4a2802b8467e804e731dbbd7816433ee92ff93c1055854`。
 - W01 收敛：`TASK-0058` Result Evidence Commit `339ad003ce52c000ea848a0e13976302d297dc0a`；防复发 Task `TASK-0058R1` Result Commit `a92ce94859a346fbf686fe360c81e2ac11a02fa5`；两者 Runtime 均已归档。

@@ -2,7 +2,7 @@ schema_version: 1
 id: "BL-0069"
 title: "补齐 Core v2 完整 Agent Session 与 Prompt 证据链"
 kind: "bug"
-status: "scheduled"
+status: "converted_to_task"
 priority: "high"
 
 source_refs:
@@ -35,4 +35,4 @@ resolution:
     - TASK-0064
     - TASK-0065
   duplicate_of:
-  reason: "由已批准的 M1-W01～W08 顺序交付；TASK-0058 先冻结公共证据合同"
+  reason: "M1-W01～W08 已顺序交付；最终真实 Codex/Claude、Capture Recovery、LIVE-006 历史补全、Board 浏览器与全库门禁由 TASK-0065 收口"

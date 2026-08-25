@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "taskId": "TASK-0065",
+  "boardUrl": "http://127.0.0.1:3000",
+  "viewports": ["1440x1000", "390x844"],
+  "runtimeTasks": [
+    "TASK-RCV-20260825190550-01-SESSION-CAPTURE",
+    "TASK-CORE-V2-LIVE-006"
+  ],
+  "checks": {
+    "canvasProjectionConsistent": true,
+    "liveCompleteTranscript": true,
+    "historicalPartialSidecar": true,
+    "providerPromptVisible": true,
+    "categoryFilters": true,
+    "eventsRemainInDialog": true,
+    "escapeRestoresFocus": true,
+    "mobileSingleColumnReadable": true
+  },
+  "screenshotsRoot": "output/playwright/TASK-0065",
+  "completedAt": "2026-08-25T21:52:00Z"
+}

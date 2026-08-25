@@ -4,6 +4,8 @@ Moye 是一个面向代码研发任务的全自动、可恢复、可追踪 Harne
 
 当前状态：**Core v2 PoC 已用真实 Codex、Restate、隔离 Git 与受信任测试完成 16 个独立产品场景，并通过统一实时审计（0 Finding，报告摘要 `sha256:96ad9fc9…de86`）。范围包括 Happy Path、Finding 驱动 Repair/Replan、Test 与 Role `UNKNOWN` 对账、Worker 中断、Git Candidate/Merge 回执未知、失败 Closure/Archive、预算耗尽、Observer 超时非阻塞及旧 Generation fencing；成功和确定失败 Task 都唯一归档，LIVE-001～004 也已通过 append-only recovery successor 合法收敛。Board 可按真实 outcome、Workflow 与验收历史筛选和下钻。这里证明的是本地单 Workflow/受控故障 PoC 的关键状态机闭环，不代表生产级 Core 已完成。**
 
+Agent Session Evidence M1 也已完成本地产品验收：新 Codex/Claude Role 在执行前冻结 Prompt Envelope，Provider 原生 Session 被规范化为受管 Transcript；真实七角色 Capture 在 Manifest 回执丢失后由 Restate 恢复且没有重跑 Agent；LIVE-006 的七个旧 Session 通过 append-only Sidecar 补全，原 Projection Digest 保持不变。统一报告摘要为 `sha256:7a9e335a…55854`。这仍不代表生产鉴权、加密保留策略、远端 Artifact Store 或 Provider 未暴露/加密 reasoning 已完成。
+
 ## 当前目标
 
 第一阶段不构建完整平台，而是验证最关键的 Task Runtime 能力：
@@ -102,6 +104,10 @@ npm run acceptance:core-v2:guards
 npm run acceptance:core-v2:matrix
 # 对调用方显式列出的 suite/scenario 做实时 Runtime、Board、Git、Artifact 与文档图 fail-closed 审计
 npm run acceptance:core-v2:audit -- --file /absolute/path/to/audit-input.json --output /absolute/path/to/audit-report.json
+# 显式绑定一次真实 Session Capture Recovery summary 后，串行验证真实 Codex、Claude、恢复、历史补全与 Board API
+MOYE_AGENT_SESSION_RECOVERY_SUMMARY=/absolute/path/to/session-capture-recovery/evidence-summary.json \
+MOYE_AGENT_SESSION_ACCEPTANCE_BOARD=http://127.0.0.1:3000 \
+npm run acceptance:agent-sessions
 ```
 
 Core v2 四个 suite 和统一 matrix 入口不会使用 Fake/Mock/Scenario Adapter：每个场景创建新的持久化运行目录和独立 Workflow key，调用真实 Codex、隔离 Git、Trusted Runner、适用时的双父 Merge、Closure 和 Archive，并从 Projection、Trace、Role Events、Manifest 与 Git DAG 生成 Evidence Summary。故障、恢复和预算命令要求 Service 显式设置 `MOYE_ACCEPTANCE_FAULT_INJECTION=enabled`；普通 Service 会在 TaskAuthority claim 前拒绝 `acceptanceControl` 或 `recoveryControl`。审计命令不扫描目录挑选“最新成功”，只接受显式 Manifest，并重新查询 Restate、TaskAuthority、Board、Git 对象、Artifact 摘要和 Document Graph；任何缺失、重复或实时漂移都会非零退出。这些命令消耗真实模型额度，不能用单元测试结果替代。
@@ -187,4 +193,4 @@ Moye 使用自己定义的 Task、证据和知识治理原则建设自身：
 
 ## 当前边界
 
-本轮已经实现 Task/Archive Workflow、Core v2 真实多角色生命周期、两阶段 Sealed Result Commit、真实 Codex 与 Claude Print Adapter、Self Review、两次隔离 Review、Repair/Replan/Reconcile、成功/失败 Closure 与独立 Archive Effect、真实本地双父 Merge/Reconcile、停滞 Workflow 的窄化 successor、全部 Session Event 下钻、实际路径点亮的只读状态机 Graph、确定性 Observer、可选智能 Observer/Knowledge 旁路、精确 Board Projection、三层 Trace、OTLP 和统一 CLI。16 场景真实矩阵及实时交叉审计已经通过。完整多 Daemon Lease/Fencing、远程 Git Provider/PR、鉴权、多租户、生产 Sandbox/密钥治理、跨节点 Artifact Store，以及 Metrics/Logs/告警/SLO 等仍未实现，详见 [Core v2 Roadmap](./docs/delivery/core-v2-roadmap.md)。
+本轮已经实现 Task/Archive Workflow、Core v2 真实多角色生命周期、两阶段 Sealed Result Commit、真实 Codex 与 Claude Print Adapter、版本化 Prompt Envelope、Provider Transcript Sidecar、Self Review、两次隔离 Review、Repair/Replan/Reconcile、成功/失败 Closure 与独立 Archive Effect、真实本地双父 Merge/Reconcile、停滞 Workflow 的窄化 successor、全部 Session Event 下钻、实际路径点亮的只读状态机 Graph、确定性 Observer、可选智能 Observer/Knowledge 旁路、精确 Board Projection、三层 Trace、OTLP 和统一 CLI。16 场景 Core v2 矩阵、Session Capture 故障恢复、历史 append-only 补全及真实 Codex/Claude 产品验收已经通过。完整多 Daemon Lease/Fencing、远程 Git Provider/PR、鉴权、多租户、生产 Sandbox/密钥治理、跨节点 Artifact Store、Transcript Retention/Erasure，以及 Metrics/Logs/告警/SLO 等仍未实现，详见 [Core v2 Roadmap](./docs/delivery/core-v2-roadmap.md)。

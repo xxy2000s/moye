@@ -1,7 +1,7 @@
 # Core v2 Role Session 只保存 CLI stdout，缺少完整 Prompt 与 Provider 原生时间线
 
 > 文档类型：Finding
-> 状态：Confirmed / Scheduled as TASK-0058～TASK-0065
+> 状态：Resolved by TASK-0058～TASK-0065
 > 发现日期：2026-08-25
 > 影响范围：Core v2 Role Runtime、Agent Evidence、Artifact、Board Agent Events
 
@@ -26,3 +26,9 @@ Core v2 生成真实 Role Prompt 后，只把 `instructionsDigest` 写入 execut
 修复不能让 Board 在请求时扫描 `~/.codex` 或 `~/.claude`，不能修改旧 Role Manifest、Task Projection、Domain Event、Outcome 或 Archive，也不能在 Transcript capture 失败时重新运行 Agent。
 
 实施工作进入 [BL-0069](../../delivery/backlog/BL-0069.yaml)，并由 [M1 Agent Session Evidence](../../delivery/milestones/m1-agent-session-evidence.md) 分阶段验收。
+
+## Resolution
+
+M1 已完成 Prompt Envelope、Codex/Claude 原生 Session Adapter、Core v2 durable Capture、统一 Timeline/Board API、Chatbot UX 与历史 append-only Enrichment。最终门禁用本轮真实 Codex Session `01a03ae1-7f4c-7bc0-affe-067f02482db9`、真实 Claude Session `2c28cacf-461c-497b-93d1-f10fa55cc551`、七角色 Capture Recovery Task `TASK-RCV-20260825190550-01-SESSION-CAPTURE` 和 LIVE-006 七个历史 Receipt 通过，聚合报告 Digest 为 `sha256:7a9e335a934849935c4a2802b8467e804e731dbbd7816433ee92ff93c1055854`。
+
+原 Finding 已解决，但生产鉴权、保留/删除、远端 Artifact Store 和 Provider 未暴露或加密内容属于明确剩余限制，不因本 Finding 关闭而视为完成。
