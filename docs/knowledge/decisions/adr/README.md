@@ -23,6 +23,7 @@ Accepted ADR 不重写历史论证。改变决策时创建新 ADR，并在两份
 | [0005](./0005-adopt-core-v2-five-plus-one-agent-model.md) | Accepted | 采用五个主流程 Agent 加一个非阻塞旁路 Agent |
 | [0006](./0006-use-two-phase-sealed-result-commit.md) | Accepted | 使用两阶段 Sealed Result Commit 关闭仓库 Task |
 | [0007](./0007-use-sidecar-session-transcript-evidence.md) | Accepted | 使用单向 Sidecar 保存 Agent Prompt 与 Provider Session 证据 |
+| [0008](./0008-publish-framework-mvp-as-versioned-umbrella-package.md) | Accepted | 以 `moye` 单包稳定子路径和私有 Restate Runtime 发布 Framework MVP |
 
 ## 新建 ADR
 

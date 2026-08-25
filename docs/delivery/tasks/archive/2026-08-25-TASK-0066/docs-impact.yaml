@@ -1,0 +1,81 @@
+schema_version: 1
+task_id: TASK-0066
+graph_revision: 119
+intents: [m2-public-boundary-versioning-release]
+changed_paths:
+  - README.md
+  - docs/delivery/README.md
+  - docs/delivery/backlog/BL-0068.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/milestones/m2-framework-release.md
+  - docs/delivery/tasks/archive/README.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0066/task.yaml
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0066/spec.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0066/design.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0066/plan.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0066/verification.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0066/docs-impact.yaml
+  - docs/delivery/tasks/README.md
+  - docs/graph.yaml
+  - docs/knowledge/current/architecture/README.md
+  - docs/knowledge/current/architecture/overview.md
+  - docs/knowledge/current/architecture/framework-product-boundary.md
+  - docs/knowledge/decisions/adr/README.md
+  - docs/knowledge/decisions/adr/0008-publish-framework-mvp-as-versioned-umbrella-package.md
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - root-readme
+    - delivery-index
+    - backlog-index
+    - sources-index
+    - archived-tasks-index
+    - tasks-index
+    - external-project-framework-productization
+    - bl-0068-framework-productization
+    - milestone-2-framework-release
+    - architecture-overview
+    - architecture-index
+    - framework-product-boundary
+    - task-runtime-kernel
+    - adr-index
+    - adr-0008-framework-release-boundary
+    - task-0066-manifest
+    - task-0066-spec
+    - task-0066-design
+    - task-0066-plan
+    - task-0066-verification
+    - task-0066-docs-impact
+  reviewed:
+    architecture-overview: { outcome: updated, reason: "登记 Framework MVP 公共/私有边界与 M2 尚在实现的事实。" }
+    restate-poc-architecture: { outcome: unchanged, reason: "W01 不改变已实现 Restate PoC handler、恢复语义或证据。" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "W01 继续使用既有两阶段 Seal 和唯一 Result Commit。" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "ADR、Backlog、Task 与 Architecture 的生命周期角色未改变。" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "版本/发布规则尚未产生新的已稳定复现 Runtime 陷阱。" }
+    task-0013-manifest: { outcome: unchanged, reason: "不修改早期 Core Control 历史。" }
+    task-0014-manifest: { outcome: unchanged, reason: "不修改早期 Role 协议历史。" }
+    task-0015-manifest: { outcome: unchanged, reason: "不修改早期 Review/Finding 历史。" }
+    task-0016-manifest: { outcome: unchanged, reason: "不修改 Retry/Repair/Replan 历史。" }
+    task-0017-manifest: { outcome: unchanged, reason: "不修改 Observer/Docs 历史。" }
+    task-0018-manifest: { outcome: unchanged, reason: "不修改 Closure 历史。" }
+    task-0019-manifest: { outcome: unchanged, reason: "不修改早期产品路径历史。" }
+    task-0020-manifest: { outcome: unchanged, reason: "不修改 Board 状态机历史。" }
+    task-0021-manifest: { outcome: unchanged, reason: "不修改多角色产品历史。" }
+    task-0029-manifest: { outcome: unchanged, reason: "不修改 Bootstrap recovery 历史。" }
+    task-0003-manifest: { outcome: unchanged, reason: "不修改 Task/Attempt 基础协议历史。" }
+    task-0004-manifest: { outcome: unchanged, reason: "不修改 Git Effect 基础历史。" }
+    task-0005-manifest: { outcome: unchanged, reason: "不修改 Agent Runner 基础历史。" }
+    task-0006-manifest: { outcome: unchanged, reason: "不修改 Coding Workflow 基础历史。" }
+    task-0007-manifest: { outcome: unchanged, reason: "不修改故障验收基础历史。" }
+    task-0001-manifest: { outcome: unchanged, reason: "不修改首个 Runtime PoC 历史。" }
+    task-0049r1-manifest: { outcome: unchanged, reason: "只复用已接受 Seal preflight，不修改历史。" }
+    task-0061r1-design: { outcome: unchanged, reason: "公共升级规则继承 replay 不变量，不修改该恢复设计。" }
+    task-0062-design: { outcome: unchanged, reason: "公共 Client 不改变已封存 Session API 设计。" }
+    task-0063-design: { outcome: unchanged, reason: "W01 不改变 Session UX。" }
+    task-0066-design: { outcome: updated, reason: "记录本 Task 对 ADR 的实现切片与非目标。" }
+    moye-task-control-skill: { outcome: unchanged, reason: "W01 按 Full、Context Route、Docs Impact、唯一 Result Commit 和 Seal 执行，不改变 Skill。" }
+    task-0002-manifest: { outcome: unchanged, reason: "Backlog 索引更新不修改早期同步任务历史。" }
+    task-0056-manifest: { outcome: unchanged, reason: "继续使用已封存的 auto/lite/standard/full 分级，不修改历史。" }

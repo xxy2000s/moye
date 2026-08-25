@@ -1,12 +1,12 @@
 # Milestone 2：Moye Framework MVP 产品化与首个正式发版
 
 > 文档类型：Delivery Plan
-> 状态：Approved / Waiting for M1
+> 状态：In Progress / W01 completed
 > 计划基线：2026-08-25
 > 冻结 Revision：1
 > 需求来源：[Moye 外部项目框架化需求基线](../../sources/brainstorm/external-project-framework-productization.md)、[BL-0068](../backlog/BL-0068.yaml)
 > 前置 Milestone：[Milestone 1：完整 Agent Session 与 Prompt 证据链](./m1-agent-session-evidence.md)
-> 执行边界：项目 Owner 已批准范围和有凭证时的发版动作；M1 完成并创建 Milestone Tag 前不得开始 M2 实现。
+> 执行边界：项目 Owner 已批准范围和有凭证时的发版动作；M1 已由 `moye-m1-agent-session-evidence-r1` 冻结，M2 正式开始。
 
 ## 1. Milestone Outcome
 
@@ -95,13 +95,13 @@ W02 与 W04 可在 W01 后并行；涉及公共契约的结果必须先由 W01 A
 
 ## 5. 公共产品边界
 
-候选包名由 W01 ADR 最终冻结，当前计划边界为：
+W01 由 ADR-0008 冻结为单个 `moye@0.1.0` umbrella package，公共子路径边界为：
 
-- `@moye/core`：公共 Schema、Task/Event/Artifact 契约；
-- `@moye/client`：提交、查询、事件、对账和 Board 链接；
-- `@moye/cli`：消费级命令；
-- `@moye/runtime-restate`：Restate Runtime 实现；
-- `@moye/plugin-sdk`：Adapter 接口、capability 和契约测试。
+- `moye/core`：公共 Schema、Task/Event/Artifact 契约；
+- `moye/client`：提交、查询、事件、对账和 Board 链接；
+- `moye`：消费级 CLI；
+- Moye Service 容器：私有 Restate Runtime 实现；
+- `moye/plugin-sdk`：Adapter 接口、capability 和契约测试。
 
 无论最终是否采用这些包名，都必须满足：
 
@@ -197,4 +197,4 @@ npm run release:verify
 
 - 当前结论：项目 Owner 于 2026-08-25 批准 Revision 1、目标发布渠道与有凭证时的外部发布动作。
 - 冻结映射：TASK-0066～TASK-0075 分别对应 W01～W10；M1 Tag 完成前不创建第一个 Active Task。
-- 当前状态：等待 M1 TASK-0058～TASK-0065 全部归档。
+- 当前状态：M1 已归档并创建远程 Tag；TASK-0066 已完成公共边界和 ADR，等待 Runtime Seal 后进入 TASK-0067。

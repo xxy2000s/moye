@@ -6,6 +6,8 @@ Moye 是一个面向代码研发任务的全自动、可恢复、可追踪 Harne
 
 Agent Session Evidence M1 也已完成本地产品验收：新 Codex/Claude Role 在执行前冻结 Prompt Envelope，Provider 原生 Session 被规范化为受管 Transcript；真实七角色 Capture 在 Manifest 回执丢失后由 Restate 恢复且没有重跑 Agent；LIVE-006 的七个旧 Session 通过 append-only Sidecar 补全，原 Projection Digest 保持不变。统一报告摘要为 `sha256:7a9e335a…55854`。这仍不代表生产鉴权、加密保留策略、远端 Artifact Store 或 Provider 未暴露/加密 reasoning 已完成。
 
+Framework MVP 的公共边界已由 [ADR-0008](./docs/knowledge/decisions/adr/0008-publish-framework-mvp-as-versioned-umbrella-package.md) 冻结：首版采用 `moye@0.1.0` umbrella package，通过 `moye/core`、`moye/client`、`moye/plugin-sdk` 和 CLI 提供公共入口，Restate Workflow/Projection 写入口保持私有。M2 仍在实施中；在外部示例、分发和真实产品矩阵完成前，不宣称 Framework MVP 已发布。
+
 ## 当前目标
 
 第一阶段不构建完整平台，而是验证最关键的 Task Runtime 能力：
@@ -193,4 +195,4 @@ Moye 使用自己定义的 Task、证据和知识治理原则建设自身：
 
 ## 当前边界
 
-本轮已经实现 Task/Archive Workflow、Core v2 真实多角色生命周期、两阶段 Sealed Result Commit、真实 Codex 与 Claude Print Adapter、版本化 Prompt Envelope、Provider Transcript Sidecar、Self Review、两次隔离 Review、Repair/Replan/Reconcile、成功/失败 Closure 与独立 Archive Effect、真实本地双父 Merge/Reconcile、停滞 Workflow 的窄化 successor、全部 Session Event 下钻、实际路径点亮的只读状态机 Graph、确定性 Observer、可选智能 Observer/Knowledge 旁路、精确 Board Projection、三层 Trace、OTLP 和统一 CLI。16 场景 Core v2 矩阵、Session Capture 故障恢复、历史 append-only 补全及真实 Codex/Claude 产品验收已经通过。完整多 Daemon Lease/Fencing、远程 Git Provider/PR、鉴权、多租户、生产 Sandbox/密钥治理、跨节点 Artifact Store、Transcript Retention/Erasure，以及 Metrics/Logs/告警/SLO 等仍未实现，详见 [Core v2 Roadmap](./docs/delivery/core-v2-roadmap.md)。
+本轮已经实现 Task/Archive Workflow、Core v2 真实多角色生命周期、两阶段 Sealed Result Commit、真实 Codex 与 Claude Print Adapter、版本化 Prompt Envelope、Provider Transcript Sidecar、Self Review、两次隔离 Review、Repair/Replan/Reconcile、成功/失败 Closure 与独立 Archive Effect、真实本地双父 Merge/Reconcile、停滞 Workflow 的窄化 successor、全部 Session Event 下钻、实际路径点亮的只读状态机 Graph、确定性 Observer、可选智能 Observer/Knowledge 旁路、精确 Board Projection、三层 Trace、OTLP 和统一内部 CLI。16 场景 Core v2 矩阵、Session Capture 故障恢复、历史 append-only 补全及真实 Codex/Claude 产品验收已经通过。消费级 Manifest/CLI/Plugin、容器分发和外部项目验收仍在 M2 实施；完整多 Daemon Lease/Fencing、远程 Git Provider/PR、鉴权、多租户、生产 Sandbox/密钥治理、跨节点 Artifact Store、Transcript Retention/Erasure，以及 Metrics/Logs/告警/SLO 等仍未实现，详见 [Core v2 Roadmap](./docs/delivery/core-v2-roadmap.md)。

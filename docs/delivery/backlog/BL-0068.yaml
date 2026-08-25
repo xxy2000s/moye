@@ -2,7 +2,7 @@ schema_version: 1
 id: "BL-0068"
 title: "将 Core v2 产品化为可被外部项目直接使用的开发框架"
 kind: "feature"
-status: "triaged"
+status: "scheduled"
 priority: "high"
 
 source_refs:
@@ -29,6 +29,7 @@ acceptance_outline:
   - "远程 Git/PR、多 Daemon、Auth/RBAC、多租户、Sandbox/Secrets、跨节点 Artifact 和生产观测按依赖进入后续阶段"
 
 resolution:
-  task_refs: []
+  task_refs:
+    - TASK-0066
   duplicate_of:
-  reason: "等待下一轮长时开发前按依赖拆分为独立实现 Task"
+  reason: "M2 已批准并由 TASK-0066 开始执行；后续 TASK-0067～0075 按依赖创建后追加登记。"

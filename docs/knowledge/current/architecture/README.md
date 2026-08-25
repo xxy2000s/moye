@@ -9,6 +9,7 @@ Architecture 文档描述系统当前有效的结构、边界、状态、协议�
 - [Document Control Plane](./document-control-plane.md)：文档图谱、入口路由、影响传播和关闭门禁。
 - [Restate PoC 架构](./poc-01-restate.md)：已经实现的第一轮垂直切片、恢复语义和验证边界。
 - [Core v2 Agent Lifecycle](./core-v2-agent-lifecycle.md)：五类主流程 Agent、旁路 Observer/Knowledge、独立测试/审查与单 Result Commit Seal。
+- [Framework MVP 公共产品边界](./framework-product-boundary.md)：消费级 CLI/Client/Plugin、私有 Runtime、版本兼容和发布身份边界。
 
 ## 更新规则
 
