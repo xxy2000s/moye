@@ -1,0 +1,24 @@
+schema_version: 1
+id: TASK-0058
+title: 定义完整 Agent Session 与 Prompt 证据协议
+status: seal_prepared
+outcome: null
+backlog_refs:
+  - BL-0069
+spec_revision: 1
+workflow_id: sealed-task/TASK-0058
+execution_mode: sealed-result-commit
+base_commit: 59642d73f9273e2944cd62f49042196bb4cd9191
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-25-TASK-0058
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:f7e88a448735185d61e552f694852c7f763e19bcdc826a2a183b469f6c58fd4b
+  base_commit: 59642d73f9273e2944cd62f49042196bb4cd9191
+  archive_path: docs/delivery/tasks/archive/2026-08-25-TASK-0058

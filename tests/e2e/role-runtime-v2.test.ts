@@ -11,13 +11,16 @@ import {
   writeRealRoleRunIntentV2,
 } from "../../src/agent/role-runtime-v2.js";
 import {
+  createRoleRunEvidenceV2,
   createNextRoleAttemptV2,
   createRoleAttemptV2,
   markRoleAttemptUnknownV2,
   reconcileRoleAttemptV2,
+  renderRoleAgentPromptV2,
   startRoleAttemptV2,
 } from "../../src/domain/role-runtime-v2.js";
 import type { AgentRoleV2, RolePhaseV2 } from "../../src/domain/role-runtime-v2.js";
+import { assertPromptEnvelopePreparedRoleRunV2, createPromptEnvelopeV1, createSessionEvidenceBindingFromRoleManifestV2 } from "../../src/domain/session-transcript.js";
 
 const commit = "7".repeat(40);
 const sha = (letter: string) => `sha256:${letter.repeat(64)}`;
@@ -46,6 +49,37 @@ describe("Real Core v2 Role Runtime", () => {
         instructions: `Execute the real ${role}/${phase} responsibility.`,
       };
       const request = await prepareRealRoleRunV2(input);
+      const renderedPrompt = renderRoleAgentPromptV2({ role, phase, instructions: input.instructions, permission: attempt.permission });
+      const promptEnvelope = createPromptEnvelopeV1({
+        taskId: attempt.taskId, sourceWorkflowRef: `restate://CoreV2Workflow/${attempt.taskId}`, specRevision: attempt.specRevision, generation: attempt.generation,
+        role, phase, attemptId: attempt.attemptId, attemptDigest: attempt.attemptDigest, runId: request.runId, operationId: request.operationId, requestDigest: request.requestDigest,
+        runnerKind: attempt.runnerKind, permission: attempt.permission, subjectCommit: attempt.subjectCommit, capturePolicy: "full",
+        renderer: { name: "real-role-prompt-v2", version: "1", optionsDigest: sha("0") }, renderPlan: { separator: "\n" },
+        segments: [
+          { ordinal: 0, kind: "MOYE_CONTROL", content: { originalValue: `You are the ${role}/${phase} Agent for a real Moye Task.`, policy: "full" } },
+          { ordinal: 1, kind: "ROLE_INSTRUCTIONS", content: { originalValue: input.instructions, policy: "full" } },
+          { ordinal: 2, kind: "PERMISSION_BOUNDARY", content: { originalValue: `Permission boundary: ${attempt.permission}.`, policy: "full" } },
+          { ordinal: 3, kind: "OUTPUT_CONTRACT", content: { originalValue: "Return only the required structured output. Do not claim artifacts or findings that do not exist.", policy: "full" } },
+        ],
+        renderedPrompt: { originalValue: renderedPrompt, policy: "full" }, createdAt: "2026-08-25T00:00:00.000Z",
+      });
+      expect(() => assertPromptEnvelopePreparedRoleRunV2(promptEnvelope, request)).not.toThrow();
+      const forgedInstructions = `${input.instructions} forged`;
+      const forgedPrompt = renderedPrompt.replace(input.instructions, forgedInstructions);
+      const wrongPrompt = createPromptEnvelopeV1({
+        taskId: attempt.taskId, sourceWorkflowRef: `restate://CoreV2Workflow/${attempt.taskId}`, specRevision: attempt.specRevision, generation: attempt.generation,
+        role, phase, attemptId: attempt.attemptId, attemptDigest: attempt.attemptDigest, runId: request.runId, operationId: request.operationId, requestDigest: request.requestDigest,
+        runnerKind: attempt.runnerKind, permission: attempt.permission, subjectCommit: attempt.subjectCommit, capturePolicy: "full",
+        renderer: { name: "real-role-prompt-v2", version: "1", optionsDigest: sha("0") }, renderPlan: { separator: "\n" },
+        segments: [
+          { ordinal: 0, kind: "MOYE_CONTROL", content: { originalValue: `You are the ${role}/${phase} Agent for a real Moye Task.`, policy: "full" } },
+          { ordinal: 1, kind: "ROLE_INSTRUCTIONS", content: { originalValue: forgedInstructions, policy: "full" } },
+          { ordinal: 2, kind: "PERMISSION_BOUNDARY", content: { originalValue: `Permission boundary: ${attempt.permission}.`, policy: "full" } },
+          { ordinal: 3, kind: "OUTPUT_CONTRACT", content: { originalValue: "Return only the required structured output. Do not claim artifacts or findings that do not exist.", policy: "full" } },
+        ],
+        renderedPrompt: { originalValue: forgedPrompt, policy: "full" }, createdAt: "2026-08-25T00:00:00.000Z",
+      });
+      expect(() => assertPromptEnvelopePreparedRoleRunV2(wrongPrompt, request)).toThrow(/exact prepared Role request/);
       const first = await runtime.run(input);
       const second = await runtime.run(input);
       expect(first.recovery).toBe("EXECUTED");
@@ -55,10 +89,28 @@ describe("Real Core v2 Role Runtime", () => {
       });
       expect(first.manifest.events.some((event) => event.category === "TOOL_CALL")).toBe(true);
       expect(second.evidence.evidenceDigest).toBe(first.evidence.evidenceDigest);
-      expect(JSON.parse(await readFile(path.join(request.runRoot, "manifest.json"), "utf8"))).toMatchObject({
+      const manifestPath = path.join(request.runRoot, "manifest.json");
+      const bytesBeforeBinding = await readFile(manifestPath, "utf8");
+      expect(JSON.parse(bytesBeforeBinding)).toMatchObject({
         runId: first.manifest.runId,
         manifestDigest: first.manifest.manifestDigest,
       });
+      const transcriptBinding = createSessionEvidenceBindingFromRoleManifestV2({
+        sourceWorkflowRef: `restate://CoreV2Workflow/${attempt.taskId}`,
+        manifest: first.manifest,
+      });
+      expect(transcriptBinding).toMatchObject({ runId: first.manifest.runId, operationId: first.manifest.operationId, roleManifestDigest: first.manifest.manifestDigest });
+      expect(() => createSessionEvidenceBindingFromRoleManifestV2({
+        sourceWorkflowRef: "restate://CoreV2Workflow/TASK-CROSS-BOUNDARY",
+        manifest: first.manifest,
+      })).toThrow(/owning .* keyed by/);
+      const { schemaVersion: _schemaVersion, evidenceDigest: _evidenceDigest, ...evidenceCore } = first.evidence;
+      const substitutedEvidence = createRoleRunEvidenceV2({ ...evidenceCore, outcome: "FAILED" });
+      expect(() => createSessionEvidenceBindingFromRoleManifestV2({
+        sourceWorkflowRef: `restate://CoreV2Workflow/${attempt.taskId}`,
+        manifest: { ...first.manifest, evidence: substitutedEvidence },
+      })).toThrow(/evidence.outcome/);
+      expect(await readFile(manifestPath, "utf8")).toBe(bytesBeforeBinding);
     }
   });
 

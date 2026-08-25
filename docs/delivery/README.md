@@ -1,6 +1,11 @@
 # Delivery：从 Backlog 到归档 Task
 
-当前长期执行序列见 [Core v2 Delivery Roadmap](./core-v2-roadmap.md)。它只记录交付编排和进度；当前架构事实仍由 Architecture、ADR、代码和测试证明。
+当前长期执行序列见 [Core v2 Delivery Roadmap](./core-v2-roadmap.md)。项目 Owner 已批准两个连续长期 Milestone：
+
+1. [Milestone 1：完整 Agent Session 与 Prompt 证据链](./milestones/m1-agent-session-evidence.md)；
+2. [Milestone 2：Moye Framework MVP 产品化与首个正式发版](./milestones/m2-framework-release.md)。
+
+M1 已按 TASK-0058～TASK-0065 顺序执行，M2 冻结为 TASK-0066～TASK-0075 并等待 M1 Tag。批准只冻结交付编排，不代表能力已经完成；当前架构事实仍由 Architecture、ADR、代码和测试证明。
 
 Delivery 管理已经进入研发交付链路的工作对象：
 

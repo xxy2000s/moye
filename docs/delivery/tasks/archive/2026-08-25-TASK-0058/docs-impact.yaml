@@ -1,0 +1,116 @@
+schema_version: 1
+task_id: TASK-0058
+graph_revision: 107
+
+intents:
+  - define-complete-agent-session-prompt-evidence-contract
+
+changed_paths:
+  - src/domain/role-runtime-v2.ts
+  - src/domain/session-transcript.ts
+  - src/agent/role-runtime-v2.ts
+  - tests/unit/session-transcript.test.ts
+  - tests/e2e/role-runtime-v2.test.ts
+  - docs/sources/findings/core-v2-role-session-uses-cli-stdout.md
+  - docs/sources/findings/README.md
+  - docs/delivery/backlog/BL-0069.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/milestones/m1-agent-session-evidence.md
+  - docs/delivery/milestones/m2-framework-release.md
+  - docs/delivery/README.md
+  - docs/knowledge/decisions/adr/0007-use-sidecar-session-transcript-evidence.md
+  - docs/knowledge/decisions/adr/README.md
+  - docs/knowledge/current/architecture/core-v2-agent-lifecycle.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/graph.yaml
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0058/task.yaml
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0058/spec.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0058/design.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0058/plan.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0058/verification.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0058/docs-impact.yaml
+  - docs/delivery/tasks/archive/README.md
+
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - task-runtime-kernel
+    - restate-poc-architecture
+    - durable-runtime-pitfalls
+    - core-v2-agent-lifecycle
+    - architecture-index
+    - adr-0007-session-transcript-sidecar
+    - adr-index
+    - finding-core-v2-role-session-uses-cli-stdout
+    - findings-index
+    - bl-0069-agent-session-evidence
+    - backlog-index
+    - sources-index
+    - tasks-index
+    - milestone-1-agent-session-evidence
+    - milestone-2-framework-release
+    - delivery-index
+    - archived-tasks-index
+    - task-0058-manifest
+    - task-0058-spec
+    - task-0058-design
+    - task-0058-plan
+    - task-0058-verification
+    - task-0058-docs-impact
+
+  reviewed:
+    architecture-overview: { outcome: unchanged, reason: "Sidecar 证据合同不改变 Task/Workflow 总体系统边界。" }
+    local-restate-poc-runbook: { outcome: unchanged, reason: "W01 尚未增加部署、恢复或操作步骤，Runtime 接入由 W04 完成。" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "继续使用 Restate PoC，不把 Transcript 合同外推为生产选型结论。" }
+    adr-0005-core-v2-agent-model: { outcome: unchanged, reason: "保持五个主流程 Agent 与旁路 Observer/Knowledge 模型。" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "TASK-0058 继续遵守单 Result Commit 与两阶段 Seal。" }
+    core-v2-five-plus-one-agent-requirements: { outcome: unchanged, reason: "Transcript 是既有 Role 执行的诊断证据补充，不新增主流程 Agent。" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "Finding、Backlog、ADR 与 Task Artifact 继续按既定文档角色组织。" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: not_applicable, reason: "W01 不改变 Worktree 或 Task lifecycle 收敛路径。" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "Session Transcript 不拥有 Closure、Gate 或 Task 状态推进权限。" }
+    task-0013-manifest: { outcome: unchanged, reason: "只消费既有确定性控制内核，不修改归档事实。" }
+    task-0014-manifest: { outcome: unchanged, reason: "保持 Role Attempt 协议并在 sidecar 中精确绑定。" }
+    task-0015-manifest: { outcome: unchanged, reason: "不改变 Review Finding 生命周期。" }
+    task-0016-manifest: { outcome: unchanged, reason: "不改变 Retry、Repair、Replan 与预算。" }
+    task-0017-manifest: { outcome: unchanged, reason: "不改变 Observer、Docs Impact Gate 或 Knowledge Candidate 权限。" }
+    task-0018-manifest: { outcome: unchanged, reason: "不改变 ClosureResult 与故障矩阵历史。" }
+    task-0019-manifest: { outcome: unchanged, reason: "不改写真实 Agent 页面验收历史。" }
+    task-0020-manifest: { outcome: unchanged, reason: "不改变 Task 状态机和转换证据。" }
+    task-0021-manifest: { outcome: unchanged, reason: "为既有 Role Session 增加后续可迁移证据合同，不改归档 Task。" }
+    task-0028-manifest: { outcome: not_applicable, reason: "不修改历史失败 Task。" }
+    task-0029-manifest: { outcome: unchanged, reason: "不改变 Bootstrap 与历史恢复协议。" }
+    task-0030-manifest: { outcome: unchanged, reason: "继续遵守 Core v2 单 Result Commit Seal。" }
+    task-0031-manifest: { outcome: unchanged, reason: "Transcript 是九类 Lifecycle Artifact 之外的诊断 sidecar，不改变既有 Gate。" }
+    task-0032-manifest: { outcome: unchanged, reason: "RoleRunManifestV2 保持字节与 Digest 兼容。" }
+    task-0033-manifest: { outcome: unchanged, reason: "不改变 Architect/Design Review/Replan。" }
+    task-0034-manifest: { outcome: unchanged, reason: "不改变 Implementation/Self Review/Checkpoint/Repair。" }
+    task-0035-manifest: { outcome: unchanged, reason: "不改变 Documentation Agent 与 Docs Impact Gate。" }
+    task-0036-manifest: { outcome: unchanged, reason: "不改变 Test Verification 与 Trusted Runner。" }
+    task-0037-manifest: { outcome: unchanged, reason: "不改变 Final Review 与 Verification Gate。" }
+    task-0038-manifest: { outcome: unchanged, reason: "不改变确定性 Observer 与旁路 Knowledge。" }
+    task-0039-manifest: { outcome: unchanged, reason: "W01 只定义 Session sidecar，Runtime/CLI/Board 接入留给后续工作包。" }
+    task-0040-manifest: { outcome: unchanged, reason: "Transcript enrichment 无权推进失败 Closure 或 Archive。" }
+    task-0041-manifest: { outcome: unchanged, reason: "不改变真实 Merge Effect 或回执对账。" }
+    task-0042-manifest: { outcome: unchanged, reason: "不改变成功 Closure/Archive 和 successor。" }
+    task-0043-manifest: { outcome: unchanged, reason: "不把 W01 合同测试冒充真实 Agent 产品矩阵。" }
+    task-0044-manifest: { outcome: unchanged, reason: "复用 UNKNOWN/Reconcile 原则，但 Transcript Capture 使用独立 token 和 Authority。" }
+    task-0045-manifest: { outcome: unchanged, reason: "保持 stale Attempt/Revision/Generation fencing 原则。" }
+    task-0046-manifest: { outcome: unchanged, reason: "W01 不改变 Board 运行语义或 UX。" }
+    task-0003-manifest: { outcome: unchanged, reason: "复用 Task/Attempt/Evidence 基础身份。" }
+    task-0004-manifest: { outcome: unchanged, reason: "不改变 Worktree、Checkpoint 或 Git Effect。" }
+    task-0005-manifest: { outcome: unchanged, reason: "合同单测不改变 Agent Adapter 实现。" }
+    task-0006-manifest: { outcome: unchanged, reason: "不形成第二套 Task 状态机。" }
+    task-0007-manifest: { outcome: unchanged, reason: "Transcript 不能替代业务 Event、Task State 或 Trace。" }
+    task-0008-manifest: { outcome: unchanged, reason: "不修改历史 Coding Demo。" }
+    task-0009-manifest: { outcome: unchanged, reason: "不改变 OTel/Phoenix 诊断边界。" }
+    task-0001-manifest: { outcome: unchanged, reason: "不修改首个生命周期归档事实。" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "继续使用 TypeScript 实现领域合同。" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "受管 Transcript Artifact 是权威诊断证据，OTel 仍是可选副本。" }
+    task-0049r1-manifest: { outcome: unchanged, reason: "不改变 Seal preflight 与 Runtime Receipt 台账。" }
+    task-0058-design: { outcome: updated, reason: "记录 Prompt、Locator、Timeline、Manifest、Receipt、历史 enrichment 与权限边界。" }
+    moye-task-control-skill: { outcome: unchanged, reason: "继续通过 CLI、Runtime API、Result Commit Seal 与 Docs Impact 门禁操作 Task，不修改 Skill。" }
+    task-0002-manifest: { outcome: unchanged, reason: "不改变 Backlog 幂等同步与 Bootstrap Closure 历史。" }
+    task-0056-manifest: { outcome: unchanged, reason: "M1 长时工作包使用 standard/full 纪律，不修改已封存的开发模式协议。" }

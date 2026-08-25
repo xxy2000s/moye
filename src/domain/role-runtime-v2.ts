@@ -130,6 +130,25 @@ export function createRoleAttemptV2(input: CreateRoleAttemptV2Input): RoleAttemp
   });
 }
 
+export function renderRoleAgentPromptV2(input: {
+  readonly role: AgentRoleV2;
+  readonly phase: RolePhaseV2;
+  readonly instructions: string;
+  readonly permission: RolePermission;
+}): string {
+  const roleValue = role(input.role);
+  const phaseValue = phase(input.phase);
+  if (!rolePhases[roleValue].includes(phaseValue)) throw validation("ROLE_PHASE_INVALID", `${roleValue} cannot execute ${phaseValue}`);
+  const instructions = requiredString(input.instructions, "instructions");
+  const permission = enumeration(input.permission, ["READ_ONLY", "WORKSPACE_WRITE"] as const, "permission");
+  return [
+    `You are the ${roleValue}/${phaseValue} Agent for a real Moye Task.`,
+    instructions,
+    `Permission boundary: ${permission}.`,
+    "Return only the required structured output. Do not claim artifacts or findings that do not exist.",
+  ].join("\n");
+}
+
 export function createNextRoleAttemptV2(input: {
   readonly previous: RoleAttemptV2;
   readonly inputDigest: string;
