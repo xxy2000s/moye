@@ -11,6 +11,7 @@ Finding 与 Incident 的边界：
 
 ## 当前 Finding
 
+- [Core v2 Role Session 只保存 CLI stdout，缺少完整 Prompt 与 Provider 原生时间线](./core-v2-role-session-uses-cli-stdout.md)：现有 Event Artifact 内部一致，但采集源不是完整 Provider Session，且运行中缺少 active locator。
 - [Core v2 Recovery / Exception 分区仍占据大块空白](./core-v2-recovery-lane-remains-oversized.md)：TASK-0050 缩短了画布，但黄色异常背景仍横跨大半画布。
 - [Backlog 文档未投影到项目看板](./backlog-docs-not-projected.md)：Git 中的 Backlog YAML 与 Restate ProjectBoard Projection 尚无显式同步路径。
 - [Demo 未展示编码任务与 Agent Trace](./demo-does-not-show-coding-agent-trace.md)：一键 Demo 仍使用通用 TaskWorkflow，无法体验已经实现的 Coding Trace。

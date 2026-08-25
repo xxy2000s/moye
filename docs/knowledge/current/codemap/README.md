@@ -1,7 +1,7 @@
 # CodeMap
 
 > 状态：Current  
-> 更新日期：2026-08-24
+> 更新日期：2026-08-25
 
 本文件映射当前已经存在并通过测试的代码，不描述未来平台。
 
@@ -84,9 +84,10 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 - `domain/core-observer.ts` 从 Core 只读事实重建 Trace/Usage/Recovery 摘要、Alert 与 `PROPOSED` Knowledge Candidate，不接收状态写入口；`domain/core-docs-impact.ts` 用 argv-only Ruby Adapter 刷新 Final Route、校验逐项 disposition/新 Markdown 注册并保存 Graph/Impact Gate 证据；
 - `domain/core-closure.ts` 从已验证 Envelope、最终 Core Projection 与完整 Trace Index 推导 `SUCCEEDED | FAILED_TERMINAL | CANCELLED`，Closure 与 CLOSED Projection 均内容寻址且不可变；
 - `domain/lifecycle-artifact.ts` 定义 Core v2 九类生命周期 Artifact、角色/Phase 权限、Revision/Commit/Producer/Attempt 绑定、固定依赖图、未信任 JSON 重建和精确 Artifact Set Gate；Review subject 与 Test Plan/Report coverage 都由确定性摘要校验，旧 Revision 或未解析 dependency 不能过 Gate；
+- `domain/session-transcript.ts` 定义 Prompt Envelope、Active Role Run Locator、Provider-normalized Timeline、Transcript Manifest 与 append-only Import Receipt 的 v1 Sidecar 合同；它冻结 capture policy、Task/Attempt/Revision/Generation/Run/Session/Role Manifest binding、canonical Digest、stale fencing 和 `DIAGNOSTIC_SUPPLEMENT_ONLY` 权限，但不执行 Provider 文件读取、Workflow 推进或 Board 查询；
 - `domain/review-finding.ts` 固定 Self Review、Candidate-bound Review Input、成功 ReviewResult、独立执行失败、Finding 稳定身份/追加处置和 Blocking Gate；Core 只接受绑定最近 Review Manifest Digest 的可信 Gate Result；
 - `core/workflow.ts` 用确定性 Scenario Adapter 贯通线性成功、Repair、Replan、UNKNOWN→Reconcile、预算终止和取消；`core/scenario-artifact.ts` 在昂贵执行前写稳定 Intent，复用已确认结果并把仅有 Intent 的情况停为 UNKNOWN；
-- `domain/role-runtime-v2.ts` 定义 Core v2 六类 Role、隔离 Phase、固定权限、Attempt/Generation/Event、Run Evidence 和 UNKNOWN/Reconcile 领域协议；`agent/role-runtime-v2.ts` 先持久化 Intent，再以 argv-only 真实 Codex/Claude 进程生成 Session、原始 Event、stderr、结构化 Output 与逐文件摘要 Manifest，完整结果可复用，Intent-only 禁止盲重跑；
+- `domain/role-runtime-v2.ts` 定义 Core v2 六类 Role、隔离 Phase、固定权限、Attempt/Generation/Event、Run Evidence、唯一真实 Role Prompt renderer 和 UNKNOWN/Reconcile 领域协议；`agent/role-runtime-v2.ts` 复用该 renderer，先持久化 Intent，再以 argv-only 真实 Codex/Claude 进程生成 Session、原始 Event、stderr、结构化 Output 与逐文件摘要 Manifest，完整结果可复用，Intent-only 禁止盲重跑；
 - `domain/core-v2-lifecycle.ts` 是 Core v2 Lifecycle Reducer，覆盖 Architect/Design Review/REPLAN、Implementation Checkpoint/Repair、Documentation、两阶段 Test、Final Review、Verification Gate、Knowledge Disposition，以及成功/失败 Closure 与 Archive Pending/Failed/Archived；Repair Generation 绑定上一 Candidate，append-only `trustedTestRuns` 与 `invalidatedGenerations` 保留旧 Candidate/Checkpoint/Test/Artifact 失效关系，旧 Attempt 不可覆盖；
 - `archive/core-v2-artifact-store.ts` 提供 Task namespace、content-checked pending/rename 和冲突拒绝；`core-v2-failure.ts`、`core-v2-success.ts` 分别持久化失败/成功 Closure 与 Archive Receipt。共享 Artifact Root 中的不同 Task 互不覆盖，相同 Task/Closure 只接受相同内容；
 - `testing/trusted-test-runner.ts` 是 argv-only 真实测试执行 Effect Adapter，持久化 Intent、逐 Case 退出码/stdout/stderr 与 Manifest；文件 Digest 绑定原始 Evidence 字节，Manifest 复用会重新校验文件，在 Intent-only 恢复时返回 UNKNOWN；专用验收故障点可在 Intent 或 Manifest 边界终止进程，Trusted Runner 子进程以显式环境标识支持执行账本审计；
@@ -123,6 +124,7 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 | `src/domain/coding-task.ts` | Spec 漂移后沿用旧证据、Attempt 被复活、Shell 命令边界丢失 | `tests/unit/coding-task.test.ts` |
 | `src/domain/core-control.ts`、`core-observer.ts`、`core-docs-impact.ts`、`core-closure.ts`、`review-finding.ts` | 过期 Decision、跨 Revision Attempt 碰撞、恢复动作混淆、UNKNOWN 盲重试、Observer 越权、Trace 漏证据、失败 Docs Gate 误关闭、冲突 Closure、预算无限循环 | Core Control/Recovery/Observer/Docs/Closure、Role/Review unit |
 | `src/domain/lifecycle-artifact.ts` | 聊天文本冒充产物、旧 Revision/Commit 证据复用、Digest 篡改、依赖 ref 伪造、Test Report 漏项 | Lifecycle Artifact unit + 完整九类交接链 E2E |
+| `src/domain/session-transcript.ts` | Prompt 正文与策略不一致、Provider tool result 冒充用户、Parser 版本漂移、旧 Attempt/Revision/Generation 越界、Transcript Receipt 越权或篡改 | `tests/unit/session-transcript.test.ts`；真实 Codex/Claude、安全边界、恢复与历史导入由 M1-W02～W08 逐级补齐 |
 | `src/domain/role-runtime-v2.ts`、`src/agent/role-runtime-v2.ts` | Role/Phase 越权、Fake 混入产品协议、跨 Attempt Evidence、完整结果重复执行、Intent-only 盲重跑、Artifact 篡改 | Role Runtime v2 unit + 六类角色真实 OS 子进程/复用/UNKNOWN/Reconcile/篡改 E2E |
 | `src/domain/core-v2-lifecycle.ts` | 角色越权、旧 Revision Artifact 复用、Finding 绕过 REPLAN/REPAIR、旧 Generation 覆盖、Projection 篡改 | Core v2 Lifecycle unit + 序列化 Architect/Review/Implementation/Repair E2E |
 | `src/acceptance/core-v2-matrix-audit.ts`、`scripts/core_v2_matrix_audit.ts`、`scripts/core_v2_full_acceptance.ts` | 目录扫描误选历史结果、Workflow probe identity 钉住旧 Deployment、summary 自证、实时 Projection 漂移、重复 Session/Test/Commit/Merge、归档图谱漂移 | Matrix Manifest unit + 旧 14 场景 fail-closed 审计 + TASK-0048 16 场景零 Finding live audit |

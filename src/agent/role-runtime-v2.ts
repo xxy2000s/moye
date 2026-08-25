@@ -12,6 +12,7 @@ import {
   createRoleRunEvidenceV2,
   parseRoleAttemptV2,
   parseRoleRunEvidenceV2,
+  renderRoleAgentPromptV2,
   roleReconcileTokenV2,
 } from "../domain/role-runtime-v2.js";
 import type {
@@ -310,12 +311,7 @@ export function createRealRoleInvocationV2(
   codexExecutable = "codex",
   claudeExecutable = "claude",
 ): AgentProcessInvocation {
-  const prompt = [
-    `You are the ${request.attempt.role}/${request.attempt.phase} Agent for a real Moye Task.`,
-    request.instructions,
-    `Permission boundary: ${request.attempt.permission}.`,
-    "Return only the required structured output. Do not claim artifacts or findings that do not exist.",
-  ].join("\n");
+  const prompt = renderRoleAgentPromptV2({ role: request.attempt.role, phase: request.attempt.phase, instructions: request.instructions, permission: request.attempt.permission });
   if (request.attempt.runnerKind === "CODEX_EXEC") {
     return {
       executable: executable(codexExecutable, "codexExecutable"),
