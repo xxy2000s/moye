@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 119
+graph_revision: 120
 updated_at: "2026-08-25"
 
 entrypoints:
@@ -4911,6 +4911,54 @@ documents:
     authority: task-evidence
     read_when: [task-close, task-archive]
 
+  - id: task-0067-manifest
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0067/task.yaml
+    type: task-manifest
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close, task-archive]
+
+  - id: task-0067-spec
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0067/spec.md
+    type: task-spec
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0067-design
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0067/design.md
+    type: task-design
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0067-plan
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0067/plan.md
+    type: task-plan
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0067-verification
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0067/verification.md
+    type: verification
+    status: archived
+    scope: framework-productization
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0067-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0067/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: framework-productization
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
 relations:
   - from: root-readme
     to: docs-index
@@ -8602,6 +8650,42 @@ relations:
 
   - from: task-0066-docs-impact
     to: task-0066-manifest
+    type: reports_on
+
+  - from: milestone-2-framework-release
+    to: task-0067-manifest
+    type: schedules
+
+  - from: archived-tasks-index
+    to: task-0067-manifest
+    type: indexes
+
+  - from: task-0067-spec
+    to: bl-0068-framework-productization
+    type: consumes
+
+  - from: task-0067-spec
+    to: task-0067-manifest
+    type: belongs_to
+
+  - from: task-0067-design
+    to: task-0067-spec
+    type: refines
+
+  - from: task-0067-design
+    to: adr-0008-framework-release-boundary
+    type: implements_slice_of
+
+  - from: task-0067-plan
+    to: task-0067-manifest
+    type: belongs_to
+
+  - from: task-0067-verification
+    to: task-0067-manifest
+    type: verifies
+
+  - from: task-0067-docs-impact
+    to: task-0067-manifest
     type: reports_on
 
 routing:

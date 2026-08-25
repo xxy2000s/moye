@@ -1,0 +1,88 @@
+schema_version: 1
+task_id: TASK-0067
+graph_revision: 120
+intents: [m2-project-manifest-migration]
+changed_paths:
+  - README.md
+  - schemas/project.schema.json
+  - src/framework/project-manifest.ts
+  - src/cli/index.ts
+  - tests/unit/project-manifest.test.ts
+  - docs/knowledge/current/architecture/framework-product-boundary.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - docs/delivery/backlog/BL-0068.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/milestones/m2-framework-release.md
+  - docs/delivery/tasks/README.md
+  - docs/delivery/tasks/archive/README.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0067/task.yaml
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0067/spec.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0067/design.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0067/plan.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0067/verification.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0067/docs-impact.yaml
+  - docs/graph.yaml
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - restate-poc-architecture
+    - task-runtime-kernel
+    - archived-tasks-index
+    - tasks-index
+    - root-readme
+    - framework-product-boundary
+    - architecture-index
+    - adr-0008-framework-release-boundary
+    - milestone-2-framework-release
+    - bl-0068-framework-productization
+    - backlog-index
+    - sources-index
+    - local-restate-poc-runbook
+    - runbooks-index
+    - task-0067-manifest
+    - task-0067-spec
+    - task-0067-design
+    - task-0067-plan
+    - task-0067-verification
+    - task-0067-docs-impact
+  reviewed:
+    moye-task-control-skill: { outcome: unchanged, reason: "继续执行 Full、Context Route、Docs Impact 和 Seal，不改变 Skill。" }
+    architecture-overview: { outcome: unchanged, reason: "Manifest 落地在已冻结 Framework 边界内，不改变总体 Harness 边界。" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "Manifest pre-dispatch 校验不改变 Restate PoC 选型。" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "文档生命周期角色未改变。" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "继续使用两阶段 Seal。" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "不消费 Worktree 生命周期规划范围。" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "Manifest 不改变 Core Closure 要求。" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "新增输入校验未产生新的稳定 Runtime 陷阱。" }
+    task-0013-manifest: { outcome: unchanged, reason: "不修改 Core Control 历史。" }
+    task-0014-manifest: { outcome: unchanged, reason: "不修改 Role 协议历史。" }
+    task-0015-manifest: { outcome: unchanged, reason: "不修改 Review/Finding 历史。" }
+    task-0016-manifest: { outcome: unchanged, reason: "不修改恢复预算历史。" }
+    task-0017-manifest: { outcome: unchanged, reason: "不修改 Docs/Observer 历史。" }
+    task-0018-manifest: { outcome: unchanged, reason: "不修改 Closure 历史。" }
+    task-0019-manifest: { outcome: unchanged, reason: "不修改早期产品入口历史。" }
+    task-0020-manifest: { outcome: unchanged, reason: "不修改 Board 历史。" }
+    task-0021-manifest: { outcome: unchanged, reason: "不修改多角色产品历史。" }
+    task-0028-manifest: { outcome: unchanged, reason: "不修改历史持久化任务。" }
+    task-0029-manifest: { outcome: unchanged, reason: "不修改 Bootstrap recovery 历史。" }
+    task-0002-manifest: { outcome: unchanged, reason: "Backlog 索引更新不修改同步历史。" }
+    task-0003-manifest: { outcome: unchanged, reason: "不修改 Task/Attempt 基础协议历史。" }
+    task-0004-manifest: { outcome: unchanged, reason: "不修改 Git Effect 历史。" }
+    task-0005-manifest: { outcome: unchanged, reason: "不修改 Agent Runner 历史。" }
+    task-0006-manifest: { outcome: unchanged, reason: "不修改 Coding Workflow 历史。" }
+    task-0007-manifest: { outcome: unchanged, reason: "不修改故障验收历史。" }
+    task-0008-manifest: { outcome: unchanged, reason: "不修改 Demo 历史。" }
+    task-0009-manifest: { outcome: unchanged, reason: "不修改 Trace 历史。" }
+    task-0001-manifest: { outcome: unchanged, reason: "不修改首个 PoC 历史。" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "继续使用 TypeScript，不改变选型。" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "Manifest 不改变 Trace 选型。" }
+    task-0049r1-manifest: { outcome: unchanged, reason: "只复用 Seal preflight。" }
+    task-0056-manifest: { outcome: unchanged, reason: "继续使用已封存的执行分级。" }
+    task-0061r1-design: { outcome: unchanged, reason: "Manifest 不改变 replay-sensitive Workflow 恢复。" }
+    task-0062-design: { outcome: unchanged, reason: "Manifest 不改变 Session API。" }
+    task-0063-design: { outcome: unchanged, reason: "Manifest 不改变 Session UX。" }
+    adr-0008-framework-release-boundary: { outcome: unchanged, reason: "实现已冻结的 Manifest v1/单包边界，不改变 W01 的版本与发布决策。" }

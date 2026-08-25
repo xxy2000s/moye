@@ -30,12 +30,43 @@ import type { SealedTaskStatus } from "../restate/services.js";
 import type { CoreV2ArchiveRetryInput, CoreV2FailureRecoveryInput, CoreV2ReconcileInput, CoreV2WorkflowInput, CoreV2WorkflowProjection } from "../restate/core-v2-services.js";
 import { inspectCoreV2SourceInvocation } from "../restate/invocation-inspector.js";
 import type { TranscriptEnrichmentInputV1, TranscriptEnrichmentProjectionV1 } from "../restate/transcript-enrichment-services.js";
+import { initializeProjectManifest, loadProjectManifest } from "../framework/project-manifest.js";
 
 const [command = "help", ...args] = process.argv.slice(2);
 const config = loadConfig();
 
 try {
   switch (command) {
+    case "init": {
+      const directory = resolve(optionalOption(args, "--dir") ?? process.cwd());
+      const requestedProjectId = optionalOption(args, "--project-id");
+      const loaded = await initializeProjectManifest(directory, {
+        force: args.includes("--force"),
+        ...(requestedProjectId === undefined ? {} : { projectId: requestedProjectId }),
+      });
+      print({ initialized: true, manifestPath: loaded.manifestPath, projectId: loaded.manifest.project.id, digest: loaded.digest });
+      break;
+    }
+    case "project": {
+      const subcommand = args[0];
+      if (subcommand !== "validate") throw new Error(`Unknown project command: ${subcommand ?? ""}`);
+      const manifestPath = resolve(optionalOption(args.slice(1), "--file") ?? ".moye/project.yaml");
+      const loaded = await loadProjectManifest(manifestPath);
+      print({
+        valid: true,
+        manifestPath: loaded.manifestPath,
+        projectId: loaded.manifest.project.id,
+        schemaVersion: loaded.manifest.schemaVersion,
+        apiVersion: 1,
+        pluginApiVersion: 1,
+        digest: loaded.digest,
+        repositoryRoot: loaded.repositoryRoot,
+        workflowProfile: loaded.manifest.workflow.profile,
+        documentationPolicy: loaded.manifest.documentation.policy,
+        ...(loaded.migratedFrom === undefined ? {} : { migratedFrom: loaded.migratedFrom }),
+      });
+      break;
+    }
     case "validate": {
       const input = await loadTaskInput(requiredOption(args, "--file"));
       createTaskProjection(input, new Date().toISOString());
@@ -416,6 +447,8 @@ function helpText(): string {
   return `Moye Task Control CLI
 
 Usage:
+  moye init [--dir PATH] [--project-id ID] [--force]
+  moye project validate [--file .moye/project.yaml]
   moye backlog sync [--dir PATH] [--project PROJECT-ID]
   moye validate --file task.json
   moye route --intent NAME --path PATH

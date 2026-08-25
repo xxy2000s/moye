@@ -11,6 +11,7 @@
 |---|---|---|
 | `src/index.ts` | 同时启动 Restate HTTP/2 Endpoint 和 Board HTTP Server | 无 |
 | `src/cli/index.ts` | backlog sync、validate、route、TaskAuthority-aware create/status/wait、close、Bootstrap/Seal recovery、seal start/status/stage/submit、archive、reconcile-task、graph | 只提交/查询或解析显式 Seal/Recovery/Reconcile；`seal-start` 在发送前复用 Intent 校验器，`seal-submit` 本地验证 Commit 对象，`seal-stage` 只准备 Git package |
+| `src/framework/project-manifest.ts`、`schemas/project.schema.json` | `.moye/project.yaml` v1、legacy v0 迁移、canonical Digest、仓库路径/argv 安全与 `init/project validate` | 不推进 Task；公共 Manifest 不保存 Runtime token、内部 Workflow Input 或本机 Artifact 绝对路径 |
 | `scripts/core_v2_full_acceptance.ts`、`scripts/core_v2_*_acceptance.ts`、`src/acceptance/core-v2-matrix-*` | 16 场景真实产品矩阵、受控故障/恢复、显式 suite/scenario Manifest 与实时交叉审计 | 不扫描目录挑选结果；补跑必须显式绑定原场景根，re-audit 不提交 Workflow 或重跑副作用 |
 | `scripts/session_timeline_acceptance.ts` | 附着显式真实 Core v2 Task，逐 Role 验证受管 Session metadata、canonical Timeline 分页、独立 execution stream 与 stderr | 只读；不提交 Workflow、不运行 Agent、不扫描 Provider Home 或验收目录 |
 | `scripts/agent_session_full_acceptance.ts` | 串行聚合真实 Codex/Claude、显式 Session Capture Recovery、历史 Enrichment 与 Board API 产品证据 | Recovery/Provider resume 必须由调用方给出精确 summary；重算受管 Manifest/Digest，不扫描目录选择结果，不推进 Task |
@@ -37,6 +38,7 @@ src/
 ├── domain/            纯领域状态、错误、Backlog、Board、Core Reducer、Observer、Docs Impact 与 Review/Finding Gate
 ├── archive/           Manifest、Bootstrap 关闭材料、两阶段 Sealed Result Commit、原子移动与 Reconcile
 ├── effects/           带稳定 operation ledger 的幂等副作用样例
+├── framework/         外部项目 Manifest、公共版本与消费级信任边界
 ├── git/               Worktree、Checkpoint 与本地 Git Effect 对账
 ├── product/           页面真实任务的输入校验、仓库边界与冻结输入构造
 ├── review/            独立真实 CLI Review、结构化 Finding 与 Artifact 对账

@@ -8,6 +8,8 @@ Agent Session Evidence M1 也已完成本地产品验收：新 Codex/Claude Role
 
 Framework MVP 的公共边界已由 [ADR-0008](./docs/knowledge/decisions/adr/0008-publish-framework-mvp-as-versioned-umbrella-package.md) 冻结：首版采用 `moye@0.1.0` umbrella package，通过 `moye/core`、`moye/client`、`moye/plugin-sdk` 和 CLI 提供公共入口，Restate Workflow/Projection 写入口保持私有。M2 仍在实施中；在外部示例、分发和真实产品矩阵完成前，不宣称 Framework MVP 已发布。
 
+项目 Manifest v1 已可在任意本地 Git 项目中生成和验证：`npm run cli -- init --dir /path/to/project` 创建 `.moye/project.yaml`，`npm run cli -- project validate --file /path/to/project/.moye/project.yaml` 返回 Schema/API/Plugin 版本、canonical Digest 和受控仓库根。它不会覆盖已有配置，路径必须留在仓库内，命令必须为非 shell argv。消费级 Task 命令与安装包仍由后续 M2 Task 交付。
+
 ## 当前目标
 
 第一阶段不构建完整平台，而是验证最关键的 Task Runtime 能力：

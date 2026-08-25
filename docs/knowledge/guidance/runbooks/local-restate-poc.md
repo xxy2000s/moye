@@ -46,6 +46,17 @@ npm run trace:down
 
 ## 2. 自动验收
 
+### 外部项目 Manifest
+
+在目标项目根目录生成安全默认配置；已有文件默认拒绝覆盖：
+
+```bash
+npm run cli -- init --dir /absolute/path/to/project
+npm run cli -- project validate --file /absolute/path/to/project/.moye/project.yaml
+```
+
+`project validate` 会展开默认值并返回 canonical Digest、Schema/API/Plugin 版本和解析后的仓库根。Manifest 路径必须是仓库内可移植相对路径；测试和 custom docs 命令必须是 argv 数组。shell、破坏性 executable、inline eval、词法越界和 symlink escape 会在任何 Workflow 派发前拒绝。只有用户明确要求替换配置时才使用 `init --force`。
+
 Docker daemon 可用时，以下命令会启动隔离容器、注册服务、提交 Task、强杀 Worker、重启、验证结果并自动清理：
 
 ```bash

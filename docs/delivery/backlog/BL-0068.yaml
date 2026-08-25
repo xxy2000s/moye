@@ -31,5 +31,6 @@ acceptance_outline:
 resolution:
   task_refs:
     - TASK-0066
+    - TASK-0067
   duplicate_of:
-  reason: "M2 已批准并由 TASK-0066 开始执行；后续 TASK-0067～0075 按依赖创建后追加登记。"
+  reason: "M2 已批准；TASK-0066 公共边界与 TASK-0067 Project Manifest 已交付，后续 TASK-0068～0075 按依赖创建后追加登记。"

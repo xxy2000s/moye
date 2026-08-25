@@ -43,4 +43,6 @@ Release Manifest 把 Git Commit、npm tarball Digest、容器 Digest、Schema ve
 
 ## 5. 当前实现状态
 
-ADR 与边界已冻结；Manifest、Client、Plugin、Documentation Policy、分发、包流水线、示例和外部验收由 TASK-0067～TASK-0075 顺序实现。在这些证据完成前，Moye 仍只能声明本地受控 Kernel 可用，不能声明 Framework MVP 已公开发布。
+Project Manifest v1 已由 `src/framework/project-manifest.ts` 实现，并以 `schemas/project.schema.json` 分发机器可读 Schema。`init` 采用安全默认值且不覆盖，`project validate` 输出 canonical Digest；legacy v0 只有明确窄化结构可以迁移，未知/未来版本稳定拒绝。路径执行词法与真实路径边界检查，命令只接受 argv 并拒绝 shell、破坏性 executable 与 inline eval。
+
+Client、Plugin、Documentation Policy、分发、包流水线、示例和外部验收仍由 TASK-0068～TASK-0075 顺序实现。在这些证据完成前，Moye 仍只能声明本地受控 Kernel 和 Manifest 可用，不能声明 Framework MVP 已公开发布。
