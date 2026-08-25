@@ -162,7 +162,7 @@ npm run cli -- core-v2-reconcile TASK-CORE-V2-EXAMPLE --token 'sha256:...' --act
 
 Board 首页可按 outcome、Workflow kind、项目任务/验收历史筛选，并通过“最新成功归档”直达最近的 `SUCCEEDED + ARCHIVED` Task。卡片上的等待对账、归档中、归档失败、失败终态和成功归档来自 Workflow Projection/TaskAuthority 的只读事实；筛选不会向 Runtime 发命令。升级前验收 Task 使用受限兼容标签，新的 acceptance harness 会在 Workflow 输入中声明显式 `acceptanceMetadata`。
 
-Board 访问 `/tasks/<task_id>` 可查看完整状态定义、实际点亮路径、Artifact、确定性 Observer 和每个 Role Session。成功 Task 中没有实际 Event 的 Repair/Replan/Reconcile/Failure/Archive Failed 节点显示“合法但本次未发生”；只有 History 经过的异常节点会点亮。点击 Session 后使用页面内 Agent Events 弹窗筛选对话、工具调用、工具结果、系统与错误；Events 不通过下载跳转查看。
+Board 访问 `/tasks/<task_id>` 可查看完整状态定义、实际点亮路径、Artifact、确定性 Observer 和每个 Role Session。成功 Task 中没有实际 Event 的 Repair/Replan/Reconcile/Failure/Archive Failed 节点显示“合法但本次未发生”；只有 History 经过的异常节点会点亮。Core v2 Session 查询分四类：`/session` 是状态/完整性/raw metadata，`/timeline` 是 Provider Adapter 生成的 canonical 对话时间线，`/events` 是 CLI execution stream，`/stderr` 是独立错误输出。Board 只读取 Projection 绑定且位于 `MOYE_ARTIFACT_ROOTS` 的受管 Artifact；不把任意路径或 Provider Home 传给这些端点。
 
 Core v2 真实产品验收使用持久化验收根目录，不删除失败历史，也不重复 Workflow key。Service 的 repository/artifact allowlist 必须覆盖该根目录；只有专用故障验收 Service 可启用窄化的 Prompt 条件：
 
@@ -177,6 +177,7 @@ npm run acceptance:core-v2
 npm run acceptance:core-v2:faults
 npm run acceptance:core-v2:recovery
 npm run acceptance:core-v2:sessions
+npm run acceptance:core-v2:session-api
 npm run acceptance:core-v2:guards
 npm run acceptance:core-v2:matrix
 ```
@@ -194,6 +195,16 @@ Harness 只通过真实 `CoreV2Workflow` 输入改变指定 Revision/Generation/
 `acceptance:core-v2:recovery` 会自己启动并注册专用 Service，在 Test Intent/Manifest、Role Manifest、Candidate Commit 和 Merge ref update 后实施受控进程终止，再以同一 deployment URI 恢复。Test `NOT_APPLIED` 场景会先证明错误 token 被拒绝，再验证相同 Evidence 幂等和冲突 Evidence 拒绝；`CONFIRMED` 场景只能使用已落盘且摘要匹配的真实 Manifest。不要删除 marker、Journal 或执行账本来让重跑通过。
 
 `acceptance:core-v2:sessions` 只选择 Session Capture Recovery 产品场景：它要求本机真实 Codex 认证和可读的 `${CODEX_HOME:-$HOME/.codex}/sessions`，为七个主流程 Role 显式开启 `sessionEvidence`，并在首个 Transcript Manifest 已落盘但 Receipt 尚未确认时终止 Service。重启后必须从受管 Manifest 完成同一 Capture，不得产生第二个 Role Run；最终摘要逐一核对 Prompt、Session、Receipt、execution events、stderr、Trusted Test、Merge、Closure 与 Archive。该命令消耗真实模型额度，失败记录和 Artifact 不应删除。
+
+`acceptance:core-v2:session-api` 不创建 Task，也不消耗模型额度。先让当前 Board/Service 的 Artifact allowlist 覆盖目标真实 Task 的 Artifact Root，再显式指定 Task：
+
+```bash
+MOYE_SESSION_API_ACCEPTANCE_BOARD=http://127.0.0.1:3000 \
+MOYE_SESSION_API_ACCEPTANCE_TASK=TASK-RCV-... \
+npm run acceptance:core-v2:session-api
+```
+
+入口从该 Task 的实时 Trace 枚举 Role，不按目录选择“最新”。它要求每个 Role 的 Session 是 `COMPLETE | PARTIAL`，逐页核对 cursor、Event ID 唯一性和 canonical Digest，至少存在 Prompt，并独立读取 execution stream 与摘要匹配的 stderr；任一 Role 缺 Evidence、越界或损坏即非零退出。
 
 `acceptance:core-v2:guards` 创建 Repair budget、Replan budget、Observer timeout 和 Stale Fencing 四个独立真实 Task。两个预算 Task 必须完成 Failure Closure/Archive，且预算后不能出现下游 Agent、Trusted Test 或 Merge；Stale Task 使用旧 Generation 的真实 Attempt ID 与 Manifest Digest 调用 `auditAttemptFence`，先验证错误 Digest 拒绝，再验证 stale 结果与幂等重放，最后比较审计前后的 Projection、Success Closure 与 Failure Closure Digest。Observer Task 必须保存真实超时 Session/Event/Manifest、`deferred` Knowledge Disposition，同时主流程继续到成功 Archive。`MOYE_CORE_V2_GUARD_SCENARIOS` 只用于显式选择补跑场景；`MOYE_CORE_V2_GUARD_REAUDIT_ROOT` 只附着既有 Task 重做只读审计，不能提交 Workflow 或重跑副作用。
 

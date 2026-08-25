@@ -154,7 +154,17 @@ Core v2 现在可在显式启用 `sessionEvidence` 时把本 Adapter 接到每�
 - Projection 只保存 Prompt descriptor、版本化 Locator、Session Evidence Authority、Receipt 和摘要，不保存 Provider Home 物理路径。Receipt 固定 `DIAGNOSTIC_SUPPLEMENT_ONLY`，不参与 Test、Verification、Merge、Closure 或 Archive Gate；
 - 产品验收 `npm run acceptance:core-v2:sessions` 用真实 Restate、真实 Codex、隔离 Git、Trusted Runner、双父 Merge 和七个 Role Session，在首个 Transcript Manifest 后强制终止 Service。恢复后七个 Receipt 全部 COMPLETE、Agent/Session/Commit/Test/Merge 均唯一，Task 最终 `CLOSED + ARCHIVED + SUCCEEDED`。
 
-W04 只实现新 Role 的 LIVE capture。Board Timeline API、Chatbot UI 与历史 append-only enrichment 分别由 M1-W05～W07 交付。
+#### 受管 Session Timeline 查询边界
+
+`src/board/session-timeline.ts` 实现 W05 的只读查询边界。Board 先从 `TaskAuthority → CoreV2Workflow Projection` 解析精确 Role Run 与 Session Evidence Record，再在 `MOYE_ARTIFACT_ROOTS` 覆盖的 Task Artifact Root 内读取 `session-evidence`；请求参数不接受 Provider Home 或任意文件路径。
+
+- `GET /api/tasks/<task>/roles/<run>/session` 返回 Capture 状态、完整性、指标、错误、受管 Artifact descriptor 和 execution/timeline/stderr 链接；raw 只暴露 ref/digest/bytes/media type 元数据，不内联 Provider 原文；
+- `.../timeline?cursor=&limit=` 直接分页返回 Provider Adapter 已产出的 `NormalizedTimelineEventV1`。这是唯一对话语义 Normalizer；Board Server 与浏览器不得从 raw 或 execution JSONL 再推断 Prompt/User/Assistant/Tool 分类；
+- 既有 `.../events` 保留为真实 CLI execution stream，`.../stderr` 独立校验并返回 Role stderr。四类数据不会互相冒充；
+- Receipt、Authority、Manifest、Task/Attempt/Run/Role Manifest binding、normalized/raw Digest 与 stderr Digest 在返回前 fail closed 校验。`PENDING`、`WAITING_RECONCILE`、`UNAVAILABLE`、`FAILED` 和 Artifact 完整性错误具有稳定 HTTP 状态与机器码；
+- `npm run acceptance:core-v2:session-api` 附着指定的真实 Core v2 Task，逐个读取所有 Role 的完整分页 Timeline、execution stream 和 stderr，不提交 Workflow、重跑 Agent 或扫描验收目录。
+
+W05 不改变 Transcript 的 `DIAGNOSTIC_SUPPLEMENT_ONLY` 权限，也不推进 Task。Chatbot UI 与历史 append-only enrichment 分别由 M1-W06～W07 交付。
 
 ### 5.0.3 当前 PoC 已实现单 Agent 编码 Workflow
 

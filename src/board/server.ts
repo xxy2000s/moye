@@ -19,6 +19,12 @@ import { buildLiveCodingTask, listLiveCapabilities } from "../product/live-task.
 import { MoyeError } from "../domain/errors.js";
 import type { CoreV2WorkflowProjection } from "../restate/core-v2-services.js";
 import { createCoreV2ObserverReport } from "../domain/core-v2-observer.js";
+import {
+  readBoardSessionMetadataV1,
+  readBoardSessionStderrV1,
+  readBoardSessionTimelinePageV1,
+  SessionTimelineError,
+} from "./session-timeline.js";
 
 export interface BoardServerOptions {
   readonly port: number;
@@ -89,10 +95,14 @@ async function route(
     const traceRequest = segments.length === 2 && segments[1] === "trace";
     const agentEventsRequest = segments.length === 2 && segments[1] === "agent-events";
     const roleEventsRequest = segments.length === 4 && segments[1] === "roles" && segments[3] === "events";
+    const roleSessionRequest = segments.length === 4 && segments[1] === "roles" && segments[3] === "session";
+    const roleTimelineRequest = segments.length === 4 && segments[1] === "roles" && segments[3] === "timeline";
+    const roleStderrRequest = segments.length === 4 && segments[1] === "roles" && segments[3] === "stderr";
     const artifactKind = segments.length === 3 && segments[1] === "artifacts"
       ? readArtifactKind(segments[2])
       : undefined;
-    if (segments.length > 1 && !traceRequest && !agentEventsRequest && !roleEventsRequest && artifactKind === undefined) {
+    if (segments.length > 1 && !traceRequest && !agentEventsRequest && !roleEventsRequest
+        && !roleSessionRequest && !roleTimelineRequest && !roleStderrRequest && artifactKind === undefined) {
       writeJson(response, 404, { error: "Not found" });
       return;
     }
@@ -206,6 +216,59 @@ async function route(
         }));
       } catch {
         writeJson(response, 404, { error: "Agent Event stream not found" });
+      }
+      return;
+    }
+    if (roleSessionRequest || roleTimelineRequest || roleStderrRequest) {
+      if (authority.owner !== "CORE_V2_WORKFLOW") {
+        writeJson(response, 409, { error: { code: "SESSION_NOT_SUPPORTED", message: "Normalized Session Evidence is available only for Core v2 Role Runs" } });
+        return;
+      }
+      let runId: string;
+      try { runId = decodeURIComponent(segments[2] ?? ""); }
+      catch { writeJson(response, 400, { error: { code: "SESSION_RUN_ID_MALFORMED", message: "Malformed Role Run ID" } }); return; }
+      const target = coreV2WorkflowTarget(authority, taskId);
+      const projection = await invoke<CoreV2WorkflowProjection | null>(options.ingressUrl, target.service, target.key, "status");
+      const run = projection?.roleRuns.find((item) => item.runId === runId);
+      if (projection === null || run === undefined) {
+        writeJson(response, 404, { error: { code: "SESSION_ROLE_RUN_NOT_FOUND", message: "Role Run not found" } });
+        return;
+      }
+      const evidence = projection.sessionEvidence?.find((item) => item.runId === runId && item.attemptId === run.attemptId);
+      const resolver = {
+        artifactRoots: options.artifactRoots ?? [],
+        declaredArtifactRoot: projection.artifactRoot,
+        taskId,
+        run,
+        ...(evidence === undefined ? {} : { evidence }),
+      };
+      try {
+        if (roleSessionRequest) {
+          const metadata = await readBoardSessionMetadataV1(resolver);
+          writeJson(response, 200, {
+            ...metadata,
+            links: {
+              execution: `/api/tasks/${encodeURIComponent(taskId)}/roles/${encodeURIComponent(runId)}/events`,
+              timeline: `/api/tasks/${encodeURIComponent(taskId)}/roles/${encodeURIComponent(runId)}/timeline`,
+              stderr: `/api/tasks/${encodeURIComponent(taskId)}/roles/${encodeURIComponent(runId)}/stderr`,
+            },
+          });
+          return;
+        }
+        if (roleTimelineRequest) {
+          const cursor = readBoundedInteger(url.searchParams.get("cursor"), 0, 0, Number.MAX_SAFE_INTEGER);
+          const limit = readBoundedInteger(url.searchParams.get("limit"), 100, 1, 200);
+          if (cursor === undefined || limit === undefined) throw new SessionTimelineError("SESSION_CURSOR_INVALID", 400, "cursor must be non-negative and limit must be between 1 and 200");
+          writeJson(response, 200, await readBoardSessionTimelinePageV1({ ...resolver, cursor, limit }));
+          return;
+        }
+        writeJson(response, 200, await readBoardSessionStderrV1(resolver));
+      } catch (error) {
+        if (error instanceof SessionTimelineError) {
+          writeJson(response, error.status, { error: { code: error.code, message: error.message } });
+        } else {
+          writeJson(response, 422, { error: { code: "SESSION_ARTIFACT_INTEGRITY_FAILED", message: "Managed Session Evidence failed validation" } });
+        }
       }
       return;
     }
@@ -448,6 +511,9 @@ export function buildCoreV2Trace(projection: CoreV2WorkflowProjection, restateAd
       summary: run.output?.summary ?? "No structured summary",
       findingCount: run.output?.findingRefs.length ?? 0,
       eventsUrl: `/api/tasks/${encodeURIComponent(projection.taskId)}/roles/${encodeURIComponent(run.runId)}/events`,
+      sessionUrl: `/api/tasks/${encodeURIComponent(projection.taskId)}/roles/${encodeURIComponent(run.runId)}/session`,
+      timelineUrl: `/api/tasks/${encodeURIComponent(projection.taskId)}/roles/${encodeURIComponent(run.runId)}/timeline`,
+      stderrUrl: `/api/tasks/${encodeURIComponent(projection.taskId)}/roles/${encodeURIComponent(run.runId)}/stderr`,
     })),
     stateMachine: buildCoreV2StateMachine(projection),
     durableRuntime: {

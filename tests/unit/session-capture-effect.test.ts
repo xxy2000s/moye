@@ -11,6 +11,11 @@ import {
   prepareLiveRoleSessionEvidenceV1,
 } from "../../src/agent/session-capture-effect.js";
 import { createRoleAttemptV2, renderRoleAgentPromptV2, startRoleAttemptV2 } from "../../src/domain/role-runtime-v2.js";
+import {
+  readBoardSessionMetadataV1,
+  readBoardSessionStderrV1,
+  readBoardSessionTimelinePageV1,
+} from "../../src/board/session-timeline.js";
 
 const roots: string[] = [];
 const taskId = "TASK-0061";
@@ -114,6 +119,39 @@ describe("live Role Session Capture Effect", () => {
     expect(agentRuns).toBe(1);
     expect(role.manifest.eventsRef).toBe(capturePending.expectedExecutionEventsRef);
     expect(role.manifest.stderrRef).toBe(capturePending.expectedStderrRef);
+
+    const evidence = {
+      attemptId: role.manifest.attemptId,
+      runId: role.manifest.runId,
+      promptEnvelope: prepared.promptEnvelopeDescriptor,
+      locator: capturePending,
+      executionEventsRef: role.manifest.eventsRef,
+      stderrRef: role.manifest.stderrRef,
+      authority: recovered.authority,
+      receipt: recovered.receipt,
+      summary: recovered.summary,
+    };
+    const resolver = {
+      artifactRoots: [fixture.root],
+      declaredArtifactRoot: fixture.taskArtifacts,
+      taskId,
+      run: role.manifest,
+      evidence,
+    };
+    const metadata = await readBoardSessionMetadataV1(resolver);
+    expect(metadata).toMatchObject({ state: "COMPLETE", provider: "CODEX", providerSessionId: sessionId });
+    expect(metadata.artifacts).toHaveProperty("raw");
+    const firstPage = await readBoardSessionTimelinePageV1({ ...resolver, cursor: 0, limit: 2 });
+    const secondPage = await readBoardSessionTimelinePageV1({ ...resolver, cursor: firstPage.nextCursor, limit: 200 });
+    expect(firstPage).toMatchObject({ cursor: 0, nextCursor: 2, hasMore: true, completed: true });
+    expect([...firstPage.events, ...secondPage.events]).toHaveLength(firstPage.total);
+    expect([...firstPage.events, ...secondPage.events].some((event) => event.category === "PROMPT")).toBe(true);
+    expect((await readBoardSessionStderrV1(resolver)).content).toBe("diagnostic stderr");
+
+    const { authority: _authority, receipt: _receipt, summary: _summary, ...pendingEvidence } = evidence;
+    expect(await readBoardSessionMetadataV1({ ...resolver, evidence: pendingEvidence })).toMatchObject({ state: "PENDING" });
+    await expect(readBoardSessionTimelinePageV1({ ...resolver, evidence: pendingEvidence, cursor: 0, limit: 20 }))
+      .rejects.toMatchObject({ code: "SESSION_CAPTURE_PENDING", status: 409 });
   });
 });
 
@@ -121,11 +159,12 @@ async function setup() {
   const root = await mkdtemp(path.join(os.tmpdir(), "moye-session-effect-"));
   roots.push(root);
   const scope = path.join(root, "scope");
-  const roles = path.join(root, "roles");
+  const taskArtifacts = path.join(root, "artifacts");
+  const roles = path.join(taskArtifacts, "roles");
   const sessions = path.join(root, "sessions");
-  const sessionArtifacts = path.join(root, "session-artifacts");
+  const sessionArtifacts = path.join(taskArtifacts, "session-evidence");
   await Promise.all([mkdir(scope), mkdir(sessions)]);
-  return { root, scope, roles, sessions, sessionArtifacts };
+  return { root, scope, roles, sessions, sessionArtifacts, taskArtifacts };
 }
 
 async function writeRollout(sessionsRoot: string, prompt: string): Promise<string> {

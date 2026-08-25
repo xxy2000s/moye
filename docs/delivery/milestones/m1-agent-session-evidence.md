@@ -144,5 +144,5 @@ Fake/Mock 只用于低层 Parser 边界，不得作为 Codex/Claude 产品验收
 
 - 当前结论：项目 Owner 于 2026-08-25 批准 Revision 1，并授权无中途交互的连续执行。
 - 冻结映射：TASK-0058～TASK-0065 分别对应 W01～W08；只允许逐个创建 Active Task。
-- 当前执行：TASK-0061R1（W04 真实恢复缺口）；下一工作包为 TASK-0062（M1-W05）。
+- 当前执行：TASK-0062（M1-W05 Unified Timeline and Board API）；W04 与 TASK-0061R1 已封存。
 - W01 收敛：`TASK-0058` Result Evidence Commit `339ad003ce52c000ea848a0e13976302d297dc0a`；防复发 Task `TASK-0058R1` Result Commit `a92ce94859a346fbf686fe360c81e2ac11a02fa5`；两者 Runtime 均已归档。

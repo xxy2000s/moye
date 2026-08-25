@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 1,
+  "acceptanceKind": "REAL_CORE_V2_SESSION_TIMELINE_BOARD_API",
+  "executedAt": "2026-08-25T20:18:24.942Z",
+  "taskId": "TASK-RCV-20260825190550-01-SESSION-CAPTURE",
+  "taskState": "CLOSED",
+  "boardUrl": "http://127.0.0.1:55824",
+  "roleCount": 7,
+  "roles": [
+    {
+      "runId": "sha256:1739586f83e83cc87a98efb081bdab7e569a7bcee8ef9d7b3bb8136fa91490e7",
+      "attemptId": "TASK-RCV-20260825190550-01-SESSION-CAPTURE.ARCHITECT.r1.g0",
+      "provider": "CODEX",
+      "providerSessionId": "01a03a50-92a3-70e1-88ce-93619bab27e5",
+      "state": "COMPLETE",
+      "manifestDigest": "sha256:4dec649e2383a0488c7762ecdddecdf6ccce380ef8aa4c43a65e38b6173ed0e4",
+      "normalizedEvents": 28,
+      "categories": [
+        "ASSISTANT",
+        "PROMPT",
+        "SYSTEM",
+        "TOOL_CALL",
+        "TOOL_RESULT"
+      ],
+      "stderrDigest": "sha256:1aa26269eb1cc57f86b235a03cda53c004edb5b1e9fc99d4da4f00843293d721"
+    },
+    {
+      "runId": "sha256:dccd92857c2b8cf840c4c99c8b1a114aedca402a103275c4c4238767266825ad",
+      "attemptId": "TASK-RCV-20260825190550-01-SESSION-CAPTURE.DESIGN_REVIEW.r1.g0",
+      "provider": "CODEX",
+      "providerSessionId": "01a03a51-58c9-7480-9cec-86ad52de3318",
+      "state": "COMPLETE",
+      "manifestDigest": "sha256:cbca53bdd471236691ce447d932d2181ec11d1ae4e6cbf7d9f4d7621bd3a8c19",
+      "normalizedEvents": 16,
+      "categories": [
+        "ASSISTANT",
+        "PROMPT",
+        "SYSTEM"
+      ],
+      "stderrDigest": "sha256:1aa26269eb1cc57f86b235a03cda53c004edb5b1e9fc99d4da4f00843293d721"
+    },
+    {
+      "runId": "sha256:90e68435c0bf5b6d0451563f90cef40ef72b441c8da3ae23d73eb08fcd5ef138",
+      "attemptId": "TASK-RCV-20260825190550-01-SESSION-CAPTURE.IMPLEMENTATION.r1.g0",
+      "provider": "CODEX",
+      "providerSessionId": "01a03a51-a446-71b2-9e1c-ce5560283c54",
+      "state": "COMPLETE",
+      "manifestDigest": "sha256:2857c8937f6000af93e0884ca2ae1a3dbcfef607c69d3f593bfea8509b795098",
+      "normalizedEvents": 53,
+      "categories": [
+        "ASSISTANT",
+        "PROMPT",
+        "SYSTEM",
+        "TOOL_CALL",
+        "TOOL_RESULT"
+      ],
+      "stderrDigest": "sha256:1aa26269eb1cc57f86b235a03cda53c004edb5b1e9fc99d4da4f00843293d721"
+    },
+    {
+      "runId": "sha256:f9bf912ff4445657efa5ee92bdf2abe87ced5edfef6131d73e1f27d82361d337",
+      "attemptId": "TASK-RCV-20260825190550-01-SESSION-CAPTURE.DOCUMENTATION.r1.g0",
+      "provider": "CODEX",
+      "providerSessionId": "01a03a52-67f6-71a2-8e31-cdbbe4bfb6e3",
+      "state": "COMPLETE",
+      "manifestDigest": "sha256:5ee767eea24873d5d68a03d9df106d49cb2a5b9967e06e2e4c9d07af0518648c",
+      "normalizedEvents": 88,
+      "categories": [
+        "ASSISTANT",
+        "PROMPT",
+        "SYSTEM",
+        "TOOL_CALL",
+        "TOOL_RESULT"
+      ],
+      "stderrDigest": "sha256:1aa26269eb1cc57f86b235a03cda53c004edb5b1e9fc99d4da4f00843293d721"
+    },
+    {
+      "runId": "sha256:3bd931a93998e333232715304be745122118c20c4d80a3a1161a851bb128235d",
+      "attemptId": "TASK-RCV-20260825190550-01-SESSION-CAPTURE.TEST_PLAN.r1.g0",
+      "provider": "CODEX",
+      "providerSessionId": "01a03a54-354c-7c00-9896-b4bdbf518f36",
+      "state": "COMPLETE",
+      "manifestDigest": "sha256:bc1daa7c810bb5ce3af4024298178c1092168878abe07d59e6fd9eae9537489b",
+      "normalizedEvents": 14,
+      "categories": [
+        "ASSISTANT",
+        "PROMPT",
+        "SYSTEM"
+      ],
+      "stderrDigest": "sha256:1aa26269eb1cc57f86b235a03cda53c004edb5b1e9fc99d4da4f00843293d721"
+    },
+    {
+      "runId": "sha256:3001a6b23ded4de80c77be5448f4c27e6e09d8262deab8897060808badcdbaa4",
+      "attemptId": "TASK-RCV-20260825190550-01-SESSION-CAPTURE.TEST_ASSESSMENT.r1.g0",
+      "provider": "CODEX",
+      "providerSessionId": "01a03a54-690e-7fd2-bf8b-90b856d2bbde",
+      "state": "COMPLETE",
+      "manifestDigest": "sha256:73787cc9675a27dd8c83785f3222350933ac12f4a8a8ecaec03cf1b843f4d2db",
+      "normalizedEvents": 14,
+      "categories": [
+        "ASSISTANT",
+        "PROMPT",
+        "SYSTEM"
+      ],
+      "stderrDigest": "sha256:1aa26269eb1cc57f86b235a03cda53c004edb5b1e9fc99d4da4f00843293d721"
+    },
+    {
+      "runId": "sha256:0db577322b32c114ac40cf3e787466b1a2d5a6744c68b0174476216020168abd",
+      "attemptId": "TASK-RCV-20260825190550-01-SESSION-CAPTURE.FINAL_REVIEW.r1.g0",
+      "provider": "CODEX",
+      "providerSessionId": "01a03a54-9c62-7831-a65b-e5a7faaff393",
+      "state": "COMPLETE",
+      "manifestDigest": "sha256:4be61813c48bd91cca69a1c49c407e4cf6661b7547d9b51fdb6df60d93ad5d44",
+      "normalizedEvents": 34,
+      "categories": [
+        "ASSISTANT",
+        "PROMPT",
+        "SYSTEM",
+        "TOOL_CALL",
+        "TOOL_RESULT"
+      ],
+      "stderrDigest": "sha256:1aa26269eb1cc57f86b235a03cda53c004edb5b1e9fc99d4da4f00843293d721"
+    }
+  ]
+}
