@@ -11,6 +11,7 @@ import { invoke, send } from "../restate/ingress.js";
 import { loadProjectManifest } from "./project-manifest.js";
 import type { LoadedProjectManifest } from "./project-manifest.js";
 import { ProjectManifestError } from "./project-manifest.js";
+import type { DocumentationPolicyInputV1 } from "./documentation-policy.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -179,9 +180,25 @@ export async function prepareProjectTask(
     baseCommit,
     targetRef: loaded.manifest.repository.targetRef,
     testCommands: Object.freeze(loaded.manifest.tests.map((command) => Object.freeze([...command.argv]))),
+    documentationPolicy: documentationPolicyInput(loaded),
     ...(sessionEvidence === undefined ? {} : { sessionEvidence }),
   });
   return Object.freeze({ manifest: loaded, input });
+}
+
+function documentationPolicyInput(loaded: LoadedProjectManifest): DocumentationPolicyInputV1 {
+  const configuration = loaded.manifest.documentation;
+  return Object.freeze({
+    policyVersion: 1,
+    kind: configuration.policy,
+    ...(configuration.command === undefined ? {} : {
+      command: Object.freeze({
+        id: configuration.command.id,
+        argv: Object.freeze([...configuration.command.argv]),
+        cwd: path.resolve(loaded.repositoryRoot, configuration.command.cwd),
+      }),
+    }),
+  });
 }
 
 function sessionEvidenceInput(loaded: LoadedProjectManifest, roots: MoyeClientOptions["providerRoots"]): CoreV2WorkflowInput["sessionEvidence"] {

@@ -73,6 +73,13 @@ npm run cli -- task open TASK-ID --print
 
 默认受管 Runtime Root 是 `~/.moye/runtime`，可用 `MOYE_FRAMEWORK_RUNTIME_ROOT` 指向仓库外目录。`doctor` 不安装依赖、不修改 Git、不启动服务；`task start` 在任何 Restate 派发前拒绝 dirty worktree、缺失/偏离 base 的 target ref、空测试计划、Runtime/Repository 重叠和未授权 Prompt capture。真实回归入口为 `npm run acceptance:framework:client`。
 
+Manifest 的 `documentation.policy` 可选 `none | conventional | moye-doc-graph | custom`。`none` 仍生成 Git diff 与 Candidate-bound `NOT_REQUIRED` Evidence；`conventional` 要求产品代码变化同步 README/docs/CHANGELOG/SECURITY/CONTRIBUTING 等项目事实；`moye-doc-graph` 执行仓库自身 `ruby scripts/docs_graph.rb validate`；`custom` 必须提供已通过 Manifest 校验的 argv/cwd。Policy 在 clean Candidate 上运行，失败进入 Repair。真实无文档图烟测：
+
+```bash
+RESTATE_INGRESS_URL=http://127.0.0.1:8080 MOYE_BOARD_URL=http://127.0.0.1:3000 \
+  npm run acceptance:framework:docs
+```
+
 Docker daemon 可用时，以下命令会启动隔离容器、注册服务、提交 Task、强杀 Worker、重启、验证结果并自动清理：
 
 ```bash

@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "validationKind": "REAL_DOCUMENTATION_POLICY_ACCEPTANCE",
+  "taskId": "TASK-DOCS-POLICY-20260825231609",
+  "workflowRef": "restate://CoreV2Workflow/TASK-DOCS-POLICY-20260825231609",
+  "invocationId": "inv_13hMn3klsvUA0nuZHuO3jrJb2Z6MyNAJT2",
+  "manifestDigest": "sha256:4bd0d6a2fc8012d45e65c20994dfabb7b7110a2d901651b56d17f63b7b2a43d5",
+  "baseCommit": "428a809a805ff219b62163d949fa96835ee1184d",
+  "candidateCommit": "a99b8c786bc453996c45f9b2c60898b3f1d06746",
+  "mergeCommit": "f00161d416017d7ca6d8597f0effd4a803c559c8",
+  "state": "CLOSED",
+  "currentStep": "ARCHIVED",
+  "archiveStatus": "ARCHIVED",
+  "outcome": "SUCCEEDED",
+  "startedAt": "2026-08-25T23:16:09.588Z",
+  "completedAt": "2026-08-25T23:21:40.225Z",
+  "hasMoyeDocumentGraph": false,
+  "documentationPolicy": {
+    "policy": "none",
+    "verdict": "PASSED",
+    "disposition": "NOT_REQUIRED",
+    "changedFiles": ["src/value.txt"],
+    "changedFilesDigest": "sha256:29f5b7fb60e03a647a8201303835180a9d7950f4fa7278f17fa148d6e5dc916c",
+    "evidenceDigest": "sha256:4c98f5ca30844a482ad88e36ebadbd206c89349488708a6bbb60e0507b146b54",
+    "docsImpactArtifactDigest": "sha256:4cd845f3f2b88825f6726ff8d05d814c8c8439ee9e12bac94576676273436dd6"
+  },
+  "trustedTestManifestDigest": "sha256:1f73532d55a3db8f6b561dc4aab110e4a20494e857246b7f030b5de3b33fc657",
+  "verificationGateDigest": "sha256:cee64f24e0aabc0cea23dd0900e7104dc9b3d9f4e9bb1384dc29c642eee92280",
+  "knowledgeDispositionDigest": "sha256:9c6acb716a1146c44ad129834e034cb492236b92d609d35aee99fb23493ac5b1",
+  "closureDigest": "sha256:3f2ed27da60d201e480698cb4ee5e58e9da44ea15b5868b80e35417185614348",
+  "archiveReceiptDigest": "sha256:95c2e03c5c8d8673a3b24847bc32f4a4242ad0fd2ece8852e23748f219740642",
+  "projectionDigest": "sha256:291aba7e4ca307cda1bef6b6d02a536dcc682cd18c1094c3aebc5fd714eb8d42",
+  "roles": [
+    { "phase": "ARCHITECT", "attemptId": "TASK-DOCS-POLICY-20260825231609.ARCHITECT.r1.g0", "sessionId": "01a03b35-b93c-7193-95e5-fb17ddc59516", "manifestDigest": "sha256:b06d8563f3a8ab1e3db19188f99b642a36f71f7d7458cfe2957445c87e7134ef" },
+    { "phase": "DESIGN_REVIEW", "attemptId": "TASK-DOCS-POLICY-20260825231609.DESIGN_REVIEW.r1.g0", "sessionId": "01a03b36-814f-7872-8c0f-ccd35ecaa81f", "manifestDigest": "sha256:7252bab419841ef71b4396321c7b3cdd52678125fba569ba83a7fe64276a8663" },
+    { "phase": "IMPLEMENTATION", "attemptId": "TASK-DOCS-POLICY-20260825231609.IMPLEMENTATION.r1.g0", "sessionId": "01a03b36-c803-78c1-aa95-0a58667d5632", "manifestDigest": "sha256:f99143e4617aa0645950938f310421dd7d37c54033156c3096f68da37ba8d960" },
+    { "phase": "DOCUMENTATION", "attemptId": "TASK-DOCS-POLICY-20260825231609.DOCUMENTATION.r1.g0", "sessionId": "01a03b38-45e7-7ef3-b20f-576fe4ed9319", "manifestDigest": "sha256:218696b71527370ff40c37e04d6f9caa1532a8c96293542a51cb56dd00c540ca" },
+    { "phase": "TEST_PLAN", "attemptId": "TASK-DOCS-POLICY-20260825231609.TEST_PLAN.r1.g0", "sessionId": "01a03b39-8693-7180-94ed-0756d94acc6e", "manifestDigest": "sha256:76f91cde7b108d8955fae73cba76cf97e9de733f119c1a0c46f2a93ebd540dcf" },
+    { "phase": "TEST_ASSESSMENT", "attemptId": "TASK-DOCS-POLICY-20260825231609.TEST_ASSESSMENT.r1.g0", "sessionId": "01a03b39-bbb3-7413-8d16-8b4547d13e12", "manifestDigest": "sha256:d848f47916cdfda29846bcea9463740cd9a28f17fa45309d4c7d31803219a78b" },
+    { "phase": "FINAL_REVIEW", "attemptId": "TASK-DOCS-POLICY-20260825231609.FINAL_REVIEW.r1.g0", "sessionId": "01a03b39-e8b3-7f70-a951-e30c110c799d", "manifestDigest": "sha256:6cd7e161f25f6d0a324a50497f5dc0d6f81cadfd4ebbf9dbbb65c69cbb75463a" }
+  ],
+  "boardUrl": "http://127.0.0.1:3000/tasks/TASK-DOCS-POLICY-20260825231609"
+}

@@ -28,6 +28,7 @@
     "acceptance:agent-sessions": "tsx scripts/agent_session_full_acceptance.ts",
     "acceptance:framework:client": "tsx scripts/framework_client_acceptance.ts",
     "acceptance:framework:plugins": "tsx scripts/plugin_sdk_contracts.ts",
+    "acceptance:framework:docs": "tsx scripts/documentation_policy_acceptance.ts",
     "acceptance:core-v2:guards": "tsx scripts/core_v2_guards_acceptance.ts",
     "acceptance:core-v2:audit": "tsx scripts/core_v2_matrix_audit.ts",
     "acceptance:core-v2:matrix": "tsx scripts/core_v2_full_acceptance.ts",

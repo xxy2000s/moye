@@ -1,0 +1,114 @@
+schema_version: 1
+task_id: TASK-0070
+graph_revision: 123
+intents: [m2-documentation-policy]
+changed_paths:
+  - README.md
+  - package.json
+  - src/framework/documentation-policy.ts
+  - src/framework/client.ts
+  - src/restate/core-v2-services.ts
+  - scripts/documentation_policy_acceptance.ts
+  - tests/unit/documentation-policy.test.ts
+  - tests/unit/framework-client.test.ts
+  - docs/knowledge/current/architecture/framework-product-boundary.md
+  - docs/knowledge/current/architecture/core-v2-agent-lifecycle.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - docs/delivery/backlog/BL-0068.yaml
+  - docs/delivery/milestones/m2-framework-release.md
+  - docs/delivery/tasks/README.md
+  - docs/delivery/tasks/archive/README.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0070/task.yaml
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0070/spec.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0070/design.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0070/plan.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0070/verification.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0070/docs-impact.yaml
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0070/documentation-policy-acceptance.json
+  - docs/graph.yaml
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - task-runtime-kernel
+    - restate-poc-architecture
+    - adr-0001-restate-poc
+    - root-readme
+    - framework-product-boundary
+    - architecture-index
+    - core-v2-agent-lifecycle
+    - local-restate-poc-runbook
+    - runbooks-index
+    - bl-0068-framework-productization
+    - backlog-index
+    - sources-index
+    - milestone-2-framework-release
+    - tasks-index
+    - archived-tasks-index
+    - task-0070-manifest
+    - task-0070-spec
+    - task-0070-design
+    - task-0070-plan
+    - task-0070-verification
+    - task-0070-docs-impact
+  reviewed:
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "Policy Artifact 使用 content-checked 幂等落盘，复用既有 UNKNOWN/副作用原则。" }
+    architecture-overview: { outcome: unchanged, reason: "四种 Policy 位于现有 Documentation/Gate 边界内。" }
+    moye-task-control-skill: { outcome: unchanged, reason: "仓库自身 Docs Gate 仍执行既有 Full/Seal；外部项目 Policy 不改变 Skill。" }
+    durable-workflow-research: { outcome: unchanged, reason: "不改变 Durable Runtime 选型分析。" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "Documentation 角色仍为主流程必需。" }
+    adr-0005-core-v2-agent-model: { outcome: unchanged, reason: "没有增删 Agent；只在 Documentation 后增加确定性 Policy Gate。" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "TASK-0070 继续使用唯一 Result Commit Seal。" }
+    core-v2-five-plus-one-agent-requirements: { outcome: unchanged, reason: "实现符合已消费的 Documentation 与 Evidence 要求。" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "Policy 只验证当前 clean Candidate，不实现通用 Worktree Manager。" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "Docs Impact 继续作为 Final Review/Gate 依赖。" }
+    task-0013-manifest: { outcome: unchanged, reason: "不修改 Core Control 历史。" }
+    task-0014-manifest: { outcome: unchanged, reason: "不修改 Role 协议历史。" }
+    task-0015-manifest: { outcome: unchanged, reason: "不修改 Review/Finding 历史。" }
+    task-0016-manifest: { outcome: unchanged, reason: "不修改预算历史。" }
+    task-0017-manifest: { outcome: unchanged, reason: "当前 Architecture 记录 Policy 扩展，不改写历史。" }
+    task-0018-manifest: { outcome: unchanged, reason: "不修改 Closure 历史。" }
+    task-0019-manifest: { outcome: unchanged, reason: "消费入口通过新可选字段演进。" }
+    task-0020-manifest: { outcome: unchanged, reason: "不修改 Board 历史。" }
+    task-0021-manifest: { outcome: unchanged, reason: "不修改多角色产品历史。" }
+    task-0028-manifest: { outcome: unchanged, reason: "不修改历史持久化 Task。" }
+    task-0029-manifest: { outcome: unchanged, reason: "不修改 Bootstrap recovery 历史。" }
+    task-0030-manifest: { outcome: unchanged, reason: "不修改 Core v2 控制面历史。" }
+    task-0031-manifest: { outcome: unchanged, reason: "不修改角色运行时历史。" }
+    task-0032-manifest: { outcome: unchanged, reason: "不修改生命周期 Artifact 历史。" }
+    task-0033-manifest: { outcome: unchanged, reason: "不修改 Lifecycle Reducer 历史。" }
+    task-0034-manifest: { outcome: unchanged, reason: "不修改真实 Role 接线历史。" }
+    task-0035-manifest: { outcome: unchanged, reason: "不修改 Git Checkpoint 历史。" }
+    task-0036-manifest: { outcome: unchanged, reason: "不修改 Trusted Test 历史。" }
+    task-0037-manifest: { outcome: unchanged, reason: "不修改 Verification Gate 历史。" }
+    task-0038-manifest: { outcome: unchanged, reason: "不修改 Merge Effect 历史。" }
+    task-0039-manifest: { outcome: unchanged, reason: "不修改 Closure/Archive 历史。" }
+    task-0040-manifest: { outcome: unchanged, reason: "不修改 Observer 历史。" }
+    task-0041-manifest: { outcome: unchanged, reason: "不修改 Board Trace 历史。" }
+    task-0042-manifest: { outcome: unchanged, reason: "不修改真实基线历史。" }
+    task-0043-manifest: { outcome: unchanged, reason: "不修改 Repair/Replan 矩阵历史。" }
+    task-0044-manifest: { outcome: unchanged, reason: "不修改 UNKNOWN/恢复矩阵历史。" }
+    task-0045-manifest: { outcome: unchanged, reason: "不修改预算/fencing 历史。" }
+    task-0046-manifest: { outcome: unchanged, reason: "不修改 Board 语义历史。" }
+    task-0002-manifest: { outcome: unchanged, reason: "不修改 Backlog 同步历史。" }
+    task-0003-manifest: { outcome: unchanged, reason: "不修改 Task/Attempt 协议历史。" }
+    task-0004-manifest: { outcome: unchanged, reason: "不修改 Git Effect 历史。" }
+    task-0005-manifest: { outcome: unchanged, reason: "不修改 Agent Runner 历史。" }
+    task-0006-manifest: { outcome: unchanged, reason: "不修改 Coding Workflow 历史。" }
+    task-0007-manifest: { outcome: unchanged, reason: "不修改首批故障矩阵历史。" }
+    task-0008-manifest: { outcome: unchanged, reason: "不修改 Demo 历史。" }
+    task-0009-manifest: { outcome: unchanged, reason: "不修改 Trace 历史。" }
+    task-0001-manifest: { outcome: unchanged, reason: "不修改首个 PoC 历史。" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "继续使用 TypeScript/Node argv Runner。" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "Policy 不改变观测选型。" }
+    task-0049r1-manifest: { outcome: unchanged, reason: "仅复用 Seal preflight。" }
+    task-0056-manifest: { outcome: unchanged, reason: "Full profile 选择不变。" }
+    adr-0007-session-transcript-sidecar: { outcome: unchanged, reason: "Policy 不改变 Session Evidence。" }
+    task-0061r1-design: { outcome: unchanged, reason: "旧 Input undefined 分支保持 replay command sequence。" }
+    task-0062-design: { outcome: unchanged, reason: "Policy 不改变 Session API。" }
+    task-0063-design: { outcome: unchanged, reason: "Policy 不改变 Session UX。" }
+    adr-0008-framework-release-boundary: { outcome: unchanged, reason: "实现其可插拔 Documentation 边界，不改变已接受发布决策。" }
+    task-0070-design: { outcome: updated, reason: "记录最终 Candidate-bound Gate 和 legacy replay 分支。" }

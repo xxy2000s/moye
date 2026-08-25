@@ -34,5 +34,6 @@ resolution:
     - TASK-0067
     - TASK-0068
     - TASK-0069
+    - TASK-0070
   duplicate_of:
-  reason: "M2 已批准；TASK-0066～0069 已交付公共边界、Manifest、消费级 Client/CLI 和 Plugin SDK，后续 TASK-0070～0075 按依赖创建。"
+  reason: "M2 已批准；TASK-0066～0070 已交付公共边界、Manifest、消费级 Client/CLI、Plugin SDK 和 Documentation Policy，后续 TASK-0071～0075 按依赖创建。"

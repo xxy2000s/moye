@@ -8,7 +8,7 @@ Agent Session Evidence M1 也已完成本地产品验收：新 Codex/Claude Role
 
 Framework MVP 的公共边界已由 [ADR-0008](./docs/knowledge/decisions/adr/0008-publish-framework-mvp-as-versioned-umbrella-package.md) 冻结：首版采用 `moye@0.1.0` umbrella package，通过 `moye/core`、`moye/client`、`moye/plugin-sdk` 和 CLI 提供公共入口，Restate Workflow/Projection 写入口保持私有。M2 仍在实施中；在外部示例、分发和真实产品矩阵完成前，不宣称 Framework MVP 已发布。
 
-项目 Manifest v1 与消费级 Client/CLI 已可驱动真实本地任务：`moye init`、`doctor`、`project validate`、`task start/status/watch/open` 会自动冻结 clean Git HEAD、目标 ref、受信任测试、Runner、仓库外受管 Artifact Root 和页面链接，用户不构造 Workflow Input。修正版真实外部任务 `TASK-FRAMEWORK-20260825224122` 已由七个真实 Role、Trusted Runner、双父 Merge、Closure 和 Archive 唯一完成。Plugin SDK v1 也已定义七类 Adapter、显式 capability negotiation、统一 contract suite 和 UNKNOWN/Reconcile 边界；第三方 Plugin 没有 Task 状态写入口。安装包与容器仍由后续 M2 Task 交付。
+项目 Manifest v1 与消费级 Client/CLI 已可驱动真实本地任务：`moye init`、`doctor`、`project validate`、`task start/status/watch/open` 会自动冻结 clean Git HEAD、目标 ref、受信任测试、Runner、仓库外受管 Artifact Root 和页面链接，用户不构造 Workflow Input。修正版真实外部任务 `TASK-FRAMEWORK-20260825224122` 已由七个真实 Role、Trusted Runner、双父 Merge、Closure 和 Archive 唯一完成。Plugin SDK v1 也已定义七类 Adapter、显式 capability negotiation、统一 contract suite 和 UNKNOWN/Reconcile 边界；第三方 Plugin 没有 Task 状态写入口。Documentation Policy 支持 `none | conventional | moye-doc-graph | custom`，其中 `none` 也由 Workflow 生成 Candidate-bound 的确定性 Evidence；无 Moye 文档图的真实任务 `TASK-DOCS-POLICY-20260825231609` 已归档成功。安装包与容器仍由后续 M2 Task 交付。
 
 ## 当前目标
 
@@ -114,6 +114,8 @@ MOYE_AGENT_SESSION_ACCEPTANCE_BOARD=http://127.0.0.1:3000 \
 npm run acceptance:agent-sessions
 # 校验七类内建 Plugin bridge、公共 capability 与 UNKNOWN/Reconcile 契约
 npm run acceptance:framework:plugins
+# 真实外部 Git 项目、真实多 Agent 与 policy:none 的确定性 Docs Evidence
+npm run acceptance:framework:docs
 ```
 
 Core v2 四个 suite 和统一 matrix 入口不会使用 Fake/Mock/Scenario Adapter：每个场景创建新的持久化运行目录和独立 Workflow key，调用真实 Codex、隔离 Git、Trusted Runner、适用时的双父 Merge、Closure 和 Archive，并从 Projection、Trace、Role Events、Manifest 与 Git DAG 生成 Evidence Summary。故障、恢复和预算命令要求 Service 显式设置 `MOYE_ACCEPTANCE_FAULT_INJECTION=enabled`；普通 Service 会在 TaskAuthority claim 前拒绝 `acceptanceControl` 或 `recoveryControl`。审计命令不扫描目录挑选“最新成功”，只接受显式 Manifest，并重新查询 Restate、TaskAuthority、Board、Git 对象、Artifact 摘要和 Document Graph；任何缺失、重复或实时漂移都会非零退出。这些命令消耗真实模型额度，不能用单元测试结果替代。

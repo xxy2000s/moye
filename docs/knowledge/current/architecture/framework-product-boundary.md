@@ -53,4 +53,6 @@ Plugin SDK v1 已由 `src/framework/plugin-sdk.ts` 实现：七类 Adapter 共�
 
 `src/framework/builtin-adapters.ts` 把现有 Agent Runner、Workspace/Git、Trusted Test、Docs Graph、Local SCM、Filesystem Artifact 和 Observer/Knowledge 实现登记为七个 bridge；统一契约入口会加载并验证真实 export，而不是给 Plugin 状态推进权限。当前只冻结 SDK 和内建 bridge，动态第三方代码加载、Sandbox/Secrets、市场和 owning Workflow 的可配置 dispatch 不在 W04 范围。
 
-Documentation Policy、分发、包流水线、示例和外部产品矩阵仍由 TASK-0070～TASK-0075 顺序实现。在这些证据完成前，Moye 仍不能声明 Framework MVP 已公开发布。
+Documentation Policy v1 已实现 `none | conventional | moye-doc-graph | custom`。Client 把 Manifest policy 冻结到私有 Workflow Input；Core v2 在独立 Documentation Agent PASS 后执行确定性 Gate：先验证 clean worktree 与 HEAD=Candidate，再读取 `base..candidate` Git diff。`none` 记录 `NOT_REQUIRED`；`conventional` 在产品代码变化而没有项目事实文档变化时阻塞；Graph/custom 使用无 shell、受限输出和固定超时的 argv Runner。Evidence 绑定 Task/Revision/Generation/Base/Candidate/changed-files/command Digest，幂等写入 Artifact namespace，再成为 Final Review 依赖的 Docs Impact Payload。旧 Workflow Input 没有 policy 字段时保留 legacy command sequence，不在重放中插入新 durable step。
+
+分发、包流水线、示例和外部产品矩阵仍由 TASK-0071～TASK-0075 顺序实现。在这些证据完成前，Moye 仍不能声明 Framework MVP 已公开发布。

@@ -29,12 +29,15 @@ import type { TaskHistoryKind, TaskHistoryKindSource } from "../domain/task.js";
 import type { ActiveRoleRunLocatorV1, ArtifactDescriptorV1, SessionEvidenceAuthorityV1, SessionTranscriptImportReceiptV1, SessionTranscriptManifestV1 } from "../domain/session-transcript.js";
 import { inspectCoreV2SourceInvocation, inspectFailedRecoveryInvocation } from "./invocation-inspector.js";
 import type { CoreV2SourceInvocationFact } from "./invocation-inspector.js";
+import { documentationPolicyPayloadV1, runDocumentationPolicyV1, validateDocumentationPolicyInputV1 } from "../framework/documentation-policy.js";
+import type { DocumentationPolicyInputV1 } from "../framework/documentation-policy.js";
 
 export interface CoreV2WorkflowInput {
   readonly taskId: string; readonly projectId: string; readonly title: string; readonly objective: string;
   readonly acceptanceCriteria: readonly string[]; readonly repositoryRoot: string; readonly artifactRoot: string;
   readonly runnerKind: RealRoleRunnerKind; readonly baseCommit: string; readonly testCommands: readonly (readonly string[])[];
   readonly targetRef?: string;
+  readonly documentationPolicy?: DocumentationPolicyInputV1;
   readonly mergeFault?: { readonly loseAcknowledgementOnceAt?: string; readonly exitAfterRefUpdateOnceAt?: string };
   readonly failureArchiveFault?: { readonly failFirstAttempt?: boolean };
   readonly successArchiveFault?: { readonly failFirstAttempt?: boolean };
@@ -168,7 +171,33 @@ export const coreV2Workflow = restate.workflow({
             projection = withLifecycle(projection, workflowRequestRepairV2(projection.lifecycle, { reason: docs.manifest.output?.findingRefs.join(", ") || "Documentation Finding", at: await durableNow(ctx, `docs-repair-g${generation}`) }));
             projection = await publish(ctx, input, projection); projection = await authorizeRepair(ctx, input, projection, generation, "blocking Documentation Finding"); continue;
           }
-          projection = withLifecycle(projection, workflowAcceptDocumentationV2(projection.lifecycle, docs.attempt, deliverable<DocsImpactPayload>(docs.manifest), await durableNow(ctx, `documentation-g${generation}-accepted`))); projection = await publish(ctx, input, projection);
+          let docsImpact: DocsImpactPayload;
+          if (input.documentationPolicy === undefined) {
+            // Old Workflow inputs keep the pre-policy durable command sequence during replay.
+            docsImpact = deliverable<DocsImpactPayload>(docs.manifest);
+          } else {
+            const policyEvidence = await ctx.run(`documentation-policy-r${projection.lifecycle.specRevision}-g${generation}`, () => runDocumentationPolicyV1({
+              taskId: input.taskId,
+              specRevision: projection.lifecycle.specRevision,
+              generation,
+              repositoryRoot: input.repositoryRoot,
+              artifactRoot: input.artifactRoot,
+              baseCommit: input.baseCommit,
+              candidateCommit: candidate,
+              policy: input.documentationPolicy!,
+            }));
+            if (policyEvidence.verdict === "BLOCKED") {
+              projection = withLifecycle(projection, workflowRequestRepairV2(projection.lifecycle, {
+                reason: policyEvidence.findingRefs.join(", ") || "Documentation Policy blocked the Candidate",
+                at: await durableNow(ctx, `docs-policy-repair-g${generation}`),
+              }));
+              projection = await publish(ctx, input, projection);
+              projection = await authorizeRepair(ctx, input, projection, generation, "blocking Documentation Policy Finding");
+              continue;
+            }
+            docsImpact = documentationPolicyPayloadV1(policyEvidence);
+          }
+          projection = withLifecycle(projection, workflowAcceptDocumentationV2(projection.lifecycle, docs.attempt, docsImpact, await durableNow(ctx, `documentation-g${generation}-accepted`))); projection = await publish(ctx, input, projection);
           const testPlanRun = await runRole(ctx, input, projection, "TEST_VERIFICATION", "TEST_PLAN", candidate, generation, testPlanPrompt(input)); projection = addRun(projection, testPlanRun);
           projection = withLifecycle(projection, workflowAcceptTestPlanV2(projection.lifecycle, testPlanRun.attempt, testPlanDeliverable(testPlanRun.manifest, input), await durableNow(ctx, `test-plan-g${generation}-accepted`))); projection = await publish(ctx, input, projection);
           const plan = projection.lifecycle.artifacts.findLast((item) => item.kind === "TEST_PLAN")!;
@@ -806,8 +835,8 @@ const encoded = "The deliverable field must be a JSON-encoded string (not a nest
 function architectPrompt(i: CoreV2WorkflowInput, revision: number) { return `Act as ARCHITECT for Spec Revision ${revision}. Read the repository without modifying it. Objective: ${i.objective}. Acceptance: ${i.acceptanceCriteria.join("; ")}. Return PASS and encode {spec:{type:"SPEC",requirements:[{id,statement,acceptanceCriteria:["criterion"]}]},design:{type:"DESIGN",decisions,components,risks},plan:{type:"PLAN",items:[{id,description,dependsOn,status:"PENDING"}]}} in deliverable. acceptanceCriteria and dependsOn must always be JSON arrays. Use requirement ids REQ-1 through REQ-${i.acceptanceCriteria.length}. ${acceptanceInstruction(i, "ARCHITECT", revision, 0)} ${encoded}`; }
 function reviewPrompt(i: CoreV2WorkflowInput, phase: "DESIGN_REVIEW" | "FINAL_REVIEW", p: CoreV2WorkflowProjection) { const boundary = coreV2ReviewBoundary(phase);
   return `Act as isolated ${phase} reviewer. Do not modify the repository. ${boundary} Immutable current artifacts: ${JSON.stringify(p.lifecycle.artifacts)}. Return PASS only if the evidence in this phase is sound. If you return FINDINGS or INCONCLUSIVE, findingRefs must contain at least one stable reference; PASS requires findingRefs:[]. ${acceptanceInstruction(i, phase, p.lifecycle.specRevision, p.lifecycle.implementationGeneration)} Encode {} in deliverable. ${encoded}`; }
-function implementationPrompt(i: CoreV2WorkflowInput, generation: number) { return `Act as IMPLEMENTATION generation ${generation}. Implement this objective in the current Git repository: ${i.objective}. Acceptance: ${i.acceptanceCriteria.join("; ")}. Run relevant checks and update required project documentation. Do not run git add or git commit: the Workflow owns the durable Candidate Commit checkpoint. Return PASS only when the workspace implementation and checks are complete; include artifact refs for test evidence. ${acceptanceInstruction(i, "IMPLEMENTATION", 1, generation)} Encode {} in deliverable. ${encoded}`; }
-function documentationPrompt(i: CoreV2WorkflowInput, generation: number) { return `Act as DOCUMENTATION. Audit the already committed Candidate for ${i.objective}. Do not modify files or create commits; if project facts are missing, return FINDINGS so Implementation Repair can own a new Candidate. ${acceptanceInstruction(i, "DOCUMENTATION", 1, generation)} Encode {type:"DOCS_IMPACT",routeDigest:"sha256:<actual 64 hex>",reportRef:"artifact://docs-impact",dispositions:[{documentId,outcome:"updated|unchanged|not_applicable",reason}]} in deliverable. Do not claim PASS without real evidence. ${encoded}`; }
+function implementationPrompt(i: CoreV2WorkflowInput, generation: number) { return `Act as IMPLEMENTATION generation ${generation}. Implement this objective in the current Git repository: ${i.objective}. Acceptance: ${i.acceptanceCriteria.join("; ")}. Run relevant checks and update project documentation required by policy ${i.documentationPolicy?.kind ?? "legacy-agent"}. Do not run git add or git commit: the Workflow owns the durable Candidate Commit checkpoint. Return PASS only when the workspace implementation and checks are complete; include artifact refs for test evidence. ${acceptanceInstruction(i, "IMPLEMENTATION", 1, generation)} Encode {} in deliverable. ${encoded}`; }
+function documentationPrompt(i: CoreV2WorkflowInput, generation: number) { return `Act as DOCUMENTATION. Audit the already committed Candidate for ${i.objective} under policy ${i.documentationPolicy?.kind ?? "legacy-agent"}. Do not modify files or create commits; if project facts are missing, return FINDINGS so Implementation Repair can own a new Candidate. ${acceptanceInstruction(i, "DOCUMENTATION", 1, generation)} Encode {type:"DOCS_IMPACT",routeDigest:"sha256:<actual 64 hex>",reportRef:"artifact://docs-impact",dispositions:[{documentId,outcome:"updated|unchanged|not_applicable",reason}]} in deliverable. For a versioned Framework policy the Workflow independently replaces this proposal with deterministic Policy Evidence. Do not claim PASS without real evidence. ${encoded}`; }
 function testPlanPrompt(i: CoreV2WorkflowInput) { return `Act as TEST_VERIFICATION Test Planner. Do not modify the repository. Return PASS and encode {type:"TEST_PLAN",cases:[{id:"TC-1",requirementIds:["REQ-1"],category:"NORMAL",argv:["command","arg"]}]} in deliverable. Use exactly these argv arrays, one case per command: ${JSON.stringify(i.testCommands)}. Cover requirement ids REQ-1 through REQ-${i.acceptanceCriteria.length}. category must be exactly NORMAL, BOUNDARY, REGRESSION, FAILURE, or RECOVERY. ${encoded}`; }
 function assessmentPrompt(manifest: unknown, ref: string) { return coreV2AssessmentPrompt(manifest, ref); }
 export function coreV2AssessmentPrompt(manifest: unknown, ref: string): string {
@@ -884,6 +913,7 @@ export function validateCoreV2Input(input: CoreV2WorkflowInput, acceptanceEnable
   validateCoreV2RecoveryControl(input.recoveryControl, input.mergeFault, input.artifactRoot, acceptanceEnabled);
   validateCoreV2ObserverKnowledge(input.observerKnowledge);
   validateCoreV2SessionEvidence(input.sessionEvidence, input.runnerKind);
+  if (input.documentationPolicy !== undefined) validateDocumentationPolicyInputV1(input.documentationPolicy, input.repositoryRoot);
 }
 export function coreV2AcceptanceInstruction(
   control: CoreV2AcceptanceControl | undefined,

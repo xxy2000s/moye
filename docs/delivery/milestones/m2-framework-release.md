@@ -1,7 +1,7 @@
 # Milestone 2：Moye Framework MVP 产品化与首个正式发版
 
 > 文档类型：Delivery Plan
-> 状态：In Progress / W04 completed
+> 状态：In Progress / W05 completed
 > 计划基线：2026-08-25
 > 冻结 Revision：1
 > 需求来源：[Moye 外部项目框架化需求基线](../../sources/brainstorm/external-project-framework-productization.md)、[BL-0068](../backlog/BL-0068.yaml)
@@ -197,4 +197,4 @@ npm run release:verify
 
 - 当前结论：项目 Owner 于 2026-08-25 批准 Revision 1、目标发布渠道与有凭证时的外部发布动作。
 - 冻结映射：TASK-0066～TASK-0075 分别对应 W01～W10；M1 Tag 完成前不创建第一个 Active Task。
-- 当前状态：M1 已冻结；TASK-0066～0069 已完成公共边界、Manifest、真实 Consumer Client/CLI 与 Plugin SDK，下一步 TASK-0070 Documentation Policy。
+- 当前状态：M1 已冻结；TASK-0066～0070 已完成公共边界、Manifest、真实 Consumer Client/CLI、Plugin SDK 与确定性 Documentation Policy，下一步 TASK-0071 Runtime Distribution。

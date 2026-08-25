@@ -36,6 +36,7 @@ describe("framework client", () => {
       runnerKind: "CODEX_EXEC",
       targetRef: "refs/heads/main",
       testCommands: [["npm", "test"]],
+      documentationPolicy: { policyVersion: 1, kind: "conventional" },
     });
     expect(prepared.input.artifactRoot.startsWith(fixture.runtimeRoot)).toBe(true);
     expect(prepared.input.sessionEvidence).toBeUndefined();

@@ -14,7 +14,7 @@ Task 是完整研发生命周期聚合根，keyed Workflow 是主状态唯一写
 |---|---|---|---|
 | ARCHITECT | 是 | Spec/Design/Plan Artifact | Revision-bound Spec、Design、Plan |
 | IMPLEMENTATION | 是 | 受管 Worktree、代码、测试、Checkpoint | Candidate Commit、Self Review |
-| DOCUMENTATION | 是 | 当前项目文档与 Docs Impact | re-route、Graph/Impact evidence |
+| DOCUMENTATION | 是 | 当前项目事实审计与 Docs Impact 提议 | 随后由 `none | conventional | moye-doc-graph | custom` 确定性 Policy 绑定 Candidate Evidence |
 | TEST_VERIFICATION | 是 | Test Artifact；首版不写产品代码 | Test Plan、综合报告、建议 |
 | REVIEW | 是 | Review/Finding Artifact | DESIGN_REVIEW 与 FINAL_REVIEW 隔离 Attempt |
 | OBSERVER_KNOWLEDGE | 否 | 候选 Artifact | none/proposed/deferred/applied disposition |
@@ -61,6 +61,8 @@ Test/Verification 使用两个隔离只读 Attempt：`TEST_PLAN` 形成 Requirem
 真实恢复验收使用窄化的 `recoveryControl`，并且只在显式开启的专用 acceptance Service 中生效。Trusted Runner 可在 Intent 已持久化但命令未执行，或命令和 Manifest 已完成但 Workflow 尚未确认的边界终止 Service；前者只能经正确 token 的 `NOT_APPLIED` 授权唯一首次执行，后者只能用同一 Manifest 的 `CONFIRMED` 对账。相同 Evidence 重放幂等，错误 token 和冲突 Evidence 均拒绝。Role Manifest、Candidate Commit 或 Merge ref 已完成后的 Service 中断由 Restate 重放同一 command，并从内容寻址 Manifest、Git parent/tree/trailer/clean worktree 或 Merge DAG/target ref 对账，不能创建第二次 Agent Run、测试、Candidate 或 Merge。
 
 Final Review 是第二次隔离 `REVIEW` Attempt，精确依赖 Docs Impact 和 Test Report。它审查 Candidate 与 Merge 前证据；目标 ref 更新由其后的 Verification Gate 授权，不能因尚未执行 Merge 而形成 Finding。PASSED 之后仍需纯 Verification Gate 重建八类主流程 Artifact、完整依赖和 Task/Revision/Commit/Digest 绑定；Gate Digest 写入 Projection 后才进入真实 Merge Effect。Review 的文字 verdict 不能替代 Gate。
+
+外部项目的 Documentation Agent 仍是必需主流程角色，但它的 PASS 不直接制造 Docs Gate 事实。新 Framework Input 会在该 Role 之后运行版本化 Documentation Policy：验证 clean Candidate、计算 Git diff，必要时执行受控 argv 命令，并保存内容寻址 Evidence；BLOCKED 进入既有 Repair，PASSED 才转换为 Candidate-bound Docs Impact Artifact。`none` 只是确定性 `NOT_REQUIRED` 处置，不是跳过角色或相信 Agent 自报。没有新字段的旧 Workflow 保持 legacy replay 路径。
 
 `src/domain/core-v2-observer.ts` 从 Lifecycle Projection 与 Role Attempt 重建事件、Artifact、Session、失败、Repair、Replan、UNKNOWN 和告警事实，不写主状态。Replan 后它同时接受当前 Revision 和 `invalidatedRevisions` 明确登记的历史 Attempt，其他 Task、未来 Revision 或未登记 Revision 仍被拒绝。
 
