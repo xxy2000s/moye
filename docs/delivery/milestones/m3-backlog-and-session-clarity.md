@@ -1,4 +1,4 @@
-# Milestone 3：Backlog 可读性与 Agent Session 证据语义收敛
+# Milestone 3：Backlog 可读性、Agent Session 证据语义与项目文档脚手架
 
 > 文档类型：Delivery Plan  
 > 状态：Draft / Pending Owner Approval  
@@ -10,7 +10,7 @@
 
 ## 1. Milestone Outcome
 
-让 Backlog 和 Agent Session 页面都能直接回答“实际发生了什么、当前缺什么、为什么这样判断、下一步是什么”，同时保持 Git 文档、Runtime Projection 和既有 Evidence 的权威边界：
+让 Backlog 和 Agent Session 页面都能直接回答“实际发生了什么、当前缺什么、为什么这样判断、下一步是什么”，并让外部项目可以非破坏性地建立标准文档治理起点，同时保持 Git 文档、Runtime Projection 和既有 Evidence 的权威边界：
 
 ```text
 Backlog YAML
@@ -24,6 +24,11 @@ Session Evidence
   → Prompt / Attempt binding confidence
   → policy / provider limitations
   → accurate Board wording + diagnostics
+
+External Project
+  → standard documentation scaffold
+  → project-local operating contract and indexes
+  → Documentation Agent / deterministic Gate
 ```
 
 完成后：
@@ -34,6 +39,7 @@ Session Evidence
 - Git 中尚未同步的 BL-0083 通过正式同步进入 Board；
 - 历史 Session “正文可读但 Prompt 强绑定无法追溯验证”不再统一显示成“记录不完整”；
 - 原始 Manifest、Receipt、Projection、Event 和 Digest 不被回写或美化。
+- 外部项目可以通过消费级 CLI 生成最小标准文档结构，并直接接入 Moye 的 Documentation Policy；已有文件不会被静默覆盖。
 
 ## 2. 当前事实基线
 
@@ -52,13 +58,20 @@ Session Evidence
 - BL-0083 记录的真实问题是：页面把 Session 内容完整性和 Prompt/Attempt 绑定可信度混成单一 `PARTIAL` 提示。
 - 对历史 Enrichment，消息、时间、层级和 Parser 指标可能没有缺口，但旧任务没有 pre-execution Prompt Envelope，因此只能声明绑定 `UNVERIFIED`，不能把可读正文误报为缺失，也不能把它升级成 `VERIFIED`。
 
+### 2.3 外部项目文档初始化
+
+- 当前 `moye init` 生成 `.moye/project.yaml`，默认 `documentation.policy: conventional`，但不会生成 AGENTS、Sources、Delivery、Knowledge、Meta、模板或文档索引。
+- `moye-doc-graph` 当前只验证项目已经存在的图谱与校验入口，不负责安装文档体系。
+- Documentation Agent 和确定性 Gate 可以审计 Candidate 文档变化，但框架目前没有为一个空白外部项目提供可直接消费的标准文档起点。
+- 本缺口独立于 Runtime 启动：Restate、Moye Service 与 Board 继续由既有 `runtime:up` 管理；Phoenix/OTLP 自动启动不进入 M3。
+
 这些事实只定义 M3 的输入，不代表对应能力已经实现。
 
 ## 3. Requirements
 
 | Requirement | 要求 |
 |---|---|
-| `M3-REQ-01` | 定义向后兼容的 Backlog 问题描述合同；新条目必须表达 `statement / observed / expected / impact / evidence_refs`，旧 v1 文档继续可读。 |
+| `M3-REQ-01` | 定义向后兼容的 Backlog 问题描述合同；新条目必须表达 `observed / expected / impact`，可引用真实 Evidence，旧 v1 文档继续可读。 |
 | `M3-REQ-02` | Backlog Projection 和同步链保存页面真正需要的 `problem`、`affectedAreas`、`acceptanceOutline`，并维持批次幂等、文档所有权和 Digest 校验。 |
 | `M3-REQ-03` | 只补录当前有效开放条目 BL-0004、BL-0005、BL-0006、BL-0007 与 BL-0083；不批量迁移已完成历史。 |
 | `M3-REQ-04` | 使用正式文档同步让 BL-0083 出现在 Board，并让 BL-0031 按 Git 中既有 `converted_to_task` 事实收敛；不得直接改 Runtime Projection。 |
@@ -67,7 +80,10 @@ Session Evidence
 | `M3-REQ-07` | 旧 Evidence 只做确定性兼容映射；不得回写或替换既有 Manifest、Receipt、Projection、Event、Artifact 和 Digest。 |
 | `M3-REQ-08` | BL-0083 的历史 Enrichment 场景显示“会话内容可读；Prompt 强绑定无法追溯验证”，真正解析/丢弃/未知/截断缺口仍逐项显示 `PARTIAL` 原因。 |
 | `M3-REQ-09` | `PENDING / WAITING_RECONCILE / UNAVAILABLE / FAILED / integrity error` 保持独立状态和操作建议；`OMITTED_BY_POLICY / NOT_EXPOSED` 不得误报为数据丢失。 |
-| `M3-REQ-10` | 自动化、真实 Runtime 同步、真实历史 Session API 和桌面/窄屏浏览器证据全部通过后，才部署到 `http://127.0.0.1:3000` 供验收。 |
+| `M3-REQ-10` | 消费级 CLI 提供显式的标准文档脚手架入口，为空白外部项目生成最小可导航、可验证、可被 Documentation Agent 消费的文档结构。 |
+| `M3-REQ-11` | 脚手架必须非破坏性：先计划后写入，已有文件或语义冲突时 fail closed；不能静默覆盖 AGENTS、README、项目文档或配置。 |
+| `M3-REQ-12` | 生成结果与 `.moye/project.yaml` Documentation Policy 一致，并通过真实外部项目的初始化、文档 Gate、Repair 和重复执行验收。 |
+| `M3-REQ-13` | 自动化、真实 Runtime 同步、真实历史 Session API、文档脚手架外部项目和桌面/窄屏浏览器证据全部通过后，才部署到 `http://127.0.0.1:3000` 供验收。 |
 
 ## 4. 工作包与拟议 Task 映射
 
@@ -80,9 +96,10 @@ Session Evidence
 | `M3-W03 / TASK-0079` Backlog Detail UX | Standard | W01 | 紧凑卡片、按需详情弹窗、信息层级、加载/错误/空值、键盘和响应式布局 | 1440px 与 390px 真实浏览器通过；卡片高度不被长文撑开；详情能读完 problem、Evidence、acceptance、source/task refs；Escape 与焦点返回正确 |
 | `M3-W04 / TASK-0080` Session Completeness Semantic Contract | Full | TASK-0076 | 冻结四维 Session 状态与旧 Evidence 兼容表；必要时版本化新 Evidence 语义，不改写旧记录 | 相同原始 Evidence 得到唯一分类；`content complete + binding unverified` 可表达；policy/provider omission 与丢失区分；不允许 UI 自行猜测 |
 | `M3-W05 / TASK-0081` Session Presentation and Diagnostics | Standard | W04 | Board resolver/API 和 Session Dialog 消费统一语义；主提示、状态徽标、原因和高级诊断分层 | BL-0083 各场景逐条通过；历史 Enrichment 不再显示通用“不完整”；真实缺口仍显示具体原因；原始 `PARTIAL/UNVERIFIED` 可在高级诊断查询 |
-| `M3-W06 / TASK-0082` Product Acceptance, Docs and Deployment | Full | W02、W03、W05 | 聚合自动化、真实 Restate/Board、历史 Session 与浏览器矩阵；更新 README/Architecture/CodeMap/Runbook/Milestone；部署最终服务 | 全部门禁通过；M3 Task 全部唯一归档；Board 与 Git/Runtime 一致；最终报告列出 Commit、Projection Digest、Sync Receipt、Session Evidence 和页面链接 |
+| `M3-W06 / TASK-0082` Standard Documentation Scaffold | Full | M2 | 为消费级 CLI 增加显式标准文档初始化；生成最小操作契约、Sources/Delivery/Knowledge/Meta 入口、模板和可执行验证入口；与 Manifest policy 绑定 | 空白项目一条命令生成并通过验证；已有项目冲突不覆盖；重复执行幂等；真实 Standard Task 能更新文档并通过 Documentation Gate |
+| `M3-W07 / TASK-0083` Product Acceptance, Docs and Deployment | Full | W02、W03、W05、W06 | 聚合自动化、真实 Restate/Board、历史 Session、脚手架外部项目与浏览器矩阵；更新 README/Architecture/CodeMap/Runbook/Milestone；部署最终服务 | 全部门禁通过；M3 Task 全部唯一归档；Board 与 Git/Runtime 一致；最终报告列出 Commit、Projection Digest、Sync Receipt、Session Evidence、Scaffold Manifest 和页面链接 |
 
-档位说明：W01 涉及持久化 Schema，W04 涉及 Evidence/Artifact 语义，W06 涉及最终部署，因此使用 Full；W02、W03、W05 是边界明确的产品工作，使用 Standard，不强制为了形式执行完整五角色链。`performance` 只在没有共享文件和 Runtime 写冲突时并行 W03 与 W04。
+档位说明：W01 涉及持久化 Schema，W04 涉及 Evidence/Artifact 语义，W06 涉及公共 CLI、外部项目文件写入和治理合同，W07 涉及最终部署，因此使用 Full；W02、W03、W05 是边界明确的产品工作，使用 Standard，不强制为了形式执行完整五角色链。`performance` 只在没有共享文件和 Runtime 写冲突时并行 W03、W04 与 W06。
 
 ## 5. 固定执行顺序
 
@@ -96,11 +113,14 @@ TASK-0076 completed
   → W04 Session Semantic Contract
       → W05 Session Presentation
 
-W02 + W03 + W05
-  → W06 Product Acceptance + Docs + Deployment
+M2 completed
+  → W06 Standard Documentation Scaffold
+
+W02 + W03 + W05 + W06
+  → W07 Product Acceptance + Docs + Deployment
 ```
 
-W03 与 W04 可以在隔离 Worktree 中并行；W02 必须等待 W01 的兼容 Service 已部署，避免 v2 文档被旧 Runtime 拒绝或字段被丢弃。最终 Backlog Sync 只由 W02 的 owning Task 执行一次并保存回执。
+W03、W04 与 W06 可以在隔离 Worktree 中并行；W02 必须等待 W01 的兼容 Service 已部署，避免 v2 文档被旧 Runtime 拒绝或字段被丢弃。最终 Backlog Sync 只由 W02 的 owning Task 执行一次并保存回执。
 
 ## 6. Backlog v2 拟议合同
 
@@ -115,7 +135,6 @@ status: triaged
 priority: medium
 
 problem:
-  statement: "问题是什么"
   observed: "已实际观察到什么"
   expected: "期望怎样"
   impact: "影响谁或什么流程"
@@ -125,8 +144,8 @@ problem:
 
 约束：
 
-1. `statement / observed / expected / impact` 对新 v2 文档为非空字段；没有真实证据时 `evidence_refs` 可为空，但不能编造引用。
-2. `acceptance_outline` 继续只描述粗粒度验收方向，不复制 Task Spec。
+1. `observed / expected / impact` 对新 v2 文档为非空字段；标题承担一句话问题概括。没有真实证据时 `evidence_refs` 可为空，但不能编造引用。
+2. `acceptance_outline` 是可选的一两条结果级方向，不复制 Task Spec，也不写页面流程、API、Schema、实施步骤或测试矩阵。
 3. v1 文档继续合法；M3 不要求 82 个历史条目整体升级。
 4. v2 字段必须进入受 Document Digest 保护的 Projection，Board 不重新读取仓库文件补字段。
 5. Runtime 创建的 Backlog 若继续被支持，也必须显式满足同等领域合同，不能绕过验证。
@@ -169,7 +188,18 @@ Historical enrichment
 “该记录不完整，缺失项不会被页面补造。”
 ```
 
-## 9. 验收矩阵
+## 9. 标准文档脚手架边界
+
+W06 需要在 Spec/Design 中冻结最终命令名和模板版本；Revision 1 只固定以下产品行为：
+
+1. 使用者通过显式 CLI 选项启用标准文档脚手架；普通 `moye init` 不应在没有选择时向现有仓库批量写文档。
+2. 最小结构包含项目级 Agent 操作契约、文档总入口、Sources、Delivery、Knowledge、Meta、Backlog/Task 模板和可由框架执行的验证入口；模板内容面向消费项目，不复制 Moye 内部历史。
+3. 写入前输出确定性计划和冲突列表；已有同名文件、不可识别结构或路径越界时拒绝，除非后续 Spec 定义了可审计、可恢复的显式 adoption 流程。
+4. 生成的 Manifest 必须选择与脚手架匹配的 Documentation Policy；Documentation Agent 负责审计当前项目事实，确定性 Gate 负责执行验证，二者都不能仅凭 Agent 自报通过。
+5. 第二次对相同生成结果执行必须幂等；模板版本变化走显式 upgrade/migration，不静默重写用户内容。
+6. 至少使用一个仓库外的空白 Git 项目和一个已有 README/docs 的项目做真实产品验收。
+
+## 10. 验收矩阵
 
 至少建立以下 `Requirement → Scenario → Execution → Evidence` 映射：
 
@@ -184,9 +214,12 @@ Historical enrichment
 | 真正 partial | 有解析/未知/截断缺口的受管 Evidence | 缺失原因列表、API/UI 一致性、原始诊断引用 |
 | policy/provider limitation | omitted/not exposed Evidence | 不被计入 data-loss 的断言和页面文案 |
 | pending/reconcile/unavailable/failed | 各状态 fixture + 可取得的真实 Runtime Evidence | 状态、操作建议、无错误合并证明 |
+| 空白项目文档初始化 | 从已发布 tarball 安装 CLI，在仓库外执行 scaffold | Scaffold Manifest、生成路径/Digest、project/docs validate、clean Git diff |
+| 已有项目冲突与重复执行 | 带 README/AGENTS/docs 的真实 Git fixture | 无覆盖证明、稳定冲突报告、相同输入幂等、路径边界拒绝 |
+| 脚手架后的 Standard Task | 真实 Agent 修改产品事实并触发 Documentation Policy | Role Session、Candidate、Docs Evidence、Repair（适用时）、Final Gate 与 Archive |
 | 最终回归 | 仓库与产品门禁 | `npm run check`、`npm run test:e2e`、M3 acceptance summary |
 
-W06 应提供一个无需手工点击、不会扫描目录挑选历史结果的统一入口，建议命名：
+W07 应提供一个无需手工点击、不会扫描目录挑选历史结果的统一入口，建议命名：
 
 ```bash
 npm run acceptance:m3
@@ -194,7 +227,7 @@ npm run acceptance:m3
 
 真实 Session 产品验收必须显式绑定 Task/Role/Run/Session 和受管 Manifest；Fake/Mock 只用于 Parser 与 UI 边界，不得冒充真实历史 Session 通过证据。
 
-## 10. 非目标与剩余边界
+## 11. 非目标与剩余边界
 
 M3 不包含：
 
@@ -205,13 +238,15 @@ M3 不包含：
 - 多租户 Auth/RBAC、加密保留策略、远端 Artifact Store；
 - 多 Daemon Lease/Fencing、远程 Git Provider/PR 等 BL-0004/BL-0005 的功能实现本身；
 - 为简单 UI 或数据补录强制启动完整五角色研发链；
-- 公开 Registry 发版。若 M3 只修改 `0.1.x` 内部兼容行为，版本策略由 W06 根据实际公共契约影响决定。
+- 自动拉起 Phoenix/OTLP 等可选可观测后端，或改变既有 Restate/Moye Runtime 启动边界；
+- 强制所有外部项目采用 Moye 文档结构，或覆盖/迁移用户已有文档；
+- 公开 Registry 发版。若 M3 只修改 `0.1.x` 兼容行为，版本策略由 W07 根据实际公共契约影响决定。
 
-## 11. 长时运行规则
+## 12. 长时运行规则
 
 批准后：
 
-1. 按 W01～W06 分别创建真实 Task；每个 Task 有自己的 Spec、Design、Plan、Verification、Docs Impact、唯一 Result Commit、Seal 和 Archive Receipt。
+1. 按 W01～W07 分别创建真实 Task；每个 Task 有自己的 Spec、Design、Plan、Verification、Docs Impact、唯一 Result Commit、Seal 和 Archive Receipt。
 2. 普通技术决策自动完成；只有外部权限缺失、不可恢复破坏风险或审批范围冲突时阻塞。
 3. 不直接编辑 Runtime Projection，不删除或覆盖旧 Backlog/Session 历史，不通过页面本地拼装制造新事实。
 4. W02 的同步必须使用正式 CLI/Runtime API，保存 batchId、输入 Digest 与 Sync Result；结果未知时先查询，不重复制造不同批次。
@@ -219,11 +254,11 @@ M3 不包含：
 6. 每个 Task 完成后清理其 Worktree 和临时进程；只保留主 Moye Worktree、正式 Runtime 和验收要求的受管 Artifact。
 7. 最终服务运行在 `http://127.0.0.1:3000`；最终报告逐项列出 Task ID、Result Commit、Runtime Outcome、Sync Receipt、Evidence Digest 和页面链接。
 
-## 12. Milestone 完成定义
+## 13. Milestone 完成定义
 
 只有同时满足以下条件，M3 才能宣布完成：
 
-1. W01～W06 全部形成唯一 Result Commit 和 `CLOSED + ARCHIVED` 终态；
+1. W01～W07 全部形成唯一 Result Commit 和 `CLOSED + ARCHIVED` 终态；
 2. 新 v2 Backlog 能完整表达 problem，旧 v1 Backlog 不迁移也能继续读取和同步；
 3. BL-0004/0005/0006/0007/0083 的详情在 Board 可查询，且 BL-0031 不再以过期开放状态展示；
 4. BL-0083 已通过正式 sync 进入 Runtime Board，相同 sync 重放幂等；
@@ -231,11 +266,13 @@ M3 不包含：
 6. Session 四维语义由统一领域逻辑生成，API 与页面不分别猜测；
 7. 历史可读 Session 不再被误报为内容不完整，真实缺失和策略限制仍准确展示；
 8. 旧 Evidence、Projection 和 Digest 前后不变；
-9. `npm run check`、`npm run test:e2e`、`npm run acceptance:m3` 和文档门禁通过；
-10. 最终服务部署在 `http://127.0.0.1:3000`，报告明确列出仍未实现的生产能力。
+9. 外部空白项目能通过消费级 CLI 非破坏性生成标准文档结构，已有项目冲突不覆盖，重复执行幂等；
+10. 脚手架项目的真实 Standard Task 能形成文档变更 Evidence 并通过 Documentation Gate；
+11. `npm run check`、`npm run test:e2e`、`npm run acceptance:m3` 和文档门禁通过；
+12. 最终服务部署在 `http://127.0.0.1:3000`，报告明确列出仍未实现的生产能力。
 
-## 13. 审批记录
+## 14. 审批记录
 
 - 当前结论：等待项目 Owner 审批 Revision 1。
-- 拟议映射：TASK-0077～TASK-0082 对应 W01～W06；批准前这些 ID 不是 Active Task，也不代表 Runtime 已创建。
+- 拟议映射：TASK-0077～TASK-0083 对应 W01～W07；批准前这些 ID 不是 Active Task，也不代表 Runtime 已创建。
 - 批准后执行方式：无普通技术决策中断的连续长时运行，直至完成条件满足或出现明确外部阻塞。

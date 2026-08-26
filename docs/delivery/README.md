@@ -4,9 +4,9 @@
 
 1. [Milestone 1：完整 Agent Session 与 Prompt 证据链](./milestones/m1-agent-session-evidence.md)；
 2. [Milestone 2：Moye Framework MVP 产品化与首个正式发版](./milestones/m2-framework-release.md)；
-3. [Milestone 3：Backlog 可读性与 Agent Session 证据语义收敛](./milestones/m3-backlog-and-session-clarity.md)（Draft，等待审批）。
+3. [Milestone 3：Backlog 可读性、Agent Session 证据语义与项目文档脚手架](./milestones/m3-backlog-and-session-clarity.md)（Draft，等待审批）。
 
-M1 已按 TASK-0058～TASK-0065 顺序执行并由 `moye-m1-agent-session-evidence-r1` 冻结，M2 已完成本地 GA source 与交付；M3 尚未批准，未创建 TASK-0077～0082，也未执行 BL-0083 的 Runtime Sync。批准只冻结交付编排，不代表能力已经完成；当前架构事实仍由 Architecture、ADR、代码和测试证明。
+M1 已按 TASK-0058～TASK-0065 顺序执行并由 `moye-m1-agent-session-evidence-r1` 冻结，M2 已完成本地 GA source 与交付；M3 尚未批准，未创建 TASK-0077～0083，也未执行 BL-0083 的 Runtime Sync。批准只冻结交付编排，不代表能力已经完成；当前架构事实仍由 Architecture、ADR、代码和测试证明。
 
 Delivery 管理已经进入研发交付链路的工作对象：
 
