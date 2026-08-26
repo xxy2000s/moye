@@ -1,0 +1,2282 @@
+{
+  "schemaVersion": 2,
+  "traceKind": "CORE_V2",
+  "task": {
+    "taskId": "TASK-SCAFFOLD-20260826191825",
+    "projectId": "standard-docs-task-acceptance",
+    "title": "Standard scaffold documentation policy task",
+    "state": "CLOSED",
+    "currentStep": "ARCHIVED",
+    "attempt": 7,
+    "specRevision": 1,
+    "backlogRefs": [],
+    "archiveStatus": "ARCHIVED",
+    "runtimeState": "CLOSED",
+    "workflowKind": "CORE_V2",
+    "historyKind": "PROJECT_TASK",
+    "historyKindSource": "WORKFLOW_INPUT",
+    "outcome": "SUCCEEDED",
+    "lastEventAt": "2026-08-26T19:26:39.804Z",
+    "events": [
+      {
+        "sequence": 1,
+        "type": "ArchitectRequired",
+        "at": "2026-08-26T19:18:30.087Z",
+        "detail": "r1"
+      },
+      {
+        "sequence": 2,
+        "type": "ArchitectArtifactsAccepted",
+        "at": "2026-08-26T19:19:32.394Z",
+        "detail": "TASK-SCAFFOLD-20260826191825.ARCHITECT.r1.g0"
+      },
+      {
+        "sequence": 3,
+        "type": "DesignReviewPassed",
+        "at": "2026-08-26T19:20:23.667Z",
+        "detail": "sha256:eb2202e5531c37e053d70a4a4bf9a833616ee6ef94f66ca90698f8e2cefe9164"
+      },
+      {
+        "sequence": 4,
+        "type": "ImplementationAccepted",
+        "at": "2026-08-26T19:21:57.499Z",
+        "detail": "sha256:b64f100ef9173f5e8a9d999daeb33484c19701d8a5ff3ae38fef60e07dd713dc"
+      },
+      {
+        "sequence": 5,
+        "type": "DocumentationGateAccepted",
+        "at": "2026-08-26T19:24:39.914Z",
+        "detail": "sha256:24d53d95b7ff6172b1d596dcbbc1b2dc50c1b62fa885cde0877a022331a9597d"
+      },
+      {
+        "sequence": 6,
+        "type": "TestPlanAccepted",
+        "at": "2026-08-26T19:24:56.522Z",
+        "detail": "sha256:22a86daf377b7ae9e90d409bedc3e2306cd9ca340b7c1b6e5b55ffd0ddc941a7"
+      },
+      {
+        "sequence": 7,
+        "type": "TrustedTestRunRecorded",
+        "at": "2026-08-26T19:24:56.678Z",
+        "detail": "sha256:5f78c1f4607d98ea41d2649afa05bc591088bd2f2485841088185590f5233ec3"
+      },
+      {
+        "sequence": 8,
+        "type": "TestVerificationPassed",
+        "at": "2026-08-26T19:25:12.556Z",
+        "detail": "sha256:7e568cda3c7750bac772b93167e0bd654eb39cc3cebe8d61a5eb9191b3982e2b"
+      },
+      {
+        "sequence": 9,
+        "type": "FinalReviewPassed",
+        "at": "2026-08-26T19:26:39.609Z",
+        "detail": "sha256:fb595a110e24caa251ea8eaa942d014f6e2598608d26333fe6ca15b7b32e1a5f"
+      },
+      {
+        "sequence": 10,
+        "type": "VerificationGatePassed",
+        "at": "2026-08-26T19:26:39.621Z",
+        "detail": "sha256:a1fe1ef1717903a9d3f682e1e0308bdf423828496de6108a0c38527a44020e23"
+      },
+      {
+        "sequence": 11,
+        "type": "KnowledgeDispositionRecorded",
+        "at": "2026-08-26T19:26:39.624Z",
+        "detail": "none:sha256:3e6fe2b8e9495ab8b1f17937464a266e701f2a538a9f1292dd72550a6b482a29"
+      },
+      {
+        "sequence": 12,
+        "type": "MergeConfirmed",
+        "at": "2026-08-26T19:26:39.790Z",
+        "detail": "sha256:704243ced5f0cda3389168913c5f041fc07ede6a5118ad4c5dc5ee1e143519f4"
+      },
+      {
+        "sequence": 13,
+        "type": "SuccessClosureCompleted",
+        "at": "2026-08-26T19:26:39.790Z",
+        "detail": "sha256:1a2a3e0b090e92d63961c0690e090ed3ca8acb3c49c8911ccdf98c021f7210a4"
+      },
+      {
+        "sequence": 14,
+        "type": "ArchivePending",
+        "at": "2026-08-26T19:26:39.790Z",
+        "detail": "sha256:370be802e07f507b22f5cb7f40897e98b5abc6accdea98c33eb51c7a13d5d4e8"
+      },
+      {
+        "sequence": 15,
+        "type": "TaskClosed",
+        "at": "2026-08-26T19:26:39.804Z",
+        "detail": "SUCCEEDED"
+      },
+      {
+        "sequence": 16,
+        "type": "ArchiveArchived",
+        "at": "2026-08-26T19:26:39.804Z",
+        "detail": "sha256:8f54a6f71024e9167dd68b0019846a22093a0d3901a4c974f9c655dc4b21e5d0"
+      }
+    ]
+  },
+  "lifecycle": {
+    "schemaVersion": 1,
+    "taskId": "TASK-SCAFFOLD-20260826191825",
+    "specRevision": 1,
+    "subjectCommit": "37403df5b465c127adfadd5a902182fa9e10e7fc",
+    "candidateCommit": "1c05ba7cd240a43c76b701dfc89ecc18a32d2de2",
+    "implementationGeneration": 0,
+    "state": "CLOSED",
+    "artifacts": [
+      {
+        "schemaVersion": 1,
+        "artifactId": "lifecycle-artifact:TASK-SCAFFOLD-20260826191825:r1:spec:TASK-SCAFFOLD-20260826191825.ARCHITECT.r1.g0:g0",
+        "taskId": "TASK-SCAFFOLD-20260826191825",
+        "specRevision": 1,
+        "kind": "SPEC",
+        "subjectCommit": "37403df5b465c127adfadd5a902182fa9e10e7fc",
+        "producer": {
+          "role": "ARCHITECT",
+          "phase": "ARCHITECT",
+          "attemptId": "TASK-SCAFFOLD-20260826191825.ARCHITECT.r1.g0",
+          "generation": 0,
+          "sessionId": "01a03f82-7865-7c53-b42b-95d23937a243",
+          "producerDigest": "sha256:06f8b52ed57efc2938760590d37ddd6b26d52abd048d0c29d15576498c9a1b23"
+        },
+        "dependencies": [],
+        "payload": {
+          "type": "SPEC",
+          "requirements": [
+            {
+              "id": "REQ-1",
+              "statement": "Replace the complete content of src/value.txt with after followed by exactly one newline.",
+              "acceptanceCriteria": [
+                "src/value.txt contains exactly the bytes for after followed by one newline."
+              ]
+            },
+            {
+              "id": "REQ-2",
+              "statement": "Update docs/knowledge/product.md to state the current product value.",
+              "acceptanceCriteria": [
+                "docs/knowledge/product.md contains the exact text Current value: after."
+              ]
+            },
+            {
+              "id": "REQ-3",
+              "statement": "Preserve all scaffold-managed files and .moye/documentation-scaffold.json unchanged.",
+              "acceptanceCriteria": [
+                ".moye/documentation-scaffold.json is not modified.",
+                "No file listed in .moye/documentation-scaffold.json is modified."
+              ]
+            },
+            {
+              "id": "REQ-4",
+              "statement": "Verify the implementation using the configured test and deterministic documentation policy.",
+              "acceptanceCriteria": [
+                "The configured node --test command passes.",
+                "The standard documentation custom policy command node scripts/docs_validate.mjs produces PASSED deterministic evidence."
+              ]
+            }
+          ]
+        },
+        "contentDigest": "sha256:8e71746763523305832d4f5ae5a448f381ec8a9ac7c7c346544c9b59b2f57328",
+        "artifactDigest": "sha256:e1f08c4742ed5baa795e1ea601fb8e14e303f363f63c005fbd91956fff72c9a1"
+      },
+      {
+        "schemaVersion": 1,
+        "artifactId": "lifecycle-artifact:TASK-SCAFFOLD-20260826191825:r1:design:TASK-SCAFFOLD-20260826191825.ARCHITECT.r1.g0:g0",
+        "taskId": "TASK-SCAFFOLD-20260826191825",
+        "specRevision": 1,
+        "kind": "DESIGN",
+        "subjectCommit": "37403df5b465c127adfadd5a902182fa9e10e7fc",
+        "producer": {
+          "role": "ARCHITECT",
+          "phase": "ARCHITECT",
+          "attemptId": "TASK-SCAFFOLD-20260826191825.ARCHITECT.r1.g0",
+          "generation": 0,
+          "sessionId": "01a03f82-7865-7c53-b42b-95d23937a243",
+          "producerDigest": "sha256:06f8b52ed57efc2938760590d37ddd6b26d52abd048d0c29d15576498c9a1b23"
+        },
+        "dependencies": [
+          {
+            "artifactId": "lifecycle-artifact:TASK-SCAFFOLD-20260826191825:r1:spec:TASK-SCAFFOLD-20260826191825.ARCHITECT.r1.g0:g0",
+            "kind": "SPEC",
+            "taskId": "TASK-SCAFFOLD-20260826191825",
+            "specRevision": 1,
+            "subjectCommit": "37403df5b465c127adfadd5a902182fa9e10e7fc",
+            "artifactDigest": "sha256:e1f08c4742ed5baa795e1ea601fb8e14e303f363f63c005fbd91956fff72c9a1"
+          }
+        ],
+        "payload": {
+          "type": "DESIGN",
+          "decisions": [
+            "Limit implementation changes to src/value.txt and docs/knowledge/product.md.",
+            "Treat the existing test/value.test.mjs assertion as the executable specification for the exact value bytes.",
+            "Use the configured standard-docs-validate custom command as deterministic documentation evidence; do not substitute an agent-reported result."
+          ],
+          "components": [
+            ".moye/documentation-scaffold.json",
+            ".moye/project.yaml",
+            "docs/knowledge/product.md",
+            "scripts/docs_validate.mjs",
+            "src/value.txt",
+            "test/value.test.mjs"
+          ],
+          "risks": [
+            "An omitted newline or extra whitespace will fail the exact-value test.",
+            "Changing a scaffold-managed file will fail digest validation.",
+            "Changing product content without the knowledge-document update can fail documentation-change enforcement when commit-range variables are supplied."
+          ]
+        },
+        "contentDigest": "sha256:51931587806058adc6d6828fa52f505c72273cc336e8b7989d887de96edab6b0",
+        "artifactDigest": "sha256:72a210a3773402c95259e32333a3307b4bdf8b5ca10b26f9decb730c897d5bf8"
+      },
+      {
+        "schemaVersion": 1,
+        "artifactId": "lifecycle-artifact:TASK-SCAFFOLD-20260826191825:r1:plan:TASK-SCAFFOLD-20260826191825.ARCHITECT.r1.g0:g0",
+        "taskId": "TASK-SCAFFOLD-20260826191825",
+        "specRevision": 1,
+        "kind": "PLAN",
+        "subjectCommit": "37403df5b465c127adfadd5a902182fa9e10e7fc",
+        "producer": {
+          "role": "ARCHITECT",
+          "phase": "ARCHITECT",
+          "attemptId": "TASK-SCAFFOLD-20260826191825.ARCHITECT.r1.g0",
+          "generation": 0,
+          "sessionId": "01a03f82-7865-7c53-b42b-95d23937a243",
+          "producerDigest": "sha256:06f8b52ed57efc2938760590d37ddd6b26d52abd048d0c29d15576498c9a1b23"
+        },
+        "dependencies": [
+          {
+            "artifactId": "lifecycle-artifact:TASK-SCAFFOLD-20260826191825:r1:design:TASK-SCAFFOLD-20260826191825.ARCHITECT.r1.g0:g0",
+            "kind": "DESIGN",
+            "taskId": "TASK-SCAFFOLD-20260826191825",
+            "specRevision": 1,
+            "subjectCommit": "37403df5b465c127adfadd5a902182fa9e10e7fc",
+            "artifactDigest": "sha256:72a210a3773402c95259e32333a3307b4bdf8b5ca10b26f9decb730c897d5bf8"
+          },
+          {
+            "artifactId": "lifecycle-artifact:TASK-SCAFFOLD-20260826191825:r1:spec:TASK-SCAFFOLD-20260826191825.ARCHITECT.r1.g0:g0",
+            "kind": "SPEC",
+            "taskId": "TASK-SCAFFOLD-20260826191825",
+            "specRevision": 1,
+            "subjectCommit": "37403df5b465c127adfadd5a902182fa9e10e7fc",
+            "artifactDigest": "sha256:e1f08c4742ed5baa795e1ea601fb8e14e303f363f63c005fbd91956fff72c9a1"
+          }
+        ],
+        "payload": {
+          "type": "PLAN",
+          "items": [
+            {
+              "id": "PLAN-1",
+              "description": "Replace src/value.txt with exactly after followed by one newline.",
+              "dependsOn": [],
+              "status": "PENDING"
+            },
+            {
+              "id": "PLAN-2",
+              "description": "Change the product fact in docs/knowledge/product.md to the exact text Current value: after.",
+              "dependsOn": [],
+              "status": "PENDING"
+            },
+            {
+              "id": "PLAN-3",
+              "description": "Confirm that only the two authorized files changed and that scaffold-managed files plus .moye/documentation-scaffold.json remain untouched.",
+              "dependsOn": [
+                "PLAN-1",
+                "PLAN-2"
+              ],
+              "status": "PENDING"
+            },
+            {
+              "id": "PLAN-4",
+              "description": "Run node --test and the configured node scripts/docs_validate.mjs custom policy, recording deterministic PASSED evidence before handoff.",
+              "dependsOn": [
+                "PLAN-3"
+              ],
+              "status": "PENDING"
+            }
+          ]
+        },
+        "contentDigest": "sha256:34416a242660ae2dc2b7a611f6ecb6d962cdab614da992b5fc6ce2e58b15e0a0",
+        "artifactDigest": "sha256:b3d622b35209a9d2b92800e745464149a6f831a5fee3128e30912bcd991e96c8"
+      },
+      {
+        "schemaVersion": 1,
+        "artifactId": "lifecycle-artifact:TASK-SCAFFOLD-20260826191825:r1:design-review:TASK-SCAFFOLD-20260826191825.DESIGN_REVIEW.r1.g0:g0",
+        "taskId": "TASK-SCAFFOLD-20260826191825",
+        "specRevision": 1,
+        "kind": "DESIGN_REVIEW",
+        "subjectCommit": "37403df5b465c127adfadd5a902182fa9e10e7fc",
+        "producer": {
+          "role": "REVIEW",
+          "phase": "DESIGN_REVIEW",
+          "attemptId": "TASK-SCAFFOLD-20260826191825.DESIGN_REVIEW.r1.g0",
+          "generation": 0,
+          "sessionId": "01a03f83-731a-7991-9ba8-ba535e81ca12",
+          "producerDigest": "sha256:e95b3a76b3321f303fd09b6bd469136975ef5dcc1fa719d1cc749bc693d46bef"
+        },
+        "dependencies": [
+          {
+            "artifactId": "lifecycle-artifact:TASK-SCAFFOLD-20260826191825:r1:design:TASK-SCAFFOLD-20260826191825.ARCHITECT.r1.g0:g0",
+            "kind": "DESIGN",
+            "taskId": "TASK-SCAFFOLD-20260826191825",
+            "specRevision": 1,
+            "subjectCommit": "37403df5b465c127adfadd5a902182fa9e10e7fc",
+            "artifactDigest": "sha256:72a210a3773402c95259e32333a3307b4bdf8b5ca10b26f9decb730c897d5bf8"
+          },
+          {
+            "artifactId": "lifecycle-artifact:TASK-SCAFFOLD-20260826191825:r1:plan:TASK-SCAFFOLD-20260826191825.ARCHITECT.r1.g0:g0",
+            "kind": "PLAN",
+            "taskId": "TASK-SCAFFOLD-20260826191825",
+            "specRevision": 1,
+            "subjectCommit": "37403df5b465c127adfadd5a902182fa9e10e7fc",
+            "artifactDigest": "sha256:b3d622b35209a9d2b92800e745464149a6f831a5fee3128e30912bcd991e96c8"
+          },
+          {
+            "artifactId": "lifecycle-artifact:TASK-SCAFFOLD-20260826191825:r1:spec:TASK-SCAFFOLD-20260826191825.ARCHITECT.r1.g0:g0",
+            "kind": "SPEC",
+            "taskId": "TASK-SCAFFOLD-20260826191825",
+            "specRevision": 1,
+            "subjectCommit": "37403df5b465c127adfadd5a902182fa9e10e7fc",
+            "artifactDigest": "sha256:e1f08c4742ed5baa795e1ea601fb8e14e303f363f63c005fbd91956fff72c9a1"
+          }
+        ],
+        "payload": {
+          "type": "DESIGN_REVIEW",
+          "verdict": "PASSED",
+          "subjectDigest": "sha256:00d7db445cc8c3b7ff6e6f70caf72262e37d14a357802a04b170ad249bcfb251",
+          "findingRefs": []
+        },
+        "contentDigest": "sha256:be1f70cb9d9b364cdcefd30778de720cf55852b7d8b2afad47c94a36afcda07c",
+        "artifactDigest": "sha256:eb2202e5531c37e053d70a4a4bf9a833616ee6ef94f66ca90698f8e2cefe9164"
+      },
+      {
+        "schemaVersion": 1,
+        "artifactId": "lifecycle-artifact:TASK-SCAFFOLD-20260826191825:r1:docs-impact:TASK-SCAFFOLD-20260826191825.DOCUMENTATION.r1.g0:g0",
+        "taskId": "TASK-SCAFFOLD-20260826191825",
+        "specRevision": 1,
+        "kind": "DOCS_IMPACT",
+        "subjectCommit": "1c05ba7cd240a43c76b701dfc89ecc18a32d2de2",
+        "producer": {
+          "role": "DOCUMENTATION",
+          "phase": "DOCUMENTATION",
+          "attemptId": "TASK-SCAFFOLD-20260826191825.DOCUMENTATION.r1.g0",
+          "generation": 0,
+          "sessionId": "01a03f85-ab66-7d82-90a2-2394e0ef1762",
+          "producerDigest": "sha256:9b3212129270a0b59db873f7cb64682f179bf2ed727967862cee69c9f2422c4e"
+        },
+        "dependencies": [
+          {
+            "artifactId": "lifecycle-artifact:TASK-SCAFFOLD-20260826191825:r1:design:TASK-SCAFFOLD-20260826191825.ARCHITECT.r1.g0:g0",
+            "kind": "DESIGN",
+            "taskId": "TASK-SCAFFOLD-20260826191825",
+            "specRevision": 1,
+            "subjectCommit": "37403df5b465c127adfadd5a902182fa9e10e7fc",
+            "artifactDigest": "sha256:72a210a3773402c95259e32333a3307b4bdf8b5ca10b26f9decb730c897d5bf8"
+          },
+          {
+            "artifactId": "lifecycle-artifact:TASK-SCAFFOLD-20260826191825:r1:spec:TASK-SCAFFOLD-20260826191825.ARCHITECT.r1.g0:g0",
+            "kind": "SPEC",
+            "taskId": "TASK-SCAFFOLD-20260826191825",
+            "specRevision": 1,
+            "subjectCommit": "37403df5b465c127adfadd5a902182fa9e10e7fc",
+            "artifactDigest": "sha256:e1f08c4742ed5baa795e1ea601fb8e14e303f363f63c005fbd91956fff72c9a1"
+          }
+        ],
+        "payload": {
+          "type": "DOCS_IMPACT",
+          "routeDigest": "sha256:bc169a90ef2a175d11ef770c725ed2dfcc718f27b33159afc07feec65fbdbeee",
+          "reportRef": "artifact://documentation-policy/r1-g0/evidence.json",
+          "dispositions": [
+            {
+              "documentId": "documentation-policy:custom",
+              "outcome": "updated",
+              "reason": "Policy custom passed with evidence sha256:bc169a90ef2a175d11ef770c725ed2dfcc718f27b33159afc07feec65fbdbeee."
+            }
+          ]
+        },
+        "contentDigest": "sha256:817fd5548127c0bc6102e60dd6cdb5ac4a9fe7d64643db1234f560045812a18c",
+        "artifactDigest": "sha256:24d53d95b7ff6172b1d596dcbbc1b2dc50c1b62fa885cde0877a022331a9597d"
+      },
+      {
+        "schemaVersion": 1,
+        "artifactId": "lifecycle-artifact:TASK-SCAFFOLD-20260826191825:r1:test-plan:TASK-SCAFFOLD-20260826191825.TEST_PLAN.r1.g0:g0",
+        "taskId": "TASK-SCAFFOLD-20260826191825",
+        "specRevision": 1,
+        "kind": "TEST_PLAN",
+        "subjectCommit": "1c05ba7cd240a43c76b701dfc89ecc18a32d2de2",
+        "producer": {
+          "role": "TEST_VERIFICATION",
+          "phase": "TEST_PLAN",
+          "attemptId": "TASK-SCAFFOLD-20260826191825.TEST_PLAN.r1.g0",
+          "generation": 0,
+          "sessionId": "01a03f88-23d2-7fe1-bb40-fec7b110ca46",
+          "producerDigest": "sha256:23734979fbd2c1a1d47335822559f51d96255ad80a324a5dd9f75c8f2afcf5f0"
+        },
+        "dependencies": [
+          {
+            "artifactId": "lifecycle-artifact:TASK-SCAFFOLD-20260826191825:r1:design:TASK-SCAFFOLD-20260826191825.ARCHITECT.r1.g0:g0",
+            "kind": "DESIGN",
+            "taskId": "TASK-SCAFFOLD-20260826191825",
+            "specRevision": 1,
+            "subjectCommit": "37403df5b465c127adfadd5a902182fa9e10e7fc",
+            "artifactDigest": "sha256:72a210a3773402c95259e32333a3307b4bdf8b5ca10b26f9decb730c897d5bf8"
+          },
+          {
+            "artifactId": "lifecycle-artifact:TASK-SCAFFOLD-20260826191825:r1:spec:TASK-SCAFFOLD-20260826191825.ARCHITECT.r1.g0:g0",
+            "kind": "SPEC",
+            "taskId": "TASK-SCAFFOLD-20260826191825",
+            "specRevision": 1,
+            "subjectCommit": "37403df5b465c127adfadd5a902182fa9e10e7fc",
+            "artifactDigest": "sha256:e1f08c4742ed5baa795e1ea601fb8e14e303f363f63c005fbd91956fff72c9a1"
+          }
+        ],
+        "payload": {
+          "type": "TEST_PLAN",
+          "cases": [
+            {
+              "id": "TC-1",
+              "requirementIds": [
+                "REQ-1",
+                "REQ-2",
+                "REQ-3",
+                "REQ-4"
+              ],
+              "category": "NORMAL",
+              "argv": [
+                "node",
+                "--test"
+              ]
+            }
+          ]
+        },
+        "contentDigest": "sha256:7a424d50ea3d0fb824a198052027ccb0a347ff396ec004d262af597e2aa94f47",
+        "artifactDigest": "sha256:22a86daf377b7ae9e90d409bedc3e2306cd9ca340b7c1b6e5b55ffd0ddc941a7"
+      },
+      {
+        "schemaVersion": 1,
+        "artifactId": "lifecycle-artifact:TASK-SCAFFOLD-20260826191825:r1:test-report:TASK-SCAFFOLD-20260826191825.TEST_ASSESSMENT.r1.g0:g0",
+        "taskId": "TASK-SCAFFOLD-20260826191825",
+        "specRevision": 1,
+        "kind": "TEST_REPORT",
+        "subjectCommit": "1c05ba7cd240a43c76b701dfc89ecc18a32d2de2",
+        "producer": {
+          "role": "TEST_VERIFICATION",
+          "phase": "TEST_ASSESSMENT",
+          "attemptId": "TASK-SCAFFOLD-20260826191825.TEST_ASSESSMENT.r1.g0",
+          "generation": 0,
+          "sessionId": "01a03f88-65ea-74f1-a3af-1063a4d03091",
+          "producerDigest": "sha256:54628f68e204e4b3fcf9c0979c59bf94d174bd6303fc7cb487b3488fdf59f818"
+        },
+        "dependencies": [
+          {
+            "artifactId": "lifecycle-artifact:TASK-SCAFFOLD-20260826191825:r1:test-plan:TASK-SCAFFOLD-20260826191825.TEST_PLAN.r1.g0:g0",
+            "kind": "TEST_PLAN",
+            "taskId": "TASK-SCAFFOLD-20260826191825",
+            "specRevision": 1,
+            "subjectCommit": "1c05ba7cd240a43c76b701dfc89ecc18a32d2de2",
+            "artifactDigest": "sha256:22a86daf377b7ae9e90d409bedc3e2306cd9ca340b7c1b6e5b55ffd0ddc941a7"
+          }
+        ],
+        "payload": {
+          "type": "TEST_REPORT",
+          "candidateCommit": "1c05ba7cd240a43c76b701dfc89ecc18a32d2de2",
+          "outcomes": [
+            {
+              "caseId": "TC-1",
+              "status": "PASSED",
+              "evidenceRefs": [
+                "/var/folders/b1/g0h9j9vd4356lc0n6h6gplz00000gn/T/moye-standard-docs-task-l3CzJu/runtime/standard-docs-task-acceptance/TASK-SCAFFOLD-20260826191825/.moye/artifacts/trusted-tests/sha256-58667d49fee9ac7e8d7bc95df908dc0a3fd1a9b2f268e38289ddace178f78fd1/manifest.json"
+              ]
+            }
+          ],
+          "recommendation": "PASS",
+          "findingRefs": []
+        },
+        "contentDigest": "sha256:9f0cf9768226d91a7c5e6b0a55fa47c8273e424668f6f16deca1d2a4d164f93f",
+        "artifactDigest": "sha256:7e568cda3c7750bac772b93167e0bd654eb39cc3cebe8d61a5eb9191b3982e2b"
+      },
+      {
+        "schemaVersion": 1,
+        "artifactId": "lifecycle-artifact:TASK-SCAFFOLD-20260826191825:r1:final-review:TASK-SCAFFOLD-20260826191825.FINAL_REVIEW.r1.g0:g0",
+        "taskId": "TASK-SCAFFOLD-20260826191825",
+        "specRevision": 1,
+        "kind": "FINAL_REVIEW",
+        "subjectCommit": "1c05ba7cd240a43c76b701dfc89ecc18a32d2de2",
+        "producer": {
+          "role": "REVIEW",
+          "phase": "FINAL_REVIEW",
+          "attemptId": "TASK-SCAFFOLD-20260826191825.FINAL_REVIEW.r1.g0",
+          "generation": 0,
+          "sessionId": "01a03f88-a330-7751-a360-0a3b0773c799",
+          "producerDigest": "sha256:d2034b8387f4ba8b769387cebca1c09233243f2df2cb5c3c12bba7efff6e9a5f"
+        },
+        "dependencies": [
+          {
+            "artifactId": "lifecycle-artifact:TASK-SCAFFOLD-20260826191825:r1:docs-impact:TASK-SCAFFOLD-20260826191825.DOCUMENTATION.r1.g0:g0",
+            "kind": "DOCS_IMPACT",
+            "taskId": "TASK-SCAFFOLD-20260826191825",
+            "specRevision": 1,
+            "subjectCommit": "1c05ba7cd240a43c76b701dfc89ecc18a32d2de2",
+            "artifactDigest": "sha256:24d53d95b7ff6172b1d596dcbbc1b2dc50c1b62fa885cde0877a022331a9597d"
+          },
+          {
+            "artifactId": "lifecycle-artifact:TASK-SCAFFOLD-20260826191825:r1:test-report:TASK-SCAFFOLD-20260826191825.TEST_ASSESSMENT.r1.g0:g0",
+            "kind": "TEST_REPORT",
+            "taskId": "TASK-SCAFFOLD-20260826191825",
+            "specRevision": 1,
+            "subjectCommit": "1c05ba7cd240a43c76b701dfc89ecc18a32d2de2",
+            "artifactDigest": "sha256:7e568cda3c7750bac772b93167e0bd654eb39cc3cebe8d61a5eb9191b3982e2b"
+          }
+        ],
+        "payload": {
+          "type": "FINAL_REVIEW",
+          "verdict": "PASSED",
+          "subjectDigest": "sha256:f7011bcf0e5309472f444d9fc7bad8c565f1154aa14fe3e15805398cda0c35fa",
+          "findingRefs": []
+        },
+        "contentDigest": "sha256:8100edd17b9c51416108780d4ac6a03cfeed4853cfebf79748c02b9f4cfdc057",
+        "artifactDigest": "sha256:fb595a110e24caa251ea8eaa942d014f6e2598608d26333fe6ca15b7b32e1a5f"
+      },
+      {
+        "schemaVersion": 1,
+        "artifactId": "lifecycle-artifact:TASK-SCAFFOLD-20260826191825:r1:knowledge-disposition:TASK-SCAFFOLD-20260826191825.KNOWLEDGE.r1.g0:g0",
+        "taskId": "TASK-SCAFFOLD-20260826191825",
+        "specRevision": 1,
+        "kind": "KNOWLEDGE_DISPOSITION",
+        "subjectCommit": "1c05ba7cd240a43c76b701dfc89ecc18a32d2de2",
+        "producer": {
+          "role": "WORKFLOW",
+          "phase": "KNOWLEDGE_DISPOSITION",
+          "attemptId": "TASK-SCAFFOLD-20260826191825.KNOWLEDGE.r1.g0",
+          "generation": 0,
+          "sessionId": "workflow",
+          "producerDigest": "sha256:1ac758cd3346f3b0f7786b69e64a6c20d4b27a78be1d2083d4baea104c591c42"
+        },
+        "dependencies": [],
+        "payload": {
+          "type": "KNOWLEDGE_DISPOSITION",
+          "disposition": "none",
+          "candidateRefs": [],
+          "rationale": "Optional intelligent Observer/Knowledge sidecar was not requested"
+        },
+        "contentDigest": "sha256:a23d0466a05e2c3cbacbf949532dbae8f0a76804f9cd301a0e6960a48fc6ec9b",
+        "artifactDigest": "sha256:3e6fe2b8e9495ab8b1f17937464a266e701f2a538a9f1292dd72550a6b482a29"
+      }
+    ],
+    "implementationCheckpoints": [
+      {
+        "attemptId": "TASK-SCAFFOLD-20260826191825.IMPLEMENTATION.r1.g0",
+        "generation": 0,
+        "baseCommit": "37403df5b465c127adfadd5a902182fa9e10e7fc",
+        "candidateCommit": "1c05ba7cd240a43c76b701dfc89ecc18a32d2de2",
+        "treeDigest": "4b978f56d6163aef2940a8231b2d58de5a5ad848",
+        "checkpointRef": "git-commit://1c05ba7cd240a43c76b701dfc89ecc18a32d2de2",
+        "testEvidenceRefs": [
+          "node-test: node --test (exit 0, 1/1 passed)",
+          "standard-docs-validate: node scripts/docs_validate.mjs (exit 0, valid=true)"
+        ],
+        "selfReview": {
+          "verdict": "PASSED",
+          "findingRefs": []
+        },
+        "checkpointDigest": "sha256:b64f100ef9173f5e8a9d999daeb33484c19701d8a5ff3ae38fef60e07dd713dc"
+      }
+    ],
+    "trustedTestRun": {
+      "runId": "sha256:58667d49fee9ac7e8d7bc95df908dc0a3fd1a9b2f268e38289ddace178f78fd1",
+      "manifestRef": "/var/folders/b1/g0h9j9vd4356lc0n6h6gplz00000gn/T/moye-standard-docs-task-l3CzJu/runtime/standard-docs-task-acceptance/TASK-SCAFFOLD-20260826191825/.moye/artifacts/trusted-tests/sha256-58667d49fee9ac7e8d7bc95df908dc0a3fd1a9b2f268e38289ddace178f78fd1/manifest.json",
+      "manifestDigest": "sha256:5f78c1f4607d98ea41d2649afa05bc591088bd2f2485841088185590f5233ec3"
+    },
+    "trustedTestRuns": [
+      {
+        "runId": "sha256:58667d49fee9ac7e8d7bc95df908dc0a3fd1a9b2f268e38289ddace178f78fd1",
+        "manifestRef": "/var/folders/b1/g0h9j9vd4356lc0n6h6gplz00000gn/T/moye-standard-docs-task-l3CzJu/runtime/standard-docs-task-acceptance/TASK-SCAFFOLD-20260826191825/.moye/artifacts/trusted-tests/sha256-58667d49fee9ac7e8d7bc95df908dc0a3fd1a9b2f268e38289ddace178f78fd1/manifest.json",
+        "manifestDigest": "sha256:5f78c1f4607d98ea41d2649afa05bc591088bd2f2485841088185590f5233ec3"
+      }
+    ],
+    "verificationGateDigest": "sha256:a1fe1ef1717903a9d3f682e1e0308bdf423828496de6108a0c38527a44020e23",
+    "knowledgeDispositionDigest": "sha256:3e6fe2b8e9495ab8b1f17937464a266e701f2a538a9f1292dd72550a6b482a29",
+    "mergeCommit": "158de5a7803a8bb2e1be4900df37fc3036a0bc29",
+    "mergeReceipt": {
+      "effectId": "local-merge-effect:sha256:6e75acd157706373aa8e857b48c7d40abf3e3c7fdd83cc2b800da01c12278d99",
+      "outcome": "APPLIED",
+      "targetRef": "refs/heads/release",
+      "mergeCommit": "158de5a7803a8bb2e1be4900df37fc3036a0bc29",
+      "reconciledAfterUnknown": false,
+      "receiptDigest": "sha256:704243ced5f0cda3389168913c5f041fc07ede6a5118ad4c5dc5ee1e143519f4"
+    },
+    "failure": null,
+    "failureClosure": null,
+    "successClosure": {
+      "outcome": "SUCCEEDED",
+      "candidateCommit": "1c05ba7cd240a43c76b701dfc89ecc18a32d2de2",
+      "mergeCommit": "158de5a7803a8bb2e1be4900df37fc3036a0bc29",
+      "mergeReceiptDigest": "sha256:704243ced5f0cda3389168913c5f041fc07ede6a5118ad4c5dc5ee1e143519f4",
+      "verificationGateDigest": "sha256:a1fe1ef1717903a9d3f682e1e0308bdf423828496de6108a0c38527a44020e23",
+      "knowledgeDispositionDigest": "sha256:3e6fe2b8e9495ab8b1f17937464a266e701f2a538a9f1292dd72550a6b482a29",
+      "implementationGeneration": 0,
+      "sourceWorkflowRef": "restate://CoreV2Workflow/TASK-SCAFFOLD-20260826191825",
+      "closureArtifactRef": "core-v2-artifact://TASK-SCAFFOLD-20260826191825/closure/success-closure.json",
+      "closureContentDigest": "sha256:1aaa4b629a65f2fecb0edb6ab709bc4bae7c2ec64321d9b52a39f8355cd2bf19",
+      "closedAt": "2026-08-26T19:26:39.790Z",
+      "closureDigest": "sha256:1a2a3e0b090e92d63961c0690e090ed3ca8acb3c49c8911ccdf98c021f7210a4"
+    },
+    "archive": {
+      "status": "ARCHIVED",
+      "effectId": "sha256:370be802e07f507b22f5cb7f40897e98b5abc6accdea98c33eb51c7a13d5d4e8",
+      "attempts": 1,
+      "receiptRef": "core-v2-artifact://TASK-SCAFFOLD-20260826191825/archive/success-archive.json",
+      "receiptDigest": "sha256:8f54a6f71024e9167dd68b0019846a22093a0d3901a4c974f9c655dc4b21e5d0",
+      "error": null
+    },
+    "outcome": "SUCCEEDED",
+    "invalidatedRevisions": [],
+    "invalidatedGenerations": [],
+    "events": [
+      {
+        "sequence": 1,
+        "type": "ArchitectRequired",
+        "at": "2026-08-26T19:18:30.087Z",
+        "detail": "r1"
+      },
+      {
+        "sequence": 2,
+        "type": "ArchitectArtifactsAccepted",
+        "at": "2026-08-26T19:19:32.394Z",
+        "detail": "TASK-SCAFFOLD-20260826191825.ARCHITECT.r1.g0"
+      },
+      {
+        "sequence": 3,
+        "type": "DesignReviewPassed",
+        "at": "2026-08-26T19:20:23.667Z",
+        "detail": "sha256:eb2202e5531c37e053d70a4a4bf9a833616ee6ef94f66ca90698f8e2cefe9164"
+      },
+      {
+        "sequence": 4,
+        "type": "ImplementationAccepted",
+        "at": "2026-08-26T19:21:57.499Z",
+        "detail": "sha256:b64f100ef9173f5e8a9d999daeb33484c19701d8a5ff3ae38fef60e07dd713dc"
+      },
+      {
+        "sequence": 5,
+        "type": "DocumentationGateAccepted",
+        "at": "2026-08-26T19:24:39.914Z",
+        "detail": "sha256:24d53d95b7ff6172b1d596dcbbc1b2dc50c1b62fa885cde0877a022331a9597d"
+      },
+      {
+        "sequence": 6,
+        "type": "TestPlanAccepted",
+        "at": "2026-08-26T19:24:56.522Z",
+        "detail": "sha256:22a86daf377b7ae9e90d409bedc3e2306cd9ca340b7c1b6e5b55ffd0ddc941a7"
+      },
+      {
+        "sequence": 7,
+        "type": "TrustedTestRunRecorded",
+        "at": "2026-08-26T19:24:56.678Z",
+        "detail": "sha256:5f78c1f4607d98ea41d2649afa05bc591088bd2f2485841088185590f5233ec3"
+      },
+      {
+        "sequence": 8,
+        "type": "TestVerificationPassed",
+        "at": "2026-08-26T19:25:12.556Z",
+        "detail": "sha256:7e568cda3c7750bac772b93167e0bd654eb39cc3cebe8d61a5eb9191b3982e2b"
+      },
+      {
+        "sequence": 9,
+        "type": "FinalReviewPassed",
+        "at": "2026-08-26T19:26:39.609Z",
+        "detail": "sha256:fb595a110e24caa251ea8eaa942d014f6e2598608d26333fe6ca15b7b32e1a5f"
+      },
+      {
+        "sequence": 10,
+        "type": "VerificationGatePassed",
+        "at": "2026-08-26T19:26:39.621Z",
+        "detail": "sha256:a1fe1ef1717903a9d3f682e1e0308bdf423828496de6108a0c38527a44020e23"
+      },
+      {
+        "sequence": 11,
+        "type": "KnowledgeDispositionRecorded",
+        "at": "2026-08-26T19:26:39.624Z",
+        "detail": "none:sha256:3e6fe2b8e9495ab8b1f17937464a266e701f2a538a9f1292dd72550a6b482a29"
+      },
+      {
+        "sequence": 12,
+        "type": "MergeConfirmed",
+        "at": "2026-08-26T19:26:39.790Z",
+        "detail": "sha256:704243ced5f0cda3389168913c5f041fc07ede6a5118ad4c5dc5ee1e143519f4"
+      },
+      {
+        "sequence": 13,
+        "type": "SuccessClosureCompleted",
+        "at": "2026-08-26T19:26:39.790Z",
+        "detail": "sha256:1a2a3e0b090e92d63961c0690e090ed3ca8acb3c49c8911ccdf98c021f7210a4"
+      },
+      {
+        "sequence": 14,
+        "type": "ArchivePending",
+        "at": "2026-08-26T19:26:39.790Z",
+        "detail": "sha256:370be802e07f507b22f5cb7f40897e98b5abc6accdea98c33eb51c7a13d5d4e8"
+      },
+      {
+        "sequence": 15,
+        "type": "TaskClosed",
+        "at": "2026-08-26T19:26:39.804Z",
+        "detail": "SUCCEEDED"
+      },
+      {
+        "sequence": 16,
+        "type": "ArchiveArchived",
+        "at": "2026-08-26T19:26:39.804Z",
+        "detail": "sha256:8f54a6f71024e9167dd68b0019846a22093a0d3901a4c974f9c655dc4b21e5d0"
+      }
+    ],
+    "projectionDigest": "sha256:4a578cd6d90b51707d318ac39c79c6b6594f2114ec02cbe98141fb040924a06b"
+  },
+  "business": {
+    "events": [
+      {
+        "sequence": 1,
+        "type": "ArchitectRequired",
+        "at": "2026-08-26T19:18:30.087Z",
+        "detail": "r1"
+      },
+      {
+        "sequence": 2,
+        "type": "ArchitectArtifactsAccepted",
+        "at": "2026-08-26T19:19:32.394Z",
+        "detail": "TASK-SCAFFOLD-20260826191825.ARCHITECT.r1.g0"
+      },
+      {
+        "sequence": 3,
+        "type": "DesignReviewPassed",
+        "at": "2026-08-26T19:20:23.667Z",
+        "detail": "sha256:eb2202e5531c37e053d70a4a4bf9a833616ee6ef94f66ca90698f8e2cefe9164"
+      },
+      {
+        "sequence": 4,
+        "type": "ImplementationAccepted",
+        "at": "2026-08-26T19:21:57.499Z",
+        "detail": "sha256:b64f100ef9173f5e8a9d999daeb33484c19701d8a5ff3ae38fef60e07dd713dc"
+      },
+      {
+        "sequence": 5,
+        "type": "DocumentationGateAccepted",
+        "at": "2026-08-26T19:24:39.914Z",
+        "detail": "sha256:24d53d95b7ff6172b1d596dcbbc1b2dc50c1b62fa885cde0877a022331a9597d"
+      },
+      {
+        "sequence": 6,
+        "type": "TestPlanAccepted",
+        "at": "2026-08-26T19:24:56.522Z",
+        "detail": "sha256:22a86daf377b7ae9e90d409bedc3e2306cd9ca340b7c1b6e5b55ffd0ddc941a7"
+      },
+      {
+        "sequence": 7,
+        "type": "TrustedTestRunRecorded",
+        "at": "2026-08-26T19:24:56.678Z",
+        "detail": "sha256:5f78c1f4607d98ea41d2649afa05bc591088bd2f2485841088185590f5233ec3"
+      },
+      {
+        "sequence": 8,
+        "type": "TestVerificationPassed",
+        "at": "2026-08-26T19:25:12.556Z",
+        "detail": "sha256:7e568cda3c7750bac772b93167e0bd654eb39cc3cebe8d61a5eb9191b3982e2b"
+      },
+      {
+        "sequence": 9,
+        "type": "FinalReviewPassed",
+        "at": "2026-08-26T19:26:39.609Z",
+        "detail": "sha256:fb595a110e24caa251ea8eaa942d014f6e2598608d26333fe6ca15b7b32e1a5f"
+      },
+      {
+        "sequence": 10,
+        "type": "VerificationGatePassed",
+        "at": "2026-08-26T19:26:39.621Z",
+        "detail": "sha256:a1fe1ef1717903a9d3f682e1e0308bdf423828496de6108a0c38527a44020e23"
+      },
+      {
+        "sequence": 11,
+        "type": "KnowledgeDispositionRecorded",
+        "at": "2026-08-26T19:26:39.624Z",
+        "detail": "none:sha256:3e6fe2b8e9495ab8b1f17937464a266e701f2a538a9f1292dd72550a6b482a29"
+      },
+      {
+        "sequence": 12,
+        "type": "MergeConfirmed",
+        "at": "2026-08-26T19:26:39.790Z",
+        "detail": "sha256:704243ced5f0cda3389168913c5f041fc07ede6a5118ad4c5dc5ee1e143519f4"
+      },
+      {
+        "sequence": 13,
+        "type": "SuccessClosureCompleted",
+        "at": "2026-08-26T19:26:39.790Z",
+        "detail": "sha256:1a2a3e0b090e92d63961c0690e090ed3ca8acb3c49c8911ccdf98c021f7210a4"
+      },
+      {
+        "sequence": 14,
+        "type": "ArchivePending",
+        "at": "2026-08-26T19:26:39.790Z",
+        "detail": "sha256:370be802e07f507b22f5cb7f40897e98b5abc6accdea98c33eb51c7a13d5d4e8"
+      },
+      {
+        "sequence": 15,
+        "type": "TaskClosed",
+        "at": "2026-08-26T19:26:39.804Z",
+        "detail": "SUCCEEDED"
+      },
+      {
+        "sequence": 16,
+        "type": "ArchiveArchived",
+        "at": "2026-08-26T19:26:39.804Z",
+        "detail": "sha256:8f54a6f71024e9167dd68b0019846a22093a0d3901a4c974f9c655dc4b21e5d0"
+      }
+    ],
+    "attempts": [
+      {
+        "schemaVersion": 1,
+        "taskId": "TASK-SCAFFOLD-20260826191825",
+        "specRevision": 1,
+        "role": "ARCHITECT",
+        "phase": "ARCHITECT",
+        "generation": 0,
+        "runnerKind": "CODEX_EXEC",
+        "permission": "READ_ONLY",
+        "inputDigest": "sha256:a8dc18073333ed1a0a3d0ffbfac7121b0c29c7648226940e8cf37a1817d0072c",
+        "subjectCommit": "37403df5b465c127adfadd5a902182fa9e10e7fc",
+        "inputArtifactRefs": [],
+        "scheduledAt": "2026-08-26T19:18:30.097Z",
+        "attemptId": "TASK-SCAFFOLD-20260826191825.ARCHITECT.r1.g0",
+        "state": "SUCCEEDED",
+        "events": [
+          {
+            "sequence": 1,
+            "type": "RoleAttemptScheduled",
+            "at": "2026-08-26T19:18:30.097Z"
+          },
+          {
+            "sequence": 2,
+            "type": "RoleAttemptStarted",
+            "at": "2026-08-26T19:18:30.106Z"
+          },
+          {
+            "sequence": 3,
+            "type": "RoleAttemptSucceeded",
+            "at": "2026-08-26T19:19:32.389Z",
+            "detail": "sha256:630e63943597f2fecfe510d2a63ef36bd1a74e3bef414e16fcf7356012912ed5"
+          }
+        ],
+        "startedAt": "2026-08-26T19:18:30.106Z",
+        "finishedAt": "2026-08-26T19:19:32.389Z",
+        "run": {
+          "schemaVersion": 1,
+          "runId": "sha256:630e63943597f2fecfe510d2a63ef36bd1a74e3bef414e16fcf7356012912ed5",
+          "taskId": "TASK-SCAFFOLD-20260826191825",
+          "specRevision": 1,
+          "role": "ARCHITECT",
+          "phase": "ARCHITECT",
+          "attemptId": "TASK-SCAFFOLD-20260826191825.ARCHITECT.r1.g0",
+          "generation": 0,
+          "runnerKind": "CODEX_EXEC",
+          "sessionId": "01a03f82-7865-7c53-b42b-95d23937a243",
+          "outcome": "SUCCEEDED",
+          "startedAt": "2026-08-26T19:18:30.110Z",
+          "finishedAt": "2026-08-26T19:19:32.371Z",
+          "eventsRef": "role-v2-artifact://630e63943597f2fecfe510d2a63ef36bd1a74e3bef414e16fcf7356012912ed5/events.jsonl",
+          "eventsDigest": "sha256:24853e4902d88d9e8d9f31f60b905854368dcd0e51f5af7b762e4b2bb1eff47b",
+          "stderrRef": "role-v2-artifact://630e63943597f2fecfe510d2a63ef36bd1a74e3bef414e16fcf7356012912ed5/stderr.log",
+          "stderrDigest": "sha256:1aa26269eb1cc57f86b235a03cda53c004edb5b1e9fc99d4da4f00843293d721",
+          "outputRef": "role-v2-artifact://630e63943597f2fecfe510d2a63ef36bd1a74e3bef414e16fcf7356012912ed5/structured-output.json",
+          "outputDigest": "sha256:3d10eb58ecb9ec5f5757dd9ad3c54f658af3c81191d160c2b394b81d1ffe592d",
+          "manifestRef": "role-v2-artifact://630e63943597f2fecfe510d2a63ef36bd1a74e3bef414e16fcf7356012912ed5/manifest.json",
+          "manifestDigest": "sha256:1c34b40dee9aafa79d47631255559c458b38ae297cd857fe598193d2351a20e6",
+          "artifactRefs": [],
+          "findingRefs": [],
+          "evidenceDigest": "sha256:18beae50b61740c5043fef46eef66cbabab2a605e80294875f3870391d375b2a"
+        },
+        "attemptDigest": "sha256:2e340d6ff8fc76fe35862b6733fe370823ecce021b3d713b8b4f328a43e299a4"
+      },
+      {
+        "schemaVersion": 1,
+        "taskId": "TASK-SCAFFOLD-20260826191825",
+        "specRevision": 1,
+        "role": "REVIEW",
+        "phase": "DESIGN_REVIEW",
+        "generation": 0,
+        "runnerKind": "CODEX_EXEC",
+        "permission": "READ_ONLY",
+        "inputDigest": "sha256:5988906b9943e0886c745f389355c19e637dfc2932502dcdfd618c0a3d54dd82",
+        "subjectCommit": "37403df5b465c127adfadd5a902182fa9e10e7fc",
+        "inputArtifactRefs": [
+          "sha256:72a210a3773402c95259e32333a3307b4bdf8b5ca10b26f9decb730c897d5bf8",
+          "sha256:b3d622b35209a9d2b92800e745464149a6f831a5fee3128e30912bcd991e96c8",
+          "sha256:e1f08c4742ed5baa795e1ea601fb8e14e303f363f63c005fbd91956fff72c9a1"
+        ],
+        "scheduledAt": "2026-08-26T19:19:32.409Z",
+        "attemptId": "TASK-SCAFFOLD-20260826191825.DESIGN_REVIEW.r1.g0",
+        "state": "SUCCEEDED",
+        "events": [
+          {
+            "sequence": 1,
+            "type": "RoleAttemptScheduled",
+            "at": "2026-08-26T19:19:32.409Z"
+          },
+          {
+            "sequence": 2,
+            "type": "RoleAttemptStarted",
+            "at": "2026-08-26T19:19:32.412Z"
+          },
+          {
+            "sequence": 3,
+            "type": "RoleAttemptSucceeded",
+            "at": "2026-08-26T19:20:23.665Z",
+            "detail": "sha256:64dab5dacaaef42ee7c8ff911d413a18d8c36cc8e9ea703b91c8416c584d9b1a"
+          }
+        ],
+        "startedAt": "2026-08-26T19:19:32.412Z",
+        "finishedAt": "2026-08-26T19:20:23.665Z",
+        "run": {
+          "schemaVersion": 1,
+          "runId": "sha256:64dab5dacaaef42ee7c8ff911d413a18d8c36cc8e9ea703b91c8416c584d9b1a",
+          "taskId": "TASK-SCAFFOLD-20260826191825",
+          "specRevision": 1,
+          "role": "REVIEW",
+          "phase": "DESIGN_REVIEW",
+          "attemptId": "TASK-SCAFFOLD-20260826191825.DESIGN_REVIEW.r1.g0",
+          "generation": 0,
+          "runnerKind": "CODEX_EXEC",
+          "sessionId": "01a03f83-731a-7991-9ba8-ba535e81ca12",
+          "outcome": "SUCCEEDED",
+          "startedAt": "2026-08-26T19:19:32.417Z",
+          "finishedAt": "2026-08-26T19:20:23.661Z",
+          "eventsRef": "role-v2-artifact://64dab5dacaaef42ee7c8ff911d413a18d8c36cc8e9ea703b91c8416c584d9b1a/events.jsonl",
+          "eventsDigest": "sha256:1cbac61a77eae91fbb7aeda771125e612a340609c5202c3e653e22dc507df10b",
+          "stderrRef": "role-v2-artifact://64dab5dacaaef42ee7c8ff911d413a18d8c36cc8e9ea703b91c8416c584d9b1a/stderr.log",
+          "stderrDigest": "sha256:1aa26269eb1cc57f86b235a03cda53c004edb5b1e9fc99d4da4f00843293d721",
+          "outputRef": "role-v2-artifact://64dab5dacaaef42ee7c8ff911d413a18d8c36cc8e9ea703b91c8416c584d9b1a/structured-output.json",
+          "outputDigest": "sha256:4c565d6e2ebee5f85da0431fb6fd827b10def9469528c68d17ecc786df7addb7",
+          "manifestRef": "role-v2-artifact://64dab5dacaaef42ee7c8ff911d413a18d8c36cc8e9ea703b91c8416c584d9b1a/manifest.json",
+          "manifestDigest": "sha256:119080748a0415ec19e04bfa5ea2de6a5d3679a543248babf5108163684bbf85",
+          "artifactRefs": [
+            "lifecycle-artifact:TASK-SCAFFOLD-20260826191825:r1:design:TASK-SCAFFOLD-20260826191825.ARCHITECT.r1.g0:g0",
+            "lifecycle-artifact:TASK-SCAFFOLD-20260826191825:r1:plan:TASK-SCAFFOLD-20260826191825.ARCHITECT.r1.g0:g0",
+            "lifecycle-artifact:TASK-SCAFFOLD-20260826191825:r1:spec:TASK-SCAFFOLD-20260826191825.ARCHITECT.r1.g0:g0"
+          ],
+          "findingRefs": [],
+          "evidenceDigest": "sha256:7878211d918118312acd95fcb3a9d9a7bf3b1ab632d97ddcd7a182f7409d655e"
+        },
+        "attemptDigest": "sha256:e87043d096e9fbf97866391e52bdd06bb42db90ee33e748d7b7dfddc481a3e71"
+      },
+      {
+        "schemaVersion": 1,
+        "taskId": "TASK-SCAFFOLD-20260826191825",
+        "specRevision": 1,
+        "role": "IMPLEMENTATION",
+        "phase": "IMPLEMENTATION",
+        "generation": 0,
+        "runnerKind": "CODEX_EXEC",
+        "permission": "WORKSPACE_WRITE",
+        "inputDigest": "sha256:eeacd5c9567da874849497d15dc26a0e83a56e8e38557458fc7379be57020e08",
+        "subjectCommit": "37403df5b465c127adfadd5a902182fa9e10e7fc",
+        "inputArtifactRefs": [
+          "sha256:72a210a3773402c95259e32333a3307b4bdf8b5ca10b26f9decb730c897d5bf8",
+          "sha256:b3d622b35209a9d2b92800e745464149a6f831a5fee3128e30912bcd991e96c8",
+          "sha256:e1f08c4742ed5baa795e1ea601fb8e14e303f363f63c005fbd91956fff72c9a1",
+          "sha256:eb2202e5531c37e053d70a4a4bf9a833616ee6ef94f66ca90698f8e2cefe9164"
+        ],
+        "scheduledAt": "2026-08-26T19:20:23.679Z",
+        "attemptId": "TASK-SCAFFOLD-20260826191825.IMPLEMENTATION.r1.g0",
+        "state": "SUCCEEDED",
+        "events": [
+          {
+            "sequence": 1,
+            "type": "RoleAttemptScheduled",
+            "at": "2026-08-26T19:20:23.679Z"
+          },
+          {
+            "sequence": 2,
+            "type": "RoleAttemptStarted",
+            "at": "2026-08-26T19:20:23.681Z"
+          },
+          {
+            "sequence": 3,
+            "type": "RoleAttemptSucceeded",
+            "at": "2026-08-26T19:21:57.376Z",
+            "detail": "sha256:a3ed7f7fd57096d113968732249d3629f5a96184f0b4aecdcfe5844174421166"
+          }
+        ],
+        "startedAt": "2026-08-26T19:20:23.681Z",
+        "finishedAt": "2026-08-26T19:21:57.376Z",
+        "run": {
+          "schemaVersion": 1,
+          "runId": "sha256:a3ed7f7fd57096d113968732249d3629f5a96184f0b4aecdcfe5844174421166",
+          "taskId": "TASK-SCAFFOLD-20260826191825",
+          "specRevision": 1,
+          "role": "IMPLEMENTATION",
+          "phase": "IMPLEMENTATION",
+          "attemptId": "TASK-SCAFFOLD-20260826191825.IMPLEMENTATION.r1.g0",
+          "generation": 0,
+          "runnerKind": "CODEX_EXEC",
+          "sessionId": "01a03f84-4647-7170-a33b-e7b2a32fd432",
+          "outcome": "SUCCEEDED",
+          "startedAt": "2026-08-26T19:20:23.684Z",
+          "finishedAt": "2026-08-26T19:21:57.358Z",
+          "eventsRef": "role-v2-artifact://a3ed7f7fd57096d113968732249d3629f5a96184f0b4aecdcfe5844174421166/events.jsonl",
+          "eventsDigest": "sha256:63cb8cd3481e31df4a83b2d84a77b4c37cc7084612b37fa0b913deb1f9bc87e7",
+          "stderrRef": "role-v2-artifact://a3ed7f7fd57096d113968732249d3629f5a96184f0b4aecdcfe5844174421166/stderr.log",
+          "stderrDigest": "sha256:98a9fe8494e47e7fc80a8cfdc369de5ac008d272aa353488e780318f0563017a",
+          "outputRef": "role-v2-artifact://a3ed7f7fd57096d113968732249d3629f5a96184f0b4aecdcfe5844174421166/structured-output.json",
+          "outputDigest": "sha256:3ac7d16a884a3f01908470041d2513805f4321195114128f6ac8ecd28aba1cdb",
+          "manifestRef": "role-v2-artifact://a3ed7f7fd57096d113968732249d3629f5a96184f0b4aecdcfe5844174421166/manifest.json",
+          "manifestDigest": "sha256:f501444816055ea9240bd27aa68eb70958a2b1bd16c61d1bd60c3145d82c1ba6",
+          "artifactRefs": [
+            "node-test: node --test (exit 0, 1/1 passed)",
+            "standard-docs-validate: node scripts/docs_validate.mjs (exit 0, valid=true)"
+          ],
+          "findingRefs": [],
+          "evidenceDigest": "sha256:131e13fd0166e2c0f4df06ee485bdf0c363da282b29bb5892c975b1173a962f8"
+        },
+        "attemptDigest": "sha256:ccafa670d0344bd4f66b8e84fc035b21263c7bd12a709330fc42fd8f257fbd32"
+      },
+      {
+        "schemaVersion": 1,
+        "taskId": "TASK-SCAFFOLD-20260826191825",
+        "specRevision": 1,
+        "role": "DOCUMENTATION",
+        "phase": "DOCUMENTATION",
+        "generation": 0,
+        "runnerKind": "CODEX_EXEC",
+        "permission": "WORKSPACE_WRITE",
+        "inputDigest": "sha256:2c8f13bf0b3a9a66319f1609f442601fc2d9934b118bf21b434dffbc0c883794",
+        "subjectCommit": "1c05ba7cd240a43c76b701dfc89ecc18a32d2de2",
+        "inputArtifactRefs": [
+          "sha256:72a210a3773402c95259e32333a3307b4bdf8b5ca10b26f9decb730c897d5bf8",
+          "sha256:b3d622b35209a9d2b92800e745464149a6f831a5fee3128e30912bcd991e96c8",
+          "sha256:e1f08c4742ed5baa795e1ea601fb8e14e303f363f63c005fbd91956fff72c9a1",
+          "sha256:eb2202e5531c37e053d70a4a4bf9a833616ee6ef94f66ca90698f8e2cefe9164"
+        ],
+        "scheduledAt": "2026-08-26T19:21:57.518Z",
+        "attemptId": "TASK-SCAFFOLD-20260826191825.DOCUMENTATION.r1.g0",
+        "state": "SUCCEEDED",
+        "events": [
+          {
+            "sequence": 1,
+            "type": "RoleAttemptScheduled",
+            "at": "2026-08-26T19:21:57.518Z"
+          },
+          {
+            "sequence": 2,
+            "type": "RoleAttemptStarted",
+            "at": "2026-08-26T19:21:57.521Z"
+          },
+          {
+            "sequence": 3,
+            "type": "RoleAttemptSucceeded",
+            "at": "2026-08-26T19:24:39.790Z",
+            "detail": "sha256:cb5a8831e4798c663dea17f3f7788994e621e705f063353fae01822266c004c7"
+          }
+        ],
+        "startedAt": "2026-08-26T19:21:57.521Z",
+        "finishedAt": "2026-08-26T19:24:39.790Z",
+        "run": {
+          "schemaVersion": 1,
+          "runId": "sha256:cb5a8831e4798c663dea17f3f7788994e621e705f063353fae01822266c004c7",
+          "taskId": "TASK-SCAFFOLD-20260826191825",
+          "specRevision": 1,
+          "role": "DOCUMENTATION",
+          "phase": "DOCUMENTATION",
+          "attemptId": "TASK-SCAFFOLD-20260826191825.DOCUMENTATION.r1.g0",
+          "generation": 0,
+          "runnerKind": "CODEX_EXEC",
+          "sessionId": "01a03f85-ab66-7d82-90a2-2394e0ef1762",
+          "outcome": "SUCCEEDED",
+          "startedAt": "2026-08-26T19:21:57.524Z",
+          "finishedAt": "2026-08-26T19:24:39.772Z",
+          "eventsRef": "role-v2-artifact://cb5a8831e4798c663dea17f3f7788994e621e705f063353fae01822266c004c7/events.jsonl",
+          "eventsDigest": "sha256:2bd036a44b83d4629ce8bc40f9d58615696e6b6466bc7e25097286879396f17b",
+          "stderrRef": "role-v2-artifact://cb5a8831e4798c663dea17f3f7788994e621e705f063353fae01822266c004c7/stderr.log",
+          "stderrDigest": "sha256:1aa26269eb1cc57f86b235a03cda53c004edb5b1e9fc99d4da4f00843293d721",
+          "outputRef": "role-v2-artifact://cb5a8831e4798c663dea17f3f7788994e621e705f063353fae01822266c004c7/structured-output.json",
+          "outputDigest": "sha256:bf6c1b7be5ea8a2b1d485e8d9fccc8d2a30d74e2b389d41cf3805ca72b0cdf44",
+          "manifestRef": "role-v2-artifact://cb5a8831e4798c663dea17f3f7788994e621e705f063353fae01822266c004c7/manifest.json",
+          "manifestDigest": "sha256:7644875cf0a9c76469e2e90d43ffa83de6fc2153a8f7c1738420735d79ab752c",
+          "artifactRefs": [],
+          "findingRefs": [],
+          "evidenceDigest": "sha256:4e2fd9741a74734dedeeeeac31f17a7c29ec348b407a4f01a7d572e7d2f7d754"
+        },
+        "attemptDigest": "sha256:a3996cfbec638020f77c6a5ff7c7f518c5201d297a53a54c99adace40c754394"
+      },
+      {
+        "schemaVersion": 1,
+        "taskId": "TASK-SCAFFOLD-20260826191825",
+        "specRevision": 1,
+        "role": "TEST_VERIFICATION",
+        "phase": "TEST_PLAN",
+        "generation": 0,
+        "runnerKind": "CODEX_EXEC",
+        "permission": "READ_ONLY",
+        "inputDigest": "sha256:e38c8672ed42f3a984d8e7d540beaf6a9a2d28c009683b5d0d9f8665e57412f8",
+        "subjectCommit": "1c05ba7cd240a43c76b701dfc89ecc18a32d2de2",
+        "inputArtifactRefs": [
+          "sha256:24d53d95b7ff6172b1d596dcbbc1b2dc50c1b62fa885cde0877a022331a9597d",
+          "sha256:72a210a3773402c95259e32333a3307b4bdf8b5ca10b26f9decb730c897d5bf8",
+          "sha256:b3d622b35209a9d2b92800e745464149a6f831a5fee3128e30912bcd991e96c8",
+          "sha256:e1f08c4742ed5baa795e1ea601fb8e14e303f363f63c005fbd91956fff72c9a1",
+          "sha256:eb2202e5531c37e053d70a4a4bf9a833616ee6ef94f66ca90698f8e2cefe9164"
+        ],
+        "scheduledAt": "2026-08-26T19:24:39.925Z",
+        "attemptId": "TASK-SCAFFOLD-20260826191825.TEST_PLAN.r1.g0",
+        "state": "SUCCEEDED",
+        "events": [
+          {
+            "sequence": 1,
+            "type": "RoleAttemptScheduled",
+            "at": "2026-08-26T19:24:39.925Z"
+          },
+          {
+            "sequence": 2,
+            "type": "RoleAttemptStarted",
+            "at": "2026-08-26T19:24:39.927Z"
+          },
+          {
+            "sequence": 3,
+            "type": "RoleAttemptSucceeded",
+            "at": "2026-08-26T19:24:56.519Z",
+            "detail": "sha256:485454432b2009f9cb03a9fb754e004a5afbb3fba51e4fde8148c7c2dfe86a68"
+          }
+        ],
+        "startedAt": "2026-08-26T19:24:39.927Z",
+        "finishedAt": "2026-08-26T19:24:56.519Z",
+        "run": {
+          "schemaVersion": 1,
+          "runId": "sha256:485454432b2009f9cb03a9fb754e004a5afbb3fba51e4fde8148c7c2dfe86a68",
+          "taskId": "TASK-SCAFFOLD-20260826191825",
+          "specRevision": 1,
+          "role": "TEST_VERIFICATION",
+          "phase": "TEST_PLAN",
+          "attemptId": "TASK-SCAFFOLD-20260826191825.TEST_PLAN.r1.g0",
+          "generation": 0,
+          "runnerKind": "CODEX_EXEC",
+          "sessionId": "01a03f88-23d2-7fe1-bb40-fec7b110ca46",
+          "outcome": "SUCCEEDED",
+          "startedAt": "2026-08-26T19:24:39.931Z",
+          "finishedAt": "2026-08-26T19:24:56.512Z",
+          "eventsRef": "role-v2-artifact://485454432b2009f9cb03a9fb754e004a5afbb3fba51e4fde8148c7c2dfe86a68/events.jsonl",
+          "eventsDigest": "sha256:f83f4fd2d4f45e2420057ee482a7465079f2ae924e9eb622a18f6e9bc05f7ba9",
+          "stderrRef": "role-v2-artifact://485454432b2009f9cb03a9fb754e004a5afbb3fba51e4fde8148c7c2dfe86a68/stderr.log",
+          "stderrDigest": "sha256:1aa26269eb1cc57f86b235a03cda53c004edb5b1e9fc99d4da4f00843293d721",
+          "outputRef": "role-v2-artifact://485454432b2009f9cb03a9fb754e004a5afbb3fba51e4fde8148c7c2dfe86a68/structured-output.json",
+          "outputDigest": "sha256:2f77d6f3872660ce303748808471802056ddf8f8e38c931cf7dbdef6f832034a",
+          "manifestRef": "role-v2-artifact://485454432b2009f9cb03a9fb754e004a5afbb3fba51e4fde8148c7c2dfe86a68/manifest.json",
+          "manifestDigest": "sha256:fb810ba2b9ca425af28d957df92221e827d4976512ef6c5a54e6bf0373dd59ab",
+          "artifactRefs": [],
+          "findingRefs": [],
+          "evidenceDigest": "sha256:424f67ae1a1337878ce8c9a3917a28be495f48cf0a8a1ced5ca6da27c5e3566f"
+        },
+        "attemptDigest": "sha256:66965a1bcb91fbe30e75654b702615bc6a8c398ad4792211f2f3c9480c83f170"
+      },
+      {
+        "schemaVersion": 1,
+        "taskId": "TASK-SCAFFOLD-20260826191825",
+        "specRevision": 1,
+        "role": "TEST_VERIFICATION",
+        "phase": "TEST_ASSESSMENT",
+        "generation": 0,
+        "runnerKind": "CODEX_EXEC",
+        "permission": "READ_ONLY",
+        "inputDigest": "sha256:57b71e158a346921cc6f51f72123f1d02c712fc732b7743938ef113f9804e4e6",
+        "subjectCommit": "1c05ba7cd240a43c76b701dfc89ecc18a32d2de2",
+        "inputArtifactRefs": [
+          "sha256:22a86daf377b7ae9e90d409bedc3e2306cd9ca340b7c1b6e5b55ffd0ddc941a7",
+          "sha256:24d53d95b7ff6172b1d596dcbbc1b2dc50c1b62fa885cde0877a022331a9597d",
+          "sha256:72a210a3773402c95259e32333a3307b4bdf8b5ca10b26f9decb730c897d5bf8",
+          "sha256:b3d622b35209a9d2b92800e745464149a6f831a5fee3128e30912bcd991e96c8",
+          "sha256:e1f08c4742ed5baa795e1ea601fb8e14e303f363f63c005fbd91956fff72c9a1",
+          "sha256:eb2202e5531c37e053d70a4a4bf9a833616ee6ef94f66ca90698f8e2cefe9164"
+        ],
+        "scheduledAt": "2026-08-26T19:24:56.681Z",
+        "attemptId": "TASK-SCAFFOLD-20260826191825.TEST_ASSESSMENT.r1.g0",
+        "state": "SUCCEEDED",
+        "events": [
+          {
+            "sequence": 1,
+            "type": "RoleAttemptScheduled",
+            "at": "2026-08-26T19:24:56.681Z"
+          },
+          {
+            "sequence": 2,
+            "type": "RoleAttemptStarted",
+            "at": "2026-08-26T19:24:56.683Z"
+          },
+          {
+            "sequence": 3,
+            "type": "RoleAttemptSucceeded",
+            "at": "2026-08-26T19:25:12.555Z",
+            "detail": "sha256:076ec722bedbc326045b0fa03d3bcee2243bcff85e1029d936b41f4bc1769517"
+          }
+        ],
+        "startedAt": "2026-08-26T19:24:56.683Z",
+        "finishedAt": "2026-08-26T19:25:12.555Z",
+        "run": {
+          "schemaVersion": 1,
+          "runId": "sha256:076ec722bedbc326045b0fa03d3bcee2243bcff85e1029d936b41f4bc1769517",
+          "taskId": "TASK-SCAFFOLD-20260826191825",
+          "specRevision": 1,
+          "role": "TEST_VERIFICATION",
+          "phase": "TEST_ASSESSMENT",
+          "attemptId": "TASK-SCAFFOLD-20260826191825.TEST_ASSESSMENT.r1.g0",
+          "generation": 0,
+          "runnerKind": "CODEX_EXEC",
+          "sessionId": "01a03f88-65ea-74f1-a3af-1063a4d03091",
+          "outcome": "SUCCEEDED",
+          "startedAt": "2026-08-26T19:24:56.685Z",
+          "finishedAt": "2026-08-26T19:25:12.550Z",
+          "eventsRef": "role-v2-artifact://076ec722bedbc326045b0fa03d3bcee2243bcff85e1029d936b41f4bc1769517/events.jsonl",
+          "eventsDigest": "sha256:dee4bfc30075fa548cc8ffd008ec6b0e566150629a6bf7c2576c744ca0b598d4",
+          "stderrRef": "role-v2-artifact://076ec722bedbc326045b0fa03d3bcee2243bcff85e1029d936b41f4bc1769517/stderr.log",
+          "stderrDigest": "sha256:1aa26269eb1cc57f86b235a03cda53c004edb5b1e9fc99d4da4f00843293d721",
+          "outputRef": "role-v2-artifact://076ec722bedbc326045b0fa03d3bcee2243bcff85e1029d936b41f4bc1769517/structured-output.json",
+          "outputDigest": "sha256:4aeef200a99626a373fadd9a0227317000d178184b10bbda2c2a02138f6ba590",
+          "manifestRef": "role-v2-artifact://076ec722bedbc326045b0fa03d3bcee2243bcff85e1029d936b41f4bc1769517/manifest.json",
+          "manifestDigest": "sha256:14cd7ebebf94532ad2b23e59d6d2bcbef2e5f330f49d60ac5c481aa9098dd505",
+          "artifactRefs": [],
+          "findingRefs": [],
+          "evidenceDigest": "sha256:366e20057738c9e0cd1b73ca336288013d5ab05d75bc736b68e4ed51c01722e1"
+        },
+        "attemptDigest": "sha256:f33e7a2b07b2d1cf920f238d6224768806aa8ebc1f4bdef436a629008a7929af"
+      },
+      {
+        "schemaVersion": 1,
+        "taskId": "TASK-SCAFFOLD-20260826191825",
+        "specRevision": 1,
+        "role": "REVIEW",
+        "phase": "FINAL_REVIEW",
+        "generation": 0,
+        "runnerKind": "CODEX_EXEC",
+        "permission": "READ_ONLY",
+        "inputDigest": "sha256:6e83faff88ef84502749ebcc0e299429132ca93b85112e643cb1bdf54023b011",
+        "subjectCommit": "1c05ba7cd240a43c76b701dfc89ecc18a32d2de2",
+        "inputArtifactRefs": [
+          "sha256:22a86daf377b7ae9e90d409bedc3e2306cd9ca340b7c1b6e5b55ffd0ddc941a7",
+          "sha256:24d53d95b7ff6172b1d596dcbbc1b2dc50c1b62fa885cde0877a022331a9597d",
+          "sha256:72a210a3773402c95259e32333a3307b4bdf8b5ca10b26f9decb730c897d5bf8",
+          "sha256:7e568cda3c7750bac772b93167e0bd654eb39cc3cebe8d61a5eb9191b3982e2b",
+          "sha256:b3d622b35209a9d2b92800e745464149a6f831a5fee3128e30912bcd991e96c8",
+          "sha256:e1f08c4742ed5baa795e1ea601fb8e14e303f363f63c005fbd91956fff72c9a1",
+          "sha256:eb2202e5531c37e053d70a4a4bf9a833616ee6ef94f66ca90698f8e2cefe9164"
+        ],
+        "scheduledAt": "2026-08-26T19:25:12.568Z",
+        "attemptId": "TASK-SCAFFOLD-20260826191825.FINAL_REVIEW.r1.g0",
+        "state": "SUCCEEDED",
+        "events": [
+          {
+            "sequence": 1,
+            "type": "RoleAttemptScheduled",
+            "at": "2026-08-26T19:25:12.568Z"
+          },
+          {
+            "sequence": 2,
+            "type": "RoleAttemptStarted",
+            "at": "2026-08-26T19:25:12.570Z"
+          },
+          {
+            "sequence": 3,
+            "type": "RoleAttemptSucceeded",
+            "at": "2026-08-26T19:26:39.607Z",
+            "detail": "sha256:173aeed690f1f175c1106d466ed720ec32df012ffb6f2121788239d5053f2a47"
+          }
+        ],
+        "startedAt": "2026-08-26T19:25:12.570Z",
+        "finishedAt": "2026-08-26T19:26:39.607Z",
+        "run": {
+          "schemaVersion": 1,
+          "runId": "sha256:173aeed690f1f175c1106d466ed720ec32df012ffb6f2121788239d5053f2a47",
+          "taskId": "TASK-SCAFFOLD-20260826191825",
+          "specRevision": 1,
+          "role": "REVIEW",
+          "phase": "FINAL_REVIEW",
+          "attemptId": "TASK-SCAFFOLD-20260826191825.FINAL_REVIEW.r1.g0",
+          "generation": 0,
+          "runnerKind": "CODEX_EXEC",
+          "sessionId": "01a03f88-a330-7751-a360-0a3b0773c799",
+          "outcome": "SUCCEEDED",
+          "startedAt": "2026-08-26T19:25:12.573Z",
+          "finishedAt": "2026-08-26T19:26:39.593Z",
+          "eventsRef": "role-v2-artifact://173aeed690f1f175c1106d466ed720ec32df012ffb6f2121788239d5053f2a47/events.jsonl",
+          "eventsDigest": "sha256:58e7ee5e3ab822ee48f59ad6ba60359ca876441de9585ea429cbaa4b9baabb39",
+          "stderrRef": "role-v2-artifact://173aeed690f1f175c1106d466ed720ec32df012ffb6f2121788239d5053f2a47/stderr.log",
+          "stderrDigest": "sha256:1aa26269eb1cc57f86b235a03cda53c004edb5b1e9fc99d4da4f00843293d721",
+          "outputRef": "role-v2-artifact://173aeed690f1f175c1106d466ed720ec32df012ffb6f2121788239d5053f2a47/structured-output.json",
+          "outputDigest": "sha256:dec90ae7c5fdb009927cf97a55adc0182f6857bacfce17eaef028fee62f0176f",
+          "manifestRef": "role-v2-artifact://173aeed690f1f175c1106d466ed720ec32df012ffb6f2121788239d5053f2a47/manifest.json",
+          "manifestDigest": "sha256:df50eee077a7b3871d212c9bd6a4d802c3b51e5fd8e301d173cdc680d2b1ea51",
+          "artifactRefs": [
+            "/var/folders/b1/g0h9j9vd4356lc0n6h6gplz00000gn/T/moye-standard-docs-task-l3CzJu/runtime/standard-docs-task-acceptance/TASK-SCAFFOLD-20260826191825/.moye/artifacts/trusted-tests/sha256-58667d49fee9ac7e8d7bc95df908dc0a3fd1a9b2f268e38289ddace178f78fd1/manifest.json",
+            "artifact://documentation-policy/r1-g0/evidence.json",
+            "lifecycle-artifact:TASK-SCAFFOLD-20260826191825:r1:docs-impact:TASK-SCAFFOLD-20260826191825.DOCUMENTATION.r1.g0:g0",
+            "lifecycle-artifact:TASK-SCAFFOLD-20260826191825:r1:test-report:TASK-SCAFFOLD-20260826191825.TEST_ASSESSMENT.r1.g0:g0"
+          ],
+          "findingRefs": [],
+          "evidenceDigest": "sha256:4b2a9b6a1e286c933b2f7d80acac7ac6cc8d30614b95cbe25d62d5d248d7d167"
+        },
+        "attemptDigest": "sha256:2f826d73178d8cbcae0dbd08a3f28cc6c07d8a11f8c483fa14298a6c203a2994"
+      }
+    ]
+  },
+  "observer": {
+    "schemaVersion": 1,
+    "taskId": "TASK-SCAFFOLD-20260826191825",
+    "specRevision": 1,
+    "state": "CLOSED",
+    "facts": {
+      "events": 16,
+      "attempts": 7,
+      "failures": 0,
+      "unknown": 0,
+      "repairs": 0,
+      "replans": 0,
+      "artifacts": [
+        "DESIGN",
+        "DESIGN_REVIEW",
+        "DOCS_IMPACT",
+        "FINAL_REVIEW",
+        "KNOWLEDGE_DISPOSITION",
+        "PLAN",
+        "SPEC",
+        "TEST_PLAN",
+        "TEST_REPORT"
+      ],
+      "sessions": [
+        "01a03f82-7865-7c53-b42b-95d23937a243",
+        "01a03f83-731a-7991-9ba8-ba535e81ca12",
+        "01a03f84-4647-7170-a33b-e7b2a32fd432",
+        "01a03f85-ab66-7d82-90a2-2394e0ef1762",
+        "01a03f88-23d2-7fe1-bb40-fec7b110ca46",
+        "01a03f88-65ea-74f1-a3af-1063a4d03091",
+        "01a03f88-a330-7751-a360-0a3b0773c799"
+      ]
+    },
+    "alerts": [],
+    "projectionDigest": "sha256:4a578cd6d90b51707d318ac39c79c6b6594f2114ec02cbe98141fb040924a06b",
+    "reportDigest": "sha256:0f9bb9ba7bdfdaf77deaec88364fc89360bb98090426d438c321f2a63abbb15b"
+  },
+  "workflowRecovery": null,
+  "roles": [
+    {
+      "kind": "ARCHITECT",
+      "runId": "sha256:630e63943597f2fecfe510d2a63ef36bd1a74e3bef414e16fcf7356012912ed5",
+      "runnerKind": "CODEX_EXEC",
+      "sessionId": "01a03f82-7865-7c53-b42b-95d23937a243",
+      "specRevision": 1,
+      "attempt": 1,
+      "attemptId": "TASK-SCAFFOLD-20260826191825.ARCHITECT.r1.g0",
+      "generation": 0,
+      "outcome": "SUCCEEDED",
+      "verdict": "PASS",
+      "summary": "Spec Revision 1 is implementation-ready. Repository inspection was read-only; the current node test fails until the planned value change is made, while the documentation validator currently succeeds.",
+      "findingCount": 0,
+      "eventsUrl": "/api/tasks/TASK-SCAFFOLD-20260826191825/roles/sha256%3A630e63943597f2fecfe510d2a63ef36bd1a74e3bef414e16fcf7356012912ed5/events",
+      "sessionUrl": "/api/tasks/TASK-SCAFFOLD-20260826191825/roles/sha256%3A630e63943597f2fecfe510d2a63ef36bd1a74e3bef414e16fcf7356012912ed5/session",
+      "timelineUrl": "/api/tasks/TASK-SCAFFOLD-20260826191825/roles/sha256%3A630e63943597f2fecfe510d2a63ef36bd1a74e3bef414e16fcf7356012912ed5/timeline",
+      "stderrUrl": "/api/tasks/TASK-SCAFFOLD-20260826191825/roles/sha256%3A630e63943597f2fecfe510d2a63ef36bd1a74e3bef414e16fcf7356012912ed5/stderr"
+    },
+    {
+      "kind": "DESIGN_REVIEW",
+      "runId": "sha256:64dab5dacaaef42ee7c8ff911d413a18d8c36cc8e9ea703b91c8416c584d9b1a",
+      "runnerKind": "CODEX_EXEC",
+      "sessionId": "01a03f83-731a-7991-9ba8-ba535e81ca12",
+      "specRevision": 1,
+      "attempt": 1,
+      "attemptId": "TASK-SCAFFOLD-20260826191825.DESIGN_REVIEW.r1.g0",
+      "generation": 0,
+      "outcome": "SUCCEEDED",
+      "verdict": "PASS",
+      "summary": "Spec, Design, and Plan are internally consistent, repository-grounded, correctly dependency-linked, and sufficient for implementation. The authorized file scope, exact-byte requirement, knowledge update, scaffold preservation, configured test, and deterministic documentation validation are all addressed.",
+      "findingCount": 0,
+      "eventsUrl": "/api/tasks/TASK-SCAFFOLD-20260826191825/roles/sha256%3A64dab5dacaaef42ee7c8ff911d413a18d8c36cc8e9ea703b91c8416c584d9b1a/events",
+      "sessionUrl": "/api/tasks/TASK-SCAFFOLD-20260826191825/roles/sha256%3A64dab5dacaaef42ee7c8ff911d413a18d8c36cc8e9ea703b91c8416c584d9b1a/session",
+      "timelineUrl": "/api/tasks/TASK-SCAFFOLD-20260826191825/roles/sha256%3A64dab5dacaaef42ee7c8ff911d413a18d8c36cc8e9ea703b91c8416c584d9b1a/timeline",
+      "stderrUrl": "/api/tasks/TASK-SCAFFOLD-20260826191825/roles/sha256%3A64dab5dacaaef42ee7c8ff911d413a18d8c36cc8e9ea703b91c8416c584d9b1a/stderr"
+    },
+    {
+      "kind": "IMPLEMENTATION",
+      "runId": "sha256:a3ed7f7fd57096d113968732249d3629f5a96184f0b4aecdcfe5844174421166",
+      "runnerKind": "CODEX_EXEC",
+      "sessionId": "01a03f84-4647-7170-a33b-e7b2a32fd432",
+      "specRevision": 1,
+      "attempt": 1,
+      "attemptId": "TASK-SCAFFOLD-20260826191825.IMPLEMENTATION.r1.g0",
+      "generation": 0,
+      "outcome": "SUCCEEDED",
+      "verdict": "PASS",
+      "summary": "Updated src/value.txt and docs/knowledge/product.md. node --test passed 1/1; standard documentation validation returned valid=true.",
+      "findingCount": 0,
+      "eventsUrl": "/api/tasks/TASK-SCAFFOLD-20260826191825/roles/sha256%3Aa3ed7f7fd57096d113968732249d3629f5a96184f0b4aecdcfe5844174421166/events",
+      "sessionUrl": "/api/tasks/TASK-SCAFFOLD-20260826191825/roles/sha256%3Aa3ed7f7fd57096d113968732249d3629f5a96184f0b4aecdcfe5844174421166/session",
+      "timelineUrl": "/api/tasks/TASK-SCAFFOLD-20260826191825/roles/sha256%3Aa3ed7f7fd57096d113968732249d3629f5a96184f0b4aecdcfe5844174421166/timeline",
+      "stderrUrl": "/api/tasks/TASK-SCAFFOLD-20260826191825/roles/sha256%3Aa3ed7f7fd57096d113968732249d3629f5a96184f0b4aecdcfe5844174421166/stderr"
+    },
+    {
+      "kind": "DOCUMENTATION",
+      "runId": "sha256:cb5a8831e4798c663dea17f3f7788994e621e705f063353fae01822266c004c7",
+      "runnerKind": "CODEX_EXEC",
+      "sessionId": "01a03f85-ab66-7d82-90a2-2394e0ef1762",
+      "specRevision": 1,
+      "attempt": 1,
+      "attemptId": "TASK-SCAFFOLD-20260826191825.DOCUMENTATION.r1.g0",
+      "generation": 0,
+      "outcome": "SUCCEEDED",
+      "verdict": "PASS",
+      "summary": "Candidate 1c05ba7 changes only src/value.txt and docs/knowledge/product.md. Exact content and product fact are correct; node --test passed 1/1 and the custom documentation validator returned valid=true for the base-to-candidate range.",
+      "findingCount": 0,
+      "eventsUrl": "/api/tasks/TASK-SCAFFOLD-20260826191825/roles/sha256%3Acb5a8831e4798c663dea17f3f7788994e621e705f063353fae01822266c004c7/events",
+      "sessionUrl": "/api/tasks/TASK-SCAFFOLD-20260826191825/roles/sha256%3Acb5a8831e4798c663dea17f3f7788994e621e705f063353fae01822266c004c7/session",
+      "timelineUrl": "/api/tasks/TASK-SCAFFOLD-20260826191825/roles/sha256%3Acb5a8831e4798c663dea17f3f7788994e621e705f063353fae01822266c004c7/timeline",
+      "stderrUrl": "/api/tasks/TASK-SCAFFOLD-20260826191825/roles/sha256%3Acb5a8831e4798c663dea17f3f7788994e621e705f063353fae01822266c004c7/stderr"
+    },
+    {
+      "kind": "TEST_PLAN",
+      "runId": "sha256:485454432b2009f9cb03a9fb754e004a5afbb3fba51e4fde8148c7c2dfe86a68",
+      "runnerKind": "CODEX_EXEC",
+      "sessionId": "01a03f88-23d2-7fe1-bb40-fec7b110ca46",
+      "specRevision": 1,
+      "attempt": 1,
+      "attemptId": "TASK-SCAFFOLD-20260826191825.TEST_PLAN.r1.g0",
+      "generation": 0,
+      "outcome": "SUCCEEDED",
+      "verdict": "PASS",
+      "summary": "Read-only test plan covering REQ-1 through REQ-4.",
+      "findingCount": 0,
+      "eventsUrl": "/api/tasks/TASK-SCAFFOLD-20260826191825/roles/sha256%3A485454432b2009f9cb03a9fb754e004a5afbb3fba51e4fde8148c7c2dfe86a68/events",
+      "sessionUrl": "/api/tasks/TASK-SCAFFOLD-20260826191825/roles/sha256%3A485454432b2009f9cb03a9fb754e004a5afbb3fba51e4fde8148c7c2dfe86a68/session",
+      "timelineUrl": "/api/tasks/TASK-SCAFFOLD-20260826191825/roles/sha256%3A485454432b2009f9cb03a9fb754e004a5afbb3fba51e4fde8148c7c2dfe86a68/timeline",
+      "stderrUrl": "/api/tasks/TASK-SCAFFOLD-20260826191825/roles/sha256%3A485454432b2009f9cb03a9fb754e004a5afbb3fba51e4fde8148c7c2dfe86a68/stderr"
+    },
+    {
+      "kind": "TEST_ASSESSMENT",
+      "runId": "sha256:076ec722bedbc326045b0fa03d3bcee2243bcff85e1029d936b41f4bc1769517",
+      "runnerKind": "CODEX_EXEC",
+      "sessionId": "01a03f88-65ea-74f1-a3af-1063a4d03091",
+      "specRevision": 1,
+      "attempt": 1,
+      "attemptId": "TASK-SCAFFOLD-20260826191825.TEST_ASSESSMENT.r1.g0",
+      "generation": 0,
+      "outcome": "SUCCEEDED",
+      "verdict": "PASS",
+      "summary": "All trusted test cases have zero exit codes.",
+      "findingCount": 0,
+      "eventsUrl": "/api/tasks/TASK-SCAFFOLD-20260826191825/roles/sha256%3A076ec722bedbc326045b0fa03d3bcee2243bcff85e1029d936b41f4bc1769517/events",
+      "sessionUrl": "/api/tasks/TASK-SCAFFOLD-20260826191825/roles/sha256%3A076ec722bedbc326045b0fa03d3bcee2243bcff85e1029d936b41f4bc1769517/session",
+      "timelineUrl": "/api/tasks/TASK-SCAFFOLD-20260826191825/roles/sha256%3A076ec722bedbc326045b0fa03d3bcee2243bcff85e1029d936b41f4bc1769517/timeline",
+      "stderrUrl": "/api/tasks/TASK-SCAFFOLD-20260826191825/roles/sha256%3A076ec722bedbc326045b0fa03d3bcee2243bcff85e1029d936b41f4bc1769517/stderr"
+    },
+    {
+      "kind": "FINAL_REVIEW",
+      "runId": "sha256:173aeed690f1f175c1106d466ed720ec32df012ffb6f2121788239d5053f2a47",
+      "runnerKind": "CODEX_EXEC",
+      "sessionId": "01a03f88-a330-7751-a360-0a3b0773c799",
+      "specRevision": 1,
+      "attempt": 1,
+      "attemptId": "TASK-SCAFFOLD-20260826191825.FINAL_REVIEW.r1.g0",
+      "generation": 0,
+      "outcome": "SUCCEEDED",
+      "verdict": "PASS",
+      "summary": "Candidate 1c05ba7 satisfies all requirements. The diff is limited to the two authorized files, exact value bytes and product documentation are correct, scaffold-managed files are unchanged, and matching trusted test plus deterministic documentation evidence passed.",
+      "findingCount": 0,
+      "eventsUrl": "/api/tasks/TASK-SCAFFOLD-20260826191825/roles/sha256%3A173aeed690f1f175c1106d466ed720ec32df012ffb6f2121788239d5053f2a47/events",
+      "sessionUrl": "/api/tasks/TASK-SCAFFOLD-20260826191825/roles/sha256%3A173aeed690f1f175c1106d466ed720ec32df012ffb6f2121788239d5053f2a47/session",
+      "timelineUrl": "/api/tasks/TASK-SCAFFOLD-20260826191825/roles/sha256%3A173aeed690f1f175c1106d466ed720ec32df012ffb6f2121788239d5053f2a47/timeline",
+      "stderrUrl": "/api/tasks/TASK-SCAFFOLD-20260826191825/roles/sha256%3A173aeed690f1f175c1106d466ed720ec32df012ffb6f2121788239d5053f2a47/stderr"
+    }
+  ],
+  "stateMachine": {
+    "schemaVersion": 1,
+    "authority": "derived-from-runtime-projection",
+    "workflow": "CoreV2Workflow",
+    "definition": {
+      "nodes": [
+        {
+          "id": "START",
+          "label": "Task Intake",
+          "domain": "BUSINESS",
+          "terminal": false,
+          "status": "VISITED"
+        },
+        {
+          "id": "ARCHITECT_REQUIRED",
+          "label": "Spec / Design / Plan",
+          "domain": "BUSINESS",
+          "terminal": false,
+          "status": "VISITED"
+        },
+        {
+          "id": "DESIGN_REVIEW_REQUIRED",
+          "label": "Design Review",
+          "domain": "BUSINESS",
+          "terminal": false,
+          "status": "VISITED"
+        },
+        {
+          "id": "IMPLEMENTATION_REQUIRED",
+          "label": "Implementation",
+          "domain": "BUSINESS",
+          "terminal": false,
+          "status": "VISITED"
+        },
+        {
+          "id": "DOCUMENTATION_REQUIRED",
+          "label": "Documentation",
+          "domain": "BUSINESS",
+          "terminal": false,
+          "status": "VISITED"
+        },
+        {
+          "id": "TEST_PLAN_REQUIRED",
+          "label": "Test Plan",
+          "domain": "BUSINESS",
+          "terminal": false,
+          "status": "VISITED"
+        },
+        {
+          "id": "TEST_EXECUTION_REQUIRED",
+          "label": "Trusted Runner",
+          "domain": "BUSINESS",
+          "terminal": false,
+          "status": "VISITED"
+        },
+        {
+          "id": "TEST_ASSESSMENT_REQUIRED",
+          "label": "Test Assessment",
+          "domain": "BUSINESS",
+          "terminal": false,
+          "status": "VISITED"
+        },
+        {
+          "id": "FINAL_REVIEW_REQUIRED",
+          "label": "Final Review",
+          "domain": "BUSINESS",
+          "terminal": false,
+          "status": "VISITED"
+        },
+        {
+          "id": "VERIFICATION_GATE_REQUIRED",
+          "label": "Verification Gate",
+          "domain": "BUSINESS",
+          "terminal": false,
+          "status": "VISITED"
+        },
+        {
+          "id": "MERGE_REQUIRED",
+          "label": "Merge",
+          "domain": "BUSINESS",
+          "terminal": false,
+          "status": "VISITED"
+        },
+        {
+          "id": "CLOSED",
+          "label": "Closure",
+          "domain": "BUSINESS",
+          "terminal": true,
+          "status": "VISITED"
+        },
+        {
+          "id": "REPAIR_REQUIRED",
+          "label": "Repair",
+          "domain": "BUSINESS",
+          "terminal": false,
+          "status": "NOT_VISITED"
+        },
+        {
+          "id": "REPLAN_REQUIRED",
+          "label": "Replan",
+          "domain": "BUSINESS",
+          "terminal": false,
+          "status": "NOT_VISITED"
+        },
+        {
+          "id": "WAITING_RECONCILE",
+          "label": "Reconcile",
+          "domain": "BUSINESS",
+          "terminal": false,
+          "status": "NOT_VISITED"
+        },
+        {
+          "id": "FAILED_TERMINAL",
+          "label": "Failed",
+          "domain": "BUSINESS",
+          "terminal": true,
+          "status": "NOT_VISITED"
+        },
+        {
+          "id": "ARCHIVE_PENDING",
+          "label": "Archive Pending",
+          "domain": "ARCHIVE",
+          "terminal": false,
+          "status": "VISITED"
+        },
+        {
+          "id": "ARCHIVE_FAILED",
+          "label": "Archive Failed",
+          "domain": "ARCHIVE",
+          "terminal": false,
+          "status": "NOT_VISITED"
+        },
+        {
+          "id": "ARCHIVED",
+          "label": "Archived",
+          "domain": "ARCHIVE",
+          "terminal": true,
+          "status": "CURRENT"
+        }
+      ],
+      "edges": [
+        {
+          "from": "START",
+          "to": "ARCHITECT_REQUIRED",
+          "kind": "NORMAL",
+          "label": "Task Intake 与 Context Plan",
+          "traversed": true
+        },
+        {
+          "from": "ARCHITECT_REQUIRED",
+          "to": "DESIGN_REVIEW_REQUIRED",
+          "kind": "NORMAL",
+          "label": "Spec、Design、Plan Artifact 完整",
+          "traversed": true
+        },
+        {
+          "from": "DESIGN_REVIEW_REQUIRED",
+          "to": "IMPLEMENTATION_REQUIRED",
+          "kind": "NORMAL",
+          "label": "Design Review PASSED",
+          "traversed": true
+        },
+        {
+          "from": "DESIGN_REVIEW_REQUIRED",
+          "to": "REPLAN_REQUIRED",
+          "kind": "REPAIR",
+          "label": "需求或设计 Finding",
+          "traversed": false
+        },
+        {
+          "from": "REPLAN_REQUIRED",
+          "to": "ARCHITECT_REQUIRED",
+          "kind": "REPAIR",
+          "label": "Spec Revision N+1",
+          "traversed": false
+        },
+        {
+          "from": "IMPLEMENTATION_REQUIRED",
+          "to": "DOCUMENTATION_REQUIRED",
+          "kind": "NORMAL",
+          "label": "Candidate Commit 与 Self Review 通过",
+          "traversed": true
+        },
+        {
+          "from": "IMPLEMENTATION_REQUIRED",
+          "to": "REPAIR_REQUIRED",
+          "kind": "REPAIR",
+          "label": "Implementation Finding",
+          "traversed": false
+        },
+        {
+          "from": "DOCUMENTATION_REQUIRED",
+          "to": "TEST_PLAN_REQUIRED",
+          "kind": "NORMAL",
+          "label": "Docs Impact 已绑定 Candidate",
+          "traversed": true
+        },
+        {
+          "from": "DOCUMENTATION_REQUIRED",
+          "to": "REPAIR_REQUIRED",
+          "kind": "REPAIR",
+          "label": "Documentation Finding",
+          "traversed": false
+        },
+        {
+          "from": "TEST_PLAN_REQUIRED",
+          "to": "TEST_EXECUTION_REQUIRED",
+          "kind": "NORMAL",
+          "label": "Requirement → Test Case 计划通过",
+          "traversed": true
+        },
+        {
+          "from": "TEST_EXECUTION_REQUIRED",
+          "to": "TEST_ASSESSMENT_REQUIRED",
+          "kind": "NORMAL",
+          "label": "Trusted Runner Evidence 已记录",
+          "traversed": true
+        },
+        {
+          "from": "TEST_EXECUTION_REQUIRED",
+          "to": "WAITING_RECONCILE",
+          "kind": "FAILURE",
+          "label": "测试外部结果未知",
+          "traversed": false
+        },
+        {
+          "from": "ARCHITECT_REQUIRED",
+          "to": "WAITING_RECONCILE",
+          "kind": "FAILURE",
+          "label": "Agent 执行回执未知",
+          "traversed": false
+        },
+        {
+          "from": "DESIGN_REVIEW_REQUIRED",
+          "to": "WAITING_RECONCILE",
+          "kind": "FAILURE",
+          "label": "Agent 执行回执未知",
+          "traversed": false
+        },
+        {
+          "from": "IMPLEMENTATION_REQUIRED",
+          "to": "WAITING_RECONCILE",
+          "kind": "FAILURE",
+          "label": "Agent 执行回执未知",
+          "traversed": false
+        },
+        {
+          "from": "DOCUMENTATION_REQUIRED",
+          "to": "WAITING_RECONCILE",
+          "kind": "FAILURE",
+          "label": "Agent 执行回执未知",
+          "traversed": false
+        },
+        {
+          "from": "TEST_PLAN_REQUIRED",
+          "to": "WAITING_RECONCILE",
+          "kind": "FAILURE",
+          "label": "Agent 执行回执未知",
+          "traversed": false
+        },
+        {
+          "from": "TEST_ASSESSMENT_REQUIRED",
+          "to": "WAITING_RECONCILE",
+          "kind": "FAILURE",
+          "label": "Agent 执行回执未知",
+          "traversed": false
+        },
+        {
+          "from": "FINAL_REVIEW_REQUIRED",
+          "to": "WAITING_RECONCILE",
+          "kind": "FAILURE",
+          "label": "Agent 执行回执未知",
+          "traversed": false
+        },
+        {
+          "from": "TEST_ASSESSMENT_REQUIRED",
+          "to": "FINAL_REVIEW_REQUIRED",
+          "kind": "NORMAL",
+          "label": "综合测试建议 PASS",
+          "traversed": true
+        },
+        {
+          "from": "TEST_ASSESSMENT_REQUIRED",
+          "to": "REPAIR_REQUIRED",
+          "kind": "REPAIR",
+          "label": "测试发现实现缺陷",
+          "traversed": false
+        },
+        {
+          "from": "TEST_ASSESSMENT_REQUIRED",
+          "to": "WAITING_RECONCILE",
+          "kind": "FAILURE",
+          "label": "测试结论 INCONCLUSIVE",
+          "traversed": false
+        },
+        {
+          "from": "FINAL_REVIEW_REQUIRED",
+          "to": "VERIFICATION_GATE_REQUIRED",
+          "kind": "NORMAL",
+          "label": "最终隔离 Review PASSED",
+          "traversed": true
+        },
+        {
+          "from": "FINAL_REVIEW_REQUIRED",
+          "to": "REPAIR_REQUIRED",
+          "kind": "REPAIR",
+          "label": "最终 Review Finding",
+          "traversed": false
+        },
+        {
+          "from": "REPAIR_REQUIRED",
+          "to": "IMPLEMENTATION_REQUIRED",
+          "kind": "REPAIR",
+          "label": "授权新 Implementation Generation",
+          "traversed": false
+        },
+        {
+          "from": "WAITING_RECONCILE",
+          "to": "TEST_EXECUTION_REQUIRED",
+          "kind": "REPAIR",
+          "label": "对账后恢复原测试",
+          "traversed": false
+        },
+        {
+          "from": "WAITING_RECONCILE",
+          "to": "ARCHITECT_REQUIRED",
+          "kind": "REPAIR",
+          "label": "Agent Manifest 确认后恢复原阶段",
+          "traversed": false
+        },
+        {
+          "from": "WAITING_RECONCILE",
+          "to": "DESIGN_REVIEW_REQUIRED",
+          "kind": "REPAIR",
+          "label": "Agent Manifest 确认后恢复原阶段",
+          "traversed": false
+        },
+        {
+          "from": "WAITING_RECONCILE",
+          "to": "IMPLEMENTATION_REQUIRED",
+          "kind": "REPAIR",
+          "label": "Agent Manifest 确认后恢复原阶段",
+          "traversed": false
+        },
+        {
+          "from": "WAITING_RECONCILE",
+          "to": "DOCUMENTATION_REQUIRED",
+          "kind": "REPAIR",
+          "label": "Agent Manifest 确认后恢复原阶段",
+          "traversed": false
+        },
+        {
+          "from": "WAITING_RECONCILE",
+          "to": "TEST_PLAN_REQUIRED",
+          "kind": "REPAIR",
+          "label": "Agent Manifest 确认后恢复原阶段",
+          "traversed": false
+        },
+        {
+          "from": "WAITING_RECONCILE",
+          "to": "TEST_ASSESSMENT_REQUIRED",
+          "kind": "REPAIR",
+          "label": "Agent Manifest 确认后恢复原阶段",
+          "traversed": false
+        },
+        {
+          "from": "WAITING_RECONCILE",
+          "to": "FINAL_REVIEW_REQUIRED",
+          "kind": "REPAIR",
+          "label": "Agent Manifest 确认后恢复原阶段",
+          "traversed": false
+        },
+        {
+          "from": "VERIFICATION_GATE_REQUIRED",
+          "to": "MERGE_REQUIRED",
+          "kind": "NORMAL",
+          "label": "确定性 Artifact Gate 通过",
+          "traversed": true
+        },
+        {
+          "from": "MERGE_REQUIRED",
+          "to": "ARCHIVE_PENDING",
+          "kind": "ARCHIVE",
+          "label": "Merge 与 Success Closure 已冻结，等待 Archive Receipt",
+          "traversed": true
+        },
+        {
+          "from": "CLOSED",
+          "to": "ARCHIVED",
+          "kind": "ARCHIVE",
+          "label": "Archive Receipt 确认",
+          "traversed": true
+        },
+        {
+          "from": "FAILED_TERMINAL",
+          "to": "ARCHIVE_PENDING",
+          "kind": "ARCHIVE",
+          "label": "Failure Artifact、Knowledge Disposition 与 Closure 已冻结",
+          "traversed": false
+        },
+        {
+          "from": "ARCHIVE_PENDING",
+          "to": "CLOSED",
+          "kind": "ARCHIVE",
+          "label": "业务 Closure 已冻结并收到 Archive Receipt",
+          "traversed": true
+        },
+        {
+          "from": "ARCHIVE_PENDING",
+          "to": "ARCHIVE_FAILED",
+          "kind": "FAILURE",
+          "label": "Archive Effect 失败；业务执行不得重跑",
+          "traversed": false
+        },
+        {
+          "from": "ARCHIVE_FAILED",
+          "to": "ARCHIVE_PENDING",
+          "kind": "REPAIR",
+          "label": "仅重试同一 Archive Effect",
+          "traversed": false
+        },
+        {
+          "from": "ARCHITECT_REQUIRED",
+          "to": "FAILED_TERMINAL",
+          "kind": "FAILURE",
+          "label": "不可恢复或预算耗尽",
+          "traversed": false
+        },
+        {
+          "from": "DESIGN_REVIEW_REQUIRED",
+          "to": "FAILED_TERMINAL",
+          "kind": "FAILURE",
+          "label": "不可恢复或预算耗尽",
+          "traversed": false
+        },
+        {
+          "from": "IMPLEMENTATION_REQUIRED",
+          "to": "FAILED_TERMINAL",
+          "kind": "FAILURE",
+          "label": "不可恢复或预算耗尽",
+          "traversed": false
+        },
+        {
+          "from": "DOCUMENTATION_REQUIRED",
+          "to": "FAILED_TERMINAL",
+          "kind": "FAILURE",
+          "label": "不可恢复或预算耗尽",
+          "traversed": false
+        },
+        {
+          "from": "TEST_PLAN_REQUIRED",
+          "to": "FAILED_TERMINAL",
+          "kind": "FAILURE",
+          "label": "不可恢复或预算耗尽",
+          "traversed": false
+        },
+        {
+          "from": "TEST_EXECUTION_REQUIRED",
+          "to": "FAILED_TERMINAL",
+          "kind": "FAILURE",
+          "label": "不可恢复或预算耗尽",
+          "traversed": false
+        },
+        {
+          "from": "TEST_ASSESSMENT_REQUIRED",
+          "to": "FAILED_TERMINAL",
+          "kind": "FAILURE",
+          "label": "不可恢复或预算耗尽",
+          "traversed": false
+        },
+        {
+          "from": "FINAL_REVIEW_REQUIRED",
+          "to": "FAILED_TERMINAL",
+          "kind": "FAILURE",
+          "label": "不可恢复或预算耗尽",
+          "traversed": false
+        },
+        {
+          "from": "VERIFICATION_GATE_REQUIRED",
+          "to": "FAILED_TERMINAL",
+          "kind": "FAILURE",
+          "label": "不可恢复或预算耗尽",
+          "traversed": false
+        },
+        {
+          "from": "MERGE_REQUIRED",
+          "to": "FAILED_TERMINAL",
+          "kind": "FAILURE",
+          "label": "不可恢复或预算耗尽",
+          "traversed": false
+        },
+        {
+          "from": "REPAIR_REQUIRED",
+          "to": "FAILED_TERMINAL",
+          "kind": "FAILURE",
+          "label": "不可恢复或预算耗尽",
+          "traversed": false
+        },
+        {
+          "from": "REPLAN_REQUIRED",
+          "to": "FAILED_TERMINAL",
+          "kind": "FAILURE",
+          "label": "不可恢复或预算耗尽",
+          "traversed": false
+        }
+      ]
+    },
+    "current": {
+      "business": "CLOSED",
+      "archive": "ARCHIVED",
+      "overall": "ARCHIVED",
+      "historyCurrent": "ARCHIVED",
+      "consistency": "VERIFIED"
+    },
+    "history": [
+      {
+        "sequence": 1,
+        "eventType": "ArchitectRequired",
+        "from": "START",
+        "to": "ARCHITECT_REQUIRED",
+        "domain": "BUSINESS",
+        "at": "2026-08-26T19:18:30.087Z",
+        "detail": "r1"
+      },
+      {
+        "sequence": 2,
+        "eventType": "ArchitectArtifactsAccepted",
+        "from": "ARCHITECT_REQUIRED",
+        "to": "DESIGN_REVIEW_REQUIRED",
+        "domain": "BUSINESS",
+        "at": "2026-08-26T19:19:32.394Z",
+        "detail": "TASK-SCAFFOLD-20260826191825.ARCHITECT.r1.g0"
+      },
+      {
+        "sequence": 3,
+        "eventType": "DesignReviewPassed",
+        "from": "DESIGN_REVIEW_REQUIRED",
+        "to": "IMPLEMENTATION_REQUIRED",
+        "domain": "BUSINESS",
+        "at": "2026-08-26T19:20:23.667Z",
+        "detail": "sha256:eb2202e5531c37e053d70a4a4bf9a833616ee6ef94f66ca90698f8e2cefe9164"
+      },
+      {
+        "sequence": 4,
+        "eventType": "ImplementationAccepted",
+        "from": "IMPLEMENTATION_REQUIRED",
+        "to": "DOCUMENTATION_REQUIRED",
+        "domain": "BUSINESS",
+        "at": "2026-08-26T19:21:57.499Z",
+        "detail": "sha256:b64f100ef9173f5e8a9d999daeb33484c19701d8a5ff3ae38fef60e07dd713dc"
+      },
+      {
+        "sequence": 5,
+        "eventType": "DocumentationGateAccepted",
+        "from": "DOCUMENTATION_REQUIRED",
+        "to": "TEST_PLAN_REQUIRED",
+        "domain": "BUSINESS",
+        "at": "2026-08-26T19:24:39.914Z",
+        "detail": "sha256:24d53d95b7ff6172b1d596dcbbc1b2dc50c1b62fa885cde0877a022331a9597d"
+      },
+      {
+        "sequence": 6,
+        "eventType": "TestPlanAccepted",
+        "from": "TEST_PLAN_REQUIRED",
+        "to": "TEST_EXECUTION_REQUIRED",
+        "domain": "BUSINESS",
+        "at": "2026-08-26T19:24:56.522Z",
+        "detail": "sha256:22a86daf377b7ae9e90d409bedc3e2306cd9ca340b7c1b6e5b55ffd0ddc941a7"
+      },
+      {
+        "sequence": 7,
+        "eventType": "TrustedTestRunRecorded",
+        "from": "TEST_EXECUTION_REQUIRED",
+        "to": "TEST_ASSESSMENT_REQUIRED",
+        "domain": "BUSINESS",
+        "at": "2026-08-26T19:24:56.678Z",
+        "detail": "sha256:5f78c1f4607d98ea41d2649afa05bc591088bd2f2485841088185590f5233ec3"
+      },
+      {
+        "sequence": 8,
+        "eventType": "TestVerificationPassed",
+        "from": "TEST_ASSESSMENT_REQUIRED",
+        "to": "FINAL_REVIEW_REQUIRED",
+        "domain": "BUSINESS",
+        "at": "2026-08-26T19:25:12.556Z",
+        "detail": "sha256:7e568cda3c7750bac772b93167e0bd654eb39cc3cebe8d61a5eb9191b3982e2b"
+      },
+      {
+        "sequence": 9,
+        "eventType": "FinalReviewPassed",
+        "from": "FINAL_REVIEW_REQUIRED",
+        "to": "VERIFICATION_GATE_REQUIRED",
+        "domain": "BUSINESS",
+        "at": "2026-08-26T19:26:39.609Z",
+        "detail": "sha256:fb595a110e24caa251ea8eaa942d014f6e2598608d26333fe6ca15b7b32e1a5f"
+      },
+      {
+        "sequence": 10,
+        "eventType": "VerificationGatePassed",
+        "from": "VERIFICATION_GATE_REQUIRED",
+        "to": "MERGE_REQUIRED",
+        "domain": "BUSINESS",
+        "at": "2026-08-26T19:26:39.621Z",
+        "detail": "sha256:a1fe1ef1717903a9d3f682e1e0308bdf423828496de6108a0c38527a44020e23"
+      },
+      {
+        "sequence": 14,
+        "eventType": "ArchivePending",
+        "from": "MERGE_REQUIRED",
+        "to": "ARCHIVE_PENDING",
+        "domain": "ARCHIVE",
+        "at": "2026-08-26T19:26:39.790Z",
+        "detail": "sha256:370be802e07f507b22f5cb7f40897e98b5abc6accdea98c33eb51c7a13d5d4e8"
+      },
+      {
+        "sequence": 15,
+        "eventType": "TaskClosed",
+        "from": "ARCHIVE_PENDING",
+        "to": "CLOSED",
+        "domain": "BUSINESS",
+        "at": "2026-08-26T19:26:39.804Z",
+        "detail": "SUCCEEDED"
+      },
+      {
+        "sequence": 16,
+        "eventType": "ArchiveArchived",
+        "from": "CLOSED",
+        "to": "ARCHIVED",
+        "domain": "ARCHIVE",
+        "at": "2026-08-26T19:26:39.804Z",
+        "detail": "sha256:8f54a6f71024e9167dd68b0019846a22093a0d3901a4c974f9c655dc4b21e5d0"
+      }
+    ],
+    "executions": [
+      {
+        "kind": "ROLE_RUN",
+        "id": "sha256:630e63943597f2fecfe510d2a63ef36bd1a74e3bef414e16fcf7356012912ed5",
+        "state": "SUCCEEDED",
+        "step": "ARCHITECT_REQUIRED",
+        "generation": 0,
+        "attemptId": "TASK-SCAFFOLD-20260826191825.ARCHITECT.r1.g0",
+        "sessionId": "01a03f82-7865-7c53-b42b-95d23937a243",
+        "producer": "CODEX_EXEC",
+        "startedAt": "2026-08-26T19:18:30.106Z",
+        "finishedAt": "2026-08-26T19:19:32.389Z",
+        "evidenceDigests": [
+          "sha256:2e340d6ff8fc76fe35862b6733fe370823ecce021b3d713b8b4f328a43e299a4",
+          "sha256:18beae50b61740c5043fef46eef66cbabab2a605e80294875f3870391d375b2a",
+          "sha256:24853e4902d88d9e8d9f31f60b905854368dcd0e51f5af7b762e4b2bb1eff47b"
+        ]
+      },
+      {
+        "kind": "REVIEW_RUN",
+        "id": "sha256:64dab5dacaaef42ee7c8ff911d413a18d8c36cc8e9ea703b91c8416c584d9b1a",
+        "state": "SUCCEEDED",
+        "step": "DESIGN_REVIEW_REQUIRED",
+        "generation": 0,
+        "attemptId": "TASK-SCAFFOLD-20260826191825.DESIGN_REVIEW.r1.g0",
+        "sessionId": "01a03f83-731a-7991-9ba8-ba535e81ca12",
+        "producer": "CODEX_EXEC",
+        "startedAt": "2026-08-26T19:19:32.412Z",
+        "finishedAt": "2026-08-26T19:20:23.665Z",
+        "evidenceDigests": [
+          "sha256:e87043d096e9fbf97866391e52bdd06bb42db90ee33e748d7b7dfddc481a3e71",
+          "sha256:7878211d918118312acd95fcb3a9d9a7bf3b1ab632d97ddcd7a182f7409d655e",
+          "sha256:1cbac61a77eae91fbb7aeda771125e612a340609c5202c3e653e22dc507df10b"
+        ]
+      },
+      {
+        "kind": "ROLE_RUN",
+        "id": "sha256:a3ed7f7fd57096d113968732249d3629f5a96184f0b4aecdcfe5844174421166",
+        "state": "SUCCEEDED",
+        "step": "IMPLEMENTATION_REQUIRED",
+        "generation": 0,
+        "attemptId": "TASK-SCAFFOLD-20260826191825.IMPLEMENTATION.r1.g0",
+        "sessionId": "01a03f84-4647-7170-a33b-e7b2a32fd432",
+        "producer": "CODEX_EXEC",
+        "startedAt": "2026-08-26T19:20:23.681Z",
+        "finishedAt": "2026-08-26T19:21:57.376Z",
+        "evidenceDigests": [
+          "sha256:ccafa670d0344bd4f66b8e84fc035b21263c7bd12a709330fc42fd8f257fbd32",
+          "sha256:131e13fd0166e2c0f4df06ee485bdf0c363da282b29bb5892c975b1173a962f8",
+          "sha256:63cb8cd3481e31df4a83b2d84a77b4c37cc7084612b37fa0b913deb1f9bc87e7"
+        ]
+      },
+      {
+        "kind": "ROLE_RUN",
+        "id": "sha256:cb5a8831e4798c663dea17f3f7788994e621e705f063353fae01822266c004c7",
+        "state": "SUCCEEDED",
+        "step": "DOCUMENTATION_REQUIRED",
+        "generation": 0,
+        "attemptId": "TASK-SCAFFOLD-20260826191825.DOCUMENTATION.r1.g0",
+        "sessionId": "01a03f85-ab66-7d82-90a2-2394e0ef1762",
+        "producer": "CODEX_EXEC",
+        "startedAt": "2026-08-26T19:21:57.521Z",
+        "finishedAt": "2026-08-26T19:24:39.790Z",
+        "evidenceDigests": [
+          "sha256:a3996cfbec638020f77c6a5ff7c7f518c5201d297a53a54c99adace40c754394",
+          "sha256:4e2fd9741a74734dedeeeeac31f17a7c29ec348b407a4f01a7d572e7d2f7d754",
+          "sha256:2bd036a44b83d4629ce8bc40f9d58615696e6b6466bc7e25097286879396f17b"
+        ]
+      },
+      {
+        "kind": "ROLE_RUN",
+        "id": "sha256:485454432b2009f9cb03a9fb754e004a5afbb3fba51e4fde8148c7c2dfe86a68",
+        "state": "SUCCEEDED",
+        "step": "TEST_PLAN_REQUIRED",
+        "generation": 0,
+        "attemptId": "TASK-SCAFFOLD-20260826191825.TEST_PLAN.r1.g0",
+        "sessionId": "01a03f88-23d2-7fe1-bb40-fec7b110ca46",
+        "producer": "CODEX_EXEC",
+        "startedAt": "2026-08-26T19:24:39.927Z",
+        "finishedAt": "2026-08-26T19:24:56.519Z",
+        "evidenceDigests": [
+          "sha256:66965a1bcb91fbe30e75654b702615bc6a8c398ad4792211f2f3c9480c83f170",
+          "sha256:424f67ae1a1337878ce8c9a3917a28be495f48cf0a8a1ced5ca6da27c5e3566f",
+          "sha256:f83f4fd2d4f45e2420057ee482a7465079f2ae924e9eb622a18f6e9bc05f7ba9"
+        ]
+      },
+      {
+        "kind": "ROLE_RUN",
+        "id": "sha256:076ec722bedbc326045b0fa03d3bcee2243bcff85e1029d936b41f4bc1769517",
+        "state": "SUCCEEDED",
+        "step": "TEST_ASSESSMENT_REQUIRED",
+        "generation": 0,
+        "attemptId": "TASK-SCAFFOLD-20260826191825.TEST_ASSESSMENT.r1.g0",
+        "sessionId": "01a03f88-65ea-74f1-a3af-1063a4d03091",
+        "producer": "CODEX_EXEC",
+        "startedAt": "2026-08-26T19:24:56.683Z",
+        "finishedAt": "2026-08-26T19:25:12.555Z",
+        "evidenceDigests": [
+          "sha256:f33e7a2b07b2d1cf920f238d6224768806aa8ebc1f4bdef436a629008a7929af",
+          "sha256:366e20057738c9e0cd1b73ca336288013d5ab05d75bc736b68e4ed51c01722e1",
+          "sha256:dee4bfc30075fa548cc8ffd008ec6b0e566150629a6bf7c2576c744ca0b598d4"
+        ]
+      },
+      {
+        "kind": "REVIEW_RUN",
+        "id": "sha256:173aeed690f1f175c1106d466ed720ec32df012ffb6f2121788239d5053f2a47",
+        "state": "SUCCEEDED",
+        "step": "FINAL_REVIEW_REQUIRED",
+        "generation": 0,
+        "attemptId": "TASK-SCAFFOLD-20260826191825.FINAL_REVIEW.r1.g0",
+        "sessionId": "01a03f88-a330-7751-a360-0a3b0773c799",
+        "producer": "CODEX_EXEC",
+        "startedAt": "2026-08-26T19:25:12.570Z",
+        "finishedAt": "2026-08-26T19:26:39.607Z",
+        "evidenceDigests": [
+          "sha256:2f826d73178d8cbcae0dbd08a3f28cc6c07d8a11f8c483fa14298a6c203a2994",
+          "sha256:4b2a9b6a1e286c933b2f7d80acac7ac6cc8d30614b95cbe25d62d5d248d7d167",
+          "sha256:58e7ee5e3ab822ee48f59ad6ba60359ca876441de9585ea429cbaa4b9baabb39"
+        ]
+      },
+      {
+        "kind": "VERIFICATION",
+        "id": "sha256:58667d49fee9ac7e8d7bc95df908dc0a3fd1a9b2f268e38289ddace178f78fd1",
+        "state": "RECORDED",
+        "step": "TEST_EXECUTION_REQUIRED",
+        "evidenceDigests": [
+          "sha256:5f78c1f4607d98ea41d2649afa05bc591088bd2f2485841088185590f5233ec3"
+        ]
+      },
+      {
+        "kind": "VERIFICATION",
+        "id": "sha256:a1fe1ef1717903a9d3f682e1e0308bdf423828496de6108a0c38527a44020e23",
+        "state": "PASSED",
+        "step": "VERIFICATION_GATE_REQUIRED",
+        "evidenceDigests": [
+          "sha256:a1fe1ef1717903a9d3f682e1e0308bdf423828496de6108a0c38527a44020e23"
+        ]
+      },
+      {
+        "kind": "MERGE_EFFECT",
+        "id": "local-merge-effect:sha256:6e75acd157706373aa8e857b48c7d40abf3e3c7fdd83cc2b800da01c12278d99",
+        "state": "APPLIED",
+        "step": "MERGE_REQUIRED",
+        "producer": "refs/heads/release",
+        "evidenceDigests": [
+          "sha256:704243ced5f0cda3389168913c5f041fc07ede6a5118ad4c5dc5ee1e143519f4",
+          "158de5a7803a8bb2e1be4900df37fc3036a0bc29"
+        ]
+      }
+    ]
+  },
+  "durableRuntime": {
+    "authority": "Restate Journal",
+    "workflowRef": "restate://CoreV2Workflow/TASK-SCAFFOLD-20260826191825",
+    "workflowService": "CoreV2Workflow",
+    "workflowKey": "TASK-SCAFFOLD-20260826191825",
+    "adminBaseUrl": "http://127.0.0.1:50842",
+    "invocationsUrl": "http://127.0.0.1:50842/ui/invocations?filter_target_service_name=%7B%22operation%22%3A%22IN%22%2C%22value%22%3A%5B%22CoreV2Workflow%22%5D%7D&filter_target_service_key=%7B%22operation%22%3A%22EQUALS%22%2C%22value%22%3A%22TASK-SCAFFOLD-20260826191825%22%7D&sort_field=created_at&sort_order=DESC"
+  }
+}

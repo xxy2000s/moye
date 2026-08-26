@@ -55,6 +55,16 @@ npm run cli -- init --dir /absolute/path/to/project
 npm run cli -- project validate --file /absolute/path/to/project/.moye/project.yaml
 ```
 
+需要采用标准文档治理起点时必须显式选择脚手架。第一条命令只输出计划，不写文件；确认 `conflicts: []` 后再 apply：
+
+```bash
+npm run cli -- init --docs standard --dir /absolute/path/to/empty-git-project --project-id example-project
+npm run cli -- init --docs standard --apply --dir /absolute/path/to/empty-git-project --project-id example-project
+node /absolute/path/to/empty-git-project/scripts/docs_validate.mjs
+```
+
+该入口只接受精确物理 Git 根，模板版本为 `standard-docs-v1`。已有不同字节的 README、AGENTS、docs、Manifest 或 validator、任一 symlink/非文件父路径都会让整批拒绝；`--force` 无效，不能用来采用或迁移已有文档。相同字节重放返回 unchanged 与相同 Scaffold Digest。生成的 `.moye/project.yaml` 是 JSON-compatible YAML，可添加 tests 等项目配置，但必须保留 `custom + node scripts/docs_validate.mjs` 文档策略；修改脚手架受管文件后要由项目 Task 显式处置，不能重跑 scaffold 覆盖。
+
 `project validate` 会展开默认值并返回 canonical Digest、Schema/API/Plugin 版本和解析后的仓库根。Manifest 路径必须是仓库内可移植相对路径；测试和 custom docs 命令必须是 argv 数组。shell、破坏性 executable、inline eval、词法越界和 symlink escape 会在任何 Workflow 派发前拒绝。只有用户明确要求替换配置时才使用 `init --force`。
 
 提交前先把 `.moye/project.yaml` 和项目基线 Commit，并确保 `repository.targetRef` 已存在且指向当前 HEAD：
@@ -79,6 +89,8 @@ Manifest 的 `documentation.policy` 可选 `none | conventional | moye-doc-graph
 RESTATE_INGRESS_URL=http://127.0.0.1:8080 MOYE_BOARD_URL=http://127.0.0.1:3000 \
   npm run acceptance:framework:docs
 ```
+
+标准脚手架的打包/冲突矩阵和真实 Task 入口分别是 `npm run acceptance:framework:scaffold` 与 `npm run acceptance:framework:scaffold:task`。两者只在 OS 临时目录创建外部 Git 项目；后者启动临时真实 Restate/Service，并保存 custom Policy、Trace 与 Git bundle Evidence，结束后自动移除临时 Runtime。
 
 Docker daemon 可用时，以下命令会启动隔离容器、注册服务、提交 Task、强杀 Worker、重启、验证结果并自动清理：
 

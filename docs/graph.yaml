@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 129
+graph_revision: 130
 updated_at: "2026-08-27"
 
 entrypoints:
@@ -5991,6 +5991,102 @@ documents:
     authority: task-evidence
     read_when: [task-close, task-archive]
 
+  - id: task-0082-manifest
+    path: docs/delivery/tasks/archive/2026-08-27-TASK-0082/task.yaml
+    type: task-manifest
+    status: archived
+    scope: framework-consumption
+    authority: task-artifact
+    read_when: [task-execution, task-close, task-archive]
+
+  - id: task-0082-spec
+    path: docs/delivery/tasks/archive/2026-08-27-TASK-0082/spec.md
+    type: task-spec
+    status: archived
+    scope: framework-consumption
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0082-design
+    path: docs/delivery/tasks/archive/2026-08-27-TASK-0082/design.md
+    type: task-design
+    status: archived
+    scope: framework-consumption
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0082-plan
+    path: docs/delivery/tasks/archive/2026-08-27-TASK-0082/plan.md
+    type: task-plan
+    status: archived
+    scope: framework-consumption
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0082-verification
+    path: docs/delivery/tasks/archive/2026-08-27-TASK-0082/verification.md
+    type: verification
+    status: archived
+    scope: framework-consumption
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0082-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-27-TASK-0082/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: framework-consumption
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0082-package-acceptance
+    path: docs/delivery/tasks/archive/2026-08-27-TASK-0082/scaffold-package-acceptance.json
+    type: runtime-evidence
+    status: archived
+    scope: framework-consumption
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0082-task-acceptance
+    path: docs/delivery/tasks/archive/2026-08-27-TASK-0082/scaffold-task-acceptance.json
+    type: runtime-evidence
+    status: archived
+    scope: framework-consumption
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0082-task-trace
+    path: docs/delivery/tasks/archive/2026-08-27-TASK-0082/scaffold-task-trace.json
+    type: runtime-evidence
+    status: archived
+    scope: framework-consumption
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0082-replan-trace
+    path: docs/delivery/tasks/archive/2026-08-27-TASK-0082/scaffold-task-final-trace.json
+    type: runtime-evidence
+    status: archived
+    scope: framework-consumption
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0082-authoritative-acceptance
+    path: docs/delivery/tasks/archive/2026-08-27-TASK-0082/scaffold-task-authoritative-acceptance.json
+    type: runtime-evidence
+    status: archived
+    scope: framework-consumption
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0082-authoritative-trace
+    path: docs/delivery/tasks/archive/2026-08-27-TASK-0082/scaffold-task-authoritative-trace.json
+    type: runtime-evidence
+    status: archived
+    scope: framework-consumption
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
 relations:
   - from: root-readme
     to: docs-index
@@ -10586,6 +10682,74 @@ relations:
 
   - from: task-0081-browser-acceptance
     to: task-0081-manifest
+    type: evidence_for
+
+  - from: tasks-index
+    to: task-0082-manifest
+    type: indexes
+
+  - from: archived-tasks-index
+    to: task-0082-manifest
+    type: indexes
+
+  - from: task-0082-spec
+    to: task-0082-manifest
+    type: belongs_to
+
+  - from: task-0082-spec
+    to: milestone-3-backlog-session-clarity
+    type: implements_slice_of
+
+  - from: task-0082-design
+    to: task-0082-spec
+    type: refines
+
+  - from: task-0082-design
+    to: framework-product-boundary
+    type: implements_slice_of
+
+  - from: task-0082-design
+    to: adr-0008-framework-release-boundary
+    type: depends_on
+
+  - from: task-0082-design
+    to: task-0070-design
+    type: depends_on
+
+  - from: task-0082-plan
+    to: task-0082-manifest
+    type: belongs_to
+
+  - from: task-0082-verification
+    to: task-0082-manifest
+    type: verifies
+
+  - from: task-0082-docs-impact
+    to: task-0082-manifest
+    type: reports_on
+
+  - from: task-0082-package-acceptance
+    to: task-0082-manifest
+    type: evidence_for
+
+  - from: task-0082-task-acceptance
+    to: task-0082-manifest
+    type: evidence_for
+
+  - from: task-0082-task-trace
+    to: task-0082-manifest
+    type: evidence_for
+
+  - from: task-0082-replan-trace
+    to: task-0082-manifest
+    type: evidence_for
+
+  - from: task-0082-authoritative-acceptance
+    to: task-0082-manifest
+    type: evidence_for
+
+  - from: task-0082-authoritative-trace
+    to: task-0082-manifest
     type: evidence_for
 
 routing:

@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "validationKind": "REAL_STANDARD_DOCUMENTATION_SCAFFOLD_TASK",
+  "taskId": "TASK-SCAFFOLD-20260826185527",
+  "deploymentId": "dp_13Lxvkn96gvRmqZBw2KDL5D",
+  "runtime": {
+    "kind": "temporary-real-restate-and-current-service",
+    "image": "docker.restate.dev/restatedev/restate:1.7.4"
+  },
+  "package": {
+    "filename": "moye-0.1.0.tgz",
+    "integrity": "sha512-Dn/xtwLj233r6OHYR7dKckqiIWNq7bl/7yBXOwdSnSkIUOsqHKRlaz1fTNsqZV3NTjtF2iKFYEW3B622XEVU4w==",
+    "digest": "sha256:27e55f66475a664ecd2e4030cdfcdd32ab5b8a04b5f94d79f3b17184aac3176b"
+  },
+  "scaffold": {
+    "templateVersion": "standard-docs-v1",
+    "scaffoldDigest": "sha256:d88755184f6b4b5396851ba564404ce5b6c7534cf112f60e0e6362a7f97b777b",
+    "fileCount": 14
+  },
+  "baseCommit": "7038d8468d35638c383340d9aa07bc24fc49ddca",
+  "releaseCommit": "4651d790b06ff5c78874b06aca5c27030124cbf4",
+  "receipt": {
+    "apiVersion": 1,
+    "taskId": "TASK-SCAFFOLD-20260826185527",
+    "workflowRef": "restate://CoreV2Workflow/TASK-SCAFFOLD-20260826185527",
+    "invocationId": "inv_17TC5wXOMnvs0bTv04hIVYV1VJjkDXhlU5",
+    "boardUrl": "http://127.0.0.1:50824/tasks/TASK-SCAFFOLD-20260826185527",
+    "projectId": "standard-docs-task-acceptance",
+    "manifestDigest": "sha256:d7db8726fd61177626580d7abd6bfdfa64fa9cb173fd91d47ce4c90d7cfdc257",
+    "baseCommit": "7038d8468d35638c383340d9aa07bc24fc49ddca"
+  },
+  "status": {
+    "apiVersion": 1,
+    "taskId": "TASK-SCAFFOLD-20260826185527",
+    "workflowRef": "restate://CoreV2Workflow/TASK-SCAFFOLD-20260826185527",
+    "state": "CLOSED",
+    "currentStep": "ARCHIVED",
+    "archiveStatus": "ARCHIVED",
+    "outcome": "SUCCEEDED",
+    "startedAt": "2026-08-26T18:55:32.816Z",
+    "completedAt": "2026-08-26T19:03:08.985Z",
+    "boardUrl": "http://127.0.0.1:50824/tasks/TASK-SCAFFOLD-20260826185527"
+  },
+  "doctor": {
+    "ok": true,
+    "checks": [
+      {
+        "id": "manifest",
+        "status": "PASS",
+        "detail": "schema 1, sha256:d7db8726fd61177626580d7abd6bfdfa64fa9cb173fd91d47ce4c90d7cfdc257"
+      },
+      {
+        "id": "git",
+        "status": "PASS",
+        "detail": "repository /private/var/folders/b1/g0h9j9vd4356lc0n6h6gplz00000gn/T/moye-standard-docs-task-jPT19U/external-project"
+      },
+      {
+        "id": "git-clean",
+        "status": "PASS",
+        "detail": "worktree clean"
+      },
+      {
+        "id": "git-target",
+        "status": "PASS",
+        "detail": "refs/heads/release -> 7038d8468d35638c383340d9aa07bc24fc49ddca"
+      },
+      {
+        "id": "agent",
+        "status": "PASS",
+        "detail": "codex codex-cli 0.149.1"
+      },
+      {
+        "id": "test:node-test",
+        "status": "PASS",
+        "detail": "/opt/homebrew/opt/node@22/bin/node; argv=[\"node\",\"--test\"]"
+      },
+      {
+        "id": "artifacts",
+        "status": "PASS",
+        "detail": "writable /var/folders/b1/g0h9j9vd4356lc0n6h6gplz00000gn/T/moye-standard-docs-task-jPT19U/runtime/standard-docs-task-acceptance"
+      },
+      {
+        "id": "docker",
+        "status": "PASS",
+        "detail": "available: 28.4.0"
+      },
+      {
+        "id": "restate",
+        "status": "PASS",
+        "detail": "reachable http://127.0.0.1:50821"
+      },
+      {
+        "id": "board",
+        "status": "PASS",
+        "detail": "reachable http://127.0.0.1:50824"
+      }
+    ]
+  },
+  "documentationPolicyEvidence": [
+    {
+      "schemaVersion": 1,
+      "artifactKind": "DOCUMENTATION_POLICY_EVIDENCE",
+      "taskId": "TASK-SCAFFOLD-20260826185527",
+      "specRevision": 1,
+      "generation": 0,
+      "policy": "custom",
+      "baseCommit": "7038d8468d35638c383340d9aa07bc24fc49ddca",
+      "candidateCommit": "2a0e97b482dd98862126f44ae57dd3594ff230ff",
+      "changedFiles": [
+        "docs/delivery/tasks/TASK-0001/task.yaml",
+        "docs/knowledge/product.md",
+        "src/value.txt"
+      ],
+      "changedFilesDigest": "sha256:1e0a5f70578df847dd35e6831320c471da69690b0737b44d702069286f0ddb2e",
+      "verdict": "PASSED",
+      "disposition": "SATISFIED",
+      "findingRefs": [],
+      "command": {
+        "id": "standard-docs-validate",
+        "argv": [
+          "node",
+          "scripts/docs_validate.mjs"
+        ],
+        "cwd": "/private/var/folders/b1/g0h9j9vd4356lc0n6h6gplz00000gn/T/moye-standard-docs-task-jPT19U/external-project",
+        "exitCode": 0,
+        "stdoutDigest": "sha256:c22cd52ea44ae2abea952c6b28cf9974f8c913258ed9b8e1a9cd47e383ac2fb4",
+        "stderrDigest": "sha256:49d0d2a89812a1cd217c5b24df541eaaaef29b9d9a22b5241123207dbea62937",
+        "outputSummary": "{\"valid\":true,\"templateVersion\":\"standard-docs-v1\",\"projectId\":\"standard-docs-task-acceptance\",\"fileCount\":12,\"scaffoldDigest\":\"sha256:d88755184f6b4b5396851ba564404ce5b6c7534cf112f60e0e6362a7f97b777b\"}"
+      },
+      "artifactRef": "artifact://documentation-policy/r1-g0/evidence.json",
+      "evidenceDigest": "sha256:89274107ea40d2c2c2f9c5f5d728ad8a4722ec1d491cdcaec80c6e06203c9b9e"
+    }
+  ],
+  "traceDigest": "sha256:d0cb29856f11ed8222e4424462acf1e5eab77043fee32a9bb7928c5423fdd17b",
+  "bundleDigest": "sha256:a7f2646a6fe1d7940a2125e3839b9e322a61735934e7c674c29ed131dabad089",
+  "acceptedFacts": {
+    "value": "after",
+    "productDocumentation": "Current value: after"
+  },
+  "fixtureRootKind": "os-temporary-directory-outside-moye",
+  "evidenceDigest": "sha256:0ea019abe8cb74c8edda188ec2bf0c33b315c1437f1c8135eab95ecf85d62ec5"
+}

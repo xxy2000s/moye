@@ -103,6 +103,10 @@ export async function runDocumentationPolicyV1(input: {
   let disposition: DocumentationPolicyEvidenceV1["disposition"] = policy.kind === "none" ? "NOT_REQUIRED" : "SATISFIED";
   let findingRefs: readonly string[] = [];
   let command: DocumentationPolicyCommandEvidenceV1 | undefined;
+  const policyEnvironment = {
+    MOYE_DOCUMENTATION_BASE_COMMIT: baseCommit,
+    MOYE_DOCUMENTATION_CANDIDATE_COMMIT: candidateCommit,
+  };
 
   if (policy.kind === "conventional") {
     const codeChanged = changedFiles.some(isProductFile);
@@ -113,9 +117,9 @@ export async function runDocumentationPolicyV1(input: {
       findingRefs = Object.freeze(["finding://documentation-policy/conventional/missing-doc-change"]);
     }
   } else if (policy.kind === "moye-doc-graph") {
-    command = await executeCommand({ id: "moye-doc-graph-validate", argv: ["ruby", "scripts/docs_graph.rb", "validate"], cwd: repositoryRoot });
+    command = await executeCommand({ id: "moye-doc-graph-validate", argv: ["ruby", "scripts/docs_graph.rb", "validate"], cwd: repositoryRoot }, policyEnvironment);
   } else if (policy.kind === "custom") {
-    command = await executeCommand(policy.command!);
+    command = await executeCommand(policy.command!, policyEnvironment);
   }
   if (command !== undefined && command.exitCode !== 0) {
     verdict = "BLOCKED";
@@ -164,13 +168,13 @@ export function documentationPolicyPayloadV1(evidence: DocumentationPolicyEviden
   });
 }
 
-async function executeCommand(commandInput: DocumentationPolicyCommandV1): Promise<DocumentationPolicyCommandEvidenceV1> {
+async function executeCommand(commandInput: DocumentationPolicyCommandV1, environment: Readonly<Record<string, string>>): Promise<DocumentationPolicyCommandEvidenceV1> {
   const result = await new Promise<{ exitCode: number; stdout: string; stderr: string }>((resolve, reject) => {
     const child = spawn(commandInput.argv[0]!, commandInput.argv.slice(1), {
       cwd: commandInput.cwd,
       shell: false,
       stdio: ["ignore", "pipe", "pipe"],
-      env: { ...process.env, MOYE_DOCUMENTATION_POLICY: commandInput.id },
+      env: { ...process.env, ...environment, MOYE_DOCUMENTATION_POLICY: commandInput.id },
     });
     const stdout: Buffer[] = [];
     const stderr: Buffer[] = [];

@@ -33,6 +33,7 @@ import type { TranscriptEnrichmentInputV1, TranscriptEnrichmentProjectionV1 } fr
 import { initializeProjectManifest, loadProjectManifest } from "../framework/project-manifest.js";
 import { MoyeClient } from "../framework/client.js";
 import { runProjectDoctor } from "../framework/doctor.js";
+import { applyStandardDocumentationScaffold, planStandardDocumentationScaffold, STANDARD_DOCUMENTATION_TEMPLATE_VERSION } from "../framework/documentation-scaffold.js";
 
 const [command = "help", ...args] = process.argv.slice(2);
 const config = loadConfig();
@@ -42,11 +43,27 @@ try {
     case "init": {
       const directory = resolve(optionalOption(args, "--dir") ?? process.cwd());
       const requestedProjectId = optionalOption(args, "--project-id");
-      const loaded = await initializeProjectManifest(directory, {
-        force: args.includes("--force"),
-        ...(requestedProjectId === undefined ? {} : { projectId: requestedProjectId }),
-      });
-      print({ initialized: true, manifestPath: loaded.manifestPath, projectId: loaded.manifest.project.id, digest: loaded.digest });
+      const docs = optionalOption(args, "--docs");
+      if (docs === undefined) {
+        if (args.includes("--apply") || optionalOption(args, "--template-version") !== undefined) throw new Error("--apply/--template-version require --docs standard");
+        const loaded = await initializeProjectManifest(directory, {
+          force: args.includes("--force"),
+          ...(requestedProjectId === undefined ? {} : { projectId: requestedProjectId }),
+        });
+        print({ initialized: true, manifestPath: loaded.manifestPath, projectId: loaded.manifest.project.id, digest: loaded.digest });
+      } else {
+        if (docs !== "standard") throw new Error(`Unsupported documentation scaffold: ${docs}`);
+        if (args.includes("--force")) throw new Error("--force cannot be used with --docs standard; existing files are never overwritten");
+        const scaffoldOptions = {
+          ...(requestedProjectId === undefined ? {} : { projectId: requestedProjectId }),
+          templateVersion: optionalOption(args, "--template-version") ?? STANDARD_DOCUMENTATION_TEMPLATE_VERSION,
+        };
+        const result = args.includes("--apply")
+          ? await applyStandardDocumentationScaffold(directory, scaffoldOptions)
+          : await planStandardDocumentationScaffold(directory, scaffoldOptions);
+        print({ initialized: "applied" in result ? result.applied : false, mode: args.includes("--apply") ? "apply" : "plan", ...result });
+        if (result.conflicts.length > 0) process.exitCode = 2;
+      }
       break;
     }
     case "project": {
@@ -529,6 +546,7 @@ function helpText(): string {
 
 Usage:
   moye init [--dir PATH] [--project-id ID] [--force]
+  moye init --docs standard [--apply] [--dir PATH] [--project-id ID] [--template-version standard-docs-v1]
   moye project validate [--file .moye/project.yaml]
   moye doctor [--file .moye/project.yaml]
   moye task start --objective TEXT --accept TEXT [--accept TEXT] [--file .moye/project.yaml] [--title TEXT] [--task-id TASK-ID]

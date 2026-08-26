@@ -44,7 +44,7 @@ describe("documentation policy v1", () => {
   it("runs custom argv without a shell and binds stdout/stderr digests", async () => {
     const fixture = await repositoryFixture({ source: false, docs: true });
     await mkdir(path.join(fixture.root, "scripts"));
-    await writeFile(path.join(fixture.root, "scripts/docs.mjs"), "console.log('docs-ok')\n");
+    await writeFile(path.join(fixture.root, "scripts/docs.mjs"), "if (!process.env.MOYE_DOCUMENTATION_BASE_COMMIT || !process.env.MOYE_DOCUMENTATION_CANDIDATE_COMMIT) process.exit(9); console.log('docs-ok')\n");
     await commitFixture(fixture, "docs command");
     const evidence = await run(fixture, { policyVersion: 1, kind: "custom", command: { id: "docs-check", argv: [process.execPath, "scripts/docs.mjs"], cwd: fixture.root } });
     expect(evidence).toMatchObject({ verdict: "PASSED", command: { id: "docs-check", argv: [process.execPath, "scripts/docs.mjs"], exitCode: 0, outputSummary: "docs-ok" } });

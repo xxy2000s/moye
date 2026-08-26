@@ -45,7 +45,7 @@ src/
 ├── domain/            纯领域状态、错误、Backlog、Board、Core Reducer、Observer、Docs Impact 与 Review/Finding Gate
 ├── archive/           Manifest、Bootstrap 关闭材料、两阶段 Sealed Result Commit、原子移动与 Reconcile
 ├── effects/           带稳定 operation ledger 的幂等副作用样例
-├── framework/         外部项目 Manifest、公共版本与消费级信任边界
+├── framework/         外部项目 Manifest、标准文档脚手架、Documentation Policy、公共 Client/Plugin 与消费级信任边界
 ├── git/               Worktree、Checkpoint 与本地 Git Effect 对账
 ├── product/           页面真实任务的输入校验、仓库边界与冻结输入构造
 ├── review/            独立真实 CLI Review、结构化 Finding 与 Artifact 对账
@@ -150,6 +150,7 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 | `src/domain/coding-task.ts` | Spec 漂移后沿用旧证据、Attempt 被复活、Shell 命令边界丢失 | `tests/unit/coding-task.test.ts` |
 | `src/domain/core-control.ts`、`core-observer.ts`、`core-docs-impact.ts`、`core-closure.ts`、`review-finding.ts` | 过期 Decision、跨 Revision Attempt 碰撞、恢复动作混淆、UNKNOWN 盲重试、Observer 越权、Trace 漏证据、失败 Docs Gate 误关闭、冲突 Closure、预算无限循环 | Core Control/Recovery/Observer/Docs/Closure、Role/Review unit |
 | `src/domain/lifecycle-artifact.ts` | 聊天文本冒充产物、旧 Revision/Commit 证据复用、Digest 篡改、依赖 ref 伪造、Test Report 漏项 | Lifecycle Artifact unit + 完整九类交接链 E2E |
+| `src/framework/documentation-scaffold.ts`、`src/framework/documentation-policy.ts`、`src/public/cli.ts` | 外部项目文件覆盖、模板/Manifest Digest 漂移、symlink/路径逃逸、并发写冲突、Agent 自报代替确定性文档 Gate | Scaffold/Policy unit；真实 npm pack 的空白/冲突/symlink 临时项目矩阵；仓库外真实 Core v2 Task、custom Policy Evidence、Trace 与 Git bundle |
 | `src/domain/session-transcript.ts`、`src/domain/session-evidence-semantics.ts`、`src/agent/codex-session-adapter.ts`、`src/agent/claude-session-adapter.ts`、`src/agent/session-capture-effect.ts`、`src/board/session-timeline.ts`、`src/board/server.ts`、`src/restate/core-v2-services.ts`、`public/app.js` | Prompt/分类/四维语义漂移、Provider Home 越界、受管 Artifact 冲突、Capture 丢回执后重跑 Agent、旧 Attempt 越界、Board 路径注入、Receipt/Manifest/stderr 篡改、canonical Timeline 被 execution stream 冒充 | Session Contract/Capture/Semantics/Board resolver unit；真实 Provider/Capture 验收；`npm run acceptance:core-v2:session-api` 对 7 个真实 Role 做分页与独立流产品验收；TASK-0063 与 TASK-0081 对真实 Session 做桌面/窄屏、四维提示、筛选、长内容、错误/完整性与键盘浏览器验收 |
 | `src/domain/role-runtime-v2.ts`、`src/agent/role-runtime-v2.ts` | Role/Phase 越权、Fake 混入产品协议、跨 Attempt Evidence、完整结果重复执行、Intent-only 盲重跑、Artifact 篡改 | Role Runtime v2 unit + 六类角色真实 OS 子进程/复用/UNKNOWN/Reconcile/篡改 E2E |
 | `src/domain/core-v2-lifecycle.ts` | 角色越权、旧 Revision Artifact 复用、Finding 绕过 REPLAN/REPAIR、旧 Generation 覆盖、Projection 篡改 | Core v2 Lifecycle unit + 序列化 Architect/Review/Implementation/Repair E2E |

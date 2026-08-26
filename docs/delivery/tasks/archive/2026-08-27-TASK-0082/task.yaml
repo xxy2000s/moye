@@ -1,0 +1,23 @@
+schema_version: 1
+id: TASK-0082
+title: Standard Documentation Scaffold
+status: seal_prepared
+outcome: null
+backlog_refs: []
+spec_revision: 1
+workflow_id: sealed-task/TASK-0082
+execution_mode: sealed-result-commit
+base_commit: d369e9d3d9621391999e2db48a959a2e7fa29d7b
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-27-TASK-0082
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:af012cb6d699446410344d0d20aa46b772da6d7976fe7d4f541de76383864f84
+  base_commit: d369e9d3d9621391999e2db48a959a2e7fa29d7b
+  archive_path: docs/delivery/tasks/archive/2026-08-27-TASK-0082
