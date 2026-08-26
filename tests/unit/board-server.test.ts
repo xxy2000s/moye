@@ -92,7 +92,15 @@ describe("board static server", () => {
     expect(script).toContain('if (!eventsUrl && !(sessionUrl && timelineUrl))');
     expect(script).toContain('data-agent-session-filter');
     expect(script).toContain('event.category === "ASSISTANT"');
-    expect(script).toContain('它不会被标记为完整 Agent 对话');
+    expect(script).toContain("requireSessionSemantics");
+    expect(script).toContain("Session API 未返回版本化四维语义；页面拒绝从 legacy 字段猜测");
+    expect(script).toContain("会话内容可读；由于该历史任务创建时尚未冻结 Prompt Envelope");
+    expect(script).toContain("renderSessionContentReasons");
+    expect(script).toContain("UNKNOWN_EVENTS");
+    expect(script).toContain("策略 / Provider 边界");
+    expect(script).toContain("高级诊断 · 原始 Receipt / Manifest 事实");
+    expect(script).toContain("receiptState: metadata.state");
+    expect(script).not.toContain("该记录不完整，缺失项不会被页面补造");
     expect(styles).toContain(".machine-graph-node.is-filter-muted");
     expect(styles).toContain(".machine-graph-tools");
     expect(styles).toContain(".machine-consistency-alert");
@@ -109,6 +117,9 @@ describe("board static server", () => {
     expect(styles).toContain('.ledger-role-tab[aria-selected="true"]');
     expect(styles).toContain(".system-execution-card");
     expect(styles).toContain(".agent-session-metadata-grid");
+    expect(styles).toContain(".agent-session-semantic-badges");
+    expect(styles).toContain(".agent-session-content-gaps");
+    expect(styles).toContain(".agent-session-diagnostics");
     expect(styles).toContain(".agent-event.category-prompt");
     expect(styles).toContain(".agent-event.category-tool_call");
   });

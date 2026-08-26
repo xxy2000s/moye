@@ -17,6 +17,7 @@ import type { MoyeConfig } from "../config.js";
 import type { AgentArtifactFile } from "../agent/runner.js";
 import { buildLiveCodingTask, listLiveCapabilities } from "../product/live-task.js";
 import { MoyeError } from "../domain/errors.js";
+import { deriveSessionEvidenceSemanticsV1 } from "../domain/session-evidence-semantics.js";
 import type { CoreV2WorkflowProjection } from "../restate/core-v2-services.js";
 import type { HistoricalSessionEvidenceRecordV1 } from "../restate/transcript-enrichment-services.js";
 import { createCoreV2ObserverReport } from "../domain/core-v2-observer.js";
@@ -281,9 +282,15 @@ async function route(
         writeJson(response, 200, await readBoardSessionStderrV1(resolver));
       } catch (error) {
         if (error instanceof SessionTimelineError) {
-          writeJson(response, error.status, { error: { code: error.code, message: error.message } });
+          const diagnostic = sessionErrorDiagnostic(error.code);
+          writeJson(response, error.status, { error: { code: error.code, message: error.message, ...diagnostic } });
         } else {
-          writeJson(response, 422, { error: { code: "SESSION_ARTIFACT_INTEGRITY_FAILED", message: "Managed Session Evidence failed validation" } });
+          writeJson(response, 422, { error: {
+            code: "SESSION_ARTIFACT_INTEGRITY_FAILED",
+            message: "Managed Session Evidence failed validation",
+            semantics: deriveSessionEvidenceSemanticsV1({ state: "INTEGRITY_ERROR" }),
+            action: "Verify the managed Artifact allowlist and Digest; do not rerun the Agent.",
+          } });
         }
       }
       return;
@@ -480,6 +487,33 @@ async function route(
   }
 
   await serveStatic(url.pathname, method === "HEAD", response, options.publicRoot);
+}
+
+function sessionErrorDiagnostic(code: SessionTimelineError["code"]): {
+  readonly semantics?: ReturnType<typeof deriveSessionEvidenceSemanticsV1>;
+  readonly action?: string;
+} {
+  if (code === "SESSION_CAPTURE_PENDING") return {
+    semantics: deriveSessionEvidenceSemanticsV1({ state: "PENDING" }),
+    action: "Refresh the same Session Evidence; do not start another Agent run.",
+  };
+  if (code === "SESSION_WAITING_RECONCILE") return {
+    semantics: deriveSessionEvidenceSemanticsV1({ state: "WAITING_RECONCILE" }),
+    action: "Reconcile the existing Capture attempt before any retry.",
+  };
+  if (code === "SESSION_EVIDENCE_NOT_FOUND" || code === "SESSION_TRANSCRIPT_UNAVAILABLE") return {
+    semantics: deriveSessionEvidenceSemanticsV1({ state: "UNAVAILABLE" }),
+    action: "Inspect the independent Execution Stream; do not invent Transcript content.",
+  };
+  if (code === "SESSION_TRANSCRIPT_FAILED") return {
+    semantics: deriveSessionEvidenceSemanticsV1({ state: "FAILED" }),
+    action: "Inspect Capture diagnostics; do not rerun the Agent for a transcript failure.",
+  };
+  if (code === "SESSION_ARTIFACT_INTEGRITY_FAILED") return {
+    semantics: deriveSessionEvidenceSemanticsV1({ state: "INTEGRITY_ERROR" }),
+    action: "Verify the managed Artifact allowlist and Digest; do not rerun the Agent.",
+  };
+  return {};
 }
 
 export function runtimeReleaseIdentity(env: NodeJS.ProcessEnv = process.env): { version: string; sourceRevision: string } {

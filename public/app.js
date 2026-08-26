@@ -1720,15 +1720,16 @@ function openManagedSessionDialog(trigger, source) {
     try {
       state.metadata = await fetchSessionJson(source.sessionUrl);
       if (state.stopped) return;
+      const semantics = requireSessionSemantics(state.metadata);
       renderManagedSessionContext(context, state.metadata);
-      if (["PENDING", "WAITING_RECONCILE"].includes(state.metadata.state)) {
+      if (["PENDING", "WAITING_RECONCILE"].includes(semantics.availability.state)) {
         viewer.dataset.state = "waiting";
-        setAgentEventsStatus(viewer, sessionStateLabel(state.metadata.state));
-        viewer.querySelector("[data-agent-events-content]").innerHTML = `<div class="agent-events-empty agent-session-waiting"><strong>${escapeHtml(sessionStateLabel(state.metadata.state))}</strong><span>Owning Workflow 尚未确认可读取的 Transcript；页面只刷新同一 Session Evidence，不会触发第二个 Agent Run。</span></div>`;
+        setAgentEventsStatus(viewer, sessionAvailabilityLabel(semantics.availability.state));
+        viewer.querySelector("[data-agent-events-content]").innerHTML = `<div class="agent-events-empty agent-session-waiting"><strong>${escapeHtml(sessionAvailabilityLabel(semantics.availability.state))}</strong><span>${escapeHtml(sessionAvailabilityMessage(semantics.availability))}</span></div>`;
         scheduleMetadata();
         return;
       }
-      if (!["COMPLETE", "PARTIAL"].includes(state.metadata.state)) {
+      if (semantics.availability.state !== "AVAILABLE") {
         renderManagedSessionUnavailable(viewer, trigger, source, state.metadata);
         return;
       }
@@ -1761,7 +1762,8 @@ function openManagedSessionDialog(trigger, source) {
         state.hasMore = page.hasMore;
         if (!drain) break;
       } while (state.hasMore);
-      viewer.dataset.state = state.metadata.state.toLowerCase();
+      const semantics = requireSessionSemantics(state.metadata);
+      viewer.dataset.state = `${semantics.availability.state.toLowerCase()}-${(semantics.content.state || "not-evaluated").toLowerCase()}`;
       renderManagedSessionState(viewer, state, loadTimeline);
     } catch (error) {
       renderManagedSessionError(viewer, error, () => void loadTimeline(false), trigger, source);
@@ -1779,6 +1781,8 @@ async function fetchSessionJson(input) {
     const error = new Error(detail?.message || `读取失败（HTTP ${response.status}）`);
     error.code = detail?.code || `HTTP_${response.status}`;
     error.status = response.status;
+    error.semantics = detail?.semantics;
+    error.action = detail?.action;
     throw error;
   }
   return body;
@@ -1786,26 +1790,119 @@ async function fetchSessionJson(input) {
 
 function renderManagedSessionContext(target, metadata) {
   target.hidden = false;
+  const semantics = requireSessionSemantics(metadata);
   const completeness = metadata.completeness || {};
   const relationships = metadata.relationships || { parentSessionIds: [], childSessionIds: [] };
   const raw = metadata.artifacts?.raw;
-  const stateTone = metadata.state === "COMPLETE" ? "green" : metadata.state === "PARTIAL" ? "yellow" : "red";
-  target.innerHTML = `<div class="agent-session-statusline">
-    <strong class="tag ${stateTone}">${escapeHtml(metadata.state)}</strong>
+  const diagnostics = {
+    receiptState: metadata.state,
+    promptBinding: metadata.promptBinding,
+    completeness: metadata.completeness,
+    metrics: metadata.metrics,
+    errors: metadata.errors,
+    authorityScope: metadata.authorityScope,
+    receiptDigest: metadata.receiptDigest,
+    manifestDigest: metadata.manifestDigest,
+    artifacts: metadata.artifacts,
+  };
+  target.innerHTML = `<section class="agent-session-semantic-summary" aria-label="Session Evidence 四维状态">
+    <div class="agent-session-semantic-badges">
+      ${sessionSemanticBadge("可用性", semantics.availability.state)}
+      ${sessionSemanticBadge("内容", semantics.content.evaluated ? semantics.content.state : "NOT_EVALUATED")}
+      ${sessionSemanticBadge("绑定", semantics.binding.state)}
+      ${sessionSemanticBadge("限制", semantics.limitation.state)}
+    </div>
+    <p>${escapeHtml(sessionSemanticSummary(metadata, semantics))}</p>
+    ${renderSessionContentReasons(semantics.content.reasons)}
+    ${renderSessionLimitation(semantics.limitation)}
+  </section>
+  <div class="agent-session-statusline">
     <span>${escapeHtml(metadata.provider || "Provider 未确认")}</span>
     <code title="${escapeHtml(metadata.providerSessionId || "")}">${escapeHtml(shortSessionId(metadata.providerSessionId))}</code>
     <span>${escapeHtml(capturePolicyLabel(metadata.capturePolicy))}</span>
     <span>${escapeHtml(sessionImportModeLabel(metadata.importMode))}</span>
-    ${metadata.state === "PARTIAL" ? '<em>该记录不完整，缺失项不会被页面补造。</em>' : ""}
   </div>
   <details class="agent-session-metadata">
-    <summary>来源、完整性与 Artifact Metadata</summary>
+    <summary>来源与 Artifact Metadata</summary>
     <div class="agent-session-metadata-grid">
       <dl><div><dt>Provider Session</dt><dd><code>${escapeHtml(metadata.providerSessionId || "未确认")}</code></dd></div><div><dt>Source</dt><dd>${escapeHtml(metadata.source?.kind || "未发布")} · ${metadata.source?.recordCount ?? 0} records</dd></div><div><dt>Parser</dt><dd>${escapeHtml(metadata.parser ? `${metadata.parser.name}@${metadata.parser.version}` : "未发布")}</dd></div><div><dt>Captured</dt><dd>${metadata.capturedAt ? formatTime(metadata.capturedAt) : "—"}</dd></div></dl>
-      <dl><div><dt>Prompt</dt><dd>${escapeHtml(completeness.prompt || "UNAVAILABLE")} · ${escapeHtml(metadata.promptBinding || "UNVERIFIED")}</dd></div><div><dt>Messages</dt><dd>${escapeHtml(completeness.messages || "UNAVAILABLE")}</dd></div><div><dt>Tools</dt><dd>${escapeHtml(completeness.tools || "UNAVAILABLE")}</dd></div><div><dt>Raw</dt><dd>${escapeHtml(completeness.raw || "UNAVAILABLE")}</dd></div></dl>
+      <dl><div><dt>Messages</dt><dd>${escapeHtml(completeness.messages || "NOT_EVALUATED")}</dd></div><div><dt>Tools</dt><dd>${escapeHtml(completeness.tools || "NOT_EVALUATED")}</dd></div><div><dt>Timestamps</dt><dd>${escapeHtml(completeness.timestamps || "NOT_EVALUATED")}</dd></div><div><dt>Hierarchy</dt><dd>${escapeHtml(completeness.hierarchy || "NOT_EVALUATED")}</dd></div></dl>
       <dl><div><dt>Parent Session</dt><dd>${renderSessionIdList(relationships.parentSessionIds)}</dd></div><div><dt>Child Session</dt><dd>${renderSessionIdList(relationships.childSessionIds)}</dd></div>${raw ? `<div><dt>Raw Metadata</dt><dd><code>${escapeHtml(shortDigest(raw.digest))}</code> · ${raw.byteLength} B</dd></div>` : ""}<div><dt>Manifest</dt><dd><code>${escapeHtml(shortDigest(metadata.manifestDigest || metadata.receiptDigest || "—"))}</code></dd></div></dl>
     </div>
+  </details>
+  <details class="agent-session-diagnostics">
+    <summary>高级诊断 · 原始 Receipt / Manifest 事实</summary>
+    <p>以下字段保持封存 Evidence 的原始语义；它们不会覆盖上方四维判定。</p>
+    <pre>${escapeHtml(JSON.stringify(diagnostics, null, 2))}</pre>
   </details>`;
+}
+
+function requireSessionSemantics(metadata) {
+  const semantics = metadata?.semantics;
+  if (semantics?.schemaVersion !== 1 || !semantics.availability?.state || !semantics.content || !semantics.binding?.state || !semantics.limitation?.state) {
+    const error = new Error("Session API 未返回版本化四维语义；页面拒绝从 legacy 字段猜测。");
+    error.code = "SESSION_SEMANTICS_MISSING";
+    throw error;
+  }
+  return semantics;
+}
+
+function sessionSemanticBadge(label, value) {
+  const tone = semanticTone(value);
+  return `<span class="agent-session-semantic-badge tone-${tone}"><small>${escapeHtml(label)}</small><strong>${escapeHtml(value || "NOT_EVALUATED")}</strong></span>`;
+}
+
+function semanticTone(value) {
+  if (["AVAILABLE", "COMPLETE", "VERIFIED", "NONE"].includes(value)) return "green";
+  if (["PENDING", "WAITING_RECONCILE", "UNVERIFIED", "PARTIAL", "NOT_EXPOSED", "OMITTED_BY_POLICY", "REDACTED"].includes(value)) return "yellow";
+  if (["UNAVAILABLE", "FAILED"].includes(value)) return "red";
+  return "neutral";
+}
+
+function sessionSemanticSummary(metadata, semantics) {
+  const availability = semantics.availability.state;
+  if (availability !== "AVAILABLE") return sessionAvailabilityMessage(semantics.availability);
+  if (semantics.content.state === "PARTIAL") {
+    const count = semantics.content.reasons?.length || 0;
+    return `会话内容可读，但检测到 ${count} 项内容缺口；页面不会补造缺失内容。${semantics.binding.state === "UNVERIFIED" ? " Prompt 与 Attempt 的强绑定同时无法追溯验证。" : ""}`;
+  }
+  if (semantics.binding.state === "UNVERIFIED") {
+    return metadata.importMode === "HISTORICAL_ENRICHMENT"
+      ? "会话内容可读；由于该历史任务创建时尚未冻结 Prompt Envelope，Prompt 与 Attempt 的强绑定无法追溯验证。"
+      : "会话内容可读；Prompt 与 Attempt 的强绑定尚未验证。";
+  }
+  return "会话内容完整可读，Prompt 与 Attempt 已由 pre-execution Prompt Envelope 验证。";
+}
+
+function renderSessionContentReasons(reasons) {
+  if (!Array.isArray(reasons) || reasons.length === 0) return "";
+  return `<div class="agent-session-content-gaps"><strong>内容缺口</strong><ul>${reasons.map(reason => `<li>${escapeHtml(sessionContentReasonLabel(reason))}</li>`).join("")}</ul></div>`;
+}
+
+function sessionContentReasonLabel(reason) {
+  const dimension = ({ messages: "消息", tools: "工具", timestamps: "时间戳", hierarchy: "会话层级", raw: "Raw source" })[reason?.dimension] || reason?.dimension;
+  if (reason?.kind === "DIMENSION_PARTIAL") return `${dimension}仅部分可用`;
+  if (reason?.kind === "DIMENSION_UNAVAILABLE") return `${dimension}不可用`;
+  if (reason?.kind === "PARSE_ERRORS") return `Parser 错误 ${reason.count} 项`;
+  if (reason?.kind === "UNKNOWN_EVENTS") return `未知 canonical Event ${reason.count} 项`;
+  if (reason?.kind === "DROPPED_EVENTS") return `丢弃 source record ${reason.count} 项`;
+  if (reason?.kind === "TERMINAL_MARKER_ABSENT") return "Provider 终止标记缺失";
+  if (reason?.kind === "CAPTURE_ERROR") return `Capture Error ${reason.errorCode || "UNKNOWN"} · ${reason.errorScope || "UNKNOWN"}`;
+  return reason?.kind || "未识别内容缺口";
+}
+
+function renderSessionLimitation(limitation) {
+  const reasons = Array.isArray(limitation?.reasons) ? limitation.reasons : [];
+  if (limitation?.state === "NONE" || reasons.length === 0) return "";
+  return `<div class="agent-session-limitation"><strong>策略 / Provider 边界</strong><ul>${reasons.map(reason => `<li>${escapeHtml(sessionLimitationMessage(reason))}</li>`).join("")}</ul></div>`;
+}
+
+function sessionLimitationMessage(value) {
+  return ({
+    OMITTED_BY_POLICY: "原始正文按 Capture Policy 省略；这是策略处置，不是采集丢失。",
+    REDACTED: "正文按确定性规则脱敏；这是策略处置，不是采集丢失。",
+    NOT_EXPOSED: "Provider 未暴露对应维度；这属于能力边界，不是采集丢失。",
+  })[value] || value;
 }
 
 function renderSessionIdList(values) {
@@ -1813,10 +1910,11 @@ function renderSessionIdList(values) {
 }
 
 function renderManagedSessionUnavailable(viewer, trigger, source, metadata) {
+  const semantics = requireSessionSemantics(metadata);
   viewer.dataset.state = "unavailable";
-  setAgentEventsStatus(viewer, sessionStateLabel(metadata.state));
+  setAgentEventsStatus(viewer, sessionAvailabilityLabel(semantics.availability.state));
   viewer.querySelector("[data-agent-events-toolbar]").replaceChildren();
-  viewer.querySelector("[data-agent-events-content]").innerHTML = `<div class="agent-events-error agent-session-unavailable" role="status"><strong>${escapeHtml(sessionStateLabel(metadata.state))}</strong><p>该 Role 没有可验证的完整 Transcript。可以查看独立 Execution Stream 诊断进程输出，但它不会被标记为完整 Agent 对话。</p><button type="button" data-agent-execution-fallback>查看 Execution Stream</button></div>`;
+  viewer.querySelector("[data-agent-events-content]").innerHTML = `<div class="agent-events-error agent-session-unavailable" role="status"><strong>${escapeHtml(sessionAvailabilityLabel(semantics.availability.state))}</strong><p>${escapeHtml(sessionAvailabilityMessage(semantics.availability))}</p><button type="button" data-agent-execution-fallback>查看 Execution Stream</button></div>`;
   viewer.querySelector("[data-agent-events-footer]").replaceChildren();
   viewer.querySelector("[data-agent-execution-fallback]")?.addEventListener("click", () => openExecutionEventsDialog(trigger, { ...source, sessionUrl: undefined, timelineUrl: undefined, stderrUrl: undefined }));
 }
@@ -1830,7 +1928,9 @@ function renderManagedSessionError(viewer, error, retry, trigger, source) {
     context.replaceChildren();
   }
   setAgentEventsStatus(viewer, "读取失败");
-  viewer.querySelector("[data-agent-events-content]").innerHTML = `<div class="agent-events-error" role="alert"><strong>Session Evidence 暂时无法读取</strong><p>${escapeHtml(message)}</p><div class="agent-session-error-actions"><button type="button" data-agent-events-retry>重新加载</button><button type="button" data-agent-execution-fallback>查看 Execution Stream</button></div></div>`;
+  const integrity = error?.semantics?.availability?.reason === "ARTIFACT_INTEGRITY_FAILED";
+  const action = error?.action || (integrity ? "核对受管 Artifact allowlist 与 Digest；不要为 Transcript 故障重跑 Agent。" : "重试读取同一 Evidence，或查看独立 Execution Stream。");
+  viewer.querySelector("[data-agent-events-content]").innerHTML = `<div class="agent-events-error" role="alert"><strong>${integrity ? "Session Artifact 完整性校验失败" : "Session Evidence 暂时无法读取"}</strong><p>${escapeHtml(message)}</p><p class="agent-session-error-action">${escapeHtml(action)}</p><div class="agent-session-error-actions"><button type="button" data-agent-events-retry>重新加载</button><button type="button" data-agent-execution-fallback>查看 Execution Stream</button></div></div>`;
   viewer.querySelector("[data-agent-events-retry]")?.addEventListener("click", retry, { once: true });
   viewer.querySelector("[data-agent-execution-fallback]")?.addEventListener("click", () => openExecutionEventsDialog(trigger, { ...source, sessionUrl: undefined, timelineUrl: undefined, stderrUrl: undefined }));
 }
@@ -1856,7 +1956,8 @@ function renderManagedSessionState(viewer, state, loadTimeline) {
   const target = viewer.querySelector("[data-agent-events-content]");
   const events = managedSessionEvents(state);
   const visible = state.filter === "all" ? events : events.filter(event => managedEventFilter(event) === state.filter);
-  const status = state.metadata.state === "PARTIAL" ? "部分 Transcript" : "完整 Transcript";
+  const semantics = requireSessionSemantics(state.metadata);
+  const status = semantics.content.state === "PARTIAL" ? `内容存在 ${semantics.content.reasons.length} 项缺口` : "内容完整";
   setAgentEventsStatus(viewer, `已加载 ${state.events.length} / ${state.transcriptTotal} 条 · ${status}`);
   const categories = [
     ["all", "全部"],
@@ -1886,7 +1987,7 @@ function renderManagedSessionState(viewer, state, loadTimeline) {
   const footer = viewer.querySelector("[data-agent-events-footer]");
   footer.innerHTML = state.hasMore
     ? '<button type="button" data-agent-session-more>加载后续 200 条</button><button type="button" data-agent-session-all>加载完整 Timeline</button>'
-    : `<span>${state.metadata.state === "PARTIAL" ? "已到部分 Transcript 末尾；缺失项以 Manifest 为准" : "完整受管 Timeline 已加载"}${state.stderr?.error ? ` · stderr：${escapeHtml(state.stderr.error)}` : ""}</span>`;
+    : `<span>${semantics.content.state === "PARTIAL" ? "受管 Timeline 已加载；内容缺口以上方 Domain reasons 为准" : "内容完整的受管 Timeline 已加载"}${state.stderr?.error ? ` · stderr：${escapeHtml(state.stderr.error)}` : ""}</span>`;
   footer.querySelector("[data-agent-session-more]")?.addEventListener("click", () => void loadTimeline(false));
   footer.querySelector("[data-agent-session-all]")?.addEventListener("click", () => void loadTimeline(true));
 }
@@ -1983,8 +2084,19 @@ function sessionImportModeLabel(value) {
   return ({ LIVE: "实时证据", HISTORICAL_ENRICHMENT: "历史补全 Sidecar" })[value] || "证据来源未发布";
 }
 
-function sessionStateLabel(value) {
-  return ({ COMPLETE: "完整 Transcript", PARTIAL: "部分 Transcript", PENDING: "等待 Transcript Capture", WAITING_RECONCILE: "等待 Capture 对账", UNAVAILABLE: "Transcript 不可用", FAILED: "Transcript Capture 失败" })[value] || value;
+function sessionAvailabilityLabel(value) {
+  return ({ AVAILABLE: "Session Evidence 可读", PENDING: "等待 Transcript Capture", WAITING_RECONCILE: "等待 Capture 对账", UNAVAILABLE: "Transcript 不可用", FAILED: "Transcript Evidence 失败" })[value] || value;
+}
+
+function sessionAvailabilityMessage(availability) {
+  return ({
+    CAPTURE_PENDING: "Capture 尚未产生 Receipt；页面只刷新同一 Evidence，不会启动第二个 Agent Run。",
+    CAPTURE_WAITING_RECONCILE: "Capture 结果未知，必须先对账同一 Attempt；不能盲目重试或重跑 Agent。",
+    TRANSCRIPT_UNAVAILABLE: "Provider Transcript 不可用；可以查看独立 Execution Stream，但页面不会把它冒充完整对话。",
+    CAPTURE_FAILED: "Transcript Capture 已失败；请检查 Capture 诊断，不要因此重跑已经完成的 Agent。",
+    ARTIFACT_INTEGRITY_FAILED: "受管 Artifact 完整性校验失败；请核对 allowlist 与 Digest，不要重跑 Agent。",
+    EVIDENCE_READABLE: "Session Evidence 已通过受管 Artifact 校验。",
+  })[availability?.reason] || "Session Evidence 状态未确认。";
 }
 
 function shortSessionId(value) {

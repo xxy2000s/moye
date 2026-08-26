@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "taskId": "TASK-0081",
+  "acceptedAt": "2026-08-27T02:35:30+08:00",
+  "source": {
+    "taskId": "TASK-RCV-20260826114418-01-ROLE-RECOVERY",
+    "role": "architect",
+    "attempt": "r1-g0",
+    "runtime": "canonical-restored-artifacts-read-through-current-board-source"
+  },
+  "semanticFacts": {
+    "availability": "AVAILABLE",
+    "content": "COMPLETE",
+    "binding": "UNVERIFIED",
+    "limitation": "NONE",
+    "rawReceiptState": "PARTIAL",
+    "historicalMessage": "会话内容可读；由于该历史任务创建时尚未冻结 Prompt Envelope，Prompt 与 Attempt 的强绑定无法追溯验证。"
+  },
+  "checks": [
+    {
+      "viewport": [1440, 1000],
+      "result": "passed",
+      "evidence": "session-historical-desktop.png",
+      "sha256": "6a838c1ffaa7a57faed8daf5e3dd36f539f68e4e2db4e800b6f485347ff6d777"
+    },
+    {
+      "viewport": [1440, 1000],
+      "result": "passed",
+      "assertion": "advanced diagnostics preserves raw Receipt/Manifest facts",
+      "evidence": "session-historical-diagnostics.png",
+      "sha256": "88507d2b898d523001448c449e2b8833837780addb4b990ca73c6b8659620e5b"
+    },
+    {
+      "viewport": [390, 844],
+      "result": "passed",
+      "dialogBounds": { "left": 8, "right": 345, "width": 337, "top": 8, "bottom": 836 },
+      "bodyOverflowX": false,
+      "evidence": "session-historical-mobile.png",
+      "sha256": "53b33a3e2deb6b92a37bb1be102a02cd147a13c05c806d6e6d67c4f84db8ebc4"
+    },
+    {
+      "interaction": "Assistant category filter",
+      "result": "passed",
+      "observed": "Assistant 8 pressed"
+    },
+    {
+      "interaction": "Escape close and focus return",
+      "result": "passed",
+      "observedActiveElement": "查看 Agent 对话与工具输出"
+    },
+    {
+      "interaction": "network failure and retry same Evidence",
+      "result": "passed",
+      "failureObserved": "Session Evidence 暂时无法读取 / Failed to fetch",
+      "safeActionObserved": "重试读取同一 Evidence，或查看独立 Execution Stream。",
+      "recoveredTo": "AVAILABLE / COMPLETE / UNVERIFIED / NONE",
+      "evidence": "session-network-error.png",
+      "sha256": "faaf2d29612b03bcbf5696c1f4d585fa4ff4d31fc3b209524d38b9f4037dee5a"
+    }
+  ],
+  "mutations": "none",
+  "temporaryEndpointsStopped": [3032, 55924]
+}

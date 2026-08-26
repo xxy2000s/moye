@@ -34,6 +34,7 @@ let providerRoot = "";
 let managedRoot = "";
 let projection: CoreV2WorkflowProjection;
 let completeRun: RoleRunManifestV2;
+let partialRun: RoleRunManifestV2;
 let missingRun: RoleRunManifestV2;
 let logs = "";
 
@@ -47,8 +48,10 @@ describe("TranscriptEnrichmentWorkflow on real Restate", () => {
     await Promise.all([mkdir(taskArtifactRoot), mkdir(providerRoot), mkdir(managedRoot)]);
     completeRun = await createRoleRun("ARCHITECT", "ARCHITECT", "01a00000-0000-7000-8000-000000000001", 0);
     missingRun = await createRoleRun("REVIEW", "DESIGN_REVIEW", "01a00000-0000-7000-8000-000000000002", 0);
+    partialRun = await createClaudeRoleRun("01a00000-0000-7000-8000-000000000003");
     await writeCodexRollout(completeRun.sessionId!, "legacy prompt preserved by Provider");
-    projection = archivedProjection([completeRun, missingRun]);
+    await writeClaudeSession(partialRun.sessionId!);
+    projection = archivedProjection([completeRun, missingRun, partialRun]);
 
     docker([
       "run", "--rm", "-d", "--name", containerName,
@@ -116,6 +119,39 @@ describe("TranscriptEnrichmentWorkflow on real Restate", () => {
     expect(after).toEqual(before);
   }, 40_000);
 
+  it("exposes genuine managed Transcript gaps as semantic Content reasons", async () => {
+    const input = enrichmentInput("history-e2e-partial", partialRun, providerRoot);
+    await send(ingressUrl(), "TranscriptEnrichmentWorkflow", input.enrichmentId, "run", input);
+    const result = await waitForEnrichment(input.enrichmentId);
+    expect(result).toMatchObject({ state: "CLOSED", outcome: "PARTIAL", receipt: { captureState: "PARTIAL" } });
+
+    const response = await fetch(`${boardUrl()}/api/tasks/${taskId}/roles/${encodeURIComponent(partialRun.runId)}/session`);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      state: "PARTIAL",
+      semantics: {
+        availability: { state: "AVAILABLE" },
+        content: {
+          evaluated: true,
+          state: "PARTIAL",
+          reasons: [{ kind: "DIMENSION_PARTIAL", dimension: "timestamps" }],
+        },
+        binding: { state: "UNVERIFIED" },
+        limitation: { state: "NOT_EXPOSED", reasons: ["NOT_EXPOSED"] },
+      },
+    });
+
+    const captureToken = createHash("sha256").update(result.receipt!.captureId, "utf8").digest("hex").slice(0, 32);
+    await writeFile(path.join(managedRoot, `capture-${captureToken}`, "session-transcript.normalized.jsonl"), "tampered\n");
+    const integrity = await fetch(`${boardUrl()}/api/tasks/${taskId}/roles/${encodeURIComponent(partialRun.runId)}/session`);
+    expect(integrity.status).toBe(422);
+    expect(await integrity.json()).toMatchObject({ error: {
+      code: "SESSION_ARTIFACT_INTEGRITY_FAILED",
+      semantics: { availability: { state: "FAILED", reason: "ARTIFACT_INTEGRITY_FAILED" } },
+      action: expect.stringContaining("do not rerun the Agent"),
+    } });
+  }, 30_000);
+
   it("records a deterministic UNAVAILABLE Receipt when the confirmed Provider source is absent", async () => {
     const input = enrichmentInput("history-e2e-missing", missingRun, providerRoot);
     await send(ingressUrl(), "TranscriptEnrichmentWorkflow", input.enrichmentId, "run", input);
@@ -126,7 +162,15 @@ describe("TranscriptEnrichmentWorkflow on real Restate", () => {
     expect(registry.receipt?.manifest).toBeUndefined();
     const response = await fetch(`${boardUrl()}/api/tasks/${taskId}/roles/${encodeURIComponent(missingRun.runId)}/timeline`);
     expect(response.status).toBe(422);
-    expect(await response.json()).toMatchObject({ error: { code: "SESSION_TRANSCRIPT_UNAVAILABLE" } });
+    expect(await response.json()).toMatchObject({ error: {
+      code: "SESSION_TRANSCRIPT_UNAVAILABLE",
+      semantics: {
+        availability: { state: "UNAVAILABLE", reason: "TRANSCRIPT_UNAVAILABLE" },
+        content: { evaluated: false },
+        binding: { state: "NOT_APPLICABLE" },
+      },
+      action: expect.stringContaining("do not invent Transcript content"),
+    } });
   }, 30_000);
 
   it("rejects Provider roots outside the operator allowlist before claiming Registry state", async () => {
@@ -144,7 +188,7 @@ function enrichmentInput(enrichmentId: string, run: RoleRunManifestV2, sourceRoo
     runId: run.runId,
     managedArtifactRoot: managedRoot,
     capturePolicy: "full",
-    codexSessionsRoot: sourceRoot,
+    ...(run.runnerKind === "CODEX_EXEC" ? { codexSessionsRoot: sourceRoot } : { claudeProjectsRoot: sourceRoot }),
     promptBinding: "UNVERIFIED",
     executorId: `e2e:${enrichmentId}`,
   };
@@ -176,6 +220,36 @@ async function createRoleRun(role: "ARCHITECT" | "REVIEW", phase: "ARCHITECT" | 
     }; } },
     now: () => new Date("2026-08-25T20:00:02.000Z"),
   }).run({ attempt, scopeRoot: repositoryRoot, artifactRoot: path.join(taskArtifactRoot, "roles"), instructions: `fixture ${phase}` })).manifest;
+}
+
+async function createClaudeRoleRun(sessionId: string): Promise<RoleRunManifestV2> {
+  const attempt = startRoleAttemptV2(createRoleAttemptV2({
+    taskId,
+    specRevision: 1,
+    role: "REVIEW",
+    phase: "DESIGN_REVIEW",
+    generation: 1,
+    runnerKind: "CLAUDE_PRINT",
+    inputDigest: sha("claude:input"),
+    subjectCommit: "a".repeat(40),
+    inputArtifactRefs: ["artifact://spec"],
+    scheduledAt: "2026-08-25T20:00:00.000Z",
+  }), "2026-08-25T20:00:01.000Z");
+  return (await new RealRoleRuntimeV2({
+    processRunner: { async run() { return {
+      stdout: `${JSON.stringify({ type: "system", subtype: "init", session_id: sessionId })}\n${JSON.stringify({
+        type: "result",
+        subtype: "success",
+        session_id: sessionId,
+        result: "partial historical fixture",
+        structured_output: { summary: "fixture", recommendation: "PASS", artifactRefs: [], findingRefs: [], deliverable: "{}" },
+      })}\n`,
+      stderr: "stderr:DESIGN_REVIEW",
+      exitCode: 0,
+      signal: null,
+    }; } },
+    now: () => new Date("2026-08-25T20:00:02.000Z"),
+  }).run({ attempt, scopeRoot: repositoryRoot, artifactRoot: path.join(taskArtifactRoot, "roles"), instructions: "fixture DESIGN_REVIEW" })).manifest;
 }
 
 function archivedProjection(roleRuns: readonly RoleRunManifestV2[]): CoreV2WorkflowProjection {
@@ -227,6 +301,18 @@ async function writeCodexRollout(sessionId: string, prompt: string): Promise<voi
     { timestamp: "2026-08-25T20:00:06.000Z", type: "event_msg", payload: { type: "task_complete" } },
   ];
   await writeFile(path.join(directory, `rollout-${sessionId}.jsonl`), `${rows.map((row) => JSON.stringify(row)).join("\n")}\n`);
+}
+
+async function writeClaudeSession(sessionId: string): Promise<void> {
+  const directory = path.join(providerRoot, "claude-project", "2026", "08", "25");
+  await mkdir(directory, { recursive: true });
+  const rows = [
+    { type: "permission-mode", permissionMode: "plan", sessionId },
+    { parentUuid: null, isSidechain: false, type: "user", message: { role: "user", content: "historical prompt" }, uuid: "user-1", timestamp: "2026-08-25T20:00:01.000Z", sessionId },
+    { parentUuid: "user-1", isSidechain: false, type: "assistant", message: { role: "assistant", model: "claude-sonnet", content: [{ type: "text", text: "working without a Provider timestamp" }], stop_reason: "tool_use" }, uuid: "assistant-1", sessionId },
+    { parentUuid: "assistant-1", isSidechain: false, type: "assistant", message: { role: "assistant", model: "claude-sonnet", content: [{ type: "text", text: "done" }], stop_reason: "end_turn" }, uuid: "assistant-final", timestamp: "2026-08-25T20:00:03.000Z", sessionId },
+  ];
+  await writeFile(path.join(directory, `${sessionId}.jsonl`), `${rows.map((row) => JSON.stringify(row)).join("\n")}\n`);
 }
 
 async function startService(entry: string, port: number): Promise<void> {
