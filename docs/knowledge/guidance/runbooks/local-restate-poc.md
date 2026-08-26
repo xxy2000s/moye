@@ -358,6 +358,15 @@ npm run cli -- reconcile-task TASK-EXAMPLE \
 
 所有内容采集开关彼此独立且默认关闭。Moye 只把这些变量传给本次 `claude -p --output-format stream-json` 子进程，不编辑 `~/.claude/settings.json` 或 Codex 配置。CLI 版本不支持某个原生变量时，该层数据不会出现；Moye 自己从 Projection 导出的 Trace 和 CLI stream JSONL 仍可用。升级前先执行 `claude --version` / `codex --version`，并用本节 Demo 验证，不要假设不同版本字段相同。
 
+本地 GA Service 若需要执行历史 Session Enrichment，必须在提交 enrichment Workflow 前显式允许精确 Provider 根，例如 macOS 使用 `MOYE_SESSION_SOURCE_ROOTS="$HOME/.codex/sessions:$HOME/.claude/projects"`；不要允许整个 Home。Board 始终只读已经复制到 `MOYE_ARTIFACT_ROOTS` 的受管文件。多 Task 恢复必须显式传入 ID，禁止扫描 Board 猜目标：
+
+```bash
+MOYE_SESSION_HISTORY_TASK_IDS=TASK-A,TASK-B \
+  npm run acceptance:agent-sessions:history:matrix
+```
+
+报告中的 `PARTIAL` 可能来自历史 Prompt Binding 为 `UNVERIFIED`，需结合 `parseErrors`、`unknownEvents` 与 Timeline 数量判断，不能把它改写成 `COMPLETE`。`UNAVAILABLE` 表示 Provider 源确实缺失，不能重跑旧 Agent 或伪造消息。
+
 可见性边界：Moye Trace 能看到 Task、Step、Attempt、Agent Run、状态和耗时；Codex 只保证保存 CLI 暴露的 `--json` JSONL，无法承诺未暴露的原始 HTTP Request/Response Body；Claude 保存 `stream-json`，启用原生 OTel 后可增加其 CLI 提供的 Span/Metric。只有显式开启内容或 Raw Body 变量时才可能看到模型正文，开启前应把本地 Phoenix 和 Artifact 按敏感数据处理。
 
 `MOYE_TEST_FAULT_INJECTION=enabled` 只允许自动化测试子进程开启 Git 或 Core Artifact 强杀/丢回执注入。正常开发、演示和部署不要设置它；未显式开启时，带 `fault` 的 Coding/Core Workflow 会在执行副作用前被拒绝。
@@ -375,6 +384,7 @@ npm run cli -- reconcile-task TASK-EXAMPLE \
 - source/target 都存在且摘要不同：不要删除任何一端，记录冲突并人工判定；
 - Restate 返回 `META0014`：Service Endpoint 不是 HTTP/2；当前 `src/index.ts` 已使用 HTTP/2，不要改回普通 `node:http`；
 - Board 显示 Runtime unavailable：先检查 Ingress `8080`，再检查 deployment 是否已注册；
+- 真实验收结束后 Board 请求超时：检查最高 Service revision 的 Deployment URI 是否仍指向已退出的临时端口；新版 harness 会在退出前 PATCH 临时 Deployment 到 predecessor endpoint。不要只重新 POST 旧 URI，也不要强制删除可能承载在途 Invocation 的 Deployment；
 - SDK 警告未验证请求签名：PoC 只能在受限本地网络运行，不能暴露公网。
 
 ## 7. 清理

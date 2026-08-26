@@ -157,3 +157,10 @@
 - 后果：command 重试耗尽后 Invocation 以 Failure Output 完成，但 Authority、Intent、Projection 和 Board 尚未创建；Workflow key 已消耗，现有 rejected-Evidence Recovery 又没有 source Intent 可读。
 - 检测：`sys_journal` 只有 Input、`prepare-seal-intent` Failure 和 Output Failure；`seal-status`、TaskAuthority、Board 均为空。
 - 规避：CLI 发送前、Workflow 首次状态写入前和最终 Commit Gate 复用同一只读校验；派发前失败不创建 Runtime Task。旧失败保留 Invocation，以新 Task 接管，不重提 key、不 purge、不伪造失败 Projection。
+
+## 23. 把重新注册旧 Service URI 当成 Deployment 回切
+
+- 触发：真实验收注册 revision 更高的临时 Restate Deployment；进程停止后只对旧 GA URI 再执行一次 `POST /deployments`。
+- 后果：旧 URI 仍保留较低 revision，新 Invocation 继续路由到已经退出的临时 endpoint；Board 显示 Runtime unavailable 或 Session/Trace 请求超时。
+- 检测：按目标 Service 的 `revision` 选择最高 Deployment，发现其 URI 指向没有监听的临时端口；重新 POST 旧 URI 后 revision 没有提升。
+- 规避：注册临时 Service 前冻结当前最高 revision 的 predecessor URI，保存临时 Deployment ID；退出前用 Admin PATCH 把临时 Deployment 的 URI 交回 predecessor，成功后才停止进程。不要强制删除可能仍有在途 Invocation 的 Deployment。

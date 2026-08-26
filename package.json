@@ -58,6 +58,7 @@
     "acceptance:core-v2:sessions": "MOYE_CORE_V2_RECOVERY_SCENARIOS=SESSION_CAPTURE_RECOVERY tsx scripts/core_v2_recovery_acceptance.ts",
     "acceptance:core-v2:session-api": "tsx scripts/session_timeline_acceptance.ts",
     "acceptance:agent-sessions:history": "tsx scripts/session_history_acceptance.ts",
+    "acceptance:agent-sessions:history:matrix": "tsx scripts/session_history_matrix.ts",
     "acceptance:agent-sessions": "tsx scripts/agent_session_full_acceptance.ts",
     "acceptance:framework:client": "tsx scripts/framework_client_acceptance.ts",
     "acceptance:framework:plugins": "tsx scripts/plugin_sdk_contracts.ts",

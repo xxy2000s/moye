@@ -5,6 +5,8 @@ import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import net from "node:net";
 import path from "node:path";
 
+import { handoffRestateDeployment, latestRestateServiceEndpoint } from "../src/acceptance/restate-deployment-handoff.js";
+import { auditCoreV2AcceptanceSessionEvidence, coreV2AcceptanceSessionEvidence, coreV2AcceptanceSessionSourceRoots } from "../src/acceptance/core-v2-session-evidence.js";
 import type { CoreV2AttemptFenceResult, CoreV2WorkflowInput, CoreV2WorkflowProjection } from "../src/restate/core-v2-services.js";
 import { IngressError, invoke, send } from "../src/restate/ingress.js";
 
@@ -29,8 +31,10 @@ const fixtureKind = fixtureKindInput as "node" | "minimal-git";
 const trustedTestArgv = fixtureKind === "minimal-git" ? ["git", "diff", "--check", "HEAD"] : ["npm", "test"];
 let service: ChildProcess | undefined;
 let logs = "";
+let serviceDeploymentId: string | undefined;
 
 await mkdir(runRoot, { recursive: true });
+const predecessorEndpoint = process.env["MOYE_MAIN_SERVICE_ENDPOINT"] ?? await latestRestateServiceEndpoint(adminUrl, "CoreV2Workflow");
 await startService();
 await registerService();
 const summaries: unknown[] = [];
@@ -45,6 +49,9 @@ try {
   await writeJson(path.join(runRoot, "matrix-summary.json"), matrix);
   process.stdout.write(`${JSON.stringify(matrix, null, 2)}\n`);
 } finally {
+  if (serviceDeploymentId !== undefined && predecessorEndpoint !== undefined) {
+    await handoffRestateDeployment(adminUrl, serviceDeploymentId, predecessorEndpoint);
+  }
   await stopService();
 }
 process.exit(0);
@@ -73,6 +80,7 @@ async function executeScenario(scenario: Scenario, index: number) {
       objective: "Create src/value.txt whose complete content is exactly `accepted-value\\n`; add a README line exactly `## Accepted behavior`; create SECURITY.md whose complete content is exactly `# Security\\n`.",
       acceptanceCriteria: ["src/value.txt contains accepted-value", "README contains ## Accepted behavior", "SECURITY.md contains # Security", "Trusted Runner executes npm test"],
       repositoryRoot, artifactRoot, runnerKind: "CODEX_EXEC", baseCommit, targetRef: "refs/heads/release", testCommands: [trustedTestArgv],
+      sessionEvidence: coreV2AcceptanceSessionEvidence(),
       ...(scenario === "REPAIR_BUDGET" ? { acceptanceControl: { profile: "REPAIR_BUDGET" as const } } : {}),
       ...(scenario === "REPLAN_BUDGET" ? { acceptanceControl: { profile: "REPLAN_BUDGET" as const } } : {}),
       ...(scenario === "STALE_FENCING" ? { acceptanceControl: { profile: "IMPLEMENTATION_SELF_REVIEW" as const } } : {}),
@@ -88,6 +96,11 @@ async function executeScenario(scenario: Scenario, index: number) {
   await writeJson(path.join(root, "final-projection.json"), final);
   await writeJson(path.join(root, "final-trace.json"), trace);
   assertUniqueRuns(final);
+  const sessionEvidence = auditCoreV2AcceptanceSessionEvidence(final);
+  for (const evidence of sessionEvidence) {
+    const page = await fetchJson<{ total: number; events: readonly unknown[] }>(`${boardUrl}/api/tasks/${encodeURIComponent(taskId)}/roles/${encodeURIComponent(evidence.runId)}/timeline?cursor=0&limit=200`);
+    assert(page.total > 0 && page.events.length > 0, `${taskId} missing canonical Session timeline for ${evidence.runId}`);
+  }
 
   let fence: { wrongDigestRejected: boolean; first: CoreV2AttemptFenceResult; replay: CoreV2AttemptFenceResult } | null = null;
   if (scenario !== "OBSERVER_TIMEOUT") {
@@ -147,6 +160,7 @@ async function executeScenario(scenario: Scenario, index: number) {
     state: final.state, outcome: final.outcome, archiveStatus: final.lifecycle.archive?.status,
     specRevision: final.lifecycle.specRevision, implementationGeneration: final.lifecycle.implementationGeneration,
     roleRuns: final.roleRuns.map((run) => ({ phase: run.phase, attemptId: run.attemptId, specRevision: run.specRevision, generation: run.generation, sessionId: run.sessionId, runId: run.runId, outcome: run.outcome, eventsDigest: run.eventsDigest, manifestDigest: run.manifestDigest })),
+    sessionEvidence,
     candidateCommit: final.lifecycle.candidateCommit, mergeCommit: final.lifecycle.mergeCommit,
     checkpoints: final.lifecycle.implementationCheckpoints.map((item) => ({ generation: item.generation, candidateCommit: item.candidateCommit, treeDigest: item.treeDigest, checkpointDigest: item.checkpointDigest })),
     trustedTestRuns: final.lifecycle.trustedTestRuns,
@@ -174,12 +188,13 @@ async function startService() {
     RESTATE_SERVICE_PORT: String(servicePort), MOYE_BOARD_PORT: String(boardPort), RESTATE_INGRESS_URL: ingressUrl, RESTATE_ADMIN_URL: adminUrl,
     MOYE_PROJECT_ID: projectId, MOYE_LIVE_RUNTIME_ROOT: runRoot, MOYE_REPOSITORY_ROOTS: runRoot, MOYE_ARTIFACT_ROOTS: runRoot,
     MOYE_ACCEPTANCE_FAULT_INJECTION: "enabled", MOYE_OBSERVABILITY_ENABLED: "false",
+    MOYE_SESSION_SOURCE_ROOTS: coreV2AcceptanceSessionSourceRoots(),
   }, stdio: ["ignore", "pipe", "pipe"] });
   service.stdout?.on("data", (value: Buffer) => { const text = value.toString(); logs += text; void appendFile(path.join(runRoot, "service.log"), text); });
   service.stderr?.on("data", (value: Buffer) => { const text = value.toString(); logs += text; void appendFile(path.join(runRoot, "service.log"), text); });
   await waitUntil(() => canConnect(servicePort), 20_000);
 }
-async function registerService() { const response = await fetch(`${adminUrl}/deployments`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ uri: `http://host.docker.internal:${servicePort}` }) }); if (!response.ok) throw new Error(`registration failed ${await response.text()}\n${logs}`); }
+async function registerService() { const response = await fetch(`${adminUrl}/deployments`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ uri: `http://host.docker.internal:${servicePort}` }) }); if (!response.ok) throw new Error(`registration failed ${await response.text()}\n${logs}`); const deployment = await response.json() as { id?: string }; if (typeof deployment.id !== "string") throw new Error("registration response has no deployment id"); serviceDeploymentId = deployment.id; }
 async function stopService() {
   const child = service; service = undefined;
   if (child === undefined || child.exitCode !== null || child.signalCode !== null) return;

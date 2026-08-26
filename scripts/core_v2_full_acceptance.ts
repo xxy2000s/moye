@@ -5,6 +5,8 @@ import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import net from "node:net";
 import path from "node:path";
 
+import { handoffRestateDeployment, latestRestateServiceEndpoint } from "../src/acceptance/restate-deployment-handoff.js";
+import { coreV2AcceptanceSessionSourceRoots } from "../src/acceptance/core-v2-session-evidence.js";
 import { buildCoreV2MatrixAuditInput } from "../src/acceptance/core-v2-matrix-manifest.js";
 
 const ingressUrl = process.env["MOYE_CORE_V2_ACCEPTANCE_INGRESS"] ?? "http://127.0.0.1:50889";
@@ -21,9 +23,11 @@ const auditBoardUrl = `http://127.0.0.1:${boardPort}`;
 const logPath = path.join(runRoot, "matrix.log");
 let service: ChildProcess | undefined;
 let registrationSequence = 0;
+let serviceDeploymentId: string | undefined;
 
 await mkdir(runRoot, { recursive: true });
 await assertReachable(`${adminUrl}/deployments`, "Restate Admin");
+const predecessorEndpoint = process.env["MOYE_MAIN_SERVICE_ENDPOINT"] ?? await latestRestateServiceEndpoint(adminUrl, "CoreV2Workflow");
 await startService();
 try {
   await registerService();
@@ -57,6 +61,9 @@ try {
   await writeJson(path.join(runRoot, "matrix-acceptance-summary.json"), summary);
   process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
 } finally {
+  if (serviceDeploymentId !== undefined && predecessorEndpoint !== undefined) {
+    await handoffRestateDeployment(adminUrl, serviceDeploymentId, predecessorEndpoint);
+  }
   await stopService();
 }
 
@@ -71,6 +78,7 @@ async function runSuite(name: string, script: string, args: readonly string[]) {
     MOYE_CORE_V2_ACCEPTANCE_RUN_ROOT: suiteRoot,
     MOYE_CORE_V2_ACCEPTANCE_BOARD: auditBoardUrl,
     MOYE_CORE_V2_ACCEPTANCE_PAGE_BOARD: pageBoardUrl,
+    MOYE_MAIN_SERVICE_ENDPOINT: `http://host.docker.internal:${servicePort}`,
   });
 }
 
@@ -98,6 +106,7 @@ async function startService() {
     MOYE_ACCEPTANCE_FAULT_INJECTION: "enabled",
     MOYE_TEST_FAULT_INJECTION: "enabled",
     MOYE_OBSERVABILITY_ENABLED: "false",
+    MOYE_SESSION_SOURCE_ROOTS: coreV2AcceptanceSessionSourceRoots(),
   }, stdio: ["ignore", "pipe", "pipe"] });
   service.stdout?.on("data", (value: Buffer) => { void appendFile(logPath, value); });
   service.stderr?.on("data", (value: Buffer) => { void appendFile(logPath, value); });
@@ -107,6 +116,9 @@ async function startService() {
 async function registerService() {
   const response = await fetch(`${adminUrl}/deployments`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ uri: `http://host.docker.internal:${servicePort}` }) });
   if (!response.ok) throw new Error(`matrix service registration failed: ${response.status} ${await response.text()}`);
+  const deployment = await response.json() as { id?: string };
+  if (typeof deployment.id !== "string") throw new Error("matrix service registration response has no deployment id");
+  serviceDeploymentId = deployment.id;
   const probeTaskId = `TASK-MATRIX-PROBE-${stamp}-${++registrationSequence}`;
   await waitUntil(async () => (await fetch(`${ingressUrl}/CoreV2Workflow/${probeTaskId}/status`, { method: "POST", headers: { "content-type": "application/json" }, body: "null" })).status !== 404, 20_000, "CoreV2Workflow registration");
 }

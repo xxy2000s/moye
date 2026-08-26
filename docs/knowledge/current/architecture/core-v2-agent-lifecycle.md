@@ -1,7 +1,7 @@
 # Core v2 Agent Lifecycle
 
 > 状态：Current / unified product Workflow implemented
-> 更新日期：2026-08-23
+> 更新日期：2026-08-26
 > 决策：[ADR-0005](../../decisions/adr/0005-adopt-core-v2-five-plus-one-agent-model.md)、[ADR-0006](../../decisions/adr/0006-use-two-phase-sealed-result-commit.md)
 
 ## 1. 状态权威
@@ -48,6 +48,10 @@ INTAKE → CONTEXT_PLAN
 
 Normalized Timeline 按 Provider 源顺序保留 Prompt、User、Assistant、Tool Call、Tool Result、System、Error、stderr 与 Unknown；每条事件绑定 raw record Digest。Provider user 记录只有与 rendered Prompt Digest 匹配时才标为 Role Prompt，Claude tool result 不能冒充用户消息。每个 Capture Attempt 必须使用新的 enrichment Workflow key 和新的 raw/normalized/Manifest/Receipt Artifact refs；Authority 永久保留这些 locator，并用 append-only journal 校验 UNKNOWN、Decision 与 Receipt 顺序。`COMPLETE` 只描述所选 capture policy 下的 Provider-exposed scope，不代表获得 Provider 未暴露或加密的内部 reasoning。Board 只能从主 Projection 的 Run ID 连接 Session Evidence Authority 并读取受管 Artifact，不能在请求时扫描 `~/.codex` 或 `~/.claude`。
 
+真实 Core v2 产品/故障验收采用比 Framework 公共默认更严格的策略：Happy、Fault、Recovery、Guard 和 Framework Matrix 都显式启用 `full` Session Evidence，并在验收结尾要求每个已完成 Role Run 具有 identity-bound Receipt、Manifest、Authority 和非空 canonical Timeline。Framework Manifest 的隐私默认仍是 `captureTranscripts=none`；外部项目只有显式允许 Prompt 采集后才启用，不因验收策略而改变。
+
+旧 Core v2 Projection 不回填新字段。`scripts/session_history_matrix.ts` 只消费调用方显式 Task ID，逐项附着 `TranscriptEnrichmentWorkflow`，记录 `COMPLETE | PARTIAL | UNAVAILABLE`，并证明 source Projection Digest 前后不变。历史 `PARTIAL` 可以表示 Provider 内容完整但 Prompt Binding 只能标为 `UNVERIFIED`，不能提升为当时已存在的 Prompt Envelope。2026-08-26 对 W09 六个真实 Task 的 44 个 Role Session 完成 append-only 恢复，共公开 1554 条 canonical Timeline Event；其中 `TASK-RCV-20260826114418-01-ROLE-RECOVERY` 为 7/7 Role、271 Event，原 Projection Digest 保持 `sha256:48d0fbf2…6858`。
+
 该 Runtime 是角色执行与恢复底座，不拥有 Task 主状态，也不自行调度下一阶段。`CoreV2Workflow/<task_id>` 是统一产品编排者：它逐阶段创建 Attempt，在 Restate durable journal 中调用真实 Runtime，把结果交给纯 Lifecycle Reducer，并向 ProjectBoard 发布同一 Projection。
 
 `src/domain/core-v2-lifecycle.ts` 已接入第一段 Workflow Reducer：成功 ARCHITECT Attempt 原子生成同 Revision 的 Spec/Design/Plan，随后只接受独立 `REVIEW/DESIGN_REVIEW` Attempt。Design Review 只能判断当前 Spec/Design/Plan；Implementation 尚未发生以及 Candidate、测试、Merge、Closure、Archive 尚不存在不能成为本 Phase 的 Finding。Review `PASSED` 才进入 Implementation；`FINDINGS` 进入 `REPLAN_REQUIRED`，提升到 R+1 并把旧 Revision 的四个 Artifact ref 显式记录为 invalidated。Role Attempt ID 使用可嵌入 Artifact Producer 的稳定 segment；单个 Architect Attempt 的三项产物使用 `ARCHITECT` phase。
@@ -59,6 +63,8 @@ Documentation 阶段只接受绑定当前 Candidate Commit 和 Implementation Ge
 Test/Verification 使用两个隔离只读 Attempt：`TEST_PLAN` 形成 Requirement/Case/argv 映射；`TEST_ASSESSMENT` 只能在真实 Trusted Runner Manifest 已记录后形成综合报告。`src/testing/trusted-test-runner.ts` 先持久化 Intent，再以 `shell:false` 执行命令并保存退出码和 stdout/stderr 原始文件字节 SHA-256；Manifest 复用或 CONFIRMED 对账会重新读取文件校验 Digest。恢复时发现 Intent-only 必须返回 UNKNOWN，不启动第二次命令。PASS、FINDINGS、INCONCLUSIVE 分别路由到 Final Review、Repair、`WAITING_RECONCILE`。
 
 真实恢复验收使用窄化的 `recoveryControl`，并且只在显式开启的专用 acceptance Service 中生效。Trusted Runner 可在 Intent 已持久化但命令未执行，或命令和 Manifest 已完成但 Workflow 尚未确认的边界终止 Service；前者只能经正确 token 的 `NOT_APPLIED` 授权唯一首次执行，后者只能用同一 Manifest 的 `CONFIRMED` 对账。相同 Evidence 重放幂等，错误 token 和冲突 Evidence 均拒绝。Role Manifest、Candidate Commit 或 Merge ref 已完成后的 Service 中断由 Restate 重放同一 command，并从内容寻址 Manifest、Git parent/tree/trailer/clean worktree 或 Merge DAG/target ref 对账，不能创建第二次 Agent Run、测试、Candidate 或 Merge。
+
+临时 Acceptance Service 同时是一个 Restate Deployment revision。Harness 在注册前冻结当前最高 `CoreV2Workflow` revision 的 endpoint，保存临时 Deployment ID，并在退出前用 Admin PATCH 把该最新 revision 的 URI 交回仍运行的前序 Service，再停止进程。重新 POST 一个旧 URI 不能替代 handoff；Harness 也不强制删除 Deployment 或终止在途 Invocation。
 
 Final Review 是第二次隔离 `REVIEW` Attempt，精确依赖 Docs Impact 和 Test Report。它审查 Candidate 与 Merge 前证据；目标 ref 更新由其后的 Verification Gate 授权，不能因尚未执行 Merge 而形成 Finding。PASSED 之后仍需纯 Verification Gate 重建八类主流程 Artifact、完整依赖和 Task/Revision/Commit/Digest 绑定；Gate Digest 写入 Projection 后才进入真实 Merge Effect。Review 的文字 verdict 不能替代 Gate。
 

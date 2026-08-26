@@ -21,7 +21,7 @@ export interface SessionHistoryAcceptanceReportV1 {
   readonly sourceProjectionDigestAfter: string;
   readonly sourceUnchanged: true;
   readonly executions: readonly {
-    readonly requirementId: "REQ-0064-08";
+    readonly requirementId: "REQ-0064-08" | "REQ-0076-03";
     readonly enrichmentId: string;
     readonly runId: string;
     readonly attemptId: string;
@@ -45,13 +45,26 @@ export interface SessionHistoryAcceptanceReportV1 {
   readonly reportDigest: string;
 }
 
-export async function runSessionHistoryAcceptance(): Promise<SessionHistoryAcceptanceReportV1> {
-  const taskId = process.env["MOYE_SESSION_HISTORY_TASK_ID"] ?? "TASK-CORE-V2-LIVE-006";
-  const ingressUrl = process.env["MOYE_SESSION_HISTORY_INGRESS"] ?? process.env["RESTATE_INGRESS_URL"] ?? "http://127.0.0.1:8080";
-  const boardUrl = (process.env["MOYE_SESSION_HISTORY_BOARD"] ?? "http://127.0.0.1:3000").replace(/\/$/u, "");
-  const codexSessionsRoot = process.env["MOYE_CODEX_SESSIONS_ROOT"] ?? path.join(os.homedir(), ".codex", "sessions");
-  const managedArtifactRoot = path.resolve(process.env["MOYE_SESSION_HISTORY_ARTIFACT_ROOT"] ?? path.join(".moye-runtime", "session-history", taskId));
-  const reportPath = path.resolve(process.env["MOYE_SESSION_HISTORY_REPORT"] ?? path.join(".moye-runtime", "acceptance", `${taskId}-session-history.json`));
+export interface SessionHistoryAcceptanceOptions {
+  readonly taskId?: string;
+  readonly ingressUrl?: string;
+  readonly boardUrl?: string;
+  readonly codexSessionsRoot?: string;
+  readonly managedArtifactRoot?: string;
+  readonly reportPath?: string;
+  readonly allowUnavailable?: boolean;
+  readonly quiet?: boolean;
+  readonly requirementId?: "REQ-0064-08" | "REQ-0076-03";
+}
+
+export async function runSessionHistoryAcceptance(options: SessionHistoryAcceptanceOptions = {}): Promise<SessionHistoryAcceptanceReportV1> {
+  const taskId = options.taskId ?? process.env["MOYE_SESSION_HISTORY_TASK_ID"] ?? "TASK-CORE-V2-LIVE-006";
+  const ingressUrl = options.ingressUrl ?? process.env["MOYE_SESSION_HISTORY_INGRESS"] ?? process.env["RESTATE_INGRESS_URL"] ?? "http://127.0.0.1:8080";
+  const boardUrl = (options.boardUrl ?? process.env["MOYE_SESSION_HISTORY_BOARD"] ?? "http://127.0.0.1:3000").replace(/\/$/u, "");
+  const codexSessionsRoot = path.resolve(options.codexSessionsRoot ?? process.env["MOYE_CODEX_SESSIONS_ROOT"] ?? path.join(os.homedir(), ".codex", "sessions"));
+  const managedArtifactRoot = path.resolve(options.managedArtifactRoot ?? process.env["MOYE_SESSION_HISTORY_ARTIFACT_ROOT"] ?? path.join(".moye-runtime", "session-history", taskId));
+  const reportPath = path.resolve(options.reportPath ?? process.env["MOYE_SESSION_HISTORY_REPORT"] ?? path.join(".moye-runtime", "acceptance", `${taskId}-session-history.json`));
+  const requirementId = options.requirementId ?? "REQ-0064-08";
   await mkdir(managedArtifactRoot, { recursive: true });
   const authority = await invoke<TaskAuthorityState | null>(ingressUrl, "TaskAuthority", taskId, "get");
   if (authority?.owner !== "CORE_V2_WORKFLOW") throw new Error(`${taskId} is not owned by CoreV2Workflow`);
@@ -81,7 +94,7 @@ export async function runSessionHistoryAcceptance(): Promise<SessionHistoryAccep
     };
     await send(ingressUrl, "TranscriptEnrichmentWorkflow", enrichmentId, "run", input);
     const result = await waitForClosed(ingressUrl, enrichmentId, 60_000);
-    if (result.receipt === undefined || !["COMPLETE", "PARTIAL"].includes(result.receipt.captureState)) {
+    if (result.receipt === undefined || (!["COMPLETE", "PARTIAL"].includes(result.receipt.captureState) && !(options.allowUnavailable === true && result.receipt.captureState === "UNAVAILABLE"))) {
       throw new Error(`${enrichmentId} did not produce usable Provider evidence: ${JSON.stringify(result)}`);
     }
     const record = await invoke<HistoricalSessionEvidenceRecordV1 | null>(ingressUrl, "SessionEvidenceRegistry", run.runId, "get");
@@ -89,19 +102,29 @@ export async function runSessionHistoryAcceptance(): Promise<SessionHistoryAccep
       throw new Error(`${enrichmentId} Registry did not converge to one append-only Receipt`);
     }
     const roleUrl = `${boardUrl}/api/tasks/${encodeURIComponent(taskId)}/roles/${encodeURIComponent(run.runId)}`;
-    const [metadata, timeline, execution, stderr] = await Promise.all([
+    const [metadata, execution, stderr] = await Promise.all([
       json(`${roleUrl}/session`),
-      json(`${roleUrl}/timeline?cursor=0&limit=200`),
       json(`${roleUrl}/events?cursor=0&limit=200`),
       json(`${roleUrl}/stderr`),
     ]) as [
       { state: string; manifestDigest?: string; metrics?: { normalizedEvents: number } },
       { total: number; events: readonly unknown[] },
-      { total: number; events: readonly unknown[] },
       { byteLength: number },
     ];
-    if (!["COMPLETE", "PARTIAL"].includes(metadata.state) || timeline.total !== timeline.events.length || timeline.total === 0) {
-      throw new Error(`${enrichmentId} Board API did not expose the canonical historical timeline`);
+    const usable = result.receipt.captureState === "COMPLETE" || result.receipt.captureState === "PARTIAL";
+    let normalizedEvents = 0;
+    if (usable) {
+      const timeline = await json(`${roleUrl}/timeline?cursor=0&limit=200`) as { total: number; events: readonly unknown[] };
+      if (metadata.state !== result.receipt.captureState || timeline.total !== timeline.events.length || timeline.total === 0) {
+        throw new Error(`${enrichmentId} Board API did not expose the canonical historical timeline`);
+      }
+      normalizedEvents = timeline.total;
+    } else {
+      if (metadata.state !== "UNAVAILABLE") throw new Error(`${enrichmentId} Board API did not expose the UNAVAILABLE disposition`);
+      const timeline = await fetch(`${roleUrl}/timeline?cursor=0&limit=200`);
+      if (timeline.status !== 404 || !((await timeline.text()).includes("SESSION_EVIDENCE_NOT_FOUND"))) {
+        throw new Error(`${enrichmentId} unavailable timeline did not remain explicitly unavailable`);
+      }
     }
     await send(ingressUrl, "TranscriptEnrichmentWorkflow", enrichmentId, "run", input);
     const replay = await waitForClosed(ingressUrl, enrichmentId, 20_000);
@@ -110,7 +133,7 @@ export async function runSessionHistoryAcceptance(): Promise<SessionHistoryAccep
       throw new Error(`${enrichmentId} replay produced a duplicate or conflicting result`);
     }
     executions.push({
-      requirementId: "REQ-0064-08",
+      requirementId,
       enrichmentId,
       runId: run.runId,
       attemptId: run.attemptId,
@@ -125,7 +148,7 @@ export async function runSessionHistoryAcceptance(): Promise<SessionHistoryAccep
       ...(result.receipt.sourceDigest === undefined ? {} : { sourceDigest: result.receipt.sourceDigest }),
       authorityDigest: replayRecord.authority.stateDigest,
       recordDigest: replayRecord.recordDigest,
-      normalizedEvents: timeline.total,
+      normalizedEvents,
       executionEvents: execution.total,
       stderrBytes: stderr.byteLength,
       idempotentReplay: true,
@@ -149,7 +172,7 @@ export async function runSessionHistoryAcceptance(): Promise<SessionHistoryAccep
   const report = Object.freeze({ ...core, reportDigest: digest("session-history-acceptance-report-v1", core) });
   await mkdir(path.dirname(reportPath), { recursive: true });
   await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`, { mode: 0o600 });
-  process.stdout.write(`${JSON.stringify({ ...report, reportPath }, null, 2)}\n`);
+  if (options.quiet !== true) process.stdout.write(`${JSON.stringify({ ...report, reportPath }, null, 2)}\n`);
   return report;
 }
 

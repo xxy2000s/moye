@@ -5,6 +5,8 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 
+import { handoffRestateDeployment, latestRestateServiceEndpoint } from "../src/acceptance/restate-deployment-handoff.js";
+import { coreV2AcceptanceSessionSourceRoots } from "../src/acceptance/core-v2-session-evidence.js";
 import { digestCanonical } from "../src/release/manifest.js";
 
 const execFileAsync = promisify(execFile);
@@ -25,8 +27,10 @@ let acceptanceBoardPort = await freePort();
 while (acceptanceBoardPort === acceptanceServicePort) acceptanceBoardPort = await freePort();
 let acceptanceService: ChildProcess | undefined;
 let acceptanceServiceLogs = "";
+let acceptanceDeploymentId: string | undefined;
 
 await mkdir(matrixRoot, { recursive: true });
+const predecessorEndpoint = process.env["MOYE_MAIN_SERVICE_ENDPOINT"] ?? await latestRestateServiceEndpoint(adminUrl, "CoreV2Workflow");
 try {
   await startAcceptanceService();
   await registerService(acceptanceServicePort);
@@ -65,6 +69,7 @@ try {
     });
   result.push({ requirement: "REQ-0074-04", project: "minimal-git", scenario: "FAILED_TERMINAL_ARCHIVE", ...await matrixScenario(path.join(faultResumeRoot ?? matrixRoot, "minimal-failure"), 0) });
 
+  await handoffAcceptanceDeployment();
   await stopAcceptanceService();
   await prepareOldCheckout(oldRoot);
   await prepareCurrentSnapshot(newRoot);
@@ -75,6 +80,7 @@ try {
     MOYE_CORE_V2_RECOVERY_INITIAL_CWD: oldRoot,
     MOYE_CORE_V2_RECOVERY_CURRENT_CWD: newRoot,
     MOYE_CORE_V2_UPGRADE_ARCHIVED_TASK_ID: String(nodeHappy["taskId"]),
+    ...(predecessorEndpoint === undefined ? {} : { MOYE_MAIN_SERVICE_ENDPOINT: predecessorEndpoint }),
   });
   const upgradeMatrix = await readJson<{ serviceTransitions: Array<{ commit: string; releaseVersion: string }>; archivedUpgrade: { taskId: string; beforeDigest: string; afterDigest: string }; scenarios: Array<Record<string, unknown>> }>(path.join(matrixRoot, "cross-version-recovery", "matrix-summary.json"));
   const upgradeScenario = upgradeMatrix.scenarios[0];
@@ -94,8 +100,8 @@ try {
   await writeFile(path.join(matrixRoot, "framework-product-matrix.json"), `${JSON.stringify(summary, null, 2)}\n`);
   process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
 } finally {
+  await handoffAcceptanceDeployment().catch(() => undefined);
   await stopAcceptanceService().catch(() => undefined);
-  await registerMainService().catch(() => undefined);
   await removeOldCheckout(oldRoot).catch(() => undefined);
   await rm(snapshotContainer, { recursive: true, force: true });
 }
@@ -121,6 +127,7 @@ async function startAcceptanceService(): Promise<void> {
       MOYE_OBSERVABILITY_ENABLED: "false",
       MOYE_RELEASE_VERSION: "0.1.0-rc.2",
       MOYE_SOURCE_REVISION: sourceRevision.stdout.trim(),
+      MOYE_SESSION_SOURCE_ROOTS: coreV2AcceptanceSessionSourceRoots(),
     },
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -148,6 +155,14 @@ async function registerService(port: number): Promise<void> {
     body: JSON.stringify({ uri: `http://host.docker.internal:${port}` }),
   });
   if (!response.ok) throw new Error(`acceptance service registration failed: ${response.status} ${await response.text()}\n${acceptanceServiceLogs}`);
+  const deployment = await response.json() as { id?: string };
+  if (typeof deployment.id !== "string") throw new Error("acceptance service registration response has no deployment id");
+  acceptanceDeploymentId = deployment.id;
+}
+
+async function handoffAcceptanceDeployment(): Promise<void> {
+  if (acceptanceDeploymentId === undefined || predecessorEndpoint === undefined) return;
+  await handoffRestateDeployment(adminUrl, acceptanceDeploymentId, predecessorEndpoint);
 }
 
 async function waitUntil(check: () => Promise<boolean> | boolean, timeoutMs: number): Promise<void> {
@@ -225,12 +240,6 @@ async function prepareCurrentSnapshot(target: string): Promise<void> {
   await run("git", ["bundle", "create", path.join(matrixRoot, "service-upgrade-snapshot.bundle"), "HEAD"], target);
   await writeFile(path.join(matrixRoot, "service-upgrade-snapshot.json"), `${JSON.stringify({ schemaVersion: 1, commit, tree, bundle: "service-upgrade-snapshot.bundle" }, null, 2)}\n`);
   await run("npm", ["ci"], target, 300_000);
-}
-
-async function registerMainService(): Promise<void> {
-  const endpoint = process.env["MOYE_MAIN_SERVICE_ENDPOINT"] ?? "http://host.docker.internal:55831";
-  const response = await fetch(`${adminUrl}/deployments`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ uri: endpoint }) });
-  if (!response.ok) throw new Error(`main service registration failed: ${response.status} ${await response.text()}`);
 }
 
 async function readJson<T>(file: string): Promise<T> { return JSON.parse(await readFile(file, "utf8")) as T; }

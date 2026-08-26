@@ -4,6 +4,7 @@ import { execFileSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
+import { auditCoreV2AcceptanceSessionEvidence, coreV2AcceptanceSessionEvidence } from "../src/acceptance/core-v2-session-evidence.js";
 import type { TrustedTestRunManifest } from "../src/testing/trusted-test-runner.js";
 import type { CoreV2AcceptanceProfile, CoreV2WorkflowInput, CoreV2WorkflowProjection } from "../src/restate/core-v2-services.js";
 import { invoke, send } from "../src/restate/ingress.js";
@@ -86,6 +87,7 @@ async function executeScenario(scenario: Scenario, index: number) {
     baseCommit,
     targetRef: "refs/heads/release",
     testCommands: [trustedTestArgv],
+    sessionEvidence: coreV2AcceptanceSessionEvidence(),
     ...(scenario.profile === undefined ? {} : { acceptanceControl: { profile: scenario.profile } }),
     acceptanceMetadata: { kind: "PRODUCT_ACCEPTANCE" as const, suite: "core-v2", scenario: scenario.name },
   };
@@ -105,6 +107,11 @@ async function executeScenario(scenario: Scenario, index: number) {
     const page = await fetchJson<{ total: number; completed: boolean }>(`${boardUrl}/api/tasks/${encodeURIComponent(taskId)}/roles/${encodeURIComponent(run.runId)}/events?cursor=0&limit=200`);
     assert(page.completed && page.total > 0, `${taskId} missing real Role events for ${run.phase}`);
     return { runId: run.runId, phase: run.phase, total: page.total };
+  }));
+  const sessionEvidence = auditCoreV2AcceptanceSessionEvidence(projection);
+  await Promise.all(sessionEvidence.map(async (evidence) => {
+    const page = await fetchJson<{ total: number; events: readonly unknown[] }>(`${boardUrl}/api/tasks/${encodeURIComponent(taskId)}/roles/${encodeURIComponent(evidence.runId)}/timeline?cursor=0&limit=200`);
+    assert(page.total > 0 && page.events.length > 0, `${taskId} missing canonical Session timeline for ${evidence.runId}`);
   }));
   auditCommon(input, projection, trace, manifests);
   auditScenario(scenario.name, projection, manifests);
@@ -134,6 +141,7 @@ async function executeScenario(scenario: Scenario, index: number) {
     implementationGeneration: lifecycle.implementationGeneration,
     roleRuns: projection.roleRuns.map((run) => ({ role: run.role, phase: run.phase, attemptId: run.attemptId, sessionId: run.sessionId, runId: run.runId, generation: run.generation, specRevision: run.specRevision, recommendation: run.output?.recommendation, eventsDigest: run.eventsDigest, manifestDigest: run.manifestDigest })),
     roleEvents,
+    sessionEvidence,
     candidateCommit,
     checkpoints: lifecycle.implementationCheckpoints.map((item) => ({ generation: item.generation, candidateCommit: item.candidateCommit, treeDigest: item.treeDigest, checkpointDigest: item.checkpointDigest })),
     trustedTests: manifests.map((manifest) => ({ runId: manifest.runId, candidateCommit: manifest.candidateCommit, argv: manifest.cases.map((item) => item.argv), exitCodes: manifest.cases.map((item) => item.exitCode), outcome: manifest.outcome, manifestDigest: manifest.manifestDigest })),

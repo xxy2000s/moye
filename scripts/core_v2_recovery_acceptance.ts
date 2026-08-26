@@ -3,9 +3,10 @@
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { appendFile, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import net from "node:net";
-import os from "node:os";
 import path from "node:path";
 
+import { handoffRestateDeployment, latestRestateServiceEndpoint } from "../src/acceptance/restate-deployment-handoff.js";
+import { auditCoreV2AcceptanceSessionEvidence, coreV2AcceptanceSessionEvidence, coreV2AcceptanceSessionSourceRoots } from "../src/acceptance/core-v2-session-evidence.js";
 import type { CoreV2WorkflowInput, CoreV2WorkflowProjection } from "../src/restate/core-v2-services.js";
 import { IngressError, invoke, send } from "../src/restate/ingress.js";
 
@@ -33,9 +34,11 @@ const pageBoardUrl = process.env["MOYE_CORE_V2_ACCEPTANCE_PAGE_BOARD"] ?? boardU
 let service: ChildProcess | undefined;
 let logs = "";
 let serviceStartCount = 0;
+let serviceDeploymentId: string | undefined;
 const serviceTransitions: Array<{ root: string; commit: string; releaseVersion: string }> = [];
 
 await mkdir(runRoot, { recursive: true });
+const predecessorEndpoint = process.env["MOYE_MAIN_SERVICE_ENDPOINT"] ?? await latestRestateServiceEndpoint(adminUrl, "CoreV2Workflow");
 await startService();
 await registerService();
 const archivedBefore = archivedUpgradeTaskId === undefined ? null : await invoke<CoreV2WorkflowProjection | null>(ingressUrl, "CoreV2Workflow", archivedUpgradeTaskId, "status");
@@ -59,6 +62,9 @@ try {
   await writeJson(path.join(runRoot, "matrix-summary.json"), matrix);
   process.stdout.write(`${JSON.stringify(matrix, null, 2)}\n`);
 } finally {
+  if (serviceDeploymentId !== undefined && predecessorEndpoint !== undefined) {
+    await handoffRestateDeployment(adminUrl, serviceDeploymentId, predecessorEndpoint);
+  }
   await stopService("SIGTERM");
 }
 process.exit(0);
@@ -83,12 +89,12 @@ async function executeScenario(scenario: Scenario, index: number) {
   await createFixture(repositoryRoot, executionLedger, fixtureKind);
   const baseCommit = git(repositoryRoot, "rev-parse", "HEAD");
   const marker = (name: string) => path.join(artifactRoot, `${name}.marker`);
-  const codexHome = process.env["CODEX_HOME"] ?? path.join(os.homedir(), ".codex");
   const input: CoreV2WorkflowInput = {
     taskId, projectId, title: `Core v2 real recovery acceptance: ${scenario}`,
     objective: "Create src/value.txt whose complete content is exactly `accepted-value\\n`; add a README line exactly `## Accepted behavior`; create SECURITY.md whose complete content is exactly `# Security\\n` (the period ends this sentence and is not file content).",
     acceptanceCriteria: ["src/value.txt complete content is exactly accepted-value plus one newline", "README contains a line exactly ## Accepted behavior", "SECURITY.md complete content is exactly # Security plus one newline", `Trusted Runner executes ${trustedTestArgv.join(" ")}`],
     repositoryRoot, artifactRoot, runnerKind: "CODEX_EXEC", baseCommit, targetRef: "refs/heads/release", testCommands: [trustedTestArgv],
+    sessionEvidence: coreV2AcceptanceSessionEvidence(),
     ...(scenario === "TEST_CONFIRMED" ? { recoveryControl: { testExitAfterManifestOnceAt: marker("test-manifest") } } : {}),
     ...(scenario === "TEST_NOT_APPLIED" ? { recoveryControl: { testExitAfterIntentOnceAt: marker("test-intent") } } : {}),
     ...(scenario === "ROLE_WORKER_RECOVERY" ? { recoveryControl: { roleExitAfterManifestOnceAt: {
@@ -96,15 +102,7 @@ async function executeScenario(scenario: Scenario, index: number) {
     } } } : {}),
     ...(scenario === "ROLE_NOT_APPLIED" ? { recoveryControl: { roleExitAfterIntentOnceAt: { FINAL_REVIEW: marker("role-final-review-intent") } } } : {}),
     ...(scenario === "CHECKPOINT_UNKNOWN" ? { recoveryControl: { checkpointExitAfterCommitOnceAt: marker("checkpoint") } } : {}),
-    ...(scenario === "SESSION_CAPTURE_RECOVERY" ? {
-      sessionEvidence: {
-        enabled: true as const,
-        capturePolicy: "full" as const,
-        codexSessionsRoot: process.env["MOYE_CODEX_SESSIONS_ROOT"] ?? path.join(codexHome, "sessions"),
-        maxSourceBytes: 64 * 1024 * 1024,
-      },
-      recoveryControl: { captureExitAfterManifestOnceAt: marker("session-capture-manifest") },
-    } : {}),
+    ...(scenario === "SESSION_CAPTURE_RECOVERY" ? { recoveryControl: { captureExitAfterManifestOnceAt: marker("session-capture-manifest") } } : {}),
     acceptanceMetadata: { kind: "PRODUCT_ACCEPTANCE" as const, suite: "core-v2-recovery", scenario },
     ...(scenario === "MERGE_UNKNOWN" ? { mergeFault: { exitAfterRefUpdateOnceAt: marker("merge") } } : {}),
   };
@@ -163,18 +161,10 @@ async function persistSummary(root: string, scenario: Scenario, projection: Core
   assert(new Set(projection.roleRuns.map((run) => run.attemptId)).size === projection.roleRuns.length, `${projection.taskId} duplicate logical Attempt`);
   assert(new Set(projection.roleRuns.map((run) => run.runId)).size === projection.roleRuns.length, `${projection.taskId} duplicate Role Run`);
   assert(new Set(projection.roleRuns.map((run) => run.sessionId)).size === projection.roleRuns.length, `${projection.taskId} duplicate Session`);
-  if (scenario === "SESSION_CAPTURE_RECOVERY") {
-    const sessionEvidence = projection.sessionEvidence ?? [];
-    assert(sessionEvidence.length === projection.roleRuns.length, `${projection.taskId} does not have one Session Evidence record per Role Run`);
-    for (const run of projection.roleRuns) {
-      const captured = sessionEvidence.find((item) => item.attemptId === run.attemptId);
-      assert(captured !== undefined, `${projection.taskId} missing Session Evidence for ${run.attemptId}`);
-      assert(captured.runId === run.runId && captured.locator.stage === "CAPTURE_PENDING", `${projection.taskId} Session locator identity/stage mismatch`);
-      assert(captured.executionEventsRef === run.eventsRef && captured.stderrRef === run.stderrRef, `${projection.taskId} execution stream refs were replaced by Transcript evidence`);
-      assert(captured.receipt?.captureState === "COMPLETE" && captured.receipt.authorityScope === "DIAGNOSTIC_SUPPLEMENT_ONLY", `${projection.taskId} Session Receipt is not a complete diagnostic sidecar`);
-      assert(captured.summary?.state === "COMPLETE" && captured.authority?.headReceiptDigest === captured.receipt.receiptDigest, `${projection.taskId} Session Evidence Authority is incomplete`);
-    }
-    assert(new Set(sessionEvidence.map((item) => item.receipt?.receiptDigest)).size === sessionEvidence.length, `${projection.taskId} duplicate Session Receipt`);
+  const sessionEvidence = auditCoreV2AcceptanceSessionEvidence(projection);
+  for (const evidence of sessionEvidence) {
+    const page = await fetchJson<{ total: number; events: readonly unknown[] }>(`${boardUrl}/api/tasks/${encodeURIComponent(projection.taskId)}/roles/${encodeURIComponent(evidence.runId)}/timeline?cursor=0&limit=200`);
+    assert(page.total > 0 && page.events.length > 0, `${projection.taskId} missing canonical Session timeline for ${evidence.runId}`);
   }
   const executions = await readLedger(ledger);
   assert((fixtureKind === "minimal-git" ? executions.length === 0 : executions.length === 1) && projection.lifecycle.trustedTestRuns.length === 1, `${projection.taskId} test executed more than once`);
@@ -199,9 +189,7 @@ async function persistSummary(root: string, scenario: Scenario, projection: Core
       phase: pending.pendingReconcile?.phase, attemptId: pending.pendingReconcile?.attemptId, runId: pending.pendingReconcile?.runId,
       operationId: pending.pendingReconcile?.operationId, eventCount: pending.lifecycle.events.length }, state: projection.state, outcome: projection.outcome,
     archiveStatus: projection.lifecycle.archive?.status, roleRuns: projection.roleRuns.map((run) => ({ phase: run.phase, attemptId: run.attemptId, sessionId: run.sessionId, runId: run.runId, manifestDigest: run.manifestDigest })),
-    sessionEvidence: (projection.sessionEvidence ?? []).map((item) => ({ attemptId: item.attemptId, runId: item.runId, locatorStage: item.locator.stage,
-      promptEnvelopeDigest: item.promptEnvelope.digest, receiptDigest: item.receipt?.receiptDigest, manifestDigest: item.summary?.manifestDigest,
-      captureState: item.summary?.state, executionEventsRef: item.executionEventsRef, stderrRef: item.stderrRef })),
+    sessionEvidence,
     testRun: projection.lifecycle.trustedTestRuns[0], candidateCommit: projection.lifecycle.candidateCommit, mergeCommit,
     mergeReceipt: projection.lifecycle.mergeReceipt, verificationGateDigest: projection.lifecycle.verificationGateDigest,
     closureDigest: projection.lifecycle.successClosure?.closureDigest, archiveReceiptDigest: projection.lifecycle.archive?.receiptDigest,
@@ -222,12 +210,13 @@ async function startService() {
     RESTATE_SERVICE_PORT: String(servicePort), MOYE_BOARD_PORT: String(boardPort), RESTATE_INGRESS_URL: ingressUrl, RESTATE_ADMIN_URL: adminUrl,
     MOYE_PROJECT_ID: projectId, MOYE_LIVE_RUNTIME_ROOT: runRoot, MOYE_REPOSITORY_ROOTS: runRoot, MOYE_ARTIFACT_ROOTS: runRoot,
     MOYE_ACCEPTANCE_FAULT_INJECTION: "enabled", MOYE_TEST_FAULT_INJECTION: "enabled", MOYE_OBSERVABILITY_ENABLED: "false", MOYE_RELEASE_VERSION: releaseVersion, MOYE_SOURCE_REVISION: commit,
+    MOYE_SESSION_SOURCE_ROOTS: coreV2AcceptanceSessionSourceRoots(),
   }, stdio: ["ignore", "pipe", "pipe"] });
   service.stdout?.on("data", (value: Buffer) => { const text = value.toString(); logs += text; void appendFile(path.join(runRoot, "service.log"), text); });
   service.stderr?.on("data", (value: Buffer) => { const text = value.toString(); logs += text; void appendFile(path.join(runRoot, "service.log"), text); });
   await waitUntil(() => canConnect(servicePort), 20_000);
 }
-async function registerService() { const response = await fetch(`${adminUrl}/deployments`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ uri: `http://host.docker.internal:${servicePort}` }) }); if (!response.ok) throw new Error(`registration failed ${await response.text()}\n${logs}`); }
+async function registerService() { const response = await fetch(`${adminUrl}/deployments`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ uri: `http://host.docker.internal:${servicePort}` }) }); if (!response.ok) throw new Error(`registration failed ${await response.text()}\n${logs}`); const deployment = await response.json() as { id?: string }; if (typeof deployment.id !== "string") throw new Error("registration response has no deployment id"); serviceDeploymentId = deployment.id; }
 async function stopService(signal: NodeJS.Signals) {
   const child = service; service = undefined;
   if (child === undefined || child.exitCode !== null || child.signalCode !== null) return;

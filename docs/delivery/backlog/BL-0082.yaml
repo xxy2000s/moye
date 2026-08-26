@@ -1,0 +1,25 @@
+schema_version: 1
+id: BL-0082
+title: "让真实 Core v2 验收任务默认保存可读取的 Agent Session Evidence"
+kind: bug
+status: converted_to_task
+priority: high
+source_refs:
+  - finding-core-v2-acceptance-role-sessions-not-captured
+  - finding-acceptance-service-stop-leaves-latest-restate-deployment-dead
+affected_areas:
+  - core-v2-acceptance
+  - session-evidence
+  - board
+  - runtime-operations
+acceptance_outline:
+  - "未来真实多 Agent 验收 Task 的每个 Role Run 都绑定完整或明确不可用的 Session Evidence"
+  - "Role Worker Recovery 中断后不重复 Agent，Session Capture 可恢复且一 Role 一 Receipt"
+  - "对 TASK-RCV-20260826114418-01-ROLE-RECOVERY 执行 append-only 历史补全，原 Projection Digest 不变"
+  - "审计 W09 目标 Task，逐个记录 COMPLETE/PARTIAL/UNAVAILABLE，不把 Session ID 冒充 Transcript"
+  - "最终 3000 Service 的 Session Source/Artifact allowlist 支持受控历史补全"
+  - "临时验收 Service 退出前把最新 Restate Deployment URI 安全交回仍运行的前序 Service"
+resolution:
+  task_refs: [TASK-0076]
+  duplicate_of:
+  reason: "TASK-0076 修复 harness 默认值、批量审计和 GA Service 配置，并补全现有历史。"

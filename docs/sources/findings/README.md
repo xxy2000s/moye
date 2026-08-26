@@ -11,6 +11,8 @@ Finding 与 Incident 的边界：
 
 ## 当前 Finding
 
+- [验收 Service 停止后 Restate 最新 Deployment 仍指向已退出进程](./acceptance-service-stop-leaves-latest-restate-deployment-dead.md)：临时验收 revision 不能靠重新注册旧 URI 回切，由 TASK-0076 增加退出前的显式 Deployment handoff。
+- [Core v2 验收任务展示 Session ID 但没有可读取的会话证据](./core-v2-acceptance-role-sessions-not-captured.md)：W09 多 Agent Task 未启用受管 Transcript Capture，最终部署又遗漏 Provider Source allowlist，由 TASK-0076 修复未来默认值并合法补全历史。
 - [Framework 产品矩阵未预检验收 Service 授权](./framework-acceptance-service-authorization-not-preflighted.md)：首轮真实矩阵绑定了未授权 Service 并会空等 Projection，TASK-0074 已改为入口自举专用 Service 并快速查询 Invocation 失败。
 - [Minimal Git Recovery 验收文字仍硬编码 npm test](./minimal-git-recovery-acceptance-text-hardcodes-npm-test.md)：实际 Git Test 与 Reviewer Requirement 矛盾，真实 Final Review 正确触发非目标 Repair；TASK-0074 已统一 argv/验收文字并增加不重复已通过场景的续跑入口。
 - [跨版本恢复等待器遗漏长 Role 的对账边界](./cross-version-recovery-wait-misses-role-reconcile.md)：长 Documentation Role 已落盘 Manifest 后进入等待对账，旧 Harness 只等进程退出并删除临时 snapshot，由 TASK-0074 修复并以新 Task 复验。

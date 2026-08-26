@@ -5615,6 +5615,78 @@ documents:
     authority: task-evidence
     read_when: [task-close, task-archive, release]
 
+  - id: finding-core-v2-acceptance-role-sessions-not-captured
+    path: docs/sources/findings/core-v2-acceptance-role-sessions-not-captured.md
+    type: finding
+    status: confirmed
+    scope: agent-session-evidence
+    authority: finding
+    read_when: [finding-intake, session-evidence-recovery, task-create]
+
+  - id: finding-acceptance-service-stop-leaves-latest-restate-deployment-dead
+    path: docs/sources/findings/acceptance-service-stop-leaves-latest-restate-deployment-dead.md
+    type: finding
+    status: confirmed
+    scope: agent-session-evidence
+    authority: finding
+    read_when: [finding-intake, session-evidence-recovery, task-create]
+
+  - id: bl-0082-core-v2-acceptance-session-evidence
+    path: docs/delivery/backlog/BL-0082.yaml
+    type: backlog-item
+    status: converted_to_task
+    scope: agent-session-evidence
+    authority: backlog
+    read_when: [backlog-triage, session-evidence-recovery, task-create]
+
+  - id: task-0076-manifest
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0076/task.yaml
+    type: task-manifest
+    status: archived
+    scope: agent-session-evidence
+    authority: task-artifact
+    read_when: [task-execution, task-close, task-archive]
+
+  - id: task-0076-spec
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0076/spec.md
+    type: task-spec
+    status: archived
+    scope: agent-session-evidence
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0076-design
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0076/design.md
+    type: task-design
+    status: archived
+    scope: agent-session-evidence
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0076-plan
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0076/plan.md
+    type: task-plan
+    status: archived
+    scope: agent-session-evidence
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0076-verification
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0076/verification.md
+    type: verification
+    status: archived
+    scope: agent-session-evidence
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0076-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0076/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: agent-session-evidence
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
 relations:
   - from: root-readme
     to: docs-index
@@ -9887,6 +9959,62 @@ relations:
   - from: task-0075-verification
     to: task-0075-framework-matrix-live-recheck
     type: verified_by
+
+  - from: findings-index
+    to: finding-core-v2-acceptance-role-sessions-not-captured
+    type: indexes
+
+  - from: findings-index
+    to: finding-acceptance-service-stop-leaves-latest-restate-deployment-dead
+    type: indexes
+
+  - from: finding-acceptance-service-stop-leaves-latest-restate-deployment-dead
+    to: bl-0082-core-v2-acceptance-session-evidence
+    type: produces
+
+  - from: finding-core-v2-acceptance-role-sessions-not-captured
+    to: bl-0082-core-v2-acceptance-session-evidence
+    type: produces
+
+  - from: backlog-index
+    to: bl-0082-core-v2-acceptance-session-evidence
+    type: indexes
+
+  - from: bl-0082-core-v2-acceptance-session-evidence
+    to: task-0076-manifest
+    type: converted_to
+
+  - from: tasks-index
+    to: task-0076-manifest
+    type: indexes
+
+  - from: task-0076-spec
+    to: bl-0082-core-v2-acceptance-session-evidence
+    type: consumes
+
+  - from: task-0076-spec
+    to: task-0076-manifest
+    type: belongs_to
+
+  - from: task-0076-design
+    to: task-0076-spec
+    type: refines
+
+  - from: task-0076-design
+    to: core-v2-agent-lifecycle
+    type: implements_slice_of
+
+  - from: task-0076-plan
+    to: task-0076-manifest
+    type: belongs_to
+
+  - from: task-0076-verification
+    to: task-0076-manifest
+    type: verifies
+
+  - from: task-0076-docs-impact
+    to: task-0076-manifest
+    type: reports_on
 
 routing:
   baseline:

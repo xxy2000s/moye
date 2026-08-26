@@ -23,7 +23,7 @@ tasks/
 
 | Task | 状态 | 目标 |
 |---|---|---|
-| — | — | 当前没有 Active Task；TASK-0075 与 TASK-0075R1 已进入 Seal Prepared package |
+| — | — | 当前没有 Active Task |
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 

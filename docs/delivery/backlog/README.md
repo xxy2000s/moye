@@ -13,6 +13,7 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 
 | ID | 状态 | 标题 | Task |
 |---|---|---|---|
+| [BL-0082](./BL-0082.yaml) | Converted | 让真实 Core v2 验收任务默认保存可读取的 Agent Session Evidence | TASK-0076 |
 | [BL-0001](./BL-0001.yaml) | Converted | 实现可恢复 Task 生命周期、Archive 与项目看板 | TASK-0001 |
 | [BL-0002](./BL-0002.yaml) | Converted | 实现首个真实单 Agent 本地编码闭环 | TASK-0003～TASK-0007 |
 | [BL-0003](./BL-0003.yaml) | Converted | 实现 Repair、Replan 与中央重试预算 | TASK-0016 |
