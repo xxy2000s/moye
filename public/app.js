@@ -20,6 +20,11 @@ const elements = {
   detailKicker: document.querySelector("#task-detail-kicker"),
   detailTitle: document.querySelector("#task-detail-title"),
   detailMeta: document.querySelector("#task-detail-meta"),
+  backlogDialog: document.querySelector("#backlog-detail-dialog"),
+  backlogDetailKicker: document.querySelector("#backlog-detail-kicker"),
+  backlogDetailTitle: document.querySelector("#backlog-detail-title"),
+  backlogDetailMeta: document.querySelector("#backlog-detail-meta"),
+  backlogDetailContent: document.querySelector("#backlog-detail-content"),
   eventsDialog: document.querySelector("#agent-events-dialog"),
   eventsViewer: document.querySelector("#agent-events-dialog [data-agent-events-viewer]"),
 };
@@ -57,7 +62,13 @@ let taskDetailTabUiState = { taskId: undefined, activeId: "canvas" };
 let executionLedgerUiState = { taskId: undefined, actorId: undefined };
 let closeMachineGraphInspector = () => false;
 let latestBoardSnapshot;
+let backlogDetailReturnFocus;
 const boardFilters = { outcome: "ALL", workflow: "ALL", history: "ALL" };
+elements.backlogDialog.addEventListener("close", () => {
+  const returnFocus = backlogDetailReturnFocus;
+  backlogDetailReturnFocus = undefined;
+  if (returnFocus?.isConnected) window.requestAnimationFrame(() => returnFocus.focus());
+});
 elements.eventsDialog.addEventListener("close", () => {
   const returnFocus = agentEventsReturnFocus;
   stopAgentEventsFollower();
@@ -88,6 +99,7 @@ elements.latestSuccess.addEventListener("click", () => {
   if (latestBoardSnapshot?.latestSucceeded) navigateToTask(latestBoardSnapshot.latestSucceeded);
 });
 initializeHistoryState();
+renderBacklogLaneState("loading");
 const initialRoute = readRoute();
 if (initialRoute.kind === "task") void applyRoute().finally(loadBoard);
 else void loadBoard();
@@ -105,6 +117,7 @@ async function loadBoard() {
   } catch (error) {
     elements.dot.className = "connection-dot offline";
     elements.connection.textContent = "运行时不可用";
+    if (!latestBoardSnapshot) renderBacklogLaneState("error");
     console.error(error);
   }
 }
@@ -155,22 +168,97 @@ function renderLatestSucceeded(task) {
 
 function renderLane(name, items, renderer) {
   const [container, count] = lanes[name];
+  container.removeAttribute("aria-busy");
   count.textContent = String(items.length);
   if (items.length === 0) {
-    container.innerHTML = '<div class="placeholder">暂无条目</div>';
+    container.innerHTML = `<div class="placeholder">${name === "backlog" ? "暂无 Backlog" : "暂无条目"}</div>`;
     return;
   }
   container.replaceChildren(...items.map((item, index) => renderer(item, index, latestBoardSnapshot?.generatedAt)));
 }
 
 function backlogCard(item, index) {
-  const card = cardShell(index, "div");
-  card.classList.add("static");
+  const card = cardShell(index, "button");
+  card.type = "button";
+  card.classList.add("backlog-card");
+  card.setAttribute("aria-label", `查看 Backlog ${item.backlogId}：${item.title}`);
   card.innerHTML = `
     <div class="card-meta"><span>${escapeHtml(item.backlogId)}</span><span>${escapeHtml(item.priority)}</span></div>
     <h3>${escapeHtml(item.title)}</h3>
-    <div class="card-footer"><span class="tag ${item.status === "SCHEDULED" ? "green" : "yellow"}">${escapeHtml(backlogStatusLabel(item.status))}</span><span class="tag blue">${escapeHtml(item.kind)}</span></div>`;
+    <div class="card-footer"><span class="tag ${item.status === "SCHEDULED" ? "green" : "yellow"}">${escapeHtml(backlogStatusLabel(item.status))}</span><span class="tag blue">${escapeHtml(item.kind)}</span></div>
+    <span class="card-detail-hint" aria-hidden="true">查看问题与证据 <span>↗</span></span>`;
+  card.addEventListener("click", () => openBacklogDetail(item, card));
   return card;
+}
+
+function renderBacklogLaneState(state) {
+  const [container, count] = lanes.backlog;
+  count.textContent = "0";
+  if (state === "loading") {
+    container.setAttribute("aria-busy", "true");
+    container.innerHTML = '<div class="placeholder backlog-lane-state"><span class="backlog-loading-mark" aria-hidden="true"></span>正在读取 Backlog Projection</div>';
+    return;
+  }
+  container.removeAttribute("aria-busy");
+  container.innerHTML = '<div class="placeholder backlog-lane-state error" role="alert"><strong>Backlog 暂时不可读</strong><span>Runtime 请求失败，尚未把错误误报为“暂无条目”。</span><button type="button">重新读取</button></div>';
+  container.querySelector("button").addEventListener("click", loadBoard);
+}
+
+function openBacklogDetail(item, trigger) {
+  backlogDetailReturnFocus = trigger;
+  elements.backlogDetailKicker.textContent = `${item.backlogId} · Backlog Detail`;
+  elements.backlogDetailTitle.textContent = item.title || "未命名 Backlog";
+  elements.backlogDetailMeta.innerHTML = `
+    <span class="tag ${item.status === "SCHEDULED" ? "green" : "yellow"}">${escapeHtml(backlogStatusLabel(item.status))}</span>
+    <span class="tag blue">${escapeHtml(item.kind || "UNKNOWN")}</span>
+    <span class="backlog-priority">优先级 ${escapeHtml(item.priority || "未提供")}</span>`;
+  elements.backlogDetailContent.innerHTML = renderBacklogDetail(item);
+  elements.backlogDialog.showModal();
+}
+
+function renderBacklogDetail(item) {
+  const problem = item.problem && typeof item.problem === "object" ? item.problem : {};
+  const source = item.source && typeof item.source === "object" ? item.source : {};
+  return `
+    <section class="backlog-problem-section" aria-labelledby="backlog-problem-heading">
+      <header><p>Problem Contract · v${escapeHtml(String(item.schemaVersion || 1))}</p><h3 id="backlog-problem-heading">问题事实</h3></header>
+      <dl class="backlog-problem-grid">
+        ${backlogFact("已观察", problem.observed)}
+        ${backlogFact("期望行为", problem.expected)}
+        ${backlogFact("实际影响", problem.impact)}
+      </dl>
+    </section>
+    <section class="backlog-detail-section" aria-labelledby="backlog-evidence-heading">
+      <header><p>Evidence & Scope</p><h3 id="backlog-evidence-heading">证据、范围与验收</h3></header>
+      <div class="backlog-detail-columns">
+        ${backlogList("Evidence 引用", problem.evidenceRefs)}
+        ${backlogList("影响范围", item.affectedAreas)}
+      </div>
+      ${backlogList("验收方向", item.acceptanceOutline, true)}
+    </section>
+    <section class="backlog-detail-section backlog-source-section" aria-labelledby="backlog-source-heading">
+      <header><p>Canonical References</p><h3 id="backlog-source-heading">来源与关联</h3></header>
+      <dl class="backlog-source-grid">
+        ${backlogReference("Source", source.path, source.kind)}
+        ${backlogReference("Digest", source.digest)}
+        ${backlogReference("关联 Task", Array.isArray(item.taskRefs) && item.taskRefs.length ? item.taskRefs.join(", ") : undefined)}
+      </dl>
+    </section>`;
+}
+
+function backlogFact(label, value) {
+  return `<div><dt>${escapeHtml(label)}</dt><dd class="${value ? "" : "empty-value"}">${escapeHtml(value || "未提供")}</dd></div>`;
+}
+
+function backlogList(label, values, ordered = false) {
+  const list = Array.isArray(values) ? values.filter(value => typeof value === "string" && value.trim()) : [];
+  if (list.length === 0) return `<section class="backlog-list-block"><h4>${escapeHtml(label)}</h4><p class="empty-value">未提供</p></section>`;
+  const tag = ordered ? "ol" : "ul";
+  return `<section class="backlog-list-block"><h4>${escapeHtml(label)}</h4><${tag}>${list.map(value => `<li>${escapeHtml(value)}</li>`).join("")}</${tag}></section>`;
+}
+
+function backlogReference(label, value, hint) {
+  return `<div><dt>${escapeHtml(label)}</dt><dd class="${value ? "" : "empty-value"}">${value ? `<code>${escapeHtml(value)}</code>${hint ? `<small>${escapeHtml(hint)}</small>` : ""}` : "未提供"}</dd></div>`;
 }
 
 function taskCard(task, index, observedAt) {

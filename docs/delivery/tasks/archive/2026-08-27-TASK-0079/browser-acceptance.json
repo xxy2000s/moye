@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "taskId": "TASK-0079",
+  "executedAt": "2026-08-26T18:06:34.000Z",
+  "runtime": {
+    "ingressUrl": "http://127.0.0.1:50889",
+    "adminUrl": "http://127.0.0.1:50890",
+    "projectId": "moye",
+    "canonicalBoardUrl": "http://127.0.0.1:3000",
+    "isolatedAcceptanceBoardUrl": "http://127.0.0.1:3030",
+    "projectionSource": "canonical ProjectBoard/moye"
+  },
+  "backlog": {
+    "visibleIds": ["BL-0004", "BL-0005", "BL-0006", "BL-0007", "BL-0083"],
+    "count": 5,
+    "allSchemaVersion": 2,
+    "desktopCardHeightsPx": [174.8, 174.8, 174.8, 174.8, 174.8],
+    "narrowCardHeightsPx": [174.8, 174.8, 174.8, 174.8, 174.8],
+    "problemTextRenderedInCard": false
+  },
+  "detail": {
+    "sampleBacklogId": "BL-0083",
+    "problemFields": ["observed", "expected", "impact"],
+    "evidenceRefs": 4,
+    "affectedAreas": 3,
+    "acceptanceOutline": 7,
+    "sourcePath": "docs/delivery/backlog/BL-0083.yaml",
+    "sourceDigest": "a3b48aaf9a0f7624c860f60cccddb3484408b2d68d74de770338b8835863e240",
+    "emptyTaskRefsDisplayedAs": "未提供"
+  },
+  "checks": {
+    "desktop1440x1000": "PASS",
+    "narrow390x844": "PASS",
+    "narrowDialogWidthPx": 337,
+    "narrowDialogScroll": "PASS (1525 content / 655 viewport)",
+    "escapeClosesDialog": "PASS",
+    "focusReturnsToTrigger": "PASS",
+    "initialLoadingState": "PASS",
+    "realNetworkFailureState": "PASS (isolated Board with unreachable ingress)",
+    "automaticRecoveryToSameProjection": "PASS (0 to 5 Backlog after canonical ingress restored)",
+    "consoleErrorsWithoutInjectedFailure": 0,
+    "runtimeWritesFromDialog": 0
+  },
+  "screenshots": [
+    {
+      "path": "browser-board-desktop.png",
+      "digest": "sha256:7b61aceaa5d4864138f5a452c35edf2bba730d0b7aab15b9e9d6af73295aaaba"
+    },
+    {
+      "path": "browser-desktop.png",
+      "digest": "sha256:b7edaf57df626208e51744b8a8b7f9283be74363dedb42b6b4ce843de955b49e"
+    },
+    {
+      "path": "browser-narrow.png",
+      "digest": "sha256:8bed0b0465ca7e80da12ce09eeab1ed4bb2dc3d150932786fad20df960e05884"
+    }
+  ]
+}

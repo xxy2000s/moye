@@ -146,6 +146,8 @@ Bootstrap Task 的 `validate/create/close` 会在进入 Runtime 前校验冻结 
 
 Board 总览保持四列业务分组，并在顶部提供 outcome、Workflow kind 与“项目任务/验收历史”筛选，以及最新成功归档 Task 的直达入口。每张 Task 卡片从自身 Domain Event History 派生开始时间、结束时间与 duration：首条 Event 是开始时间，只有完成 Archive 才显示结束时间，运行中 duration 使用 Board 投影时刻累计。`WAITING_RECONCILE`、`ARCHIVE_PENDING`、`ARCHIVE_FAILED`、`FAILED_TERMINAL` 和 `SUCCEEDED` 使用 Workflow 发布或 TaskAuthority 只读解析出的精确语义；筛选和时间展示都不写 ProjectBoard，也不推进 Task。新增 Core v2 验收输入使用显式 `acceptanceMetadata`，升级前历史记录只按受限 Task ID/标题约定显示兼容标签并标明来源。
 
+需求池卡片只保留 ID、标题、状态、类型和优先级，结构化 `problem` 不会铺开撑高看板。选择卡片后，独立 Backlog Dialog 从同一 ProjectBoard Projection 展示 observed/expected/impact、Evidence、影响范围、验收方向、canonical source/digest 与关联 Task；缺省字段明确显示“未提供”。初始加载、请求失败和空列表互不混淆，原生 Dialog 支持 Escape 与焦点返回；这些交互仍然只读，不回读 Git 或修改 Projection。
+
 Coding Task 出现在看板后，点击卡片会路由到可直达和刷新的全屏 `/tasks/<task_id>` Task Audit Page；右上角“返回项目”回到 `/`，浏览器 Back/Forward 同样有效。详情内容顶部固定为“画布”“角色与交付物”“Workflow 状态事实”“高级诊断”四个局部 Tab，首次进入默认画布，同一 Task 自动刷新保留当前 Tab；键盘可用左右方向键、Home 和 End 切换，窄屏横向滚动。四个 Tab 只重组现有只读事实，不创建第二套状态。页面 Header 只常驻 Task 身份、真实 Workflow kind、角色参与和结果摘要；画布 Tab 直接进入 Graph，不再重复 Workflow 说明与四格状态：
 
 1. Projection 与 Event History 一致时只在 Graph 工具栏显示一个紧凑标识；不一致时才在画布前主动展开业务、Archive、整体落点与 Event 重建差异。四项完整状态事实固定保留在“Workflow 状态事实”Tab；

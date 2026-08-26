@@ -110,6 +110,20 @@
       </section>
     </main>
 
+    <dialog id="backlog-detail-dialog" class="backlog-detail-dialog" aria-labelledby="backlog-detail-title">
+      <article class="backlog-detail-frame">
+        <header class="backlog-detail-header">
+          <div>
+            <p id="backlog-detail-kicker" class="eyebrow">Backlog Detail</p>
+            <h2 id="backlog-detail-title">需求详情</h2>
+            <div id="backlog-detail-meta" class="backlog-detail-meta" aria-label="Backlog 摘要"></div>
+          </div>
+          <form method="dialog"><button class="close" aria-label="关闭 Backlog 详情" autofocus>关闭</button></form>
+        </header>
+        <div id="backlog-detail-content" class="backlog-detail-content"></div>
+      </article>
+    </dialog>
+
     <dialog id="agent-events-dialog" class="agent-events-dialog" aria-labelledby="agent-events-title">
       <section class="agent-events-viewer" data-agent-events-viewer aria-live="polite">
         <header>

@@ -1,0 +1,23 @@
+schema_version: 1
+id: TASK-0079
+title: Backlog Detail UX
+status: seal_prepared
+outcome: null
+backlog_refs: []
+spec_revision: 1
+workflow_id: sealed-task/TASK-0079
+execution_mode: sealed-result-commit
+base_commit: 6c8cbb74b9260bc0ff8a2cdb4101deb2aaee9060
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-27-TASK-0079
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:dd5b1d7dcd6c43340b1def3a5c8802694a08f6b0ce6a9551115b83662a5321a8
+  base_commit: 6c8cbb74b9260bc0ff8a2cdb4101deb2aaee9060
+  archive_path: docs/delivery/tasks/archive/2026-08-27-TASK-0079

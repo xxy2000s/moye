@@ -113,6 +113,8 @@ Core PoC 已用确定性 Adapter 验证完整控制协议。Coding 产品路径�
 
 Board 固定展示需求池、进行中、待归档、已归档，并且只读。通用 Task 与 Coding Task 都通过 `TaskAuthority` owner 解析后查询唯一主 Workflow Projection；纯函数 Trace Builder 先形成状态机 Definition/History，再形成三个明确分区：
 
+需求池的卡片只展示 Backlog 摘要；选择卡片后，独立原生 Dialog 直接从同一个 ProjectBoard Projection 展示 v2 `problem`、Evidence、影响范围、验收方向、source/digest 和 Task refs。页面不回读 Git，也不创建第二份详情状态；加载、错误、空列表、Dialog 展开和焦点位置都只是浏览器内 UI 状态。v1 或可选字段缺失时明确显示空值，不补造领域事实。
+
 1. Business Facts：状态、Step、Attempt、Evidence Binding 和领域 Event，是任务结果权威；
 2. Durable Runtime：Workflow Ref 与 Restate Admin 入口，Journal 是执行、重放和中断恢复权威；
 3. Technical Evidence：Agent Session/Artifact、Branch、Checkpoint、Verification 和 Merge，是诊断证据。
