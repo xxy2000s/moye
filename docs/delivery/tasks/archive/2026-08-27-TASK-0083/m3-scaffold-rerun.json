@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "validationKind": "REAL_PACKED_STANDARD_DOCUMENTATION_SCAFFOLD",
+  "templateVersion": "standard-docs-v1",
+  "package": {
+    "filename": "moye-0.1.0.tgz",
+    "integrity": "sha512-4xt0LayI9WT+no56ITWRLC34gXEkGE0oapE+/vgVvEWr008pFbQIc5IKYNdN/rjtSGbL7RJPfrbGM0inYeH/Lg==",
+    "shasum": "53ee37aae3dedff4be90eb6945077d1a23060c97",
+    "digest": "sha256:d3a64a58f389c165dca802dbb3e06a1eb27fe2883efccd6f2103117a79b0c54b"
+  },
+  "blank": {
+    "scaffoldDigest": "sha256:8a32525eb2628e9bbb767adc3ea020d22a073d11d9d769954691b2a1827027fa",
+    "planDigest": "sha256:6d848e7a9fb2c72ffc134ece60782824614e5956b9c0175017ef141114b2a78f",
+    "fileCount": 14,
+    "manifestDigest": "sha256:c962d29c8ffc966a5ef764da93a6b4ac9f6afc289595a756b44fefa3c17853d2",
+    "documentationPolicy": "custom",
+    "docsValidation": {
+      "valid": true,
+      "templateVersion": "standard-docs-v1",
+      "projectId": "blank-external-project",
+      "fileCount": 12,
+      "scaffoldDigest": "sha256:8a32525eb2628e9bbb767adc3ea020d22a073d11d9d769954691b2a1827027fa"
+    },
+    "repeatedPlanDigest": "sha256:fbf15ed909c1de52b6dbf323f8f5584ef33a34e7548241193d4d116fb9df5dde",
+    "cleanGit": true
+  },
+  "occupied": {
+    "exitCode": 2,
+    "forceExitCode": 1,
+    "conflictPaths": [
+      "README.md",
+      "docs/README.md"
+    ],
+    "readmeDigestPreserved": "sha256:02a0961d52223e01f565bf6bfe004c5a73cde06047fc794af70f1675f51a2aec"
+  },
+  "symlink": {
+    "exitCode": 2,
+    "outsideWriteCount": 0
+  },
+  "fixtureRootKind": "os-temporary-directory-outside-moye",
+  "evidenceDigest": "sha256:e537ea96bd67faf61532902493b2c319e0dd8d453ee79fa2dc56df11790d8f49"
+}

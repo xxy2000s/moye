@@ -2,8 +2,8 @@
 
 > 文档类型：Architecture  
 > 状态：Draft  
-> 版本：v0.2
-> 更新日期：2026-08-22
+> 版本：v0.3
+> 更新日期：2026-08-27
 
 ## 1. 背景
 
@@ -32,6 +32,8 @@
 TASK-0048 已用 16 个独立真实 Runtime Task 和零 Finding live audit 验证本地 PoC 的关键状态机矩阵；Fake 只保留在 Demo 与低层自动化夹具。Board 从连续 Domain Event 派生实际路径，并展示 Projection/Event 一致性、每代 Attempt、Role Session、Verification、Git、Closure 与 Archive。该实现仍不是生产平台：Daemon 集群与完整 Lease/Fencing、远程 Git/PR、鉴权、多租户、生产 Sandbox/密钥治理、跨节点 Artifact Store、生产运营与长期知识反馈尚未实现。
 
 Framework MVP 的外部消费边界已由 [ADR-0008](../../decisions/adr/0008-publish-framework-mvp-as-versioned-umbrella-package.md) 冻结，并由 [Framework MVP 公共产品边界](./framework-product-boundary.md) 描述当前实现：`moye` umbrella package 提供版本化 Core、Client、Plugin SDK 与 CLI，Restate owning Workflow 和 Projection 写入口保持私有。RC tarball、非 root Service image、CycloneDX SBOM、Node/Python/Minimal Git 外部项目和 Happy/Repair/Reconcile/失败归档/跨版本恢复产品矩阵已经通过本地真实 Runtime 验收。GA 的公开可用性仍按发布目标逐项由远端 Receipt 证明；本地 Artifact、已接受 ADR 或 Git Tag 均不能替代 GitHub Release、npm 与容器 Registry 的确认事实。
+
+Milestone 3 在不改变 Task/Workflow 状态所有权的前提下补齐了三个消费切片：ProjectBoard Projection 持久化 Backlog v2 的结构化问题事实，Board 只读呈现紧凑卡片和按需详情；统一 Session resolver 从既有受管 Evidence 确定性派生 Availability、Content、Binding 与 Limitation 四维语义，UI 不自行猜测，也不回写历史 Artifact；公共 CLI 通过显式 preview/apply 为外部项目生成版本化 `standard-docs-v1` 文档起点，并由 custom Documentation Policy 和确定性验证入口约束。M3 聚合验收只查询固定 Task、Backlog、Session 和 Evidence 路径，临时 Board 不注册到 Restate，因此没有引入第二套 Runtime 或 Projection 写入口。
 
 ## 2. 设计结论
 

@@ -1,7 +1,7 @@
 # CodeMap
 
 > 状态：Current  
-> 更新日期：2026-08-25
+> 更新日期：2026-08-27
 
 本文件映射当前已经存在并通过测试的代码，不描述未来平台。
 
@@ -18,13 +18,14 @@
 | `scripts/plugin_sdk_contracts.ts` | 对七类内建 Adapter bridge 执行统一 descriptor、权限、capability、execute/reconcile export 契约检查 | 不运行 Workflow、不推进 Task；行为幂等和 UNKNOWN token 由同一公共 contract suite 单元验收 |
 | `scripts/documentation_policy_acceptance.ts` | 无 Document Graph 的独立 Git 项目通过 Client 运行真实七 Role、policy:none、Trusted Test、Merge、Closure/Archive | 显式读取 Generation 0 Policy Evidence；不扫描或补造 Docs Impact，不把 Agent 自报当确定性 Gate |
 | `scripts/agent_session_full_acceptance.ts` | 串行聚合真实 Codex/Claude、显式 Session Capture Recovery、历史 Enrichment 与 Board API 产品证据 | Recovery/Provider resume 必须由调用方给出精确 summary；重算受管 Manifest/Digest，不扫描目录选择结果，不推进 Task |
+| `scripts/m3_acceptance.ts` | 固定输入聚合 TASK-0077～0082 Result Commit/Seal、canonical Backlog、固定历史 Session、packed `standard-docs-v1` scaffold 与权威真实外部 Task | 临时当前源码 Board 不注册；不扫描目录、不选择“最新”、不推进 Workflow、不写 Projection；外部 fixture 只在 OS 临时目录运行 |
 | `src/restate/services.ts`、`src/restate/core-v2-services.ts`、`src/restate/invocation-inspector.ts` | TaskAuthority、Task/Sealed/Core v2 Workflow、Bootstrap/Seal/Core v2 Failure Recovery、Archive 与 ProjectBoard | Core v2 replay-sensitive 输入在既有首个 durable Run 固化；Inspector 只接受 paused durable Run 或精确 index-1 HandlerReturn 570 mismatch，Authority 冻结 append-only successor chain |
 | `src/restate/coding-services.ts` | CodingTaskWorkflow、Board 映射、Spec Revision 主权更新、Durable Reconcile Signal、成功/失败 Archive 子流程 | Workflow 独占 Coding Projection |
 | `src/restate/core-services.ts` | CoreClosureWorkflow 与只读 status | Workflow 独占 Core Projection；Scenario Adapter 只返回可验证 Artifact |
 | `src/product/live-task.ts` | 校验 CLI/API 真实任务、仓库白名单与 Git refs，并冻结真实多角色 Coding Workflow 输入 | 不推进状态；只构造提交材料；产品入口拒绝 Fake |
 | `src/review/live-review.ts` | 调用独立 Codex/Claude 只读 Review，生成结构化 Verdict、Finding 和 Artifact | 不推进状态；Workflow 消费已验证结果 |
 | `src/trace/state-machine.ts`、`coding-trace.ts`、`telemetry.ts` | Coding/通用 Task Projection 到状态机 Definition/History、三层 Trace、稳定 OTel Span 与恢复建议的纯映射 | 无，只读派生；`TraceSink` 默认 Noop |
-| `src/demo/coding-fixture.ts`、`scripts/demo.ts`、`scripts/trace-compose.ts` | 隔离 Git Fixture、Fake/真实 CLI 可选 Demo 与可选 Phoenix 编排 | 不拥有生产状态；演示状态由 CodingTaskWorkflow 持有 |
+| `src/demo/coding-fixture.ts`、`scripts/demo.ts`、`scripts/trace-compose.ts` | 隔离 Git Fixture、满足严格 v2 合同的演示 Backlog、Fake/真实 CLI 可选 Demo 与可选 Phoenix 编排 | 不拥有生产状态；演示状态由 CodingTaskWorkflow 持有 |
 | `src/domain/board.ts`、`src/board/server.ts`、`src/board/session-timeline.ts`、`public/index.html`、`public/app.js` | `/` 四列只读项目看板、紧凑 Backlog 卡片与问题详情 Dialog、Task Audit Page、状态机与 Execution Ledger；Board API 分离 execution stream、canonical normalized transcript、raw metadata 与 stderr，并只从 Projection 绑定的受管 Artifact 读取 | Workflow 发布精确运行元数据；Backlog 详情直接消费 ProjectBoard Projection；Board 校验 allowlist/binding/digest，只读浏览，不扫描 Git/Provider Home、不创建或推进 Task |
 | `Dockerfile`、`compose.yaml`、`src/runtime/**`、`scripts/runtime-{compose,backup}.ts` | 非 root Service 镜像、Service+Restate+registrar 编排、健康/就绪、双卷备份恢复和固定镜像升级/回滚 | Journal/Artifact 分卷持久化；默认 loopback；删除数据需要显式确认 |
 | `src/public/**`、`src/release/{manifest,publish}.ts`、`scripts/release_{verify,publish,snapshot_acceptance}.ts`、`tsconfig.package.json`、`.github/workflows/ci.yml` | 消费级 CLI 与三个 npm exports、最小发布编译闭包、Release Identity、clean-install/容器/SBOM、append-only 外部 publish/reconcile 和 CI | exports 不暴露 Runtime 状态写入口；release verify 要求 clean commit；Git/GitHub/npm/container 逐目标对账且冲突 fail closed |

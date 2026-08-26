@@ -1,7 +1,7 @@
 # Milestone 3：Backlog 可读性、Agent Session 证据语义与项目文档脚手架
 
 > 文档类型：Delivery Plan  
-> 状态：Approved / In Progress
+> 状态：Completed
 > 计划基线：2026-08-27  
 > Revision：1  
 > 需求来源：项目 Owner 关于 Backlog 现象表达、当前未完成条目补录和 BL-0083 纳入后续长时开发的直接要求；[BL-0083](../backlog/BL-0083.yaml)  
@@ -276,3 +276,19 @@ M3 不包含：
 - 当前结论：项目 Owner 于 2026-08-27 批准 Revision 1；TASK-0077～TASK-0083 对应 W01～W07。
 - 执行方式：无普通技术决策中断的连续长时运行，直至完成条件满足或出现明确外部阻塞。
 - 运行记录：TASK-0077 已在 canonical Runtime 启动；首次误投旧 Runtime 的真实事件与非破坏清理见 [Incident](../../sources/incidents/2026-08-27-task-0077-seal-submitted-to-stale-runtime.md)。
+
+## 15. 完成记录
+
+2026-08-27，W01～W06 已分别形成唯一 Result Commit，并由 canonical Runtime 收敛到 `CLOSED + ARCHIVED + SUCCEEDED`；W07 的同一 Result Commit 包含最终聚合器、修复后的严格 v2 Demo 回归、仓库门禁、浏览器证据与本完成记录，随后按 sealed-result-commit 协议部署和关闭。
+
+| Work Package | Result Commit | Runtime / 核心证据 |
+|---|---|---|
+| W01 / TASK-0077 | `1f6760808dcf78a418fbbff8bbca73c3d22c9a6a` | Backlog v2 合同、v1 兼容与严格投影；Package `sha256:b8eb6079…12a90db` |
+| W02 / TASK-0078 | `6c8cbb74b9260bc0ff8a2cdb4101deb2aaee9060` | Sync batch `98457bb9…9b955`，五个开放条目，BL-0031 收敛，重放 unchanged |
+| W03 / TASK-0079 | `2567fc9093b13eee225001d903a90564d8c62d3f` | 1440/390、键盘、错误恢复与只读边界浏览器证据 `sha256:f2b24128…d31755` |
+| W04 / TASK-0080 | `f262522c1bc05f81c9339c4e5fa151f511521b1f` | Session 四维语义 Evidence `sha256:ab0aa402…76a68e`，旧 Manifest/Receipt/Digest 不变 |
+| W05 / TASK-0081 | `d369e9d3d9621391999e2db48a959a2e7fa29d7b` | 固定历史 Session 显示 `AVAILABLE + COMPLETE + UNVERIFIED + NONE`，高级诊断保留原始事实 |
+| W06 / TASK-0082 | `241a81938065f9e4efec32507e4af2aa43380779` | packed scaffold、冲突/路径边界、真实 custom-policy Task；Bundle `sha256:c5944bed…1bace` |
+| W07 / TASK-0083 | 本文所在唯一 Result Commit | `npm run acceptance:m3` 固定输入报告、当前源码真实浏览器、check/e2e、Document Graph、最终 Deployment 与 Runtime Seal |
+
+本里程碑没有公开发布新 Registry 版本，也没有实现生产 Auth/RBAC、远端 Artifact/Git Provider、多 Daemon Lease/Fencing 或自动 Phoenix/OTLP；这些限制不因本地 tarball、Runtime Deployment 或 M3 完成而改变。

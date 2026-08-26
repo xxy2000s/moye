@@ -65,6 +65,7 @@
     "acceptance:framework:docs": "tsx scripts/documentation_policy_acceptance.ts",
     "acceptance:framework:scaffold": "tsx scripts/documentation_scaffold_acceptance.ts",
     "acceptance:framework:scaffold:task": "tsx scripts/documentation_scaffold_task_acceptance.ts",
+    "acceptance:m3": "tsx scripts/m3_acceptance.ts",
     "acceptance:core-v2:guards": "tsx scripts/core_v2_guards_acceptance.ts",
     "acceptance:core-v2:audit": "tsx scripts/core_v2_matrix_audit.ts",
     "acceptance:core-v2:matrix": "tsx scripts/core_v2_full_acceptance.ts",

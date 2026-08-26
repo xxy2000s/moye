@@ -1,7 +1,7 @@
 # 本地运行 Restate PoC
 
 > 状态：Verified  
-> 验证日期：2026-08-23
+> 验证日期：2026-08-27
 > 适用版本：Node.js 22、Restate SDK 1.16.7、Restate Server 1.7.4
 
 ## 1. 第一次体验
@@ -142,6 +142,22 @@ npm run cli -- session-enrich-status <enrichment-id>
 TASK-0011 已通过 `npm run demo:codex` 再次执行真实 Codex 隔离 Fixture：运行中事件从 4 条增长至 13 条，完成时冻结 17 条，包含命令执行、文件修改、Git Commit、工具结果和最终回答，并通过 Verification、唯一 Merge 与 Archive。自动化回归仍使用 Fake/受控进程，避免每次测试消耗模型额度。
 
 ## 3. 手工启动
+
+### Canonical 本地 Runtime 与 M3 验收
+
+仓库默认 `8080/9070` 只适用于按本 Runbook 新启动的默认实例；如果本机已有持久化 canonical Runtime，所有 CLI、验收和部署命令必须显式绑定该实例，不能依赖 Shell 默认值。2026-08-27 的 canonical 实例使用：
+
+```bash
+export RESTATE_INGRESS_URL=http://127.0.0.1:50889
+export RESTATE_ADMIN_URL=http://127.0.0.1:50890
+
+npm run runtime:status
+npm run acceptance:m3
+```
+
+`acceptance:m3` 固定查询 TASK-0077～0082、五个开放 Backlog、一个明确历史 Session 与 W02～W06 的已知 Evidence；它会启动未注册的临时当前源码 Board，并在仓库外 OS 临时目录重跑 packed scaffold。不得把旧 `8080/9070` Runtime 中同名 Task 的重试、按 mtime 找到的结果或手工 Projection 修改当作通过证据。
+
+最终 Service 交接遵循先健康、再注册、最后切换的顺序：从唯一 Result Commit 构建候选 endpoint，验证 `/healthz`、`/readyz` 与 release identity 后注册 canonical Admin；旧 Deployment 若仍可能被 Invocation 固定引用，先把其 URI 安全指向兼容的新 endpoint，再停止旧无状态 Service。Restate 容器、`.moye-runtime/restate-live`、Artifact Root 和未经审计的历史 Service 不随交接删除。最终 Board 必须在 `http://127.0.0.1:3000` 返回同一 Result Commit；Deployment/进程事实保存在 Runtime Receipt 和最终报告，不回写 sealed Commit。
 
 启动持久化 Restate：
 
