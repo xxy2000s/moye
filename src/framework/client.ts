@@ -5,13 +5,51 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 
-import type { CoreV2WorkflowInput, CoreV2WorkflowProjection } from "../restate/core-v2-services.js";
-import type { TaskAuthorityState } from "../restate/services.js";
 import { invoke, send } from "../restate/ingress.js";
 import { loadProjectManifest } from "./project-manifest.js";
 import type { LoadedProjectManifest } from "./project-manifest.js";
 import { ProjectManifestError } from "./project-manifest.js";
-import type { DocumentationPolicyInputV1 } from "./documentation-policy.js";
+
+interface PublicAuthorityState {
+  readonly owner: string;
+  readonly recoveryWorkflowRef?: string;
+}
+
+interface PublicCoreV2Projection {
+  readonly taskId: string;
+  readonly state: string;
+  readonly currentStep: string;
+  readonly outcome: string | null;
+  readonly startedAt: string;
+  readonly completedAt?: string | null;
+  readonly lifecycle: { readonly archive?: { readonly status: "NOT_READY" | "PENDING" | "ARCHIVED" | "FAILED" } };
+}
+
+interface InternalWorkflowInput {
+  readonly taskId: string;
+  readonly projectId: string;
+  readonly title: string;
+  readonly objective: string;
+  readonly acceptanceCriteria: readonly string[];
+  readonly repositoryRoot: string;
+  readonly artifactRoot: string;
+  readonly runnerKind: "CODEX_EXEC" | "CLAUDE_PRINT";
+  readonly baseCommit: string;
+  readonly targetRef: string;
+  readonly testCommands: readonly (readonly string[])[];
+  readonly documentationPolicy: {
+    readonly policyVersion: 1;
+    readonly kind: "none" | "conventional" | "moye-doc-graph" | "custom";
+    readonly command?: { readonly id: string; readonly argv: readonly string[]; readonly cwd: string };
+  };
+  readonly observerKnowledge?: unknown;
+  readonly sessionEvidence?: {
+    readonly enabled: true;
+    readonly capturePolicy: "digest_only" | "full";
+    readonly codexSessionsRoot?: string;
+    readonly claudeProjectsRoot?: string;
+  };
+}
 
 const execFileAsync = promisify(execFile);
 
@@ -90,13 +128,13 @@ export class MoyeClient {
 
   public async status(taskIdInput: string): Promise<ProjectTaskStatusV1 | null> {
     const taskId = taskIdValue(taskIdInput);
-    const authority = await invoke<TaskAuthorityState | null>(this.#ingressUrl, "TaskAuthority", taskId, "get");
+    const authority = await invoke<PublicAuthorityState | null>(this.#ingressUrl, "TaskAuthority", taskId, "get");
     if (authority === null) return null;
     if (authority.owner !== "CORE_V2_WORKFLOW") throw new ProjectManifestError("PROJECT_TASK_WORKFLOW_UNSUPPORTED", `${taskId} is owned by ${authority.owner}`);
     const target = authority.recoveryWorkflowRef === undefined
       ? { service: "CoreV2Workflow", key: taskId }
       : workflowRef(authority.recoveryWorkflowRef);
-    const projection = await invoke<CoreV2WorkflowProjection | null>(this.#ingressUrl, target.service, target.key, "status");
+    const projection = await invoke<PublicCoreV2Projection | null>(this.#ingressUrl, target.service, target.key, "status");
     if (projection === null) return null;
     return publicStatus(projection, `restate://${target.service}/${target.key}`, this.taskUrl(taskId));
   }
@@ -142,7 +180,7 @@ export class MoyeClient {
 export async function prepareProjectTask(
   request: StartProjectTaskRequest,
   options: { readonly runtimeRoot: string; readonly providerRoots?: MoyeClientOptions["providerRoots"] },
-): Promise<{ readonly manifest: LoadedProjectManifest; readonly input: CoreV2WorkflowInput }> {
+): Promise<{ readonly manifest: LoadedProjectManifest; readonly input: InternalWorkflowInput }> {
   const objective = requiredText(request.objective, "objective");
   const criteria = request.acceptanceCriteria.map((item) => requiredText(item, "acceptanceCriteria"));
   if (criteria.length === 0) throw new ProjectManifestError("PROJECT_ACCEPTANCE_REQUIRED", "at least one acceptance criterion is required");
@@ -168,7 +206,7 @@ export async function prepareProjectTask(
   await mkdir(artifactRoot, { recursive: true });
   const runnerKind = loaded.manifest.agent.runner === "codex" ? "CODEX_EXEC" as const : "CLAUDE_PRINT" as const;
   const sessionEvidence = sessionEvidenceInput(loaded, options.providerRoots);
-  const input: CoreV2WorkflowInput = Object.freeze({
+  const input: InternalWorkflowInput = Object.freeze({
     taskId,
     projectId: loaded.manifest.project.id,
     title: request.title === undefined ? objective.slice(0, 120) : requiredText(request.title, "title"),
@@ -186,7 +224,7 @@ export async function prepareProjectTask(
   return Object.freeze({ manifest: loaded, input });
 }
 
-function documentationPolicyInput(loaded: LoadedProjectManifest): DocumentationPolicyInputV1 {
+function documentationPolicyInput(loaded: LoadedProjectManifest): InternalWorkflowInput["documentationPolicy"] {
   const configuration = loaded.manifest.documentation;
   return Object.freeze({
     policyVersion: 1,
@@ -201,7 +239,7 @@ function documentationPolicyInput(loaded: LoadedProjectManifest): DocumentationP
   });
 }
 
-function sessionEvidenceInput(loaded: LoadedProjectManifest, roots: MoyeClientOptions["providerRoots"]): CoreV2WorkflowInput["sessionEvidence"] {
+function sessionEvidenceInput(loaded: LoadedProjectManifest, roots: MoyeClientOptions["providerRoots"]): InternalWorkflowInput["sessionEvidence"] {
   const policy = loaded.manifest.agent.captureTranscripts;
   if (policy === "none") return undefined;
   if (!loaded.manifest.privacy.capturePrompts) throw new ProjectManifestError("PROJECT_PROMPT_CAPTURE_NOT_ALLOWED", "transcript capture requires privacy.capturePrompts: true");
@@ -213,7 +251,7 @@ function sessionEvidenceInput(loaded: LoadedProjectManifest, roots: MoyeClientOp
   return { enabled: true, capturePolicy: policy, claudeProjectsRoot: roots?.claudeProjects ?? path.join(home, ".claude", "projects") };
 }
 
-function publicStatus(projection: CoreV2WorkflowProjection, workflow: string, boardUrl: string): ProjectTaskStatusV1 {
+function publicStatus(projection: PublicCoreV2Projection, workflow: string, boardUrl: string): ProjectTaskStatusV1 {
   const archiveStatus = projection.lifecycle.archive?.status ?? "NOT_READY";
   return Object.freeze({
     apiVersion: 1,
@@ -224,7 +262,7 @@ function publicStatus(projection: CoreV2WorkflowProjection, workflow: string, bo
     archiveStatus,
     outcome: projection.outcome,
     startedAt: projection.startedAt,
-    completedAt: projection.completedAt,
+    ...(projection.completedAt === undefined ? {} : { completedAt: projection.completedAt }),
     boardUrl,
   });
 }

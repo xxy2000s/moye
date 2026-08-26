@@ -1,16 +1,48 @@
 {
   "name": "moye",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
+  "license": "MIT",
+  "description": "Durable multi-agent development workflow framework",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xxy2000s/moye.git"
+  },
+  "homepage": "https://github.com/xxy2000s/moye#readme",
+  "bugs": "https://github.com/xxy2000s/moye/issues",
   "type": "module",
   "bin": {
-    "moye": "dist/src/cli/index.js"
+    "moye": "package-dist/public/cli.js"
   },
+  "exports": {
+    "./core": {
+      "types": "./package-dist/public/core.d.ts",
+      "import": "./package-dist/public/core.js"
+    },
+    "./client": {
+      "types": "./package-dist/public/client.d.ts",
+      "import": "./package-dist/public/client.js"
+    },
+    "./plugin-sdk": {
+      "types": "./package-dist/public/plugin-sdk.d.ts",
+      "import": "./package-dist/public/plugin-sdk.js"
+    },
+    "./schemas/project.schema.json": "./schemas/project.schema.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "package-dist",
+    "schemas/project.schema.json",
+    "README.md",
+    "LICENSE"
+  ],
   "engines": {
     "node": ">=22"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "build:package": "node scripts/clean-package-dist.mjs && tsc -p tsconfig.package.json",
+    "prepack": "npm run build:package",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "dev": "tsx src/index.ts",
     "demo": "exec tsx scripts/demo.ts",
@@ -45,6 +77,8 @@
     "runtime:backup": "tsx scripts/runtime-backup.ts backup",
     "runtime:restore": "tsx scripts/runtime-backup.ts restore",
     "acceptance:framework:runtime": "tsx scripts/runtime_distribution_acceptance.ts",
+    "release:verify": "tsx scripts/release_verify.ts",
+    "acceptance:framework:release": "tsx scripts/release_snapshot_acceptance.ts",
     "trace:up": "tsx scripts/trace-compose.ts up",
     "trace:down": "tsx scripts/trace-compose.ts down",
     "trace:status": "tsx scripts/trace-compose.ts status",

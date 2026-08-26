@@ -2,6 +2,7 @@
 .github
 .moye-runtime
 dist
+package-dist
 node_modules
 coverage
 docs

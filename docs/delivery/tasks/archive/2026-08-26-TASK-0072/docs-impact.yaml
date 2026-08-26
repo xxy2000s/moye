@@ -1,0 +1,97 @@
+schema_version: 1
+task_id: TASK-0072
+graph_revision: 123
+intents: [m2-package-release-pipeline]
+changed_paths:
+  - .dockerignore
+  - .gitignore
+  - .github/workflows/ci.yml
+  - LICENSE
+  - package.json
+  - package-lock.json
+  - tsconfig.package.json
+  - src/public/core.ts
+  - src/public/client.ts
+  - src/public/plugin-sdk.ts
+  - src/public/cli.ts
+  - src/release/manifest.ts
+  - src/framework/client.ts
+  - src/framework/doctor.ts
+  - scripts/clean-package-dist.mjs
+  - scripts/release_verify.ts
+  - scripts/release_snapshot_acceptance.ts
+  - tests/unit/release-manifest.test.ts
+  - README.md
+  - docs/knowledge/current/architecture/framework-product-boundary.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/runbooks/release-pipeline.md
+  - docs/knowledge/guidance/runbooks/README.md
+  - docs/delivery/backlog/BL-0068.yaml
+  - docs/delivery/milestones/m2-framework-release.md
+  - docs/delivery/tasks/README.md
+  - docs/delivery/tasks/archive/README.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0072/task.yaml
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0072/spec.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0072/design.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0072/plan.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0072/verification.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0072/docs-impact.yaml
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0072/release-pipeline-acceptance.json
+  - docs/graph.yaml
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - release-pipeline-runbook
+    - runbooks-index
+    - framework-product-boundary
+    - architecture-index
+    - tasks-index
+    - task-runtime-kernel
+    - root-readme
+    - bl-0068-framework-productization
+    - backlog-index
+    - sources-index
+    - milestone-2-framework-release
+    - archived-tasks-index
+    - task-0072-manifest
+    - task-0072-spec
+    - task-0072-design
+    - task-0072-plan
+    - task-0072-verification
+    - task-0072-docs-impact
+  reviewed:
+    architecture-overview: { outcome: unchanged, reason: "Package/Release 实例化既有公共边界，不改变 Task Runtime 总体所有权。" }
+    restate-poc-architecture: { outcome: unchanged, reason: "npm 包不分发 Restate handler；Service 镜像继续复用 W06 架构。" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "TASK-0072 继续使用冻结 Base、唯一 Result Commit 与两阶段 Seal。" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "Task、Architecture、CodeMap 与 Runbook 仍按既有角色更新。" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "发布流水线没有改变 UNKNOWN 外部副作用和 Runtime recovery 语义。" }
+    task-0013-manifest: { outcome: unchanged, reason: "不修改 Core Control 历史。" }
+    task-0014-manifest: { outcome: unchanged, reason: "不修改 Role 协议历史。" }
+    task-0015-manifest: { outcome: unchanged, reason: "不修改 Review/Finding 历史。" }
+    task-0016-manifest: { outcome: unchanged, reason: "不修改预算历史。" }
+    task-0017-manifest: { outcome: unchanged, reason: "不修改 Observer/Docs 历史。" }
+    task-0018-manifest: { outcome: unchanged, reason: "不修改 Closure 历史。" }
+    task-0019-manifest: { outcome: unchanged, reason: "消费级 CLI 不导出旧 Coding 状态推进入口。" }
+    task-0020-manifest: { outcome: unchanged, reason: "不修改 Board 状态机历史。" }
+    task-0021-manifest: { outcome: unchanged, reason: "不修改多角色产品历史。" }
+    task-0029-manifest: { outcome: unchanged, reason: "不修改 Bootstrap recovery 历史。" }
+    task-0003-manifest: { outcome: unchanged, reason: "不修改首个编码协议历史。" }
+    task-0004-manifest: { outcome: unchanged, reason: "不修改 Git Effect 历史。" }
+    task-0005-manifest: { outcome: unchanged, reason: "不修改 Agent Runner 历史。" }
+    task-0006-manifest: { outcome: unchanged, reason: "不修改 Coding Workflow 历史。" }
+    task-0007-manifest: { outcome: unchanged, reason: "不修改首批故障矩阵历史。" }
+    task-0001-manifest: { outcome: unchanged, reason: "不修改 Restate PoC 历史。" }
+    task-0049r1-manifest: { outcome: unchanged, reason: "复用既有 Seal stage/preflight 约束。" }
+    task-0061r1-design: { outcome: unchanged, reason: "包编译不改变 replay-sensitive Workflow command 顺序。" }
+    task-0062-design: { outcome: unchanged, reason: "npm 包不读取或分发 Session Artifact。" }
+    task-0063-design: { outcome: unchanged, reason: "Board Session UX 不变。" }
+    adr-0008-framework-release-boundary: { outcome: unchanged, reason: "按已接受的单包、私有 Runtime 和 Release Identity 决策实现。" }
+    task-0070-design: { outcome: unchanged, reason: "Documentation Policy 作为 Client 配置继续通过公共边界冻结。" }
+    task-0071-design: { outcome: unchanged, reason: "容器 dry-run 消费 W06 镜像边界，不改变持久化与恢复设计。" }
+    task-0072-design: { outcome: updated, reason: "记录最小发布闭包、pack audit 和 clean snapshot 流水线。" }
+    moye-task-control-skill: { outcome: unchanged, reason: "发布 Task 继续使用 Full profile、Context Route、Docs Impact 和两阶段 Seal。" }
+    task-0002-manifest: { outcome: unchanged, reason: "不修改 Backlog Runtime Projection 同步历史。" }
+    task-0056-manifest: { outcome: unchanged, reason: "本 Task 符合既有 Full profile，不改变开发档位规则。" }

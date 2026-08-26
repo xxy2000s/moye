@@ -27,6 +27,7 @@
 | `src/demo/coding-fixture.ts`、`scripts/demo.ts`、`scripts/trace-compose.ts` | 隔离 Git Fixture、Fake/真实 CLI 可选 Demo 与可选 Phoenix 编排 | 不拥有生产状态；演示状态由 CodingTaskWorkflow 持有 |
 | `src/domain/board.ts`、`src/board/server.ts`、`src/board/session-timeline.ts`、`public/index.html`、`public/app.js` | `/` 四列只读项目看板、Task Audit Page、状态机与 Execution Ledger；Board API 分离 execution stream、canonical normalized transcript、raw metadata 与 stderr，并只从 Projection 绑定的受管 Artifact 读取 | Workflow 发布精确运行元数据；Board 校验 allowlist/binding/digest，只读浏览，不扫描 Provider Home、不创建或推进 Task |
 | `Dockerfile`、`compose.yaml`、`src/runtime/**`、`scripts/runtime-{compose,backup}.ts` | 非 root Service 镜像、Service+Restate+registrar 编排、健康/就绪、双卷备份恢复和固定镜像升级/回滚 | Journal/Artifact 分卷持久化；默认 loopback；删除数据需要显式确认 |
+| `src/public/**`、`src/release/manifest.ts`、`scripts/release_{verify,snapshot_acceptance}.ts`、`tsconfig.package.json`、`.github/workflows/ci.yml` | 消费级 CLI 与三个 npm exports、最小发布编译闭包、Release Identity、clean-install/容器/SBOM dry-run 和 CI | exports 不暴露 Runtime 状态写入口；release verify 要求 clean commit；外部 publish 仍由 W10 Effect 管理 |
 
 ## 模块图
 
@@ -48,6 +49,8 @@ src/
 ├── verification/      argv-only Verification Gate 与 Commit Binding
 ├── restate/           Durable Workflow、Projection、HTTP Ingress client
 ├── runtime/           Deployment 注册、Runtime 运维计划与备份 Manifest 验证
+├── public/            npm 消费级 Core/Client/Plugin SDK facade 与独立 CLI
+├── release/           版本、Git、tarball、image、Schema 与 SBOM 的内容寻址 Release Manifest
 ├── trace/             三层 Trace、稳定关联 ID、Noop/OTLP Sink 与恢复建议派生
 ├── board/             Board API 与静态资源服务
 ├── cli/               人和 Agent 的命令入口
@@ -72,6 +75,8 @@ scripts/
 ├── runtime-compose.ts  argv-only Compose 生命周期、日志、固定镜像升级/回滚与显式 purge
 ├── runtime-backup.ts   停写窗口双卷备份、Digest 校验与 empty-target restore
 ├── runtime_distribution_acceptance.ts  真实镜像、注册、Task、重启、备份与 Projection 一致性验收
+├── release_verify.ts  clean commit 的 npm pack/install、CLI/exports、Docker、SBOM 与 Release Manifest 验证
+├── release_snapshot_acceptance.ts  把当前实现复制为独立 clean commit 后执行相同 RC 流水线
 ├── trace-compose.ts   argv-only 启停可选 Phoenix Profile
 ├── codex_fixture_smoke.mjs  一次性真实 Codex Fixture（拒绝覆盖既有证据）
 └── docs_graph.rb      文档校验、Context Route、Impact Gate、Mermaid

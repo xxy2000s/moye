@@ -59,4 +59,6 @@ Runtime Distribution 已由 `Dockerfile + compose.yaml` 实现：固定 Node/Age
 
 运维入口提供 data-preserving stop/uninstall、日志、绑定稳定 Restate node name 的内容寻址双卷备份、empty-target restore、固定镜像 upgrade/rollback 和二次确认的 purge。真实容器验收 Task `TASK-RUNTIME-1787702994174` 在完整 stop/start、备份重启和跨 Compose project restore 后保持同一 Projection Digest，证明本地单节点持久化与可恢复性；它不证明 HA、远端 Artifact、生产密钥或灾备。
 
-包流水线、示例、外部产品矩阵与正式发布仍由 TASK-0072～TASK-0075 顺序实现。在这些证据完成前，Moye 仍不能声明 Framework MVP 已公开发布。
+Package Pipeline 使用 `tsconfig.package.json` 从四个公共入口只编译最小传递闭包；npm `exports` 是可导入边界，tarball 审计同时拒绝 Workflow handler、Projection reducer、内部文档、测试与 Runtime 数据。`release:verify` 只接受 clean Git source，通过真实 `npm pack`、隔离 install、CLI/Schema/exports、Docker build、CycloneDX SBOM 和 canonical Release Manifest 绑定候选版本。开发中的 Task 使用独立 committed snapshot 运行同一流水线，避免把脏 HEAD 记录成 Release Commit。
+
+包流水线已由 TASK-0072 验收；示例、外部产品矩阵与正式发布仍由 TASK-0073～TASK-0075 顺序实现。在这些证据完成前，Moye 仍不能声明 Framework MVP 已公开发布。

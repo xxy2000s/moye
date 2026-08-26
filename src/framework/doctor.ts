@@ -6,7 +6,6 @@ import path from "node:path";
 import { promisify } from "node:util";
 
 import { invoke } from "../restate/ingress.js";
-import type { TaskAuthorityState } from "../restate/services.js";
 import { loadProjectManifest } from "./project-manifest.js";
 
 const execFileAsync = promisify(execFile);
@@ -76,7 +75,7 @@ export async function runProjectDoctor(input: {
   });
   await capture(checks, "docker", "WARN", async () => `available: ${await command("docker", ["info", "--format", "{{.ServerVersion}}"], 15_000)}`);
   await capture(checks, "restate", "FAIL", async () => {
-    await invoke<TaskAuthorityState | null>(input.ingressUrl, "TaskAuthority", "TASK-DOCTOR-PROBE", "get");
+    await invoke<{ readonly owner: string } | null>(input.ingressUrl, "TaskAuthority", "TASK-DOCTOR-PROBE", "get");
     return `reachable ${input.ingressUrl}`;
   });
   await capture(checks, "board", "FAIL", async () => {

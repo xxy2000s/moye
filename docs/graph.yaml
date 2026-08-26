@@ -264,6 +264,14 @@ documents:
     authority: operational-procedure
     read_when: [runtime-distribution, operations-change, release]
 
+  - id: release-pipeline-runbook
+    path: docs/knowledge/guidance/runbooks/release-pipeline.md
+    type: runbook
+    status: verified
+    scope: framework-productization
+    authority: operational-procedure
+    read_when: [release, operations-change]
+
   - id: codemap
     path: docs/knowledge/current/codemap/README.md
     type: codemap
@@ -5207,6 +5215,54 @@ documents:
     authority: task-evidence
     read_when: [task-close, task-archive]
 
+  - id: task-0072-manifest
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0072/task.yaml
+    type: task-manifest
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close, task-archive]
+
+  - id: task-0072-spec
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0072/spec.md
+    type: task-spec
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0072-design
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0072/design.md
+    type: task-design
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0072-plan
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0072/plan.md
+    type: task-plan
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0072-verification
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0072/verification.md
+    type: verification
+    status: archived
+    scope: framework-productization
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0072-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0072/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: framework-productization
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
 relations:
   - from: root-readme
     to: docs-index
@@ -5300,11 +5356,19 @@ relations:
     to: runtime-distribution-runbook
     type: indexes
 
+  - from: runbooks-index
+    to: release-pipeline-runbook
+    type: indexes
+
   - from: local-restate-poc-runbook
     to: restate-poc-architecture
     type: operates
 
   - from: runtime-distribution-runbook
+    to: framework-product-boundary
+    type: operates
+
+  - from: release-pipeline-runbook
     to: framework-product-boundary
     type: operates
 
@@ -9146,6 +9210,42 @@ relations:
 
   - from: task-0071-docs-impact
     to: task-0071-manifest
+    type: reports_on
+
+  - from: milestone-2-framework-release
+    to: task-0072-manifest
+    type: schedules
+
+  - from: archived-tasks-index
+    to: task-0072-manifest
+    type: indexes
+
+  - from: task-0072-spec
+    to: bl-0068-framework-productization
+    type: consumes
+
+  - from: task-0072-spec
+    to: task-0072-manifest
+    type: belongs_to
+
+  - from: task-0072-design
+    to: task-0072-spec
+    type: refines
+
+  - from: task-0072-design
+    to: framework-product-boundary
+    type: implements_slice_of
+
+  - from: task-0072-plan
+    to: task-0072-manifest
+    type: belongs_to
+
+  - from: task-0072-verification
+    to: task-0072-manifest
+    type: verifies
+
+  - from: task-0072-docs-impact
+    to: task-0072-manifest
     type: reports_on
 
 routing:

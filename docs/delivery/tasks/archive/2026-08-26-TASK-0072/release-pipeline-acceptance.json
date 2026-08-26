@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "taskId": "TASK-0072",
+  "verifiedAt": "2026-08-26T00:36:00.113Z",
+  "snapshotCommit": "649f687c8440334f6b79bd9969e3126bbf08d736",
+  "release": {
+    "version": "0.1.0-rc.1",
+    "channel": "rc",
+    "releaseDigest": "sha256:23448efb21a49a2ab10976949973544a1674b50aa40b9aaf766e4c6a32bf0e8d",
+    "npmDigest": "sha256:e5a959c5edcd0a9b169a243f75de2c3268eaad0bb382ca29651cae7360c5a574",
+    "npmIntegrity": "sha512-3N69kCZ8HIXe7THvc7T+0+95sKkFCGHsu4awhRTJSJCikAZAI7DB8XkBRP6Y42Q15pIi+pumB1OpZko1cipENQ==",
+    "containerDigest": "sha256:63feb6c036361f20eb582f26fb9312aa0a9a193eafd3625976ba2cf012a8b752",
+    "sbomDigest": "sha256:8654b8b1712c681ebe4aae11477b5e2295af4627a6f83f9074611f2f404914f0"
+  },
+  "package": {
+    "entries": 34,
+    "bytes": 38971,
+    "forbiddenEntries": 0,
+    "publicExports": ["moye/core", "moye/client", "moye/plugin-sdk"],
+    "cliVersion": "moye 0.1.0",
+    "schemaVersion": 1,
+    "apiVersion": 1,
+    "pluginApiVersion": 1
+  },
+  "container": {
+    "reference": "moye:0.1.0-rc.1",
+    "user": "node"
+  },
+  "evidenceDigest": "sha256:4b275f55734ec985bce6efecb365dd59f1d061ceaf6d43e1d699faa9e8dd7202"
+}

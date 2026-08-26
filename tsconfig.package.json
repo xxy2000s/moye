@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "package-dist",
+    "declaration": true,
+    "sourceMap": true
+  },
+  "include": [
+    "src/public/core.ts",
+    "src/public/client.ts",
+    "src/public/plugin-sdk.ts",
+    "src/public/cli.ts"
+  ],
+  "exclude": ["dist", "package-dist", "node_modules", "scripts", "tests"]
+}

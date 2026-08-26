@@ -1,0 +1,40 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  repository-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run test:e2e
+
+  release-dry-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run release:verify
+        env:
+          MOYE_RELEASE_VERSION: 0.1.0-rc.1
+          MOYE_RELEASE_IMAGE: moye:0.1.0-rc.1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: moye-release-candidate
+          path: .moye-runtime/release/0.1.0-rc.1
+          if-no-files-found: error
