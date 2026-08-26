@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "taskId": "TASK-RUNTIME-1787702994174",
+  "workflowRef": "restate://TaskWorkflow/TASK-RUNTIME-1787702994174",
+  "invocationId": "inv_12TqBVzsqTKa5o3p6yRlY8gw6bnJQy0Xt9",
+  "terminal": { "state": "CLOSED", "archiveStatus": "ARCHIVED", "outcome": "SUCCEEDED" },
+  "projectionDigestBeforeRestart": "sha256:a8ff1bc02c0efded7522782e7fee6bdccaf5a182594396d1658c8d1543ab1e73",
+  "projectionDigestAfterRestart": "sha256:a8ff1bc02c0efded7522782e7fee6bdccaf5a182594396d1658c8d1543ab1e73",
+  "projectionDigestAfterBackupRestart": "sha256:a8ff1bc02c0efded7522782e7fee6bdccaf5a182594396d1658c8d1543ab1e73",
+  "image": "moye:task-0071-31768",
+  "imageDigest": "sha256:0a45cfe9de60ee9f9258f1c0dbedfa26caa632b892334c7a13907ecf8f212671",
+  "composeProject": "moye_rt_31768",
+  "health": { "status": "ok", "service": "moye", "check": "liveness" },
+  "readiness": {
+    "status": "ready",
+    "ready": true,
+    "dependencies": {
+      "restateIngress": { "ok": true, "status": 400 },
+      "restateAdmin": { "ok": true, "status": 200 }
+    }
+  },
+  "backupManifest": {
+    "schemaVersion": 1,
+    "composeProject": "moye_rt_31768",
+    "createdAt": "2026-08-26T00:10:32.559Z",
+    "image": "moye:task-0071-31768",
+    "restateNodeName": "moye-runtime",
+    "archives": [
+      { "volume": "moye_rt_31768_restate_data", "file": "moye_rt_31768_restate_data.tar.gz", "sha256": "sha256:208fbe769f15992ffb12f949ac45768005b809f60dc7c7e647a386cb23e3c488" },
+      { "volume": "moye_rt_31768_moye_artifacts", "file": "moye_rt_31768_moye_artifacts.tar.gz", "sha256": "sha256:77bb7f99b94f2bcdf3e34124b2606b525a511c3423f7784e4ff50ce37cfb12e4" }
+    ]
+  },
+  "restoreDrill": {
+    "composeProject": "moye_rt_31768_restore",
+    "readiness": "ready",
+    "registrarExitCode": 0,
+    "terminal": { "state": "CLOSED", "archiveStatus": "ARCHIVED", "outcome": "SUCCEEDED" },
+    "projectionDigest": "sha256:a8ff1bc02c0efded7522782e7fee6bdccaf5a182594396d1658c8d1543ab1e73",
+    "cleanup": { "containers": "removed", "network": "removed", "volumes": "removed" }
+  },
+  "boardSummary": { "archived": 1, "acceptanceTaskPresent": true },
+  "cleanup": { "containers": "removed", "network": "removed", "volumes": "removed" }
+}

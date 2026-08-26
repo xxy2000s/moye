@@ -1,0 +1,16 @@
+schema_version: 1
+id: BL-0076
+title: 为 Runtime 备份恢复固定并校验 Restate node name
+kind: bug
+status: converted_to_task
+priority: high
+source_refs: [finding-runtime-restore-node-name]
+affected_areas: [runtime-distribution, restate-persistence, backup-restore]
+acceptance_outline:
+  - Compose 使用稳定 Restate node name
+  - backup manifest 记录 node name，restore 在解包前校验
+  - 备份恢复到新 Compose project 后历史 Task 可查询
+resolution:
+  task_refs: [TASK-0071]
+  duplicate_of:
+  reason: TASK-0071 已固定 node name 并完成真实跨 project restore drill

@@ -256,6 +256,14 @@ documents:
     authority: operational-procedure
     read_when: [restate-poc, operations-change, incident-response]
 
+  - id: runtime-distribution-runbook
+    path: docs/knowledge/guidance/runbooks/runtime-distribution.md
+    type: runbook
+    status: verified
+    scope: framework-productization
+    authority: operational-procedure
+    read_when: [runtime-distribution, operations-change, release]
+
   - id: codemap
     path: docs/knowledge/current/codemap/README.md
     type: codemap
@@ -4975,6 +4983,38 @@ documents:
     authority: delivery-control
     read_when: [backlog-triage, task-create, git-effect-change]
 
+  - id: finding-runtime-registrar-ps
+    path: docs/sources/findings/runtime-acceptance-registrar-exit-not-visible.md
+    type: finding
+    status: resolved
+    scope: framework-productization
+    authority: observed-defect
+    read_when: [finding-intake, runtime-distribution, acceptance]
+
+  - id: bl-0075-runtime-registrar-ps
+    path: docs/delivery/backlog/BL-0075.yaml
+    type: backlog-item
+    status: converted_to_task
+    scope: framework-productization
+    authority: delivery-control
+    read_when: [backlog-triage, runtime-distribution, acceptance]
+
+  - id: finding-runtime-restore-node-name
+    path: docs/sources/findings/runtime-restore-requires-stable-restate-node-name.md
+    type: finding
+    status: resolved
+    scope: framework-productization
+    authority: observed-defect
+    read_when: [finding-intake, runtime-distribution, recovery]
+
+  - id: bl-0076-runtime-restore-node-name
+    path: docs/delivery/backlog/BL-0076.yaml
+    type: backlog-item
+    status: converted_to_task
+    scope: framework-productization
+    authority: delivery-control
+    read_when: [backlog-triage, runtime-distribution, recovery]
+
   - id: task-0068-manifest
     path: docs/delivery/tasks/archive/2026-08-25-TASK-0068/task.yaml
     type: task-manifest
@@ -5119,6 +5159,54 @@ documents:
     authority: task-evidence
     read_when: [task-close, task-archive]
 
+  - id: task-0071-manifest
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0071/task.yaml
+    type: task-manifest
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close, task-archive]
+
+  - id: task-0071-spec
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0071/spec.md
+    type: task-spec
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0071-design
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0071/design.md
+    type: task-design
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0071-plan
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0071/plan.md
+    type: task-plan
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0071-verification
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0071/verification.md
+    type: verification
+    status: archived
+    scope: framework-productization
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0071-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-25-TASK-0071/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: framework-productization
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
 relations:
   - from: root-readme
     to: docs-index
@@ -5208,8 +5296,16 @@ relations:
     to: local-restate-poc-runbook
     type: indexes
 
+  - from: runbooks-index
+    to: runtime-distribution-runbook
+    type: indexes
+
   - from: local-restate-poc-runbook
     to: restate-poc-architecture
+    type: operates
+
+  - from: runtime-distribution-runbook
+    to: framework-product-boundary
     type: operates
 
   - from: meta-index
@@ -8864,6 +8960,38 @@ relations:
     to: task-0068-manifest
     type: converted_to
 
+  - from: findings-index
+    to: finding-runtime-registrar-ps
+    type: indexes
+
+  - from: finding-runtime-registrar-ps
+    to: bl-0075-runtime-registrar-ps
+    type: produces
+
+  - from: backlog-index
+    to: bl-0075-runtime-registrar-ps
+    type: indexes
+
+  - from: bl-0075-runtime-registrar-ps
+    to: task-0071-manifest
+    type: converted_to
+
+  - from: findings-index
+    to: finding-runtime-restore-node-name
+    type: indexes
+
+  - from: finding-runtime-restore-node-name
+    to: bl-0076-runtime-restore-node-name
+    type: produces
+
+  - from: backlog-index
+    to: bl-0076-runtime-restore-node-name
+    type: indexes
+
+  - from: bl-0076-runtime-restore-node-name
+    to: task-0071-manifest
+    type: converted_to
+
   - from: milestone-2-framework-release
     to: task-0068-manifest
     type: schedules
@@ -8974,6 +9102,50 @@ relations:
 
   - from: task-0070-docs-impact
     to: task-0070-manifest
+    type: reports_on
+
+  - from: milestone-2-framework-release
+    to: task-0071-manifest
+    type: schedules
+
+  - from: archived-tasks-index
+    to: task-0071-manifest
+    type: indexes
+
+  - from: task-0071-spec
+    to: bl-0068-framework-productization
+    type: consumes
+
+  - from: task-0071-spec
+    to: bl-0075-runtime-registrar-ps
+    type: resolves
+
+  - from: task-0071-spec
+    to: bl-0076-runtime-restore-node-name
+    type: resolves
+
+  - from: task-0071-spec
+    to: task-0071-manifest
+    type: belongs_to
+
+  - from: task-0071-design
+    to: task-0071-spec
+    type: refines
+
+  - from: task-0071-design
+    to: framework-product-boundary
+    type: implements_slice_of
+
+  - from: task-0071-plan
+    to: task-0071-manifest
+    type: belongs_to
+
+  - from: task-0071-verification
+    to: task-0071-manifest
+    type: verifies
+
+  - from: task-0071-docs-impact
+    to: task-0071-manifest
     type: reports_on
 
 routing:

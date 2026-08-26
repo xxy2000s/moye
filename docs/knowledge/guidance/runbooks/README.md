@@ -4,6 +4,7 @@ Runbook 描述已经实际执行并验证的启动、恢复、排障和清理步
 
 ## 当前 Runbook
 
+- [Moye Runtime Distribution 运维手册](./runtime-distribution.md)：完整 Service+Restate Compose 的启动、健康、日志、备份、恢复、升级、回滚、卸载与显式数据清理。
 - [本地运行 Restate PoC](./local-restate-poc.md)：安装、启动、注册、CLI、Board、故障注入和清理。
 
 未经验证的命令只放在 Task Plan 或 Proposed Architecture，不能提升为 Runbook。

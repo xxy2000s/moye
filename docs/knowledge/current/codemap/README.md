@@ -26,7 +26,7 @@
 | `src/trace/state-machine.ts`、`coding-trace.ts`、`telemetry.ts` | Coding/通用 Task Projection 到状态机 Definition/History、三层 Trace、稳定 OTel Span 与恢复建议的纯映射 | 无，只读派生；`TraceSink` 默认 Noop |
 | `src/demo/coding-fixture.ts`、`scripts/demo.ts`、`scripts/trace-compose.ts` | 隔离 Git Fixture、Fake/真实 CLI 可选 Demo 与可选 Phoenix 编排 | 不拥有生产状态；演示状态由 CodingTaskWorkflow 持有 |
 | `src/domain/board.ts`、`src/board/server.ts`、`src/board/session-timeline.ts`、`public/index.html`、`public/app.js` | `/` 四列只读项目看板、Task Audit Page、状态机与 Execution Ledger；Board API 分离 execution stream、canonical normalized transcript、raw metadata 与 stderr，并只从 Projection 绑定的受管 Artifact 读取 | Workflow 发布精确运行元数据；Board 校验 allowlist/binding/digest，只读浏览，不扫描 Provider Home、不创建或推进 Task |
-| `compose.yaml`、`scripts/runtime-compose.ts` | 自动兼容两种 Compose CLI，启动/停止带 `restate_data` 命名卷的 Restate 1.7.4 | Restate Journal/Projection 持久化；停止命令不删除数据卷 |
+| `Dockerfile`、`compose.yaml`、`src/runtime/**`、`scripts/runtime-{compose,backup}.ts` | 非 root Service 镜像、Service+Restate+registrar 编排、健康/就绪、双卷备份恢复和固定镜像升级/回滚 | Journal/Artifact 分卷持久化；默认 loopback；删除数据需要显式确认 |
 
 ## 模块图
 
@@ -47,6 +47,7 @@ src/
 ├── review/            独立真实 CLI Review、结构化 Finding 与 Artifact 对账
 ├── verification/      argv-only Verification Gate 与 Commit Binding
 ├── restate/           Durable Workflow、Projection、HTTP Ingress client
+├── runtime/           Deployment 注册、Runtime 运维计划与备份 Manifest 验证
 ├── trace/             三层 Trace、稳定关联 ID、Noop/OTLP Sink 与恢复建议派生
 ├── board/             Board API 与静态资源服务
 ├── cli/               人和 Agent 的命令入口
@@ -54,7 +55,8 @@ src/
 └── index.ts           进程入口
 
 public/                无框架 Board UI
-compose.yaml           持久化 Restate Runtime 与可选 Phoenix trace Profile
+Dockerfile             可分发的非 root Moye Service 镜像
+compose.yaml           Service+Restate+registrar 双卷 Runtime 与可选 Phoenix trace Profile
 tests/
 ├── unit/              领域、归档、投影和幂等副作用
 └── e2e/               真实 Restate 容器 + SIGKILL 恢复
@@ -67,6 +69,9 @@ scripts/
 ├── core_v2_recovery_acceptance.ts  为 Test UNKNOWN、Role Worker 中断、Checkpoint/Merge 回执未知创建独立真实 Task，控制 Service 重启并审计唯一副作用
 ├── core_v2_guards_acceptance.ts  为 Repair/Replan 预算、智能 Observer 超时和旧 Generation/Revision fencing 创建独立真实 Task并审计终态
 ├── core_v2_matrix_audit.ts  只读取显式 suite/scenario，实时交叉检查 Restate、Board、Git、Artifact 与文档归档图并输出内容寻址报告
+├── runtime-compose.ts  argv-only Compose 生命周期、日志、固定镜像升级/回滚与显式 purge
+├── runtime-backup.ts   停写窗口双卷备份、Digest 校验与 empty-target restore
+├── runtime_distribution_acceptance.ts  真实镜像、注册、Task、重启、备份与 Projection 一致性验收
 ├── trace-compose.ts   argv-only 启停可选 Phoenix Profile
 ├── codex_fixture_smoke.mjs  一次性真实 Codex Fixture（拒绝覆盖既有证据）
 └── docs_graph.rb      文档校验、Context Route、Impact Gate、Mermaid

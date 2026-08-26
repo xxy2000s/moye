@@ -58,6 +58,17 @@ async function route(
   const method = request.method ?? "GET";
   const url = new URL(request.url ?? "/", "http://localhost");
 
+  if (method === "GET" && url.pathname === "/healthz") {
+    writeJson(response, 200, { status: "ok", service: "moye", check: "liveness" });
+    return;
+  }
+
+  if (method === "GET" && url.pathname === "/readyz") {
+    const readiness = await probeRuntimeReadiness(options);
+    writeJson(response, readiness.ready ? 200 : 503, readiness);
+    return;
+  }
+
   if (method === "GET" && url.pathname === "/api/board") {
     const snapshot = await invoke<ProjectBoardSnapshot>(
       options.ingressUrl,
@@ -469,6 +480,28 @@ async function route(
   }
 
   await serveStatic(url.pathname, method === "HEAD", response, options.publicRoot);
+}
+
+export async function probeRuntimeReadiness(
+  options: Pick<BoardServerOptions, "ingressUrl" | "restateAdminUrl">,
+  fetchImpl: typeof fetch = fetch,
+): Promise<{ readonly status: "ready" | "not_ready"; readonly ready: boolean; readonly dependencies: Readonly<Record<string, { readonly ok: boolean; readonly status?: number; readonly error?: string }>> }> {
+  const checks = await Promise.all([
+    probeHttp("restateIngress", options.ingressUrl, fetchImpl, false),
+    probeHttp("restateAdmin", new URL("/health", options.restateAdminUrl).toString(), fetchImpl, true),
+  ]);
+  const dependencies = Object.fromEntries(checks.map(({ name, ...check }) => [name, check]));
+  const ready = checks.every((check) => check.ok);
+  return { status: ready ? "ready" : "not_ready", ready, dependencies };
+}
+
+async function probeHttp(name: string, url: string, fetchImpl: typeof fetch, requireSuccess: boolean) {
+  try {
+    const response = await fetchImpl(url, { signal: AbortSignal.timeout(2_000) });
+    return { name, ok: requireSuccess ? response.ok : response.status < 500, status: response.status };
+  } catch (error) {
+    return { name, ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
 }
 
 export function buildCoreV2Trace(projection: CoreV2WorkflowProjection, restateAdminUrl: string) {

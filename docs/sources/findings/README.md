@@ -11,6 +11,8 @@ Finding 与 Incident 的边界：
 
 ## 当前 Finding
 
+- [Runtime 验收漏查已成功退出的 registrar](./runtime-acceptance-registrar-exit-not-visible.md)：首轮注册实际成功但 harness 只查询运行中容器，已由 TASK-0071 改为 `ps -a + ExitCode` 并完成真实复验。
+- [Restate 备份恢复缺少稳定 node name](./runtime-restore-requires-stable-restate-node-name.md)：首轮跨 project restore 因默认 hostname 漂移被 Restate 拒绝，已固定并绑定 `RESTATE_NODE_NAME` 后完成真实恢复。
 - [Framework Client 在目标 ref 不存在时仍派发任务](./framework-client-dispatched-missing-target-ref.md)：已由 TASK-0068 增加 pre-dispatch target gate，并用第二条真实任务复核。
 
 - [Claude Role Runtime 忽略 CLI 的 structured_output](./claude-role-runtime-ignores-structured-output.md)：真实 Claude Role 已返回合法结构化对象，但旧解析器读取普通结果文本并误标 `INVALID_OUTPUT`，由 TASK-0060 修复。

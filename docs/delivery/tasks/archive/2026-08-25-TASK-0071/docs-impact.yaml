@@ -1,0 +1,121 @@
+schema_version: 1
+task_id: TASK-0071
+graph_revision: 123
+intents: [m2-runtime-distribution]
+changed_paths:
+  - Dockerfile
+  - .dockerignore
+  - compose.yaml
+  - config/runtime.env.example
+  - package.json
+  - src/board/server.ts
+  - scripts/runtime-compose.ts
+  - scripts/runtime-backup.ts
+  - scripts/runtime_distribution_acceptance.ts
+  - src/runtime/register.ts
+  - src/runtime/operations.ts
+  - src/runtime/backup.ts
+  - tests/unit/board-health.test.ts
+  - tests/unit/runtime-operations.test.ts
+  - tests/unit/runtime-backup.test.ts
+  - README.md
+  - docs/knowledge/current/architecture/framework-product-boundary.md
+  - docs/knowledge/current/architecture/poc-01-restate.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/runbooks/runtime-distribution.md
+  - docs/knowledge/guidance/runbooks/README.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - docs/delivery/backlog/BL-0068.yaml
+  - docs/delivery/backlog/BL-0075.yaml
+  - docs/delivery/backlog/BL-0076.yaml
+  - docs/delivery/backlog/README.md
+  - docs/sources/findings/runtime-acceptance-registrar-exit-not-visible.md
+  - docs/sources/findings/runtime-restore-requires-stable-restate-node-name.md
+  - docs/sources/findings/README.md
+  - docs/delivery/milestones/m2-framework-release.md
+  - docs/delivery/tasks/README.md
+  - docs/delivery/tasks/archive/README.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0071/task.yaml
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0071/spec.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0071/design.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0071/plan.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0071/verification.md
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0071/docs-impact.yaml
+  - docs/delivery/tasks/archive/2026-08-25-TASK-0071/runtime-distribution-acceptance.json
+  - docs/graph.yaml
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - milestone-2-framework-release
+    - restate-poc-architecture
+    - task-runtime-kernel
+    - framework-product-boundary
+    - local-restate-poc-runbook
+    - runbooks-index
+    - bl-0068-framework-productization
+    - tasks-index
+    - findings-index
+    - backlog-index
+    - sources-index
+    - root-readme
+    - architecture-index
+    - runtime-distribution-runbook
+    - bl-0075-runtime-registrar-ps
+    - bl-0076-runtime-restore-node-name
+    - finding-runtime-registrar-ps
+    - finding-runtime-restore-node-name
+    - archived-tasks-index
+    - task-0071-manifest
+    - task-0071-spec
+    - task-0071-design
+    - task-0071-plan
+    - task-0071-verification
+    - task-0071-docs-impact
+  reviewed:
+    architecture-overview: { outcome: unchanged, reason: "Compose 实例化既有 Service/Restate 边界，不改变 Task 状态所有权。" }
+    task-runtime-kernel: { outcome: unchanged, reason: "持久卷和恢复操作遵循既有 Workflow/Journal 不变量。" }
+    restate-poc-architecture: { outcome: updated, reason: "补充容器 Service、健康检查、注册和持久卷部署事实。" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "Runbook 复用不得盲目删除 Journal/Artifact 的既有风险。" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "仍使用已接受的 Restate PoC，不扩张最终生产选型声明。" }
+    adr-0008-framework-release-boundary: { outcome: unchanged, reason: "实现 ADR 已冻结的 Service 容器分发边界。" }
+    document-control-plane: { outcome: unchanged, reason: "Runtime 运维不修改文档治理规则。" }
+    codemap: { outcome: updated, reason: "登记新增容器、健康和运维模块。" }
+    local-restate-poc-runbook: { outcome: updated, reason: "区分开发用 Restate-only 与可分发完整 Runtime。" }
+    tasks-index: { outcome: updated, reason: "登记 TASK-0071 Active/Archive 生命周期。" }
+    backlog-index: { outcome: updated, reason: "登记真实发现并已由 TASK-0071 消费的 BL-0075/BL-0076。" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "TASK-0071 继续使用两阶段 Seal 与唯一 Result Commit。" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "Finding、Backlog、Task、Architecture 与 Runbook 按既有角色写入。" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "容器工作区仍是显式挂载缓存，不改变 Git/Artifact 权威。" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "Runtime 分发不改变五类主流程 Agent、Gate 或 Closure 权限。" }
+    task-0013-manifest: { outcome: unchanged, reason: "不修改 Core Control 历史。" }
+    task-0014-manifest: { outcome: unchanged, reason: "不修改 Role 协议历史。" }
+    task-0015-manifest: { outcome: unchanged, reason: "不修改 Review/Finding 历史。" }
+    task-0016-manifest: { outcome: unchanged, reason: "不修改预算历史。" }
+    task-0017-manifest: { outcome: unchanged, reason: "不修改 Observer/Docs 历史。" }
+    task-0018-manifest: { outcome: unchanged, reason: "不修改 Closure 历史。" }
+    task-0019-manifest: { outcome: unchanged, reason: "不修改旧 Coding 产品入口。" }
+    task-0020-manifest: { outcome: unchanged, reason: "不修改 Board 状态机历史。" }
+    task-0021-manifest: { outcome: unchanged, reason: "不修改多角色产品历史。" }
+    task-0028-manifest: { outcome: unchanged, reason: "以双卷完整分发替代旧 Restate-only 启动，不改写历史 Task。" }
+    task-0029-manifest: { outcome: unchanged, reason: "不修改 Bootstrap recovery 历史。" }
+    task-0003-manifest: { outcome: unchanged, reason: "不修改首个编码 Task 协议历史。" }
+    task-0004-manifest: { outcome: unchanged, reason: "不修改 Git Effect 历史。" }
+    task-0005-manifest: { outcome: unchanged, reason: "不修改 Agent Runner 历史。" }
+    task-0006-manifest: { outcome: unchanged, reason: "不修改 Coding Workflow 历史。" }
+    task-0007-manifest: { outcome: unchanged, reason: "不修改首批故障矩阵历史。" }
+    task-0008-manifest: { outcome: unchanged, reason: "不修改 Demo 历史。" }
+    task-0009-manifest: { outcome: unchanged, reason: "可选 Phoenix profile 保持不变。" }
+    task-0001-manifest: { outcome: unchanged, reason: "不修改首个 Restate PoC 历史。" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "Runtime 与运维入口继续使用 TypeScript/Node。" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "Phoenix 仍是可选 trace profile，默认采集关闭。" }
+    task-0049r1-manifest: { outcome: unchanged, reason: "复用既有 Seal preflight 与归档约束。" }
+    task-0061r1-design: { outcome: unchanged, reason: "Service 容器配置冻结，不让部署环境改变 Workflow durable command 顺序。" }
+    task-0062-design: { outcome: unchanged, reason: "Session API 仍从受管 Artifact/allowlist 读取。" }
+    task-0063-design: { outcome: unchanged, reason: "Session Chatbot UX 不变。" }
+    moye-task-control-skill: { outcome: unchanged, reason: "Runtime 分发仍通过既有 Full/Seal/Docs Impact 流程，没有新增状态旁路。" }
+    task-0002-manifest: { outcome: unchanged, reason: "不修改 Backlog Projection 同步历史。" }
+    task-0056-manifest: { outcome: unchanged, reason: "本 Task 按 Full profile 执行，不修改开发档位规则。" }
+    task-0070-design: { outcome: unchanged, reason: "容器化不改变 Documentation Policy Gate 与 legacy replay 分支。" }

@@ -138,7 +138,7 @@ npm run runtime:up
 npm run runtime:status
 ```
 
-脚本自动探测 `docker compose` 或 `docker-compose`，并把 Restate `/restate-data` 挂载到 `moye_restate_data` 命名卷。日常停止使用 `npm run runtime:down`；它只执行 `stop`，不会删除容器或数据卷。不要用 `docker run --rm` 启动需要保留 Board/Journal 历史的 Runtime。
+脚本自动探测 `docker compose` 或 `docker-compose`。M2 Runtime Distribution 现在默认同时启动 Restate、Moye Service 与一次性 registrar，并分别把 Restate `/restate-data` 和 Moye `/var/lib/moye/artifacts` 挂载到命名卷。日常停止使用 `npm run runtime:down`；它只执行 `stop`，不会删除容器或数据卷。不要用 `docker run --rm` 启动需要保留 Board/Journal 历史的 Runtime。完整分发、备份和版本操作见 [Runtime Distribution Runbook](./runtime-distribution.md)。
 
 另一个终端启动 Moye：
 

@@ -55,4 +55,8 @@ Plugin SDK v1 已由 `src/framework/plugin-sdk.ts` 实现：七类 Adapter 共�
 
 Documentation Policy v1 已实现 `none | conventional | moye-doc-graph | custom`。Client 把 Manifest policy 冻结到私有 Workflow Input；Core v2 在独立 Documentation Agent PASS 后执行确定性 Gate：先验证 clean worktree 与 HEAD=Candidate，再读取 `base..candidate` Git diff。`none` 记录 `NOT_REQUIRED`；`conventional` 在产品代码变化而没有项目事实文档变化时阻塞；Graph/custom 使用无 shell、受限输出和固定超时的 argv Runner。Evidence 绑定 Task/Revision/Generation/Base/Candidate/changed-files/command Digest，幂等写入 Artifact namespace，再成为 Final Review 依赖的 Docs Impact Payload。旧 Workflow Input 没有 policy 字段时保留 legacy command sequence，不在重放中插入新 durable step。
 
-分发、包流水线、示例和外部产品矩阵仍由 TASK-0071～TASK-0075 顺序实现。在这些证据完成前，Moye 仍不能声明 Framework MVP 已公开发布。
+Runtime Distribution 已由 `Dockerfile + compose.yaml` 实现：固定 Node/Agent CLI/Git/Ruby 运行层以非 root 用户启动，Restate Journal 与 Moye Artifact 使用独立命名卷，Board/Ingress/Admin 默认仅绑定 loopback，Service Endpoint 只在内部网络提供给 Restate。一次性 registrar 在 `/readyz` 通过后注册 deployment；`/healthz` 与 `/readyz` 分别表达进程存活和 Restate 依赖可用。
+
+运维入口提供 data-preserving stop/uninstall、日志、绑定稳定 Restate node name 的内容寻址双卷备份、empty-target restore、固定镜像 upgrade/rollback 和二次确认的 purge。真实容器验收 Task `TASK-RUNTIME-1787702994174` 在完整 stop/start、备份重启和跨 Compose project restore 后保持同一 Projection Digest，证明本地单节点持久化与可恢复性；它不证明 HA、远端 Artifact、生产密钥或灾备。
+
+包流水线、示例、外部产品矩阵与正式发布仍由 TASK-0072～TASK-0075 顺序实现。在这些证据完成前，Moye 仍不能声明 Framework MVP 已公开发布。

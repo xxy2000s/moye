@@ -87,6 +87,8 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 | [BL-0072](./BL-0072.yaml) | Converted to Task | 兼容 Codex 当前 item_completed 对话记录 | TASK-0061 |
 | [BL-0073](./BL-0073.yaml) | Converted to Task | 消除 Core v2 重放配置分叉并恢复 pre-dispatch Journal mismatch | TASK-0061R1 |
 | [BL-0074](./BL-0074.yaml) | Converted to Task | 在 Framework Task 派发前验证目标 Git ref | TASK-0068 |
+| [BL-0075](./BL-0075.yaml) | Converted to Task | 修复 Runtime 验收对一次性 registrar 的状态查询 | TASK-0071 |
+| [BL-0076](./BL-0076.yaml) | Converted to Task | 为 Runtime 备份恢复固定并校验 Restate node name | TASK-0071 |
 
 ## 本轮调度结果
 

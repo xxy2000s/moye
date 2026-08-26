@@ -8,7 +8,7 @@ Agent Session Evidence M1 也已完成本地产品验收：新 Codex/Claude Role
 
 Framework MVP 的公共边界已由 [ADR-0008](./docs/knowledge/decisions/adr/0008-publish-framework-mvp-as-versioned-umbrella-package.md) 冻结：首版采用 `moye@0.1.0` umbrella package，通过 `moye/core`、`moye/client`、`moye/plugin-sdk` 和 CLI 提供公共入口，Restate Workflow/Projection 写入口保持私有。M2 仍在实施中；在外部示例、分发和真实产品矩阵完成前，不宣称 Framework MVP 已发布。
 
-项目 Manifest v1 与消费级 Client/CLI 已可驱动真实本地任务：`moye init`、`doctor`、`project validate`、`task start/status/watch/open` 会自动冻结 clean Git HEAD、目标 ref、受信任测试、Runner、仓库外受管 Artifact Root 和页面链接，用户不构造 Workflow Input。修正版真实外部任务 `TASK-FRAMEWORK-20260825224122` 已由七个真实 Role、Trusted Runner、双父 Merge、Closure 和 Archive 唯一完成。Plugin SDK v1 也已定义七类 Adapter、显式 capability negotiation、统一 contract suite 和 UNKNOWN/Reconcile 边界；第三方 Plugin 没有 Task 状态写入口。Documentation Policy 支持 `none | conventional | moye-doc-graph | custom`，其中 `none` 也由 Workflow 生成 Candidate-bound 的确定性 Evidence；无 Moye 文档图的真实任务 `TASK-DOCS-POLICY-20260825231609` 已归档成功。安装包与容器仍由后续 M2 Task 交付。
+项目 Manifest v1 与消费级 Client/CLI 已可驱动真实本地任务：`moye init`、`doctor`、`project validate`、`task start/status/watch/open` 会自动冻结 clean Git HEAD、目标 ref、受信任测试、Runner、仓库外受管 Artifact Root 和页面链接，用户不构造 Workflow Input。修正版真实外部任务 `TASK-FRAMEWORK-20260825224122` 已由七个真实 Role、Trusted Runner、双父 Merge、Closure 和 Archive 唯一完成。Plugin SDK v1 也已定义七类 Adapter、显式 capability negotiation、统一 contract suite 和 UNKNOWN/Reconcile 边界；第三方 Plugin 没有 Task 状态写入口。Documentation Policy 支持 `none | conventional | moye-doc-graph | custom`，其中 `none` 也由 Workflow 生成 Candidate-bound 的确定性 Evidence；无 Moye 文档图的真实任务 `TASK-DOCS-POLICY-20260825231609` 已归档成功。本地 Runtime Distribution 也已交付：非 root Service 镜像、Service+Restate+registrar Compose、双持久卷、健康/就绪、备份/恢复与固定镜像升级/回滚均有可执行入口；真实容器 Task 经 stop/start、备份与跨 project restore 后保持同一 Projection Digest。npm tarball、Registry 镜像、外部示例和 GA 发布仍由后续 M2 Task 交付。
 
 ## 当前目标
 
@@ -127,7 +127,7 @@ npm run runtime:up
 npm run runtime:status
 ```
 
-脚本会自动兼容 `docker compose` 与 `docker-compose`；`runtime:down` 只停止 Restate，不删除 `moye_restate_data` 数据卷。运行时包含两个本地入口：
+脚本会自动兼容 `docker compose` 与 `docker-compose`；默认启动 Restate、Moye Service 和一次性 registrar。`runtime:down` 只停止服务，不删除 `moye_restate_data` 与 `moye_moye_artifacts` 数据卷。配置、备份、恢复、升级、回滚与卸载见 [Runtime Distribution Runbook](./docs/knowledge/guidance/runbooks/runtime-distribution.md)。运行时包含两个本地入口：
 
 - Restate Service Endpoint：默认 `9080`；
 - Moye Project Board：默认 [http://localhost:3000](http://localhost:3000)。

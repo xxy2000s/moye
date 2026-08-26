@@ -1,0 +1,16 @@
+schema_version: 1
+id: BL-0075
+title: 修复 Runtime 验收对一次性 registrar 的状态查询
+kind: bug
+status: converted_to_task
+priority: medium
+source_refs: [finding-runtime-registrar-ps]
+affected_areas: [runtime-distribution, acceptance-harness]
+acceptance_outline:
+  - 查询已结束 registrar 的精确容器 ID 和 ExitCode
+  - 注册失败与成功退出必须可区分
+  - 修正版完整 Compose 持久化验收通过
+resolution:
+  task_refs: [TASK-0071]
+  duplicate_of:
+  reason: TASK-0071 已使用 compose ps -a 复核一次性 registrar 并通过完整真实验收

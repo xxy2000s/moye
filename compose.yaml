@@ -3,12 +3,63 @@ name: moye
 services:
   restate:
     image: docker.restate.dev/restatedev/restate:1.7.4
+    environment:
+      RESTATE_NODE_NAME: ${RESTATE_NODE_NAME:-moye-runtime}
     ports:
-      - "127.0.0.1:8080:8080"
-      - "127.0.0.1:9070:9070"
+      - "127.0.0.1:${RESTATE_INGRESS_BIND_PORT:-8080}:8080"
+      - "127.0.0.1:${RESTATE_ADMIN_BIND_PORT:-9070}:9070"
     volumes:
       - restate_data:/restate-data
     restart: unless-stopped
+
+  moye:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${MOYE_IMAGE:-moye:0.1.0-local}
+    depends_on:
+      restate:
+        condition: service_started
+    environment:
+      RESTATE_INGRESS_URL: http://restate:8080
+      RESTATE_ADMIN_URL: http://restate:9070
+      RESTATE_SERVICE_PORT: "9080"
+      MOYE_BOARD_PORT: "3000"
+      MOYE_PROJECT_ID: ${MOYE_PROJECT_ID:-moye}
+      MOYE_LIVE_RUNTIME_ROOT: /var/lib/moye/artifacts/live
+      MOYE_ARTIFACT_ROOTS: /var/lib/moye/artifacts
+      MOYE_REPOSITORY_ROOTS: /workspaces
+      MOYE_SESSION_SOURCE_ROOTS: /sessions
+      MOYE_OBSERVABILITY_ENABLED: ${MOYE_OBSERVABILITY_ENABLED:-false}
+      MOYE_CAPTURE_USER_PROMPTS: ${MOYE_CAPTURE_USER_PROMPTS:-false}
+      MOYE_CAPTURE_ASSISTANT_RESPONSES: ${MOYE_CAPTURE_ASSISTANT_RESPONSES:-false}
+      MOYE_CAPTURE_TOOL_DETAILS: ${MOYE_CAPTURE_TOOL_DETAILS:-false}
+      MOYE_CAPTURE_TOOL_CONTENT: ${MOYE_CAPTURE_TOOL_CONTENT:-false}
+      MOYE_CAPTURE_RAW_MODEL_IO: ${MOYE_CAPTURE_RAW_MODEL_IO:-false}
+    ports:
+      - "127.0.0.1:${MOYE_BOARD_BIND_PORT:-3000}:3000"
+    volumes:
+      - moye_artifacts:/var/lib/moye/artifacts
+      - type: bind
+        source: ${MOYE_WORKSPACE_ROOT:-./.moye-runtime/workspaces}
+        target: /workspaces
+      - type: bind
+        source: ${MOYE_SESSION_SOURCE_ROOT:-./.moye-runtime/sessions}
+        target: /sessions
+        read_only: true
+    restart: unless-stopped
+
+  register:
+    image: ${MOYE_IMAGE:-moye:0.1.0-local}
+    pull_policy: never
+    depends_on:
+      moye:
+        condition: service_healthy
+    environment:
+      RESTATE_ADMIN_URL: http://restate:9070
+      MOYE_SERVICE_ENDPOINT_URL: http://moye:9080
+    command: ["node", "dist/src/runtime/register.js"]
+    restart: "no"
 
   phoenix:
     profiles: ["trace"]
@@ -26,4 +77,5 @@ services:
 
 volumes:
   restate_data:
+  moye_artifacts:
   phoenix_data:
