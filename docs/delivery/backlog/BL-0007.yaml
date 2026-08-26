@@ -1,9 +1,19 @@
-schema_version: 1
+schema_version: 2
 id: "BL-0007"
 title: "实现经验候选、知识提升与效果反馈闭环"
 kind: "feature"
 status: "triaged"
 priority: "medium"
+
+problem:
+  observed: "Core 已生成内容寻址 Knowledge Candidate 与处置结果，并由 Docs Gate 约束文档影响；尚未实现候选审核提升、后续检索采用/拒绝和效果反馈闭环。"
+  expected: "Finding、Incident 与 Task 产生的候选经明确审核提升为长期知识，并持续记录后续 Task 的检索、采用、拒绝和结果。"
+  impact: "当前系统能保留候选但不能证明经验被长期消费或有效；若把候选直接视为 Architecture/ADR/Pitfall 会越过知识治理边界。"
+  evidence_refs:
+    - "TASK-0017"
+    - "TASK-0038"
+    - "document-control-plane"
+    - "BL-0007"
 
 source_refs:
   - task-spec-document-closure-brainstorm

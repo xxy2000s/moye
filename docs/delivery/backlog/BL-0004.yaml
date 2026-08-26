@@ -1,9 +1,18 @@
-schema_version: 1
+schema_version: 2
 id: "BL-0004"
 title: "实现多 Daemon 调度、租约与安全交接"
 kind: "feature"
 status: "triaged"
 priority: "high"
+
+problem:
+  observed: "当前实现只有单机 Workflow 与进程级 Worker 接管证据，没有持久化 Daemon 注册、能力调度、Lease 心跳或跨 Daemon Fencing Token。"
+  expected: "多个 Daemon 能按已验证能力领取 Attempt，以持久化 Lease/Fencing 安全交接，并从 TaskEnvelope、Checkpoint、Git 与 Artifact 恢复。"
+  impact: "生产环境无法安全横向扩展执行者；Worker/机器退出后的归属、卡住检测和旧执行者写入隔离仍依赖受控 PoC 边界。"
+  evidence_refs:
+    - "task-runtime-kernel"
+    - "TASK-0045"
+    - "BL-0004"
 
 source_refs:
   - task-spec-document-closure-brainstorm

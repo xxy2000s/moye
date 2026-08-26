@@ -123,6 +123,22 @@ describe("backlog document sync", () => {
     expect(second.batchId).toBe(first.batchId);
   });
 
+  it("selects an explicit canonical subset and rejects missing or duplicate ids", async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), "moye-backlog-selected-"));
+    await writeFile(path.join(directory, "BL-0002.yaml"), backlogYaml("BL-0002", "ready"));
+    await writeFile(path.join(directory, "BL-0003.yaml"), backlogYaml("BL-0003", "triaged"));
+
+    const selected = await loadBacklogSyncBatch(directory, process.cwd(), ["BL-0003"]);
+    expect(selected.items.map((item) => item.backlogId)).toEqual(["BL-0003"]);
+    expect(selected.items[0]?.source?.path).toContain("BL-0003.yaml");
+    await expect(loadBacklogSyncBatch(directory, process.cwd(), ["BL-0099"]))
+      .rejects.toThrow(/Selected backlog ids not found: BL-0099/);
+    await expect(loadBacklogSyncBatch(directory, process.cwd(), ["BL-0002", "BL-0002"]))
+      .rejects.toThrow(/Duplicate selected backlog ids: BL-0002/);
+    await expect(loadBacklogSyncBatch(directory, process.cwd(), ["not-a-backlog"]))
+      .rejects.toThrow(/Invalid selected backlog ids/);
+  });
+
   it("rejects a filename/id mismatch, unknown fields, and an invalid member of a multi-file batch", async () => {
     const mismatch = await mkdtemp(path.join(os.tmpdir(), "moye-backlog-mismatch-"));
     await writeFile(path.join(mismatch, "BL-0002.yaml"), backlogYaml("BL-0099", "ready"));

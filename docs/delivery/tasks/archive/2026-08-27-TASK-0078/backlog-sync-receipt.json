@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "taskId": "TASK-0078",
+  "projectId": "moye",
+  "runtime": {
+    "ingressUrl": "http://127.0.0.1:50889",
+    "adminUrl": "http://127.0.0.1:50890",
+    "boardUrl": "http://127.0.0.1:3000",
+    "deploymentId": "dp_15LdVILkyN3PqLXlnroI77P",
+    "serviceEndpoint": "http://host.docker.internal:55923",
+    "ready": true
+  },
+  "selection": [
+    "BL-0004",
+    "BL-0005",
+    "BL-0006",
+    "BL-0007",
+    "BL-0031",
+    "BL-0083"
+  ],
+  "batchId": "98457bb9ead7d73f657f4cd00391590e2b3e8ff49aa86162b5cf12caad49b955",
+  "sourceDigests": {
+    "BL-0004": "bc32878d5bc6a4a5c218f64a0b9ce5fef42a423569266dec4087e9a673898425",
+    "BL-0005": "1ba4b487a1837bd49a2154f68ff8bd407b7ce08a662744e25c4c36b45fedcfc9",
+    "BL-0006": "710b60796c95b051df8484fb900ec45fa4a40fad3ad2363f068760f3be7d1178",
+    "BL-0007": "b71421a4e0534e70f2fde2f660c5c19eb45e0469dec9567d58c11d595cf69c2d",
+    "BL-0031": "908351ebade3d38492edf4777acf194040b8d8241779869d0dea5e55b92901f9",
+    "BL-0083": "a3b48aaf9a0f7624c860f60cccddb3484408b2d68d74de770338b8835863e240"
+  },
+  "before": {
+    "generatedAt": "2026-08-26T17:56:46.391Z",
+    "visibleIds": ["BL-0004", "BL-0005", "BL-0006", "BL-0007", "BL-0031"],
+    "bl0031": {
+      "status": "CAPTURED",
+      "taskRefs": [],
+      "sourceDigest": "be3ef80481dda46e37ce089958645de529aa7942a968bfe2eb46dde8f777ce15"
+    }
+  },
+  "firstSync": {
+    "received": 6,
+    "inserted": 1,
+    "updated": 5,
+    "unchanged": 0,
+    "changed": true,
+    "preservedIds": [
+      "BL-0001", "BL-0002", "BL-0003", "BL-0008", "BL-0009", "BL-0010",
+      "BL-0011", "BL-0012", "BL-0013", "BL-0014", "BL-0015", "BL-0016",
+      "BL-0017", "BL-0018", "BL-0019", "BL-0020", "BL-0021", "BL-0022",
+      "BL-0023", "BL-0024", "BL-0025", "BL-0026", "BL-0027", "BL-0028",
+      "BL-0029", "BL-0030"
+    ]
+  },
+  "after": {
+    "generatedAt": "2026-08-26T17:57:00.575Z",
+    "visibleIds": ["BL-0004", "BL-0005", "BL-0006", "BL-0007", "BL-0083"],
+    "allVisibleSchemaVersion": 2,
+    "bl0031Visible": false,
+    "bl0083": {
+      "status": "TRIAGED",
+      "schemaVersion": 2,
+      "sourceDigest": "a3b48aaf9a0f7624c860f60cccddb3484408b2d68d74de770338b8835863e240"
+    }
+  },
+  "idempotentReplay": {
+    "received": 6,
+    "inserted": 0,
+    "updated": 0,
+    "unchanged": 6,
+    "changed": false
+  },
+  "projectionMutation": "ProjectBoard.syncBacklog formal handler only; no direct Projection edit",
+  "historicalMigration": "No: 26 existing non-selected ids were preserved and no non-selected document was submitted"
+}

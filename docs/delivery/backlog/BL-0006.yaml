@@ -1,9 +1,19 @@
-schema_version: 1
+schema_version: 2
 id: "BL-0006"
 title: "建设生产级 Trace、运营指标与异常看板"
 kind: "feature"
 status: "triaged"
 priority: "medium"
+
+problem:
+  observed: "Core 已交付 Task/Attempt/Session 关联、确定性 ObserverReport、OTLP Trace 与只读 Board 诊断子集，但没有生产级指标存储、SLO、告警路由和跨 Daemon 运营视图。"
+  expected: "业务 Event、Workflow Journal 与技术 Trace 保持分层，并形成可运营的耗时、成本、重试、卡住、预算和未知副作用指标及告警。"
+  impact: "本地 PoC 可诊断但生产团队仍无法依赖统一看板持续发现容量、可靠性和恢复风险；已完成子集也容易被误读为完整生产可观测平台。"
+  evidence_refs:
+    - "TASK-0017"
+    - "TASK-0038"
+    - "TASK-0048"
+    - "architecture-overview"
 
 source_refs:
   - durable-workflow-research

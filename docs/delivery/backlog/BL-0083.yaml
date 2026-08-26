@@ -1,9 +1,19 @@
-schema_version: 1
+schema_version: 2
 id: BL-0083
 title: "区分 Agent Session 内容完整性与 Prompt 绑定可信度"
 kind: bug
 status: triaged
 priority: medium
+
+problem:
+  observed: "Board 把历史 Enrichment 的 promptBinding=UNVERIFIED 与内容缺口合并为 PARTIAL，并统一提示记录不完整；实际消息、时间、层级和 Parser 指标可能完整可读。"
+  expected: "页面分别展示 Evidence 可用性、内容完整性、Prompt/Attempt 绑定可信度和策略/Provider 限制；历史正文可读但强绑定不可追溯时只说明 UNVERIFIED。"
+  impact: "用户会把可信度限制误判为 Transcript 丢失，无法区分真正解析/截断缺口与历史任务未冻结 Prompt Envelope 的可审计边界。"
+  evidence_refs:
+    - "TASK-0064"
+    - "TASK-0076"
+    - "adr-0007-session-transcript-sidecar"
+    - "/api/tasks/<task_id>/roles/<run_id>/session"
 source_refs: []
 affected_areas:
   - board-agent-session
@@ -20,4 +30,4 @@ acceptance_outline:
 resolution:
   task_refs: []
   duplicate_of:
-  reason: "2026-08-27 用户确认暂不实施；保留为后续可调度 Backlog。"
+  reason: "2026-08-27 M3 Revision 1 已批准；本条在 TASK-0080/0081 创建前保持 Triaged。"

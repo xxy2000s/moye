@@ -127,7 +127,8 @@ try {
       if (subcommand !== "sync") throw new Error(`Unknown backlog command: ${subcommand ?? ""}`);
       const directory = optionalOption(args, "--dir") ?? "docs/delivery/backlog";
       const projectId = optionalOption(args, "--project") ?? config.projectId;
-      const batch = await loadBacklogSyncBatch(directory);
+      const selectedIds = repeatedOptions(args.slice(1), "--id");
+      const batch = await loadBacklogSyncBatch(directory, process.cwd(), selectedIds.length === 0 ? undefined : selectedIds);
       const result = await invoke<BacklogSyncResult>(
         config.restateIngressUrl,
         "ProjectBoard",
@@ -534,7 +535,7 @@ Usage:
   moye task status TASK-ID
   moye task watch TASK-ID [--timeout-ms N]
   moye task open TASK-ID [--print]
-  moye backlog sync [--dir PATH] [--project PROJECT-ID]
+  moye backlog sync [--dir PATH] [--project PROJECT-ID] [--id BL-ID ...]
   moye validate --file task.json
   moye route --intent NAME --path PATH
   moye status TASK-ID
@@ -567,6 +568,8 @@ workflow and waits for its business terminal state. archive and reconcile use
 the same keyed ArchiveWorkflow, so they cannot create a second lifecycle.
 
 backlog sync validates every BL-*.yaml before a single ProjectBoard batch call.
+When --id is repeated, only those canonical document paths enter the atomic batch;
+missing, invalid, or duplicate ids fail before Runtime invocation.
 Runtime-only records are preserved and reported; no implicit delete occurs.
 `;
 }

@@ -1,0 +1,23 @@
+schema_version: 1
+id: TASK-0078
+title: Active Backlog Enrichment and Canonical Sync
+status: seal_prepared
+outcome: null
+backlog_refs: []
+spec_revision: 1
+workflow_id: sealed-task/TASK-0078
+execution_mode: sealed-result-commit
+base_commit: 1f6760808dcf78a418fbbff8bbca73c3d22c9a6a
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-27-TASK-0078
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:4918cedd591708d6252b1fd279196f9d932e17bb3ddebb6fb53257f898368a8d
+  base_commit: 1f6760808dcf78a418fbbff8bbca73c3d22c9a6a
+  archive_path: docs/delivery/tasks/archive/2026-08-27-TASK-0078

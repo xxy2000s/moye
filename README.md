@@ -174,6 +174,7 @@ npm run cli -- backlog sync --dir docs/delivery/backlog --project moye
 ```
 
 该命令先校验完整批次，再通过一次 ProjectBoard 调用幂等合并；源文件消失时默认保留运行时记录并在结果中报告，不会静默删除。
+需要只同步当前开放或明确处置的条目时重复传入 `--id BL-NNNN`；CLI 会保持原 canonical 文档路径，并在任何 Runtime 调用前拒绝非法、重复或不存在的 ID。不要通过复制文档到临时目录改变 source ownership，也不要为了页面隐藏效果同步无关历史条目。
 
 ## 文档入口
 

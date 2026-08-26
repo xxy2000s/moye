@@ -1,0 +1,93 @@
+schema_version: 1
+task_id: TASK-0078
+graph_revision: 127
+intents: [active-backlog-enrichment-canonical-sync]
+changed_paths:
+  - README.md
+  - docs/delivery/backlog/BL-0004.yaml
+  - docs/delivery/backlog/BL-0005.yaml
+  - docs/delivery/backlog/BL-0006.yaml
+  - docs/delivery/backlog/BL-0007.yaml
+  - docs/delivery/backlog/BL-0083.yaml
+  - docs/delivery/tasks/archive/README.md
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0078/backlog-sync-receipt.json
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0078/design.md
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0078/docs-impact.yaml
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0078/plan.md
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0078/spec.md
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0078/task.yaml
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0078/verification.md
+  - docs/graph.yaml
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - src/backlog/document-sync.ts
+  - src/cli/index.ts
+  - tests/unit/backlog-sync.test.ts
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - bl-0004-multi-daemon-handoff
+    - backlog-index
+    - sources-index
+    - bl-0005-remote-scm-loop
+    - bl-0006-production-observability
+    - bl-0007-knowledge-feedback-loop
+    - bl-0083-session-evidence-presentation-semantics
+    - local-restate-poc-runbook
+    - runbooks-index
+    - root-readme
+    - archived-tasks-index
+    - tasks-index
+    - task-runtime-kernel
+    - restate-poc-architecture
+    - task-0078-backlog-sync-receipt
+    - task-0078-design
+    - task-0078-docs-impact
+    - task-0078-plan
+    - task-0078-spec
+    - task-0078-manifest
+    - task-0078-verification
+  reviewed:
+    milestone-3-backlog-session-clarity: { outcome: unchanged, reason: "执行已批准 W02 的既定五条补录、BL-0031 收敛和正式同步，没有改变 Milestone 范围。" }
+    tasks-index: { outcome: unchanged, reason: "最终 Task package 直接进入 Archive，Active 索引保持无活动目录事实。" }
+    architecture-overview: { outcome: unchanged, reason: "Selective sync 不改变 ProjectBoard 查询投影与 Task-centric 系统边界。" }
+    moye-task-control-skill: { outcome: unchanged, reason: "按 Standard profile 完成 Context Route、真实 Runtime sync、Docs Impact 与唯一 Result Commit Seal。" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "继续使用 canonical Restate；未改变选型。" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "Backlog、Task 与 Runbook 继续按既有文档角色组织。" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "TASK-0078 使用标准两阶段 Seal。" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "不改变 Task/Worktree 生命周期。" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "只更新 Backlog intake，不修改 Core 关闭要求。" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "正式 sync 通过单 Object handler 原子执行；没有新增未知副作用模式。" }
+    task-0013-manifest: { outcome: unchanged, reason: "不修改 Core reducer。" }
+    task-0014-manifest: { outcome: unchanged, reason: "不修改 Role Attempt。" }
+    task-0015-manifest: { outcome: unchanged, reason: "不修改 Review/Finding。" }
+    task-0016-manifest: { outcome: unchanged, reason: "不修改 Retry/Repair/Replan。" }
+    task-0017-manifest: { outcome: unchanged, reason: "BL-0006/7 只陈述其已交付子集，不修改 Observer/Knowledge。" }
+    task-0018-manifest: { outcome: unchanged, reason: "不修改 Closure。" }
+    task-0019-manifest: { outcome: unchanged, reason: "不修改 Coding Workflow。" }
+    task-0020-manifest: { outcome: unchanged, reason: "ProjectBoard 仍由正式 handler 写入，页面只读。" }
+    task-0021-manifest: { outcome: unchanged, reason: "不修改 Core 产品闭环。" }
+    task-0028-manifest: { outcome: unchanged, reason: "不改写历史失败 Task。" }
+    task-0029-manifest: { outcome: unchanged, reason: "BL-0031 只消费其既有 converted 事实，不修改 TASK-0029。" }
+    bl-0010-agent-runtime-trace-demo: { outcome: unchanged, reason: "不迁移或修改非选择 Backlog。" }
+    task-0002-manifest: { outcome: unchanged, reason: "扩展原 Backlog sync 为显式 canonical 子集，保持原子/idempotent/ownership 合同。" }
+    task-0003-manifest: { outcome: unchanged, reason: "不修改 TaskEnvelope。" }
+    task-0004-manifest: { outcome: unchanged, reason: "不修改 Git Effect。" }
+    task-0005-manifest: { outcome: unchanged, reason: "不修改 Agent Runner。" }
+    task-0006-manifest: { outcome: unchanged, reason: "不修改 Coding Gate/Merge。" }
+    task-0007-manifest: { outcome: unchanged, reason: "不修改 Trace/Recovery。" }
+    task-0008-manifest: { outcome: unchanged, reason: "不修改 Demo。" }
+    task-0009-manifest: { outcome: unchanged, reason: "不修改 OTLP。" }
+    task-0001-manifest: { outcome: unchanged, reason: "Task/Archive/Board 聚合边界不变。" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "沿用 TypeScript。" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "不修改可观测选型。" }
+    task-0049r1-manifest: { outcome: unchanged, reason: "遵守 Seal preflight。" }
+    task-0056-manifest: { outcome: unchanged, reason: "W02 按批准矩阵使用 Standard，不改变档位规则。" }
+    task-0061r1-design: { outcome: unchanged, reason: "不修改 Core replay command。" }
+    task-0062-design: { outcome: unchanged, reason: "不修改 Session resolver。" }
+    task-0063-design: { outcome: unchanged, reason: "不修改 Session UI。" }
+    adr-0007-session-transcript-sidecar: { outcome: unchanged, reason: "BL-0083 只登记问题事实，不修改 Session Evidence。" }
+    task-0077-design: { outcome: unchanged, reason: "消费已冻结 Backlog v2 合同，不改变其设计。" }

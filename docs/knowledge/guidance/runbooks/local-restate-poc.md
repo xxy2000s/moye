@@ -181,6 +181,13 @@ npm run cli -- recover-bootstrap-failure --file /path/to/recovery.json
 npm run cli -- backlog sync --dir docs/delivery/backlog --project moye
 ```
 
+只允许同步明确条目时使用重复的 canonical ID 选择器；该模式仍从原目录读取源文件并保留 source path/digest，不要复制到临时目录：
+
+```bash
+npm run cli -- backlog sync --dir docs/delivery/backlog --project moye \
+  --id BL-0004 --id BL-0031
+```
+
 - `create` 异步提交 keyed owning Workflow；`status/wait` 先解析 TaskAuthority，不会把 Coding Task 错查到 TaskWorkflow；
 - `wait` 在成功/失败 Archive 终态、Archive 失败或 `WAITING_RECONCILE` 返回；不会创建第二个 Invocation；
 - Bootstrap `validate/create/close` 在派发前校验 Manifest 首次引入提交与冻结 Base；失败时不会创建 Authority、Projection 或 Board 记录；Runtime 在首次写状态前执行同一兜底校验；

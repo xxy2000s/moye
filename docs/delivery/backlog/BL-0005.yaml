@@ -1,9 +1,18 @@
-schema_version: 1
+schema_version: 2
 id: "BL-0005"
 title: "接入远程 Git Provider 与 PR/Merge 闭环"
 kind: "feature"
 status: "triaged"
 priority: "medium"
+
+problem:
+  observed: "当前 Git Effect 只在本地仓库创建 Candidate、双父 Merge 和 ref CAS；没有远程 Provider Push、PR、Review 状态或 Merge API 回执。"
+  expected: "可替换 SCM Adapter 以稳定幂等键执行并对账 Push/PR/Merge，网络未知结果先查询远端事实，Base 漂移后重新验证。"
+  impact: "Moye 尚不能在 GitHub/GitLab 等远程协作流程中形成可审计的 PR 到 Merge 闭环，也不能安全处理远端超时和重复投递。"
+  evidence_refs:
+    - "TASK-0041"
+    - "framework-product-boundary"
+    - "BL-0005"
 
 source_refs:
   - task-spec-document-closure-brainstorm

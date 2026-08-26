@@ -47,11 +47,19 @@ const RESOLUTION_KEYS = ["task_refs", "duplicate_of", "reason"] as const;
 export async function loadBacklogSyncBatch(
   directory: string,
   cwd = process.cwd(),
+  selectedIds?: readonly string[],
 ): Promise<BacklogSyncInput> {
   const absoluteDirectory = path.resolve(cwd, directory);
+  const requested = selectedIds === undefined ? undefined : validateSelectedIds(selectedIds);
   const entries = (await readdir(absoluteDirectory, { withFileTypes: true }))
     .filter((entry) => entry.isFile() && /^BL-[A-Z0-9-]+\.yaml$/.test(entry.name))
+    .filter((entry) => requested === undefined || requested.has(entry.name.slice(0, -".yaml".length)))
     .sort((left, right) => left.name.localeCompare(right.name));
+  if (requested !== undefined) {
+    const found = new Set(entries.map((entry) => entry.name.slice(0, -".yaml".length)));
+    const missing = [...requested].filter((id) => !found.has(id));
+    if (missing.length > 0) throw validationError(`Selected backlog ids not found: ${missing.join(", ")}`);
+  }
   const items = await Promise.all(entries.map(async (entry) => {
     const absolutePath = path.join(absoluteDirectory, entry.name);
     const [raw, metadata] = await Promise.all([
@@ -78,6 +86,15 @@ export async function loadBacklogSyncBatch(
   const missingPolicy = "PRESERVE" as const;
   const batchId = backlogBatchId(items, missingPolicy);
   return { batchId, missingPolicy, items };
+}
+
+function validateSelectedIds(ids: readonly string[]): Set<string> {
+  if (ids.length === 0) throw validationError("Selected backlog ids must not be empty");
+  const invalid = ids.filter((id) => !/^BL-[A-Z0-9][A-Z0-9-]{0,63}$/.test(id));
+  if (invalid.length > 0) throw validationError(`Invalid selected backlog ids: ${invalid.join(", ")}`);
+  const duplicates = duplicateIds(ids);
+  if (duplicates.length > 0) throw validationError(`Duplicate selected backlog ids: ${duplicates.join(", ")}`);
+  return new Set(ids);
 }
 
 export function convertBacklogDocument(

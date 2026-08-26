@@ -10,7 +10,7 @@
 | 入口 | 职责 | 状态所有权 |
 |---|---|---|
 | `src/index.ts` | 同时启动 Restate HTTP/2 Endpoint 和 Board HTTP Server | 无 |
-| `src/cli/index.ts` | backlog sync、validate、route、TaskAuthority-aware create/status/wait、close、Bootstrap/Seal recovery、seal start/status/stage/submit、archive、reconcile-task、graph | 只提交/查询或解析显式 Seal/Recovery/Reconcile；`seal-start` 在发送前复用 Intent 校验器，`seal-submit` 本地验证 Commit 对象，`seal-stage` 只准备 Git package |
+| `src/cli/index.ts` | backlog sync（可显式选择 canonical `--id` 子集）、validate、route、TaskAuthority-aware create/status/wait、close、Bootstrap/Seal recovery、seal start/status/stage/submit、archive、reconcile-task、graph | 只提交/查询或解析显式 Seal/Recovery/Reconcile；`seal-start` 在发送前复用 Intent 校验器，`seal-submit` 本地验证 Commit 对象，`seal-stage` 只准备 Git package |
 | `src/framework/project-manifest.ts`、`client.ts`、`doctor.ts`、`plugin-sdk.ts`、`builtin-adapters.ts`、`documentation-policy.ts`、`schemas/project.schema.json` | `.moye/project.yaml` v1、迁移、消费级 Task request/status/watch、Plugin API v1、七类内建 bridge、四种 Candidate-bound Docs Policy、Git/target/Artifact preflight 与 doctor | Client 单次提交 owning Workflow；Plugin/Docs Policy 只返回内容寻址 Result/Evidence，不暴露或写 Projection，不保存 Runtime token/内部 Workflow Input；默认不采集 Transcript |
 | `scripts/core_v2_full_acceptance.ts`、`scripts/core_v2_*_acceptance.ts`、`src/acceptance/core-v2-matrix-*`、`src/acceptance/core-v2-session-evidence.ts`、`src/acceptance/restate-deployment-handoff.ts` | 16 场景真实产品矩阵、受控故障/恢复、默认 Role Session Evidence、显式 suite/scenario Manifest、实时交叉审计和临时 Deployment 安全回切 | 不扫描目录挑选结果；补跑必须显式绑定原场景根，re-audit 不提交 Workflow 或重跑副作用；临时 Service 退出前 PATCH 最新 Deployment URI 到仍运行的 predecessor |
 | `scripts/session_timeline_acceptance.ts` | 附着显式真实 Core v2 Task，逐 Role 验证受管 Session metadata、canonical Timeline 分页、独立 execution stream 与 stderr | 只读；不提交 Workflow、不运行 Agent、不扫描 Provider Home 或验收目录 |
@@ -123,7 +123,7 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 - `agent/runner.ts` 规范请求、验证 Worktree/Git common dir、运行中 JSONL Stream 与最终 Artifact；`codex-exec.ts` 以 `workspace-write + --add-dir <validated-git-common-dir>` 允许真实 commit，`claude-print.ts` 维持自己的 argv-only 边界；两者只把 stdout chunk 交给行边界写入器，不推进 Task 状态；Claude 原生 OTel/内容采集只注入当前子进程，默认关闭；
 - `product/live-task.ts` 只接受 `CODEX_EXEC | CLAUDE_PRINT`，在进入 Runtime 前拒绝 Fake、越界仓库、非 Git 仓库和冲突 ref；它创建受管 Task Package、Artifact Root、Worktree Root 与冻结 Envelope；
 - `review/live-review.ts` 使用与 Implementation 独立的 CLI Session 和只读权限生成结构化 Verdict/Finding；Intent 已存在而 Manifest 缺失时返回 UNKNOWN，不盲目重跑；
-- `backlog/document-sync.ts` 严格区分 v1 兼容读取与 v2 `problem` 合同，先验证全部 YAML，再形成单个 ProjectBoard 批次；`domain/backlog.ts` 让 Projection 保存 schema、问题、影响范围和验收方向，Runtime 新建只接受完整 v2；
+- `backlog/document-sync.ts` 严格区分 v1 兼容读取与 v2 `problem` 合同；可对调用方显式 ID 子集做语法、重复、缺失与全文档验证，再形成单个 ProjectBoard 批次并保持 canonical source path；`domain/backlog.ts` 让 Projection 保存 schema、问题、影响范围和验收方向，Runtime 新建只接受完整 v2；
 - `archive/file-archive.ts` 只依赖领域输入和文件系统；`bootstrap-closure.ts` 以同一基线检查支持 CLI/Workflow Preflight、最终 Gate、成功/失败 Artifact 和稳定写入；
 - `archive/sealed-result-commit.ts` 从冻结 Base 和 Active manifest 生成内容寻址 Seal Intent；同一只读校验器由 CLI 派发前和 Workflow 第一条 durable command 调用。`seal-stage` 在移动 package 前即要求精确 Accepted Verification；普通 Gate 再校验唯一父提交、HEAD、clean worktree、Manifest/Intent、Accepted Verification、Docs Impact/changed paths。历史 Recovery Gate 额外要求 Result 是 HEAD 祖先，并在该 Commit 的 detached worktree 内验证当时的 Graph Revision，避免拿新图谱误判旧证据；
 - `git/workspace-effect.ts` 通过 argv-only Git Adapter 管理隔离 Worktree；写操作前后都以 Branch、Worktree HEAD 和 ancestry 对账，Checkpoint 固定 Commit 与 Tree Object ID；
