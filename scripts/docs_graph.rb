@@ -27,7 +27,8 @@ def markdown_files
   roots = [File.join(ROOT, "README.md"), File.join(ROOT, "AGENTS.md")]
   docs = Dir[File.join(ROOT, "docs", "**", "*.md")]
   agent_skills = Dir[File.join(ROOT, ".agents", "skills", "**", "*.md")]
-  (roots + docs + agent_skills).select { |path| File.file?(path) }.map { |path| Pathname.new(path).relative_path_from(Pathname.new(ROOT)).to_s }.sort
+  example_guides = Dir[File.join(ROOT, "examples", "**", "README.md")]
+  (roots + docs + agent_skills + example_guides).select { |path| File.file?(path) }.map { |path| Pathname.new(path).relative_path_from(Pathname.new(ROOT)).to_s }.sort
 end
 
 def local_markdown_links(path)

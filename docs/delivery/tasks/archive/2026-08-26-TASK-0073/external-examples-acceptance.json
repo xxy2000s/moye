@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "taskId": "TASK-0073",
+  "tarball": "moye-0.1.0.tgz",
+  "initializedDigest": "sha256:c131044f39d4ffa3c0031e9616b14a333dfdc3cd424392457397d0176d7c425d",
+  "examples": [
+    { "example": "node-typescript", "projectId": "node-typescript-example", "manifestDigest": "sha256:1186605f031e8a47cebefdea32e3153274945eb17be88a29a15a1f50eb2cd3db", "documentationPolicy": "conventional", "testArgv": ["npm", "test"], "exitCode": 0, "stdoutDigest": "sha256:92be42b77fe7b1019bbaadd6fa24769b167c34ba5c6fb98282baa982d310bf47" },
+    { "example": "python", "projectId": "python-example", "manifestDigest": "sha256:833487ec3cb3b4f0828a105ea90b5dbd6b7a540e1cbb62f3b4f0637d388713c3", "documentationPolicy": "none", "testArgv": ["python3", "-m", "unittest", "discover", "-s", "tests"], "exitCode": 0, "stdoutDigest": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126" },
+    { "example": "minimal-git", "projectId": "minimal-git-example", "manifestDigest": "sha256:9c82ccbb7b00d0bbec0be094bba203bf094bb64d706125c61e83e6feb0050c0e", "documentationPolicy": "none", "testArgv": ["git", "diff", "--check", "HEAD"], "exitCode": 0, "stdoutDigest": "sha256:12ae32cb1ec02d01eda3581b127c1fee3b0dc53572ed6baf239721a03d82e126" }
+  ],
+  "evidenceDigest": "sha256:0418177439a3afdd30b3fe81ee9aae6cdbc19666859aa5479521f5da23c43827"
+}

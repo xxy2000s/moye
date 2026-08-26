@@ -1,0 +1,12 @@
+schemaVersion: 1
+project: { id: node-typescript-example }
+repository: { root: ., baseRef: HEAD, targetRef: refs/heads/main }
+workflow: { profile: core-v2, repairBudget: 1, replanBudget: 1 }
+agent: { runner: codex, captureTranscripts: none }
+tests:
+  - id: node-test
+    argv: [npm, test]
+    cwd: .
+documentation: { policy: conventional }
+artifacts: { root: .moye/artifacts }
+privacy: { capturePrompts: false }

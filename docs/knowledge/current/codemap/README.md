@@ -28,6 +28,7 @@
 | `src/domain/board.ts`、`src/board/server.ts`、`src/board/session-timeline.ts`、`public/index.html`、`public/app.js` | `/` 四列只读项目看板、Task Audit Page、状态机与 Execution Ledger；Board API 分离 execution stream、canonical normalized transcript、raw metadata 与 stderr，并只从 Projection 绑定的受管 Artifact 读取 | Workflow 发布精确运行元数据；Board 校验 allowlist/binding/digest，只读浏览，不扫描 Provider Home、不创建或推进 Task |
 | `Dockerfile`、`compose.yaml`、`src/runtime/**`、`scripts/runtime-{compose,backup}.ts` | 非 root Service 镜像、Service+Restate+registrar 编排、健康/就绪、双卷备份恢复和固定镜像升级/回滚 | Journal/Artifact 分卷持久化；默认 loopback；删除数据需要显式确认 |
 | `src/public/**`、`src/release/manifest.ts`、`scripts/release_{verify,snapshot_acceptance}.ts`、`tsconfig.package.json`、`.github/workflows/ci.yml` | 消费级 CLI 与三个 npm exports、最小发布编译闭包、Release Identity、clean-install/容器/SBOM dry-run 和 CI | exports 不暴露 Runtime 状态写入口；release verify 要求 clean commit；外部 publish 仍由 W10 Effect 管理 |
+| `examples/**`、`scripts/external_examples_acceptance.ts` | Node/TypeScript、Python、Minimal Git 三个独立消费 fixture 与 tarball-only smoke | 不 import Moye 源码/Document Graph；完整 Runtime 场景由 W09 执行 |
 
 ## 模块图
 
@@ -58,6 +59,7 @@ src/
 └── index.ts           进程入口
 
 public/                无框架 Board UI
+examples/              只消费发布包的 Node、Python 与通用 Git 外部项目模板
 Dockerfile             可分发的非 root Moye Service 镜像
 compose.yaml           Service+Restate+registrar 双卷 Runtime 与可选 Phoenix trace Profile
 tests/

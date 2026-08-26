@@ -89,7 +89,7 @@ Context Plan
 
 ### 4.1 存储
 
-`docs/graph.yaml` 是统一机器可读来源，替代原来的平面文档清单。登记范围包含根入口、`docs/**/*.md` 和项目级 `.agents/skills/**/*.md`，因此操作 Skill 也进入同一依赖图，而不是藏在文档体系之外。
+`docs/graph.yaml` 是统一机器可读来源，替代原来的平面文档清单。登记范围包含根入口、`docs/**/*.md`、项目级 `.agents/skills/**/*.md`，以及作为公开产品资料的 `examples/**/README.md`；因此操作 Skill 和外部项目指南都进入同一依赖图，而不是藏在文档体系之外。
 
 图谱包含：
 

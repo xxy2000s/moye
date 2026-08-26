@@ -61,4 +61,6 @@ Runtime Distribution 已由 `Dockerfile + compose.yaml` 实现：固定 Node/Age
 
 Package Pipeline 使用 `tsconfig.package.json` 从四个公共入口只编译最小传递闭包；npm `exports` 是可导入边界，tarball 审计同时拒绝 Workflow handler、Projection reducer、内部文档、测试与 Runtime 数据。`release:verify` 只接受 clean Git source，通过真实 `npm pack`、隔离 install、CLI/Schema/exports、Docker build、CycloneDX SBOM 和 canonical Release Manifest 绑定候选版本。开发中的 Task 使用独立 committed snapshot 运行同一流水线，避免把脏 HEAD 记录成 Release Commit。
 
-包流水线已由 TASK-0072 验收；示例、外部产品矩阵与正式发布仍由 TASK-0073～TASK-0075 顺序实现。在这些证据完成前，Moye 仍不能声明 Framework MVP 已公开发布。
+`examples/node-typescript | python | minimal-git` 是可脱离仓库复制的消费 fixture：只包含项目相对 Manifest、业务代码/测试与发布 CLI 操作，不 import Moye source 或 Moye Document Graph。统一验收只从 W07 tarball 安装 CLI/包并在三个隔离 Git repo 执行 init、validate 和真实测试；完整 Agent/Repair/Reconcile/upgrade 场景属于 W09 产品矩阵。
+
+包流水线与三个外部示例已由 TASK-0072～0073 验收；外部产品矩阵与正式发布仍由 TASK-0074～TASK-0075 顺序实现。在这些证据完成前，Moye 仍不能声明 Framework MVP 已公开发布。

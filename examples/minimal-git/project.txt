@@ -1,0 +1,3 @@
+Moye minimal Git project
+
+This fixture intentionally has no language runtime or package manager.

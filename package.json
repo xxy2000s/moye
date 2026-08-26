@@ -79,6 +79,7 @@
     "acceptance:framework:runtime": "tsx scripts/runtime_distribution_acceptance.ts",
     "release:verify": "tsx scripts/release_verify.ts",
     "acceptance:framework:release": "tsx scripts/release_snapshot_acceptance.ts",
+    "acceptance:framework:examples": "tsx scripts/external_examples_acceptance.ts",
     "trace:up": "tsx scripts/trace-compose.ts up",
     "trace:down": "tsx scripts/trace-compose.ts down",
     "trace:status": "tsx scripts/trace-compose.ts status",

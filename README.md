@@ -116,6 +116,8 @@ npm run acceptance:agent-sessions
 npm run acceptance:framework:plugins
 # 真实外部 Git 项目、真实多 Agent 与 policy:none 的确定性 Docs Evidence
 npm run acceptance:framework:docs
+# 从 W07 RC tarball 安装并验证 Node/TypeScript、Python、Minimal Git 三个独立示例
+npm run acceptance:framework:examples
 ```
 
 Core v2 四个 suite 和统一 matrix 入口不会使用 Fake/Mock/Scenario Adapter：每个场景创建新的持久化运行目录和独立 Workflow key，调用真实 Codex、隔离 Git、Trusted Runner、适用时的双父 Merge、Closure 和 Archive，并从 Projection、Trace、Role Events、Manifest 与 Git DAG 生成 Evidence Summary。故障、恢复和预算命令要求 Service 显式设置 `MOYE_ACCEPTANCE_FAULT_INJECTION=enabled`；普通 Service 会在 TaskAuthority claim 前拒绝 `acceptanceControl` 或 `recoveryControl`。审计命令不扫描目录挑选“最新成功”，只接受显式 Manifest，并重新查询 Restate、TaskAuthority、Board、Git 对象、Artifact 摘要和 Document Graph；任何缺失、重复或实时漂移都会非零退出。这些命令消耗真实模型额度，不能用单元测试结果替代。

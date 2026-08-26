@@ -1,0 +1,12 @@
+schemaVersion: 1
+project: { id: python-example }
+repository: { root: ., baseRef: HEAD, targetRef: refs/heads/main }
+workflow: { profile: core-v2, repairBudget: 1, replanBudget: 1 }
+agent: { runner: codex, captureTranscripts: none }
+tests:
+  - id: python-unittest
+    argv: [python3, -m, unittest, discover, -s, tests]
+    cwd: .
+documentation: { policy: none }
+artifacts: { root: .moye/artifacts }
+privacy: { capturePrompts: false }

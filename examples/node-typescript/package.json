@@ -1,0 +1,12 @@
+{
+  "name": "moye-example-node-typescript",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-strip-types --test test/*.test.ts"
+  },
+  "devDependencies": {
+    "moye": "0.1.0"
+  }
+}

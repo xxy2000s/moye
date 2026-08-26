@@ -272,6 +272,38 @@ documents:
     authority: operational-procedure
     read_when: [release, operations-change]
 
+  - id: external-examples-index
+    path: examples/README.md
+    type: index
+    status: verified
+    scope: framework-productization
+    authority: user-guide
+    read_when: [framework-consumption, release]
+
+  - id: external-example-node-typescript
+    path: examples/node-typescript/README.md
+    type: user-guide
+    status: verified
+    scope: framework-productization
+    authority: user-guide
+    read_when: [framework-consumption]
+
+  - id: external-example-python
+    path: examples/python/README.md
+    type: user-guide
+    status: verified
+    scope: framework-productization
+    authority: user-guide
+    read_when: [framework-consumption]
+
+  - id: external-example-minimal-git
+    path: examples/minimal-git/README.md
+    type: user-guide
+    status: verified
+    scope: framework-productization
+    authority: user-guide
+    read_when: [framework-consumption]
+
   - id: codemap
     path: docs/knowledge/current/codemap/README.md
     type: codemap
@@ -5263,6 +5295,54 @@ documents:
     authority: task-evidence
     read_when: [task-close, task-archive]
 
+  - id: task-0073-manifest
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0073/task.yaml
+    type: task-manifest
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close, task-archive]
+
+  - id: task-0073-spec
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0073/spec.md
+    type: task-spec
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0073-design
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0073/design.md
+    type: task-design
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0073-plan
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0073/plan.md
+    type: task-plan
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0073-verification
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0073/verification.md
+    type: verification
+    status: archived
+    scope: framework-productization
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0073-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0073/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: framework-productization
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
 relations:
   - from: root-readme
     to: docs-index
@@ -5371,6 +5451,26 @@ relations:
   - from: release-pipeline-runbook
     to: framework-product-boundary
     type: operates
+
+  - from: root-readme
+    to: external-examples-index
+    type: routes_to
+
+  - from: external-examples-index
+    to: external-example-node-typescript
+    type: indexes
+
+  - from: external-examples-index
+    to: external-example-python
+    type: indexes
+
+  - from: external-examples-index
+    to: external-example-minimal-git
+    type: indexes
+
+  - from: external-examples-index
+    to: framework-product-boundary
+    type: implements_slice_of
 
   - from: meta-index
     to: document-control-plane
@@ -9246,6 +9346,42 @@ relations:
 
   - from: task-0072-docs-impact
     to: task-0072-manifest
+    type: reports_on
+
+  - from: milestone-2-framework-release
+    to: task-0073-manifest
+    type: schedules
+
+  - from: archived-tasks-index
+    to: task-0073-manifest
+    type: indexes
+
+  - from: task-0073-spec
+    to: bl-0068-framework-productization
+    type: consumes
+
+  - from: task-0073-spec
+    to: task-0073-manifest
+    type: belongs_to
+
+  - from: task-0073-design
+    to: task-0073-spec
+    type: refines
+
+  - from: task-0073-design
+    to: framework-product-boundary
+    type: implements_slice_of
+
+  - from: task-0073-plan
+    to: task-0073-manifest
+    type: belongs_to
+
+  - from: task-0073-verification
+    to: task-0073-manifest
+    type: verifies
+
+  - from: task-0073-docs-impact
+    to: task-0073-manifest
     type: reports_on
 
 routing:

@@ -1,0 +1,98 @@
+schema_version: 1
+task_id: TASK-0073
+graph_revision: 123
+intents: [m2-external-example-projects]
+changed_paths:
+  - examples/README.md
+  - examples/node-typescript/README.md
+  - examples/node-typescript/package.json
+  - examples/node-typescript/src/greeting.ts
+  - examples/node-typescript/test/greeting.test.ts
+  - examples/node-typescript/.moye/project.yaml
+  - examples/python/README.md
+  - examples/python/src/calculator.py
+  - examples/python/tests/test_calculator.py
+  - examples/python/.moye/project.yaml
+  - examples/minimal-git/README.md
+  - examples/minimal-git/project.txt
+  - examples/minimal-git/.moye/project.yaml
+  - scripts/external_examples_acceptance.ts
+  - scripts/docs_graph.rb
+  - package.json
+  - README.md
+  - docs/knowledge/current/architecture/framework-product-boundary.md
+  - docs/knowledge/current/architecture/document-control-plane.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/delivery/backlog/BL-0068.yaml
+  - docs/delivery/milestones/m2-framework-release.md
+  - docs/delivery/tasks/README.md
+  - docs/delivery/tasks/archive/README.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0073/task.yaml
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0073/spec.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0073/design.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0073/plan.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0073/verification.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0073/docs-impact.yaml
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0073/external-examples-acceptance.json
+  - docs/graph.yaml
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - root-readme
+    - framework-product-boundary
+    - architecture-index
+    - tasks-index
+    - task-runtime-kernel
+    - external-examples-index
+    - external-example-node-typescript
+    - external-example-python
+    - external-example-minimal-git
+    - bl-0068-framework-productization
+    - backlog-index
+    - sources-index
+    - milestone-2-framework-release
+    - archived-tasks-index
+    - task-0073-manifest
+    - task-0073-spec
+    - task-0073-design
+    - task-0073-plan
+    - task-0073-verification
+    - task-0073-docs-impact
+  reviewed:
+    architecture-overview: { outcome: unchanged, reason: "外部示例消费公共 API，不改变 Runtime 总体边界。" }
+    moye-task-control-skill: { outcome: unchanged, reason: "TASK-0073 继续遵守 Full、Route、Impact 和 Seal。" }
+    external-examples-index: { outcome: updated, reason: "登记三个可复制示例、验收入口和 W09 边界。" }
+    restate-poc-architecture: { outcome: unchanged, reason: "示例不实现或修改 Restate handler。" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "示例 README 作为公开 user-guide 注册，不改变生命周期角色。" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "继续使用唯一 Result Commit。" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "示例不改变 UNKNOWN/Retry/Recovery 语义。" }
+    task-0013-manifest: { outcome: unchanged, reason: "不修改 Core Control。" }
+    task-0014-manifest: { outcome: unchanged, reason: "不修改 Role 协议。" }
+    task-0015-manifest: { outcome: unchanged, reason: "不修改 Review/Finding。" }
+    task-0016-manifest: { outcome: unchanged, reason: "不修改预算。" }
+    task-0017-manifest: { outcome: unchanged, reason: "不修改 Observer/Docs。" }
+    task-0018-manifest: { outcome: unchanged, reason: "不修改 Closure。" }
+    task-0019-manifest: { outcome: unchanged, reason: "示例仅消费新的公共 CLI。" }
+    task-0020-manifest: { outcome: unchanged, reason: "不修改 Board。" }
+    task-0021-manifest: { outcome: unchanged, reason: "不修改多角色历史。" }
+    task-0029-manifest: { outcome: unchanged, reason: "不修改 Bootstrap recovery。" }
+    task-0002-manifest: { outcome: unchanged, reason: "不修改 Backlog Projection。" }
+    task-0003-manifest: { outcome: unchanged, reason: "不修改编码协议。" }
+    task-0004-manifest: { outcome: unchanged, reason: "不修改 Git Effect。" }
+    task-0005-manifest: { outcome: unchanged, reason: "不修改 Agent Runner。" }
+    task-0006-manifest: { outcome: unchanged, reason: "不修改 Coding Workflow。" }
+    task-0007-manifest: { outcome: unchanged, reason: "不修改故障矩阵历史。" }
+    task-0001-manifest: { outcome: unchanged, reason: "不修改 Restate PoC。" }
+    task-0049r1-manifest: { outcome: unchanged, reason: "复用 Seal preflight。" }
+    task-0056-manifest: { outcome: unchanged, reason: "本 Task 保持 Full profile。" }
+    task-0061r1-design: { outcome: unchanged, reason: "示例不改变 Workflow command replay。" }
+    task-0062-design: { outcome: unchanged, reason: "示例默认不采集 Session。" }
+    task-0063-design: { outcome: unchanged, reason: "页面下钻复用既有 UX。" }
+    adr-0008-framework-release-boundary: { outcome: unchanged, reason: "示例只消费 ADR 冻结的 umbrella package。" }
+    task-0070-design: { outcome: unchanged, reason: "示例分别使用已实现的 conventional/none policy。" }
+    task-0071-design: { outcome: unchanged, reason: "示例运行说明复用 W06 Runtime。" }
+    task-0072-design: { outcome: unchanged, reason: "验收消费 W07 tarball，不修改 Release Identity。" }
+    task-0073-design: { outcome: updated, reason: "记录 standalone fixture 与 W09 产品矩阵分工。" }
