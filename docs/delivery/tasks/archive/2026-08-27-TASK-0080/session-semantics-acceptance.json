@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "taskId": "TASK-0080",
+  "capturedFrom": "http://127.0.0.1:3000/api/tasks/TASK-RCV-20260826114418-01-ROLE-RECOVERY/roles/sha256%3A0f7e26c3e614aefa95e9de29e91b1fccdb9db9e4c9f10f7d6440982967f0ec31/session",
+  "capturedAt": "2026-08-26T18:19:05.324Z",
+  "realHistoricalEvidence": {
+    "taskId": "TASK-RCV-20260826114418-01-ROLE-RECOVERY",
+    "runId": "sha256:0f7e26c3e614aefa95e9de29e91b1fccdb9db9e4c9f10f7d6440982967f0ec31",
+    "attemptId": "TASK-RCV-20260826114418-01-ROLE-RECOVERY.ARCHITECT.r1.g0",
+    "providerSessionId": "01a03de2-b60b-7371-9d85-4fddd823ff7c",
+    "receiptDigest": "sha256:7b69b895a1f043c5ed46fc653d69797d64c5e63b2a221e87dab90ae6684b2fb3",
+    "manifestDigest": "sha256:99576df390720f7793f85e1b7d530ae96b228ad0c4b289c1b8fb00a568634be8",
+    "normalizedDigest": "sha256:481dfdb89ee2e3c6a429ee06c922015b8d79f0089cbce288be66e01c558fa581",
+    "sourceDigest": "sha256:961505a7e297476e72268fe287a76da975918fdca34837584c32d06389788ba0",
+    "rawState": "PARTIAL",
+    "promptBinding": "UNVERIFIED",
+    "completeness": {
+      "prompt": "UNVERIFIED",
+      "messages": "COMPLETE",
+      "tools": "COMPLETE",
+      "timestamps": "COMPLETE",
+      "hierarchy": "COMPLETE",
+      "raw": "FULL",
+      "providerScope": "PROVIDER_EXPOSED"
+    },
+    "metrics": {
+      "sourceRecords": 32,
+      "normalizedEvents": 32,
+      "parseErrors": 0,
+      "unknownEvents": 0,
+      "droppedEvents": 0
+    },
+    "terminalMarkerState": "PRESENT",
+    "errors": [
+      {
+        "code": "UNSUPPORTED_FORMAT",
+        "scope": "PARSER",
+        "detailDigest": "sha256:0734b35eedf4002bb6f9dbd1163524b8652d6b879e8110a8f26ec2f73dfb6570"
+      }
+    ]
+  },
+  "rawEvidenceDigest": "sha256:fff5c71addaaa2d9a334c1529e38c5064e76ecb56e27da99f703fc657e9f5b3e",
+  "semantics": {
+    "schemaVersion": 1,
+    "availability": { "state": "AVAILABLE", "reason": "EVIDENCE_READABLE" },
+    "content": { "evaluated": true, "state": "COMPLETE", "reasons": [] },
+    "binding": { "state": "UNVERIFIED", "reason": "HISTORICAL_BINDING_UNVERIFIED" },
+    "limitation": { "state": "NONE", "reasons": [] }
+  }
+}

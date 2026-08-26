@@ -86,7 +86,17 @@ describe("TranscriptEnrichmentWorkflow on real Restate", () => {
     expect(registry).toMatchObject({ taskId, runId: completeRun.runId, receipt: { receiptDigest: result.receipt?.receiptDigest }, summary: { state: "PARTIAL", captureAttempts: 1 } });
     const metadata = await fetch(`${boardUrl()}/api/tasks/${taskId}/roles/${encodeURIComponent(completeRun.runId)}/session`);
     expect(metadata.status).toBe(200);
-    expect(await metadata.json()).toMatchObject({ state: "PARTIAL", provider: "CODEX", providerSessionId: completeRun.sessionId });
+    expect(await metadata.json()).toMatchObject({
+      state: "PARTIAL",
+      provider: "CODEX",
+      providerSessionId: completeRun.sessionId,
+      semantics: {
+        availability: { state: "AVAILABLE" },
+        content: { evaluated: true, state: "COMPLETE", reasons: [] },
+        binding: { state: "UNVERIFIED" },
+        limitation: { state: "NONE" },
+      },
+    });
     const timeline = await fetch(`${boardUrl()}/api/tasks/${taskId}/roles/${encodeURIComponent(completeRun.runId)}/timeline?limit=200`);
     expect(timeline.status).toBe(200);
     expect((await timeline.json() as { events: readonly { category: string }[] }).events.some((event) => event.category === "USER")).toBe(true);

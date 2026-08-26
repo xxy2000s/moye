@@ -150,6 +150,12 @@ describe("live Role Session Capture Effect", () => {
     const metadata = await readBoardSessionMetadataV1(resolver);
     expect(metadata).toMatchObject({
       state: "COMPLETE",
+      semantics: {
+        availability: { state: "AVAILABLE" },
+        content: { evaluated: true, state: "COMPLETE", reasons: [] },
+        binding: { state: "VERIFIED" },
+        limitation: { state: "NONE" },
+      },
       provider: "CODEX",
       providerSessionId: sessionId,
       source: { kind: "CODEX_ROLLOUT_JSONL" },
@@ -165,7 +171,10 @@ describe("live Role Session Capture Effect", () => {
     expect((await readBoardSessionStderrV1(resolver)).content).toBe("diagnostic stderr");
 
     const { authority: _authority, receipt: _receipt, summary: _summary, ...pendingEvidence } = evidence;
-    expect(await readBoardSessionMetadataV1({ ...resolver, evidence: pendingEvidence })).toMatchObject({ state: "PENDING" });
+    expect(await readBoardSessionMetadataV1({ ...resolver, evidence: pendingEvidence })).toMatchObject({
+      state: "PENDING",
+      semantics: { availability: { state: "PENDING" }, content: { evaluated: false }, binding: { state: "NOT_APPLICABLE" } },
+    });
     await expect(readBoardSessionTimelinePageV1({ ...resolver, evidence: pendingEvidence, cursor: 0, limit: 20 }))
       .rejects.toMatchObject({ code: "SESSION_CAPTURE_PENDING", status: 409 });
   });
@@ -242,7 +251,17 @@ describe("live Role Session Capture Effect", () => {
       recordDigest: sha("6"),
     };
     const resolver = { artifactRoots: [fixture.root], declaredArtifactRoot: fixture.taskArtifacts, taskId, run: role.manifest, historicalEvidence };
-    expect(await readBoardSessionMetadataV1(resolver)).toMatchObject({ state: "PARTIAL", provider: "CODEX", providerSessionId: sessionId });
+    expect(await readBoardSessionMetadataV1(resolver)).toMatchObject({
+      state: "PARTIAL",
+      provider: "CODEX",
+      providerSessionId: sessionId,
+      semantics: {
+        availability: { state: "AVAILABLE" },
+        content: { evaluated: true, state: "COMPLETE", reasons: [] },
+        binding: { state: "UNVERIFIED" },
+        limitation: { state: "NONE" },
+      },
+    });
     const timeline = await readBoardSessionTimelinePageV1({ ...resolver, cursor: 0, limit: 200 });
     expect(timeline.events.some((event) => event.category === "USER" && event.origin === "PROVIDER_USER")).toBe(true);
     expect((await readBoardSessionStderrV1(resolver)).content).toBe("historical stderr");

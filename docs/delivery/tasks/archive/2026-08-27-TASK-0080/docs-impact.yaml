@@ -1,0 +1,112 @@
+schema_version: 1
+task_id: TASK-0080
+graph_revision: 128
+intents: [session-evidence-four-dimensional-semantics]
+changed_paths:
+  - docs/delivery/tasks/archive/README.md
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0080/design.md
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0080/docs-impact.yaml
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0080/plan.md
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0080/session-semantics-acceptance.json
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0080/spec.md
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0080/task.yaml
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0080/verification.md
+  - docs/graph.yaml
+  - docs/knowledge/current/architecture/core-v2-agent-lifecycle.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/decisions/adr/0009-separate-session-content-from-binding-confidence.md
+  - docs/knowledge/decisions/adr/README.md
+  - src/board/session-timeline.ts
+  - src/domain/session-evidence-semantics.ts
+  - tests/e2e/transcript-enrichment-restate.test.ts
+  - tests/unit/session-capture-effect.test.ts
+  - tests/unit/session-evidence-semantics.test.ts
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - task-runtime-kernel
+    - restate-poc-architecture
+    - core-v2-agent-lifecycle
+    - architecture-index
+    - adr-0009-session-evidence-semantics
+    - adr-index
+    - archived-tasks-index
+    - tasks-index
+    - durable-runtime-pitfalls
+    - adr-0007-session-transcript-sidecar
+    - milestone-3-backlog-session-clarity
+    - bl-0083-session-evidence-presentation-semantics
+    - task-0062-design
+    - task-0076-spec
+    - task-0076-verification
+    - task-0080-design
+    - task-0080-docs-impact
+    - task-0080-plan
+    - task-0080-session-semantics-acceptance
+    - task-0080-spec
+    - task-0080-manifest
+    - task-0080-verification
+  reviewed:
+    milestone-3-backlog-session-clarity: { outcome: unchanged, reason: "TASK-0080 实现批准的 W04 范围；Milestone 状态与后续 W05/W06/W07 计划不在本提交改写。" }
+    local-restate-poc-runbook: { outcome: unchanged, reason: "未改变 canonical 50889/50890 Runtime 的启动、恢复或清理步骤。" }
+    moye-task-control-skill: { outcome: unchanged, reason: "按 Full profile 执行 Context Route、真实 Session/E2E、Docs Impact 与两阶段 Seal。" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "Task、Architecture、ADR 与 Evidence 继续按既有文档角色组织。" }
+    architecture-overview: { outcome: unchanged, reason: "四维语义是受管 Session Evidence 的只读派生，不改变 Task-centric 系统边界。" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "继续使用 canonical Restate；未改变 Runtime 选型。" }
+    adr-0005-core-v2-agent-model: { outcome: unchanged, reason: "不改变 5+1 Agent 角色、权限或推进关系。" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "TASK-0080 继续使用两阶段 Seal 和唯一 Result Commit。" }
+    core-v2-five-plus-one-agent-requirements: { outcome: not_applicable, reason: "本次只改变 Session Evidence 读取语义，不重新消费早期角色 brainstorm。" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "不改变 Task、Worktree、Git 或 Archive 收敛。" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "不改变 Core Closure 或多角色流水线。" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "不新增外部副作用、重试或 Reconcile 风险。" }
+    task-0013-manifest: { outcome: unchanged, reason: "Core reducer 与状态所有权不变。" }
+    task-0014-manifest: { outcome: unchanged, reason: "Attempt 与执行接管协议不变。" }
+    task-0015-manifest: { outcome: unchanged, reason: "Review/Finding 生命周期不变。" }
+    task-0016-manifest: { outcome: unchanged, reason: "Retry、Repair 与 Replan 语义不变。" }
+    task-0017-manifest: { outcome: unchanged, reason: "Observer、Knowledge 与 Docs Gate 不变。" }
+    task-0018-manifest: { outcome: unchanged, reason: "Closure 语义不变。" }
+    task-0019-manifest: { outcome: unchanged, reason: "Coding 产品流程不变。" }
+    task-0020-manifest: { outcome: unchanged, reason: "ProjectBoard 仍是只读查询投影。" }
+    task-0021-manifest: { outcome: unchanged, reason: "Core v2 产品闭环不变。" }
+    task-0028-manifest: { outcome: unchanged, reason: "不修改历史失败 Task 或 Projection。" }
+    task-0029-manifest: { outcome: unchanged, reason: "Bootstrap 失败收敛协议不变。" }
+    task-0030-manifest: { outcome: unchanged, reason: "Core v2 架构与 Seal 边界不变。" }
+    task-0031-manifest: { outcome: unchanged, reason: "Lifecycle Artifact Gate 不变。" }
+    task-0032-manifest: { outcome: unchanged, reason: "Role Runtime v2 执行协议不变。" }
+    task-0033-manifest: { outcome: unchanged, reason: "Architect/Design Review 与 Revision 规则不变。" }
+    task-0034-manifest: { outcome: unchanged, reason: "Implementation/Repair Checkpoint 不变。" }
+    task-0035-manifest: { outcome: unchanged, reason: "Documentation Agent 与 Docs Gate 不变。" }
+    task-0036-manifest: { outcome: unchanged, reason: "Trusted Runner 与 Test Verification 不变。" }
+    task-0037-manifest: { outcome: unchanged, reason: "Final Review 与 Verification Gate 不变。" }
+    task-0038-manifest: { outcome: unchanged, reason: "Observer/Knowledge 旁路不变。" }
+    task-0039-manifest: { outcome: unchanged, reason: "Core v2 Workflow 主流程不变。" }
+    task-0040-manifest: { outcome: unchanged, reason: "失败 Closure/Archive 历史不变。" }
+    task-0041-manifest: { outcome: unchanged, reason: "Git Merge 与 UNKNOWN 对账不变。" }
+    task-0042-manifest: { outcome: unchanged, reason: "成功 Closure/Archive 与 successor 不变。" }
+    task-0043-manifest: { outcome: unchanged, reason: "真实 Agent happy/repair/replan 矩阵不变。" }
+    task-0044-manifest: { outcome: unchanged, reason: "Test/Role/Git UNKNOWN 恢复矩阵不变。" }
+    task-0045-manifest: { outcome: unchanged, reason: "预算与 stale fencing 不变。" }
+    task-0046-manifest: { outcome: unchanged, reason: "Board Runtime 状态与历史筛选不变。" }
+    task-0003-manifest: { outcome: unchanged, reason: "TaskEnvelope/Attempt 协议不变。" }
+    task-0004-manifest: { outcome: unchanged, reason: "Git/Worktree Effect 不变。" }
+    task-0005-manifest: { outcome: unchanged, reason: "Agent Runner 不变。" }
+    task-0006-manifest: { outcome: unchanged, reason: "Coding Workflow/Gate/Merge 不变。" }
+    task-0007-manifest: { outcome: unchanged, reason: "恢复 Trace 不变。" }
+    task-0008-manifest: { outcome: unchanged, reason: "Demo 边界不变。" }
+    task-0009-manifest: { outcome: unchanged, reason: "Telemetry 合同不变。" }
+    task-0001-manifest: { outcome: unchanged, reason: "Task/Archive/Board 聚合边界不变。" }
+    task-0002-manifest: { outcome: unchanged, reason: "Backlog 与 ProjectBoard 文档同步边界不变。" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "沿用 TypeScript 技术栈。" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "不修改 OTLP 或 Phoenix。" }
+    task-0049r1-manifest: { outcome: unchanged, reason: "Seal preflight 与 append-only 历史原则不变。" }
+    task-0056-manifest: { outcome: unchanged, reason: "TASK-0080 维持 Full profile，不改变执行档位合同。" }
+    adr-0007-session-transcript-sidecar: { outcome: unchanged, reason: "写入侧 Sidecar v1 不变；新 ADR-0009 仅补充确定性读取语义。" }
+    task-0061r1-design: { outcome: unchanged, reason: "不改变 replay-sensitive Core command 顺序。" }
+    task-0062-design: { outcome: unchanged, reason: "受管 resolver 与四端点边界仍有效；metadata 只增加统一派生字段。" }
+    task-0063-design: { outcome: unchanged, reason: "本 Task 不改 Session UI；展示由 TASK-0081 执行。" }
+    task-0076-design: { outcome: unchanged, reason: "历史 append-only enrichment 与 Deployment handoff 不变。" }
+    task-0077-design: { outcome: unchanged, reason: "Backlog v2 合同与同步投影不受 Session 语义影响。" }
+    task-0080-design: { outcome: updated, reason: "冻结四维语义、兼容 sentinel 与不持久化边界。" }

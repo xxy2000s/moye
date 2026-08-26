@@ -15,6 +15,10 @@ import {
   type SessionTranscriptManifestV1,
   type TranscriptTerminalStateV1,
 } from "../domain/session-transcript.js";
+import {
+  deriveSessionEvidenceSemanticsV1,
+  type SessionEvidenceSemanticsV1,
+} from "../domain/session-evidence-semantics.js";
 import type { CoreV2SessionEvidenceRecordV1 } from "../restate/core-v2-services.js";
 import type { HistoricalSessionEvidenceRecordV1 } from "../restate/transcript-enrichment-services.js";
 
@@ -43,6 +47,7 @@ export interface BoardSessionMetadataV1 {
   readonly provider?: "CODEX" | "CLAUDE";
   readonly providerSessionId?: string;
   readonly state: BoardSessionState;
+  readonly semantics: SessionEvidenceSemanticsV1;
   readonly capturePolicy?: "full" | "redacted" | "digest_only";
   readonly importMode?: "LIVE" | "HISTORICAL_ENRICHMENT";
   readonly promptBinding?: "PROMPT_ENVELOPE_V1" | "PROVIDER_NATIVE_OBSERVED" | "UNVERIFIED";
@@ -122,6 +127,14 @@ export async function readBoardSessionMetadataV1(input: ResolverInput): Promise<
     ...(provider === undefined ? {} : { provider }),
     ...(providerSessionId === undefined ? {} : { providerSessionId }),
     state,
+    semantics: deriveSessionEvidenceSemanticsV1({
+      state,
+      ...(receipt === undefined ? {} : {
+        capturePolicy: receipt.capturePolicy,
+        promptBinding: receipt.promptBinding,
+        errors: receipt.errors,
+      }),
+    }),
     ...(receipt === undefined ? {} : { capturePolicy: receipt.capturePolicy }),
     ...(receipt === undefined ? {} : {
       importMode: receipt.importMode,
@@ -138,10 +151,20 @@ export async function readBoardSessionMetadataV1(input: ResolverInput): Promise<
     ...(receipt === undefined ? {} : { receiptDigest: receipt.receiptDigest }),
   };
   if (state !== "COMPLETE" && state !== "PARTIAL") return base;
+  if (receipt === undefined) throw integrity("Readable Session Evidence is missing its Receipt");
   const managed = await loadManaged(input);
   return {
     ...base,
     state: managed.manifest.captureState,
+    semantics: deriveSessionEvidenceSemanticsV1({
+      state: managed.manifest.captureState,
+      capturePolicy: receipt.capturePolicy,
+      promptBinding: receipt.promptBinding,
+      completeness: managed.manifest.completeness,
+      metrics: managed.manifest.metrics,
+      terminalMarkerState: managed.manifest.source.terminalMarkerState,
+      errors: managed.manifest.errors,
+    }),
     completeness: managed.manifest.completeness,
     metrics: managed.manifest.metrics,
     source: managed.manifest.source,

@@ -4407,6 +4407,14 @@ documents:
     authority: accepted-decision
     read_when: [architecture-change, public-api-change, release-planning, task-create]
 
+  - id: adr-0009-session-evidence-semantics
+    path: docs/knowledge/decisions/adr/0009-separate-session-content-from-binding-confidence.md
+    type: adr
+    status: accepted
+    scope: agent-session-evidence
+    authority: accepted-decision
+    read_when: [architecture-change, task-runtime-change, board-change, task-execution]
+
   - id: task-0058-manifest
     path: docs/delivery/tasks/archive/2026-08-25-TASK-0058/task.yaml
     type: task-manifest
@@ -5868,6 +5876,62 @@ documents:
     type: runtime-evidence
     status: archived
     scope: backlog-management
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0080-manifest
+    path: docs/delivery/tasks/archive/2026-08-27-TASK-0080/task.yaml
+    type: task-manifest
+    status: archived
+    scope: agent-session-evidence
+    authority: task-artifact
+    read_when: [task-execution, task-close, task-archive]
+
+  - id: task-0080-spec
+    path: docs/delivery/tasks/archive/2026-08-27-TASK-0080/spec.md
+    type: task-spec
+    status: archived
+    scope: agent-session-evidence
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0080-design
+    path: docs/delivery/tasks/archive/2026-08-27-TASK-0080/design.md
+    type: task-design
+    status: archived
+    scope: agent-session-evidence
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0080-plan
+    path: docs/delivery/tasks/archive/2026-08-27-TASK-0080/plan.md
+    type: task-plan
+    status: archived
+    scope: agent-session-evidence
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0080-verification
+    path: docs/delivery/tasks/archive/2026-08-27-TASK-0080/verification.md
+    type: verification
+    status: archived
+    scope: agent-session-evidence
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0080-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-27-TASK-0080/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: agent-session-evidence
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0080-session-semantics-acceptance
+    path: docs/delivery/tasks/archive/2026-08-27-TASK-0080/session-semantics-acceptance.json
+    type: runtime-evidence
+    status: archived
+    scope: agent-session-evidence
     authority: task-evidence
     read_when: [task-close, task-archive]
 
@@ -10358,6 +10422,66 @@ relations:
 
   - from: task-0079-browser-acceptance
     to: task-0079-manifest
+    type: evidence_for
+
+  - from: adr-index
+    to: adr-0009-session-evidence-semantics
+    type: indexes
+
+  - from: adr-0009-session-evidence-semantics
+    to: adr-0007-session-transcript-sidecar
+    type: extends
+
+  - from: adr-0009-session-evidence-semantics
+    to: core-v2-agent-lifecycle
+    type: governs
+
+  - from: tasks-index
+    to: task-0080-manifest
+    type: indexes
+
+  - from: archived-tasks-index
+    to: task-0080-manifest
+    type: indexes
+
+  - from: task-0080-spec
+    to: task-0080-manifest
+    type: belongs_to
+
+  - from: task-0080-spec
+    to: milestone-3-backlog-session-clarity
+    type: implements_slice_of
+
+  - from: task-0080-spec
+    to: bl-0083-session-evidence-presentation-semantics
+    type: consumes
+
+  - from: task-0080-design
+    to: task-0080-spec
+    type: refines
+
+  - from: task-0080-design
+    to: adr-0009-session-evidence-semantics
+    type: implements_slice_of
+
+  - from: task-0080-design
+    to: task-0076-design
+    type: depends_on
+
+  - from: task-0080-plan
+    to: task-0080-manifest
+    type: belongs_to
+
+  - from: task-0080-verification
+    to: task-0080-manifest
+    type: verifies
+
+  - from: task-0080-docs-impact
+    to: task-0080-manifest
+    type: reports_on
+
+  - from: task-0080-session-semantics-acceptance
+    to: task-0080-manifest
     type: evidence_for
 
 routing:
