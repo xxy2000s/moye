@@ -1,12 +1,12 @@
 # Milestone 3：Backlog 可读性、Agent Session 证据语义与项目文档脚手架
 
 > 文档类型：Delivery Plan  
-> 状态：Draft / Pending Owner Approval  
+> 状态：Approved / In Progress
 > 计划基线：2026-08-27  
 > Revision：1  
 > 需求来源：项目 Owner 关于 Backlog 现象表达、当前未完成条目补录和 BL-0083 纳入后续长时开发的直接要求；[BL-0083](../backlog/BL-0083.yaml)  
 > 前置 Milestone：[M1 Agent Session Evidence](./m1-agent-session-evidence.md)、[M2 Framework Release](./m2-framework-release.md)  
-> 执行边界：本文当前只供审批；批准前不创建实现 Task、不修改 Runtime Projection、不执行 Backlog Sync。
+> 执行边界：项目 Owner 于 2026-08-27 批准 Revision 1；按 W01～W07 连续执行，Runtime 只通过正式 Workflow/CLI 推进。
 
 ## 1. Milestone Outcome
 
@@ -273,6 +273,6 @@ M3 不包含：
 
 ## 14. 审批记录
 
-- 当前结论：等待项目 Owner 审批 Revision 1。
-- 拟议映射：TASK-0077～TASK-0083 对应 W01～W07；批准前这些 ID 不是 Active Task，也不代表 Runtime 已创建。
-- 批准后执行方式：无普通技术决策中断的连续长时运行，直至完成条件满足或出现明确外部阻塞。
+- 当前结论：项目 Owner 于 2026-08-27 批准 Revision 1；TASK-0077～TASK-0083 对应 W01～W07。
+- 执行方式：无普通技术决策中断的连续长时运行，直至完成条件满足或出现明确外部阻塞。
+- 运行记录：TASK-0077 已在 canonical Runtime 启动；首次误投旧 Runtime 的真实事件与非破坏清理见 [Incident](../../sources/incidents/2026-08-27-task-0077-seal-submitted-to-stale-runtime.md)。

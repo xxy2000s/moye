@@ -187,7 +187,18 @@ npm run cli -- backlog sync --dir docs/delivery/backlog --project moye
 - `close` 只提交指定 Bootstrap Workflow；已存在的重复 `run` 由 Restate 明确拒绝，使用 `status/wait` 查询既有结果；
 - `recover-bootstrap-failure` 只用于升级前已经 Invocation 失败、Projection 仍为无 Evidence `EXECUTING/NOT_READY` 的已知 Bootstrap 故障。输入必须包含原 Invocation ID 和预期错误码；命令创建 append-only successor，不能用于 Retry、成功任务或手工改写 Projection；
 - `archive` 和 `reconcile` 连接同一 keyed ArchiveWorkflow。
-- Core v2 仓库自举任务使用 `seal-start → seal-status → seal-stage → git commit → seal-submit → wait`。必须先落盘 Active Task package，再调用 `seal-start`；CLI 会在发送 Invocation 前以与 Workflow 相同的规则校验 HEAD/Base、物理 package、Manifest identity 和 Archive path。该本地 preflight 失败意味着 Runtime 尚未创建 Task，不要换端口重试或猜测 Board 状态。`seal-stage` 只按 Workflow 冻结的 Intent 准备归档 package；`seal-submit` 只解析 durable promise，Gate 会校验唯一父提交、HEAD、clean worktree、Archive package、Accepted Verification、Docs Impact 和实际 changed paths。成功后 Workflow 只更新 Runtime，不再写 Git：
+- Core v2 仓库自举任务使用 `seal-start → seal-status → seal-stage → git commit → seal-submit → wait`。必须先落盘 Active Task package，再调用 `seal-start`；CLI 会在发送 Invocation 前以与 Workflow 相同的规则校验 HEAD/Base、物理 package、Manifest identity 和 Archive path。该本地 preflight 失败意味着 Runtime 尚未创建 Task，不要换端口重试或猜测 Board 状态。`seal-stage` 只按 Workflow 冻结的 Intent 准备归档 package；`seal-submit` 只解析 durable promise，Gate 会校验唯一父提交、HEAD、clean worktree、Archive package、Accepted Verification、Docs Impact 和实际 changed paths。成功后 Workflow 只更新 Runtime，不再写 Git。
+
+本机存在多套 Runtime 时，不能依赖 `8080/9070` 默认值。先显式导出本轮 canonical 端点，并从 Board/TaskAuthority 核对一个已知前置 Task 和归档数量；Ingress、Admin、Board 三者不属于同一历史时停止，不提交 Workflow。停止旧 Runtime 应使用 `docker stop` 或等价的可恢复操作并保留数据卷；只有确认没有非终态 Invocation 引用后才停止旧 Service，禁止 purge Invocation、remove Deployment 或删除卷来“清理”历史。
+
+```bash
+export RESTATE_INGRESS_URL=http://127.0.0.1:50889
+export RESTATE_ADMIN_URL=http://127.0.0.1:50890
+npm run cli -- status TASK-KNOWN-PREDECESSOR
+curl --fail http://127.0.0.1:3000/readyz
+```
+
+标准 Seal 命令为：
 
 ```bash
 npm run cli -- seal-start --file /path/to/sealed-task.json

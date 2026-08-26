@@ -60,12 +60,21 @@ describe("Backlog document to ProjectBoard sync", () => {
 
   it("atomically syncs documents, preserves runtime-only data, and stays idempotent", async () => {
     const runtimeOnly: BacklogProjection = {
+      schemaVersion: 2,
       backlogId: "BL-RUNTIME-ONLY",
       title: "Runtime only",
       kind: "INVESTIGATION",
       status: "CAPTURED",
       priority: "LOW",
       sourceRefs: ["e2e"],
+      affectedAreas: ["backlog"],
+      acceptanceOutline: ["runtime item remains visible"],
+      problem: {
+        observed: "A runtime-only item exists",
+        expected: "Document sync preserves it",
+        impact: "Deleting it would lose runtime intake",
+        evidenceRefs: ["backlog-sync-e2e"],
+      },
       taskRefs: [],
       updatedAt: "2026-08-20T00:00:00.000Z",
     };

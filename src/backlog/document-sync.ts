@@ -20,6 +20,12 @@ interface DocumentBacklog {
   readonly kind: string;
   readonly status: string;
   readonly priority: string;
+  readonly problem?: {
+    readonly observed: string;
+    readonly expected: string;
+    readonly impact: string;
+    readonly evidence_refs: readonly string[];
+  };
   readonly source_refs: readonly string[];
   readonly affected_areas: readonly string[];
   readonly acceptance_outline: readonly string[];
@@ -30,10 +36,12 @@ interface DocumentBacklog {
   };
 }
 
-const TOP_LEVEL_KEYS = [
+const TOP_LEVEL_V1_KEYS = [
   "schema_version", "id", "title", "kind", "status", "priority", "source_refs",
   "affected_areas", "acceptance_outline", "resolution",
 ] as const;
+const TOP_LEVEL_V2_KEYS = [...TOP_LEVEL_V1_KEYS, "problem"] as const;
+const PROBLEM_KEYS = ["observed", "expected", "impact", "evidence_refs"] as const;
 const RESOLUTION_KEYS = ["task_refs", "duplicate_of", "reason"] as const;
 
 export async function loadBacklogSyncBatch(
@@ -79,9 +87,11 @@ export function convertBacklogDocument(
   updatedAt: string,
 ): BacklogProjection {
   if (!isRecord(input)) throw validationError(`${sourcePath}: document must be an object`);
-  rejectUnknownKeys(input, TOP_LEVEL_KEYS, sourcePath);
   const document = input as Partial<DocumentBacklog>;
-  if (document.schema_version !== 1) throw validationError(`${sourcePath}: schema_version must be 1`);
+  if (document.schema_version !== 1 && document.schema_version !== 2) {
+    throw validationError(`${sourcePath}: schema_version must be 1 or 2`);
+  }
+  rejectUnknownKeys(input, document.schema_version === 1 ? TOP_LEVEL_V1_KEYS : TOP_LEVEL_V2_KEYS, sourcePath);
   const backlogId = requiredString(document.id, sourcePath, "id");
   if (!/^BL-[A-Z0-9][A-Z0-9-]{0,63}$/.test(backlogId)) {
     throw validationError(`${sourcePath}: invalid backlog id ${backlogId}`);
@@ -91,8 +101,11 @@ export function convertBacklogDocument(
   const status = enumValue(document.status, BACKLOG_STATUSES, sourcePath, "status");
   const priority = enumValue(document.priority, BACKLOG_PRIORITIES, sourcePath, "priority");
   const sourceRefs = refArray(document.source_refs, sourcePath, "source_refs", /^[a-z0-9][a-z0-9-]*$/);
-  stringArray(document.affected_areas, sourcePath, "affected_areas");
-  stringArray(document.acceptance_outline, sourcePath, "acceptance_outline");
+  const affectedAreas = stringArray(document.affected_areas, sourcePath, "affected_areas");
+  const acceptanceOutline = stringArray(document.acceptance_outline, sourcePath, "acceptance_outline");
+  const problem = document.schema_version === 2
+    ? parseProblem(document.problem, sourcePath)
+    : undefined;
   if (!isRecord(document.resolution)) throw validationError(`${sourcePath}: resolution must be an object`);
   rejectUnknownKeys(document.resolution, RESOLUTION_KEYS, `${sourcePath}:resolution`);
   const taskRefs = refArray(document.resolution.task_refs, sourcePath, "resolution.task_refs", /^TASK-[A-Z0-9][A-Z0-9-]{0,63}$/);
@@ -102,15 +115,30 @@ export function convertBacklogDocument(
   if (Number.isNaN(Date.parse(updatedAt))) throw validationError(`${sourcePath}: invalid updatedAt`);
 
   return {
+    schemaVersion: document.schema_version,
     backlogId,
     title,
     kind,
     status,
     priority,
     sourceRefs,
+    affectedAreas,
+    acceptanceOutline,
+    ...(problem === undefined ? {} : { problem }),
     taskRefs,
     updatedAt,
     source: { kind: "DOCUMENT", path: sourcePath, digest: sourceDigest },
+  };
+}
+
+function parseProblem(value: unknown, sourcePath: string): NonNullable<BacklogProjection["problem"]> {
+  if (!isRecord(value)) throw validationError(`${sourcePath}: problem must be an object`);
+  rejectUnknownKeys(value, PROBLEM_KEYS, `${sourcePath}:problem`);
+  return {
+    observed: requiredString(value["observed"], sourcePath, "problem.observed"),
+    expected: requiredString(value["expected"], sourcePath, "problem.expected"),
+    impact: requiredString(value["impact"], sourcePath, "problem.impact"),
+    evidenceRefs: stringArray(value["evidence_refs"], sourcePath, "problem.evidence_refs"),
   };
 }
 

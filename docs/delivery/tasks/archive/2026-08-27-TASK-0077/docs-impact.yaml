@@ -1,0 +1,84 @@
+schema_version: 1
+task_id: TASK-0077
+graph_revision: 126
+intents: [backlog-problem-contract-v2]
+changed_paths:
+  - docs/delivery/README.md
+  - docs/delivery/milestones/m3-backlog-and-session-clarity.md
+  - docs/delivery/tasks/archive/README.md
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0077/design.md
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0077/docs-impact.yaml
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0077/plan.md
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0077/spec.md
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0077/task.yaml
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0077/verification.md
+  - docs/graph.yaml
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - docs/meta/templates/backlog-item.yaml
+  - docs/sources/incidents/2026-08-27-task-0077-seal-submitted-to-stale-runtime.md
+  - docs/sources/incidents/README.md
+  - src/backlog/document-sync.ts
+  - src/domain/backlog.ts
+  - tests/e2e/backlog-sync.test.ts
+  - tests/unit/backlog-sync.test.ts
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - task-runtime-kernel
+    - restate-poc-architecture
+    - durable-runtime-pitfalls
+    - local-restate-poc-runbook
+    - runbooks-index
+    - incident-task-0077-stale-runtime
+    - incidents-index
+    - delivery-index
+    - milestone-3-backlog-session-clarity
+    - archived-tasks-index
+    - tasks-index
+    - task-0077-design
+    - task-0077-docs-impact
+    - task-0077-plan
+    - task-0077-spec
+    - task-0077-manifest
+    - task-0077-verification
+  reviewed:
+    moye-task-control-skill: { outcome: unchanged, reason: "按 Full profile 执行 Context Route、真实 Restate E2E、Docs Impact 与两阶段 Seal。" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "Incident、Milestone、Task package 与 Current/Runbook 文档继续按既有角色组织。" }
+    architecture-overview: { outcome: unchanged, reason: "Backlog v2 扩充查询 Projection 字段，不改变 Task-centric 系统边界或状态所有者。" }
+    backlog-index: { outcome: unchanged, reason: "本 Task 不迁移或更新任何 Backlog 条目；v2 条目补录由 TASK-0078 执行。" }
+    pitfalls-index: { outcome: unchanged, reason: "Runtime 多实例误投已有真实 Incident 与 Runbook 规则，本次未形成新的通用 Pitfall 页面。" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "仍使用 Restate，未改变 PoC 选型。" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "两个 Runtime 使用同一冻结 Intent 和唯一 Result Commit，遵守两阶段 Seal。" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "未改变 Task 生命周期或 Worktree 收敛设想。" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "Backlog 合同不改变 Core 多角色关闭要求。" }
+    task-0013-manifest: { outcome: unchanged, reason: "不修改 Core reducer 或 ControlDecision。" }
+    task-0014-manifest: { outcome: unchanged, reason: "不修改 Role Attempt 协议。" }
+    task-0015-manifest: { outcome: unchanged, reason: "不修改 Review/Finding 生命周期。" }
+    task-0016-manifest: { outcome: unchanged, reason: "不修改 Retry/Repair/Replan。" }
+    task-0017-manifest: { outcome: unchanged, reason: "不修改 Observer、Knowledge 或 Docs Gate。" }
+    task-0018-manifest: { outcome: unchanged, reason: "不修改 Closure 语义。" }
+    task-0019-manifest: { outcome: unchanged, reason: "不修改 Coding 产品流程。" }
+    task-0020-manifest: { outcome: unchanged, reason: "ProjectBoard 仍为只读查询投影；同步仍由正式对象 handler 写入。" }
+    task-0021-manifest: { outcome: unchanged, reason: "不修改 Core v2 产品闭环。" }
+    task-0028-manifest: { outcome: unchanged, reason: "不修改历史失败 Task 或 Projection。" }
+    task-0029-manifest: { outcome: unchanged, reason: "不修改 Bootstrap 失败收敛协议。" }
+    task-0003-manifest: { outcome: unchanged, reason: "不修改 TaskEnvelope/Attempt 协议。" }
+    task-0004-manifest: { outcome: unchanged, reason: "不修改 Git/Worktree Effect。" }
+    task-0005-manifest: { outcome: unchanged, reason: "不修改 Agent Runner。" }
+    task-0006-manifest: { outcome: unchanged, reason: "不修改 Coding Workflow/Gate/Merge。" }
+    task-0007-manifest: { outcome: unchanged, reason: "不修改恢复 Trace。" }
+    task-0008-manifest: { outcome: unchanged, reason: "不修改 Demo。" }
+    task-0009-manifest: { outcome: unchanged, reason: "不修改 Telemetry。" }
+    task-0001-manifest: { outcome: unchanged, reason: "Task/Archive/Board 聚合边界不变。" }
+    task-0002-manifest: { outcome: unchanged, reason: "沿用正式 Backlog 文档批次同步与 ProjectBoard 所有权边界，版本化扩充合同。" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "继续使用既有 TypeScript 技术栈。" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "不修改可观测后端。" }
+    task-0049r1-manifest: { outcome: unchanged, reason: "Seal start preflight 与 append-only 历史原则不变。" }
+    task-0056-manifest: { outcome: unchanged, reason: "TASK-0077 维持 Full profile，不改变 lite/standard/full 分类。" }
+    task-0061r1-design: { outcome: unchanged, reason: "不修改 replay-sensitive Core command 顺序。" }
+    task-0062-design: { outcome: unchanged, reason: "不修改 Session Board resolver。" }
+    task-0063-design: { outcome: unchanged, reason: "不修改 Session UI。" }

@@ -123,7 +123,7 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 - `agent/runner.ts` 规范请求、验证 Worktree/Git common dir、运行中 JSONL Stream 与最终 Artifact；`codex-exec.ts` 以 `workspace-write + --add-dir <validated-git-common-dir>` 允许真实 commit，`claude-print.ts` 维持自己的 argv-only 边界；两者只把 stdout chunk 交给行边界写入器，不推进 Task 状态；Claude 原生 OTel/内容采集只注入当前子进程，默认关闭；
 - `product/live-task.ts` 只接受 `CODEX_EXEC | CLAUDE_PRINT`，在进入 Runtime 前拒绝 Fake、越界仓库、非 Git 仓库和冲突 ref；它创建受管 Task Package、Artifact Root、Worktree Root 与冻结 Envelope；
 - `review/live-review.ts` 使用与 Implementation 独立的 CLI Session 和只读权限生成结构化 Verdict/Finding；Intent 已存在而 Manifest 缺失时返回 UNKNOWN，不盲目重跑；
-- `backlog/document-sync.ts` 先验证全部 YAML，再形成单个 ProjectBoard 批次；
+- `backlog/document-sync.ts` 严格区分 v1 兼容读取与 v2 `problem` 合同，先验证全部 YAML，再形成单个 ProjectBoard 批次；`domain/backlog.ts` 让 Projection 保存 schema、问题、影响范围和验收方向，Runtime 新建只接受完整 v2；
 - `archive/file-archive.ts` 只依赖领域输入和文件系统；`bootstrap-closure.ts` 以同一基线检查支持 CLI/Workflow Preflight、最终 Gate、成功/失败 Artifact 和稳定写入；
 - `archive/sealed-result-commit.ts` 从冻结 Base 和 Active manifest 生成内容寻址 Seal Intent；同一只读校验器由 CLI 派发前和 Workflow 第一条 durable command 调用。`seal-stage` 在移动 package 前即要求精确 Accepted Verification；普通 Gate 再校验唯一父提交、HEAD、clean worktree、Manifest/Intent、Accepted Verification、Docs Impact/changed paths。历史 Recovery Gate 额外要求 Result 是 HEAD 祖先，并在该 Commit 的 detached worktree 内验证当时的 Graph Revision，避免拿新图谱误判旧证据；
 - `git/workspace-effect.ts` 通过 argv-only Git Adapter 管理隔离 Worktree；写操作前后都以 Branch、Worktree HEAD 和 ancestry 对账，Checkpoint 固定 Commit 与 Tree Object ID；
@@ -145,7 +145,7 @@ docs_graph.rb <── moye-task-control Skill / CLI route
 | `src/agent/runner.ts`、`live-role.ts`、`role-runner.ts`、`codex-exec.ts`、`claude-print.ts` | Agent/Role Run 重复调用、角色 Schema/Producer 篡改、未知结果盲重试、chunk 边界丢行、JSONL 伪造、敏感内容误采集、Raw API 目录逃逸、Shell 注入 | Agent/Role/Codex/Claude unit + 受控流/真实 Codex 多 Session Acceptance |
 | `src/archive/bootstrap-closure.ts`、`task-artifacts.ts` | 自举基线派发过晚、证据与提交不一致、失败 Artifact 重放、归档后引用失效 | Bootstrap unit + 旧服务升级/真实 Restate E2E |
 | `src/archive/sealed-result-commit.ts`、`src/restate/services.ts` | Commit 自引用、错误 Evidence、用当前 Graph 误判历史 Commit、successor 覆盖历史、Worker 等待时丢 Intent | Seal/recovery unit + 真实 Git/Restate SIGKILL/错误 Evidence E2E |
-| `src/backlog/document-sync.ts` | 坏条目部分写入、枚举漂移、无意义重复同步 | `tests/unit/backlog-sync.test.ts`、真实 Restate E2E |
+| `src/backlog/document-sync.ts`、`src/domain/backlog.ts` | v1/v2 漂移、problem 缺项、坏条目部分写入、摘要/所有权冲突、无意义重复同步 | `tests/unit/backlog-sync.test.ts`、真实 Restate E2E |
 | `src/domain/coding-task.ts` | Spec 漂移后沿用旧证据、Attempt 被复活、Shell 命令边界丢失 | `tests/unit/coding-task.test.ts` |
 | `src/domain/core-control.ts`、`core-observer.ts`、`core-docs-impact.ts`、`core-closure.ts`、`review-finding.ts` | 过期 Decision、跨 Revision Attempt 碰撞、恢复动作混淆、UNKNOWN 盲重试、Observer 越权、Trace 漏证据、失败 Docs Gate 误关闭、冲突 Closure、预算无限循环 | Core Control/Recovery/Observer/Docs/Closure、Role/Review unit |
 | `src/domain/lifecycle-artifact.ts` | 聊天文本冒充产物、旧 Revision/Commit 证据复用、Digest 篡改、依赖 ref 伪造、Test Report 漏项 | Lifecycle Artifact unit + 完整九类交接链 E2E |

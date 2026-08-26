@@ -31,13 +31,24 @@ export interface BacklogDocumentSource {
   readonly digest: string;
 }
 
+export interface BacklogProblem {
+  readonly observed: string;
+  readonly expected: string;
+  readonly impact: string;
+  readonly evidenceRefs: readonly string[];
+}
+
 export interface BacklogProjection {
+  readonly schemaVersion: 1 | 2;
   readonly backlogId: string;
   readonly title: string;
   readonly kind: (typeof BACKLOG_KINDS)[number];
   readonly status: BacklogStatus;
   readonly priority: (typeof BACKLOG_PRIORITIES)[number];
   readonly sourceRefs: readonly string[];
+  readonly affectedAreas: readonly string[];
+  readonly acceptanceOutline: readonly string[];
+  readonly problem?: BacklogProblem;
   readonly taskRefs: readonly string[];
   readonly updatedAt: string;
   readonly source?: BacklogDocumentSource;
@@ -161,6 +172,9 @@ export function upsertRuntimeBacklog(
 }
 
 export function assertBacklogProjection(item: BacklogProjection, requireDocumentSource: boolean): void {
+  if (item.schemaVersion !== 1 && item.schemaVersion !== 2) {
+    throw validationError(`Invalid backlog schema version: ${String(item.schemaVersion)}`);
+  }
   if (!/^BL-[A-Z0-9][A-Z0-9-]{0,63}$/.test(item.backlogId)) {
     throw validationError(`Invalid backlog id: ${item.backlogId}`);
   }
@@ -168,8 +182,14 @@ export function assertBacklogProjection(item: BacklogProjection, requireDocument
   if (!BACKLOG_KINDS.includes(item.kind)) throw validationError(`Invalid backlog kind: ${String(item.kind)}`);
   if (!BACKLOG_STATUSES.includes(item.status)) throw validationError(`Invalid backlog status: ${String(item.status)}`);
   if (!BACKLOG_PRIORITIES.includes(item.priority)) throw validationError(`Invalid backlog priority: ${String(item.priority)}`);
-  if (!stringList(item.sourceRefs) || !stringList(item.taskRefs)) {
+  if (!stringList(item.sourceRefs) || !stringList(item.affectedAreas) ||
+      !stringList(item.acceptanceOutline) || !stringList(item.taskRefs)) {
     throw validationError(`Backlog ${item.backlogId} refs must be non-empty strings when present`);
+  }
+  if (item.schemaVersion === 2) {
+    assertBacklogProblem(item.backlogId, item.problem);
+  } else if (item.problem !== undefined) {
+    throw validationError(`Backlog ${item.backlogId} schema v1 cannot contain problem`);
   }
   if (Number.isNaN(Date.parse(item.updatedAt))) throw validationError(`Invalid backlog updatedAt: ${item.updatedAt}`);
   if (requireDocumentSource) {
@@ -183,6 +203,16 @@ export function assertBacklogProjection(item: BacklogProjection, requireDocument
     }
   } else if (item.source !== undefined) {
     throw validationError("Document-owned backlog must be written through syncBacklog");
+  } else if (item.schemaVersion !== 2) {
+    throw validationError("Runtime-created backlog must use schema version 2");
+  }
+}
+
+function assertBacklogProblem(backlogId: string, problem: BacklogProblem | undefined): void {
+  if (problem === undefined || typeof problem !== "object" ||
+      !nonEmptyString(problem.observed) || !nonEmptyString(problem.expected) ||
+      !nonEmptyString(problem.impact) || !stringList(problem.evidenceRefs)) {
+    throw validationError(`Backlog ${backlogId} requires a complete v2 problem`);
   }
 }
 
@@ -197,6 +227,10 @@ function sameBacklog(left: BacklogProjection, right: BacklogProjection): boolean
 
 function stringList(value: readonly string[]): boolean {
   return Array.isArray(value) && value.every((item) => typeof item === "string" && item.trim().length > 0);
+}
+
+function nonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
 }
 
 function validationError(message: string): MoyeError {

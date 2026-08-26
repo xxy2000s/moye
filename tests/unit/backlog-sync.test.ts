@@ -24,14 +24,76 @@ describe("backlog document sync", () => {
     }, "docs/delivery/backlog/BL-0042.yaml", "a".repeat(64), "2026-08-20T00:00:00.000Z");
 
     expect(item).toMatchObject({
+      schemaVersion: 1,
       backlogId: "BL-0042",
       kind: "FEATURE",
       status: "READY",
       priority: "HIGH",
       sourceRefs: ["finding-42"],
+      affectedAreas: ["backlog"],
+      acceptanceOutline: ["sync succeeds"],
       taskRefs: ["TASK-0042"],
       source: { kind: "DOCUMENT", digest: "a".repeat(64) },
     });
+  });
+
+  it("strictly converts the v2 problem contract into the protected projection", () => {
+    const item = convertBacklogDocument({
+      schema_version: 2,
+      id: "BL-0042",
+      title: "Document backlog v2",
+      kind: "bug",
+      status: "triaged",
+      priority: "medium",
+      problem: {
+        observed: "The board only shows a title",
+        expected: "The observed problem can be inspected",
+        impact: "Operators cannot triage the item",
+        evidence_refs: ["TASK-0002", "/api/board"],
+      },
+      source_refs: [],
+      affected_areas: ["project-board"],
+      acceptance_outline: ["detail is readable"],
+      resolution: { task_refs: [], duplicate_of: null, reason: null },
+    }, "BL-0042.yaml", "d".repeat(64), "2026-08-20T00:00:00.000Z");
+
+    expect(item).toMatchObject({
+      schemaVersion: 2,
+      affectedAreas: ["project-board"],
+      acceptanceOutline: ["detail is readable"],
+      problem: {
+        observed: "The board only shows a title",
+        evidenceRefs: ["TASK-0002", "/api/board"],
+      },
+    });
+  });
+
+  it("rejects incomplete and unknown v2 problem fields", () => {
+    const base = {
+      schema_version: 2,
+      id: "BL-0042",
+      title: "Invalid v2",
+      kind: "bug",
+      status: "triaged",
+      priority: "medium",
+      source_refs: [],
+      affected_areas: [],
+      acceptance_outline: [],
+      resolution: { task_refs: [], duplicate_of: null, reason: null },
+    };
+    expect(() => convertBacklogDocument({
+      ...base,
+      problem: { observed: "seen", expected: "wanted", evidence_refs: [] },
+    }, "BL-0042.yaml", "d".repeat(64), "2026-08-20T00:00:00.000Z"))
+      .toThrow(/problem\.impact must be a non-empty string/);
+    expect(() => convertBacklogDocument({
+      ...base,
+      problem: { observed: "seen", expected: "wanted", impact: "blocked", evidence_refs: [], guessed: true },
+    }, "BL-0042.yaml", "d".repeat(64), "2026-08-20T00:00:00.000Z"))
+      .toThrow(/unknown fields guessed/);
+    expect(() => convertBacklogDocument({ ...base, problem: undefined, surprise: true },
+      "BL-0042.yaml", "d".repeat(64), "2026-08-20T00:00:00.000Z"))
+      .toThrow(/unknown fields surprise/);
   });
 
   it("rejects an unknown enum before a batch can be submitted", () => {
@@ -166,6 +228,20 @@ describe("backlog document sync", () => {
     expect(() => upsertRuntimeBacklog({ [document.backlogId]: document }, runtime))
       .toThrow(/owned by document sync/);
   });
+
+  it("requires runtime-created backlog to satisfy the v2 problem contract", () => {
+    const valid = projection("BL-RUNTIME-V2", "CAPTURED", "runtime");
+    expect(upsertRuntimeBacklog({}, valid)[valid.backlogId]).toEqual(valid);
+    const { problem: _problem, ...withoutProblem } = valid;
+    expect(() => upsertRuntimeBacklog({}, {
+      ...withoutProblem,
+      schemaVersion: 1,
+    })).toThrow(/must use schema version 2/);
+    expect(() => upsertRuntimeBacklog({}, {
+      ...valid,
+      problem: { ...valid.problem!, observed: "" },
+    })).toThrow(/requires a complete v2 problem/);
+  });
 });
 
 function projection(
@@ -174,12 +250,21 @@ function projection(
   source: "doc" | "runtime",
 ): BacklogProjection {
   return {
+    schemaVersion: 2,
     backlogId,
     title: backlogId,
     kind: "FEATURE",
     status,
     priority: "HIGH",
     sourceRefs: [],
+    affectedAreas: ["backlog"],
+    acceptanceOutline: ["sync succeeds"],
+    problem: {
+      observed: "A backlog condition was observed",
+      expected: "The condition is resolved",
+      impact: "Backlog consumers are affected",
+      evidenceRefs: [],
+    },
     taskRefs: [],
     updatedAt: "2026-08-20T00:00:00.000Z",
     ...(source === "doc" ? {

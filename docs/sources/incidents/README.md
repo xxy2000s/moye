@@ -32,3 +32,4 @@ YYYY-MM-DD-short-title.md
 - [TASK-0049 在 Active package 落盘前启动 Seal](./2026-08-24-task-0049-seal-start-before-package.md)：原 Invocation 在首个 durable command 失败且未创建业务 Projection；保留失败历史，由新 Task 增加派发前 preflight。
 - [TASK-0058 Verification 状态导致 Seal 失败](./2026-08-25-task-0058-verification-status-seal-failure.md)：非规范机器状态通过 stage 后被最终 Gate 拒绝，由 TASK-0058R1 前移预检并 append-only 恢复。
 - [TASK-0075 Seal 提交到非 canonical Restate Runtime](./2026-08-26-ga-seal-submitted-to-stale-runtime.md)：保留两个 Runtime 的真实历史，原 Task 与 canonical handoff 使用不同 Workflow key 并绑定同一 W10 Result Commit。
+- [TASK-0077 Seal 首次提交到已遗留的非 canonical Runtime](./2026-08-27-task-0077-seal-submitted-to-stale-runtime.md)：同类故障复发；清理无引用 Service、停止但保留旧 Runtime，并用相同 Intent 等待同一 Result Commit 双端合法收敛。

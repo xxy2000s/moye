@@ -1,9 +1,15 @@
-schema_version: 1
+schema_version: 2
 id: "BL-NNNN"
 title: "replace-with-title"
 kind: "feature" # feature | bug | debt | docs | investigation
 status: "captured" # captured | triaged | ready | scheduled | converted_to_task | deferred | duplicate | rejected
 priority: "medium"
+
+problem:
+  observed: "replace-with-observed-behavior"
+  expected: "replace-with-expected-behavior"
+  impact: "replace-with-user-or-system-impact"
+  evidence_refs: []
 
 source_refs: []
 affected_areas: []

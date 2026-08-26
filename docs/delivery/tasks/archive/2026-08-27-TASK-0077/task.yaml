@@ -1,0 +1,23 @@
+schema_version: 1
+id: TASK-0077
+title: Backlog Problem Contract v2
+status: seal_prepared
+outcome: null
+backlog_refs: []
+spec_revision: 1
+workflow_id: sealed-task/TASK-0077
+execution_mode: sealed-result-commit
+base_commit: d356eb770b90ae77609cb9a213453c3abdd66d00
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-27-TASK-0077
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:f258cffffc6a5b4c9a5e887b233ae02d7cc8a3991fbea560d9d31ea6040db391
+  base_commit: d356eb770b90ae77609cb9a213453c3abdd66d00
+  archive_path: docs/delivery/tasks/archive/2026-08-27-TASK-0077
