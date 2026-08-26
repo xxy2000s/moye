@@ -25,6 +25,7 @@ describe("Backlog document to ProjectBoard sync", () => {
     ]);
     docker([
       "run", "--rm", "-d", "--name", containerName,
+      "--add-host", "host.docker.internal:host-gateway",
       "-p", `127.0.0.1:${ingressPort}:8080`,
       "-p", `127.0.0.1:${adminPort}:9070`,
       "docker.restate.dev/restatedev/restate:1.7.4",
