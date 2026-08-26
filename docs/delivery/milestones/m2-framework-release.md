@@ -1,7 +1,7 @@
 # Milestone 2：Moye Framework MVP 产品化与首个正式发版
 
 > 文档类型：Delivery Plan
-> 状态：In Progress / W08 completed
+> 状态：W10 GA source completed / external Registry receipts depend on credentials
 > 计划基线：2026-08-25
 > 冻结 Revision：1
 > 需求来源：[Moye 外部项目框架化需求基线](../../sources/brainstorm/external-project-framework-productization.md)、[BL-0068](../backlog/BL-0068.yaml)
@@ -39,9 +39,9 @@ External Repository
 
 本文不把本地 Framework MVP 外推为多租户生产平台。
 
-## 2. 发版前当前缺口
+## 2. 发版前基线（已由 W01～W10 消费）
 
-当前仓库已经具备 Core v2、真实 Agent、Trusted Runner、本地 Git Merge、Closure、Archive、Board 和真实故障矩阵，但仍不满足消费级发版：
+M2 启动时，仓库已经具备 Core v2、真实 Agent、Trusted Runner、本地 Git Merge、Closure、Archive、Board 和真实故障矩阵，但存在以下消费级发版缺口。它们已经分别由 W01～W10 的 Result Commit 消费；本节保留为 Milestone 计划基线，不代表当前仍缺失：
 
 - 根 `package.json` 仍为 `private: true`，没有稳定公共包边界和发布产物；
 - 外部项目必须理解内部 Workflow Input、`baseCommit`、`artifactRoot` 等字段；
@@ -197,4 +197,4 @@ npm run release:verify
 
 - 当前结论：项目 Owner 于 2026-08-25 批准 Revision 1、目标发布渠道与有凭证时的外部发布动作。
 - 冻结映射：TASK-0066～TASK-0075 分别对应 W01～W10；M1 Tag 完成前不创建第一个 Active Task。
-- 当前状态：M1 已冻结；TASK-0066～0074 已完成公共边界、三个 External Example 与真实 External Project Product Matrix；下一步 TASK-0075 RC/GA Release and Handoff。
+- 当前状态：M1 已冻结；TASK-0066～0074 已归档，TASK-0075 已交付 GA source、发布对账协议、Security/Migration/Release Notes 与 clean-install handoff；没有凭证的公开渠道保持 `BLOCKED_AUTH`，不宣称已公开发布。

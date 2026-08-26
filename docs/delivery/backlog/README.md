@@ -92,6 +92,8 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 | [BL-0077](./BL-0077.yaml) | Converted to Task | 让 Framework 产品矩阵自举验收 Service 并快速暴露 Invocation 失败 | TASK-0074 |
 | [BL-0078](./BL-0078.yaml) | Converted to Task | 统一 Recovery Harness 的测试 argv 与验收文字 | TASK-0074 |
 | [BL-0079](./BL-0079.yaml) | Converted to Task | 让跨版本恢复 Harness 对账长 Role 并持久保存新版本 Commit | TASK-0074 |
+| [BL-0080](./BL-0080.yaml) | Converted to Task | 收敛 W10 非 canonical Runtime Seal 并形成 canonical handoff | TASK-0075R1 |
+| [BL-0081](./BL-0081.yaml) | Converted to Task | 为 W09 Framework Matrix 增加独立 live recheck digest | TASK-0075 |
 
 ## 本轮调度结果
 

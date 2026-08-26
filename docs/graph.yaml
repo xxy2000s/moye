@@ -24,6 +24,14 @@ documents:
     authority: operating-contract
     read_when: [any-agent-task]
 
+  - id: security-policy
+    path: SECURITY.md
+    type: security-policy
+    status: active
+    scope: repository
+    authority: operational-procedure
+    read_when: [security-change, release, framework-consumption]
+
   - id: moye-task-control-skill
     path: .agents/skills/moye-task-control/SKILL.md
     type: agent-skill
@@ -271,6 +279,30 @@ documents:
     scope: framework-productization
     authority: operational-procedure
     read_when: [release, operations-change]
+
+  - id: framework-migration-runbook
+    path: docs/knowledge/guidance/runbooks/framework-migration.md
+    type: runbook
+    status: verified
+    scope: framework-productization
+    authority: operational-procedure
+    read_when: [release, migration, operations-change, framework-consumption]
+
+  - id: releases-index
+    path: docs/knowledge/guidance/releases/README.md
+    type: index
+    status: active
+    scope: framework-productization
+    authority: navigation
+    read_when: [release, framework-consumption]
+
+  - id: release-0-1-0
+    path: docs/knowledge/guidance/releases/v0.1.0.md
+    type: release-notes
+    status: active
+    scope: framework-productization
+    authority: release-record
+    read_when: [release, framework-consumption, migration]
 
   - id: external-examples-index
     path: examples/README.md
@@ -5447,10 +5479,170 @@ documents:
     authority: task-evidence
     read_when: [task-close, task-archive, framework-release]
 
+  - id: task-0075-manifest
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0075/task.yaml
+    type: task-manifest
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close, task-archive]
+
+  - id: task-0075-spec
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0075/spec.md
+    type: task-spec
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0075-design
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0075/design.md
+    type: task-design
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0075-plan
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0075/plan.md
+    type: task-plan
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0075-verification
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0075/verification.md
+    type: verification
+    status: archived
+    scope: framework-productization
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0075-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0075/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: framework-productization
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: incident-ga-seal-stale-runtime
+    path: docs/sources/incidents/2026-08-26-ga-seal-submitted-to-stale-runtime.md
+    type: incident
+    status: resolved
+    scope: framework-productization
+    authority: incident-record
+    read_when: [incident-response, release, task-archive]
+
+  - id: bl-0080-canonical-runtime-handoff
+    path: docs/delivery/backlog/BL-0080.yaml
+    type: backlog-item
+    status: converted_to_task
+    scope: framework-productization
+    authority: backlog
+    read_when: [backlog-triage, release, task-create]
+
+  - id: task-0075r1-manifest
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0075R1/task.yaml
+    type: task-manifest
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close, task-archive]
+
+  - id: task-0075r1-spec
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0075R1/spec.md
+    type: task-spec
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0075r1-design
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0075R1/design.md
+    type: task-design
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0075r1-plan
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0075R1/plan.md
+    type: task-plan
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0075r1-verification
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0075R1/verification.md
+    type: verification
+    status: archived
+    scope: framework-productization
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0075r1-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0075R1/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: framework-productization
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: finding-framework-matrix-digest-source-reference
+    path: docs/sources/findings/archived-framework-matrix-digest-is-source-reference.md
+    type: finding
+    status: resolved
+    scope: framework-productization
+    authority: finding
+    read_when: [finding-intake, release, external-project-acceptance]
+
+  - id: bl-0081-framework-matrix-live-recheck
+    path: docs/delivery/backlog/BL-0081.yaml
+    type: backlog-item
+    status: converted_to_task
+    scope: framework-productization
+    authority: backlog
+    read_when: [backlog-triage, release, external-project-acceptance]
+
+  - id: task-0075-framework-matrix-live-recheck
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0075/framework-product-matrix-live-recheck.json
+    type: verification-evidence
+    status: archived
+    scope: framework-productization
+    authority: task-evidence
+    read_when: [task-close, task-archive, release]
+
 relations:
   - from: root-readme
     to: docs-index
     type: routes_to
+
+  - from: root-readme
+    to: security-policy
+    type: routes_to
+
+  - from: knowledge-index
+    to: releases-index
+    type: indexes
+
+  - from: releases-index
+    to: release-0-1-0
+    type: indexes
+
+  - from: release-0-1-0
+    to: framework-product-boundary
+    type: documents
+
+  - from: runbooks-index
+    to: framework-migration-runbook
+    type: indexes
+
+  - from: framework-migration-runbook
+    to: release-pipeline-runbook
+    type: extends
 
   - from: agent-contract
     to: docs-index
@@ -9587,6 +9779,114 @@ relations:
   - from: task-0074-docs-impact
     to: task-0074-manifest
     type: reports_on
+
+  - from: milestone-2-framework-release
+    to: task-0075-manifest
+    type: schedules
+
+  - from: archived-tasks-index
+    to: task-0075-manifest
+    type: indexes
+
+  - from: task-0075-spec
+    to: bl-0068-framework-productization
+    type: consumes
+
+  - from: task-0075-spec
+    to: task-0075-manifest
+    type: belongs_to
+
+  - from: task-0075-design
+    to: task-0075-spec
+    type: refines
+
+  - from: task-0075-design
+    to: framework-product-boundary
+    type: implements_slice_of
+
+  - from: task-0075-plan
+    to: task-0075-manifest
+    type: belongs_to
+
+  - from: task-0075-verification
+    to: task-0075-manifest
+    type: verifies
+
+  - from: task-0075-docs-impact
+    to: task-0075-manifest
+    type: reports_on
+
+  - from: incidents-index
+    to: incident-ga-seal-stale-runtime
+    type: indexes
+
+  - from: incident-ga-seal-stale-runtime
+    to: bl-0080-canonical-runtime-handoff
+    type: produces
+
+  - from: backlog-index
+    to: bl-0080-canonical-runtime-handoff
+    type: indexes
+
+  - from: bl-0080-canonical-runtime-handoff
+    to: task-0075r1-manifest
+    type: converted_to
+
+  - from: archived-tasks-index
+    to: task-0075r1-manifest
+    type: indexes
+
+  - from: task-0075r1-spec
+    to: bl-0080-canonical-runtime-handoff
+    type: consumes
+
+  - from: task-0075r1-spec
+    to: task-0075r1-manifest
+    type: belongs_to
+
+  - from: task-0075r1-design
+    to: task-0075r1-spec
+    type: refines
+
+  - from: task-0075r1-design
+    to: task-0075-design
+    type: hands_off
+
+  - from: task-0075r1-plan
+    to: task-0075r1-manifest
+    type: belongs_to
+
+  - from: task-0075r1-verification
+    to: task-0075r1-manifest
+    type: verifies
+
+  - from: task-0075r1-docs-impact
+    to: task-0075r1-manifest
+    type: reports_on
+
+  - from: findings-index
+    to: finding-framework-matrix-digest-source-reference
+    type: indexes
+
+  - from: finding-framework-matrix-digest-source-reference
+    to: bl-0081-framework-matrix-live-recheck
+    type: produces
+
+  - from: backlog-index
+    to: bl-0081-framework-matrix-live-recheck
+    type: indexes
+
+  - from: bl-0081-framework-matrix-live-recheck
+    to: task-0075-manifest
+    type: converted_to
+
+  - from: task-0075-spec
+    to: bl-0081-framework-matrix-live-recheck
+    type: resolves
+
+  - from: task-0075-verification
+    to: task-0075-framework-matrix-live-recheck
+    type: verified_by
 
 routing:
   baseline:

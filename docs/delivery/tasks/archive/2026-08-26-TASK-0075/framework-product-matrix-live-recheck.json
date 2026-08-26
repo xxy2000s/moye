@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "suite": "FRAMEWORK_PRODUCT_MATRIX_LIVE_RECHECK",
+  "sourceMatrixPath": ".moye-runtime/acceptance/framework-matrix-20260826114406/framework-product-matrix.json",
+  "sourceEvidenceDigest": "sha256:d65f253ba55f8bb00f8ab253706e23b6e4d54d5f6c7f2b0db8b59456942f8354",
+  "checkedAt": "2026-08-26T12:47:50.075Z",
+  "scenarios": [
+    { "taskId": "TASK-ACCEPT-20260826013428-01-HAPPY", "outcome": "SUCCEEDED", "projectionDigest": "sha256:6b8523fc5c8515ac4d86611b2eecc50bd23a2ab6f4c7c22179a888af052bc068", "pageUrl": "http://127.0.0.1:3000/tasks/TASK-ACCEPT-20260826013428-01-HAPPY" },
+    { "taskId": "TASK-ACCEPT-20260826014137-01-IMPLEMENTATION-SELF-REVIEW", "outcome": "SUCCEEDED", "projectionDigest": "sha256:309d4580593bdf97bccd2b1cda16fdb71ca194b1372ccc6472e5a1d2dd450ee5", "pageUrl": "http://127.0.0.1:3000/tasks/TASK-ACCEPT-20260826014137-01-IMPLEMENTATION-SELF-REVIEW" },
+    { "taskId": "TASK-ACCEPT-20260826014912-01-TEST-FAILURE", "outcome": "SUCCEEDED", "projectionDigest": "sha256:e2e4ef48d0ec928b0963856ccd8149e3aef964ebbb58bb696f2b844b25ccb7d7", "pageUrl": "http://127.0.0.1:3000/tasks/TASK-ACCEPT-20260826014912-01-TEST-FAILURE" },
+    { "taskId": "TASK-RCV-20260826023652-01-TEST-NOT-APPLIED", "outcome": "SUCCEEDED", "projectionDigest": "sha256:1022f592835bd66dcac512bddcb4ad873be79dee79b61876831a996a4c4d49b5", "pageUrl": "http://127.0.0.1:3000/tasks/TASK-RCV-20260826023652-01-TEST-NOT-APPLIED" },
+    { "taskId": "TASK-GRD-20260826024315-01-REPAIR-BUDGET", "outcome": "FAILED_TERMINAL", "projectionDigest": "sha256:24d1a3ade558192f7cd8bd1ba1283e4ff2fce691f9da614950f891a9ff4d3b81", "pageUrl": "http://127.0.0.1:3000/tasks/TASK-GRD-20260826024315-01-REPAIR-BUDGET" },
+    { "taskId": "TASK-RCV-20260826114418-01-ROLE-RECOVERY", "outcome": "SUCCEEDED", "projectionDigest": "sha256:e7f12152437e2387de1923354a5bfdbe7eabb9ba1f77fe9dd49ba49b0b4d3800", "pageUrl": "http://127.0.0.1:3000/tasks/TASK-RCV-20260826114418-01-ROLE-RECOVERY" }
+  ],
+  "reportDigest": "sha256:4db1d505b2090825a18d804d02603a208f66550576bb53c26aaf4e860d91585a"
+}

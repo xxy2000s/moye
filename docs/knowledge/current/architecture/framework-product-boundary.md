@@ -1,7 +1,7 @@
 # Framework MVP 公共产品边界
 
 > 文档类型：Architecture
-> 状态：Current / W09 product matrix accepted; W10 release pending
+> 状态：Current / Framework MVP 0.1.0 GA source accepted; public channels are receipt-dependent
 > 版本：v0.1
 > 更新日期：2026-08-25
 > 决策依据：[ADR-0008](../../decisions/adr/0008-publish-framework-mvp-as-versioned-umbrella-package.md)
@@ -39,7 +39,7 @@ External Git Repository
 
 ## 4. 发布一致性
 
-Release Manifest 把 Git Commit、npm tarball Digest、容器 Digest、Schema versions 和 channel 绑定为唯一 Release Identity。任何目标端回执未知都先 Reconcile；相同版本不同 Digest 是硬冲突。
+Release Manifest 把 Git Commit、npm tarball Digest、容器 Digest、Schema versions 和 channel 绑定为唯一 Release Identity。`ReleasePublishIntentV1` 再冻结 Git remote/tag、GitHub repository、npm integrity、容器 reference 与 Release Notes；四个外部目标分别追加 `NOT_APPLIED | CONFIRMED | BLOCKED_AUTH | UNKNOWN | CONFLICT` 观测。任何目标端回执未知都先 Reconcile；相同版本不同 Digest 是硬冲突。Git 中的 sealed Result Commit 不自引用发布回执，外部 Receipt 保存在受管 release evidence 中。
 
 ## 5. 当前实现状态
 
@@ -63,6 +63,6 @@ Package Pipeline 使用 `tsconfig.package.json` 从四个公共入口只编译�
 
 `examples/node-typescript | python | minimal-git` 是可脱离仓库复制的消费 fixture：只包含项目相对 Manifest、业务代码/测试与发布 CLI 操作，不 import Moye source 或 Moye Document Graph。统一验收只从 W07 tarball 安装 CLI/包并在三个隔离 Git repo 执行 init、validate 和真实测试；完整 Agent/Repair/Reconcile/upgrade 场景属于 W09 产品矩阵。
 
-包流水线与三个外部示例已由 TASK-0072～0073 验收。TASK-0074 进一步用 Node Happy/Repair、Python Test Failure/Repair、Minimal Git UNKNOWN/失败 Archive 及旧/新真实 Commit Service 接管形成统一产品矩阵；只有 Runtime Task、真实 Agent/Git/Test/Artifact/Receipt 和可复验快照算作通过。W10 正式发版与发布后回装仍待完成，因此 Moye 还不能声明 Framework MVP 已公开发布。
+包流水线与三个外部示例已由 TASK-0072～0073 验收。TASK-0074 进一步用 Node Happy/Repair、Python Test Failure/Repair、Minimal Git UNKNOWN/失败 Archive 及旧/新真实 Commit Service 接管形成统一产品矩阵；只有 Runtime Task、真实 Agent/Git/Test/Artifact/Receipt 和可复验快照算作通过。TASK-0075 将同一 clean sealed Commit 构建为 GA tarball、image、SBOM 与 Release Manifest，并用 append-only publish ledger 执行外部对账和发布后 clean-install。Framework MVP 的本地产品形态已经可交付，但任何 `BLOCKED_AUTH` 渠道仍不得声明已公开发布。
 
 跨版本接管不会靠版本字符串推断：Service `/healthz` 暴露只读 `release.version + sourceRevision`，Harness 保存新版本 Git Commit/Tree/bundle，且同一 Workflow 的每次注册都记录实际 Commit。长 Role 已产生 Manifest 但未确认时，Harness 只用绑定同一 Run/Attempt/Digest 的 Evidence 完成 `CONFIRMED` 对账；不会重跑 Agent。已归档 Task 在升级前后必须保持相同 Projection Digest。

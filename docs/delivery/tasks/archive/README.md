@@ -94,5 +94,7 @@ YYYY-MM-DD-TASK-NNNN
 | [TASK-0072](./2026-08-26-TASK-0072/spec.md) | Seal Prepared；业务终态见 Runtime | 2026-08-26 | npm 公共包、clean install、容器、SBOM 与 Release Manifest RC 流水线 |
 | [TASK-0073](./2026-08-26-TASK-0073/spec.md) | Seal Prepared；业务终态见 Runtime | 2026-08-26 | Node/TypeScript、Python 与 Minimal Git 独立消费示例 |
 | [TASK-0074](./2026-08-26-TASK-0074/spec.md) | Seal Prepared；业务终态见 Runtime | 2026-08-26 | Node/Python/Minimal Git 真实产品矩阵、失败归档与跨版本 Service 恢复 |
+| [TASK-0075](./2026-08-26-TASK-0075/spec.md) | Seal Prepared；业务终态见 Runtime | 2026-08-26 | Framework MVP 0.1.0 GA Release、发布对账与最终交接 |
+| [TASK-0075R1](./2026-08-26-TASK-0075R1/spec.md) | Seal Prepared；业务终态见 Runtime | 2026-08-26 | 将同一 W10 Result Commit 合法交接至 canonical Runtime |
 
 Bootstrap Task 的 `task.yaml` 冻结在 Archive 开始前，因此其中 `archive.status: pending` 描述的是冻结点；最终 `ARCHIVED` 事实由目录位置、`archive-manifest.json` 和 ProjectBoard Projection 共同证明。Sealed Task 的 Git package 固定为 `seal_prepared`，上表的 `Succeeded + Archived` 来自 2026-08-24 对 owning Workflow/合法 recovery successor 的只读 Runtime 查询；精确 Result Commit 与 Package Digest 见 [Core v2 Roadmap](../../core-v2-roadmap.md)。TASK-0002 归档后文档图门禁曾发现 Spec 的 Active 相对链接因目录层级变化而失效，控制面只修正了该链接；修正前内容仍由 Result Commit `ff1954f4e4360e85276cf22aa30d6f5e8e396f84` 保存。后续 Task 使用不随 Active/Archive 深度变化的稳定引用。

@@ -24,7 +24,7 @@ def documents_by_id
 end
 
 def markdown_files
-  roots = [File.join(ROOT, "README.md"), File.join(ROOT, "AGENTS.md")]
+  roots = [File.join(ROOT, "README.md"), File.join(ROOT, "AGENTS.md"), File.join(ROOT, "SECURITY.md")]
   docs = Dir[File.join(ROOT, "docs", "**", "*.md")]
   agent_skills = Dir[File.join(ROOT, ".agents", "skills", "**", "*.md")]
   example_guides = Dir[File.join(ROOT, "examples", "**", "README.md")]

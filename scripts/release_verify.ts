@@ -77,7 +77,7 @@ try {
   await writeFile(path.join(outputRoot, "checksums.txt"), `${packageDigest.replace("sha256:", "")}  ${packResult.filename}\n${sbomDigest.replace("sha256:", "")}  sbom.cdx.json\n`);
   await writeFile(path.join(outputRoot, "release-manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
   const evidence = {
-    taskId: "TASK-0072",
+    taskId: process.env["MOYE_RELEASE_TASK_ID"] ?? "TASK-0072",
     verifiedAt: new Date().toISOString(),
     release: manifest,
     npmPack: { entries: packResult.files.length, forbiddenEntries: 0 },
@@ -99,7 +99,7 @@ try {
 function auditPackageFiles(files: readonly string[]): void {
   const forbidden = files.filter((file) => /(?:^|\/)(?:docs|tests|scripts|\.moye-runtime|output)(?:\/|$)/.test(file) || /(?:^|\/)(?:core-v2-services|services|coding-services)\./.test(file));
   if (forbidden.length > 0) throw new Error(`forbidden package entries: ${forbidden.join(", ")}`);
-  for (const required of ["LICENSE", "README.md", "package.json", "schemas/project.schema.json", "package-dist/public/cli.js", "package-dist/public/core.js", "package-dist/public/client.js", "package-dist/public/plugin-sdk.js"]) {
+  for (const required of ["LICENSE", "README.md", "SECURITY.md", "package.json", "schemas/project.schema.json", "package-dist/public/cli.js", "package-dist/public/core.js", "package-dist/public/client.js", "package-dist/public/plugin-sdk.js"]) {
     if (!files.includes(required)) throw new Error(`required package entry missing: ${required}`);
   }
 }

@@ -66,5 +66,6 @@ Finding 与 Incident 的边界：
 - [Task 详情 Tab 出现纵向 scrollbar 与被裁剪的键盘焦点竖线](./task-detail-tabs-overflow-focus-artifacts.md)：选中线越过滚动容器边界使宽屏出现纵向 scrollbar，键盘 focus outline 被裁剪后只剩竖边。
 - [Codex 当前 item_completed 对话记录被误归为 System](./codex-current-item-completed-dialogue-misclassified.md)：真实 Core v2 Session Capture 暴露当前 Codex `item_completed`/`output_text` 格式兼容缺陷，由 TASK-0061 修复并保留失败 Workflow。
 - [Core v2 重放读取部署开关会产生不可恢复的 Journal mismatch](./core-v2-replay-config-mismatch-not-recoverable.md)：TASK-0061R1 将校验固化进既有 durable command，并通过 append-only successor 完成真实失败归档。
+- [归档 Framework Matrix 的 Evidence Digest 实际指向 Runtime 源文件](./archived-framework-matrix-digest-is-source-reference.md)：W09 原始 Matrix 校验正确，但归档注释版不是同一内容；TASK-0075 新增独立 live recheck digest 且不改写历史。
 
 不要为了演示目录创建虚构 Bug。

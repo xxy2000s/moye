@@ -1,0 +1,19 @@
+schema_version: 1
+id: BL-0081
+title: "为 W09 Framework Matrix 增加不改写历史的独立 live recheck digest"
+kind: bug
+status: converted_to_task
+priority: medium
+source_refs:
+  - finding-framework-matrix-digest-source-reference
+affected_areas:
+  - release-evidence
+  - external-project-acceptance
+acceptance_outline:
+  - "保留 TASK-0074 归档与原始 Runtime Matrix 字节"
+  - "明确区分 sourceEvidenceDigest 与新摘要自己的 reportDigest"
+  - "对六个目标 Task 重新查询 canonical Board terminal 与 Projection Digest"
+resolution:
+  task_refs: [TASK-0075]
+  duplicate_of:
+  reason: "TASK-0075 以新增 W10 Artifact 修复证据表达，不重写 W09 历史。"

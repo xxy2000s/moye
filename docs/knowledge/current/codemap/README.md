@@ -27,7 +27,7 @@
 | `src/demo/coding-fixture.ts`、`scripts/demo.ts`、`scripts/trace-compose.ts` | 隔离 Git Fixture、Fake/真实 CLI 可选 Demo 与可选 Phoenix 编排 | 不拥有生产状态；演示状态由 CodingTaskWorkflow 持有 |
 | `src/domain/board.ts`、`src/board/server.ts`、`src/board/session-timeline.ts`、`public/index.html`、`public/app.js` | `/` 四列只读项目看板、Task Audit Page、状态机与 Execution Ledger；Board API 分离 execution stream、canonical normalized transcript、raw metadata 与 stderr，并只从 Projection 绑定的受管 Artifact 读取 | Workflow 发布精确运行元数据；Board 校验 allowlist/binding/digest，只读浏览，不扫描 Provider Home、不创建或推进 Task |
 | `Dockerfile`、`compose.yaml`、`src/runtime/**`、`scripts/runtime-{compose,backup}.ts` | 非 root Service 镜像、Service+Restate+registrar 编排、健康/就绪、双卷备份恢复和固定镜像升级/回滚 | Journal/Artifact 分卷持久化；默认 loopback；删除数据需要显式确认 |
-| `src/public/**`、`src/release/manifest.ts`、`scripts/release_{verify,snapshot_acceptance}.ts`、`tsconfig.package.json`、`.github/workflows/ci.yml` | 消费级 CLI 与三个 npm exports、最小发布编译闭包、Release Identity、clean-install/容器/SBOM dry-run 和 CI | exports 不暴露 Runtime 状态写入口；release verify 要求 clean commit；外部 publish 仍由 W10 Effect 管理 |
+| `src/public/**`、`src/release/{manifest,publish}.ts`、`scripts/release_{verify,publish,snapshot_acceptance}.ts`、`tsconfig.package.json`、`.github/workflows/ci.yml` | 消费级 CLI 与三个 npm exports、最小发布编译闭包、Release Identity、clean-install/容器/SBOM、append-only 外部 publish/reconcile 和 CI | exports 不暴露 Runtime 状态写入口；release verify 要求 clean commit；Git/GitHub/npm/container 逐目标对账且冲突 fail closed |
 | `examples/**`、`scripts/external_examples_acceptance.ts` | Node/TypeScript、Python、Minimal Git 三个独立消费 fixture 与 tarball-only smoke | 不 import Moye 源码/Document Graph；完整 Runtime 场景由 W09 执行 |
 | `scripts/framework_product_matrix.ts` | W09 统一外部产品矩阵编排、Evidence 复用、专用 Service、自举跨版本 snapshot 与 clean release | 调用真实 Core v2 suites；不实现第二套 Workflow 状态机 |
 | `scripts/core_v2_{acceptance,recovery_acceptance,guards_acceptance}.ts` | 参数化 Node/Python/Minimal Git fixture 与真实 Agent/Runner 故障场景 | Test argv、Reviewer contract 与 Evidence 同源；Recovery 只消费正式 token/manifest |
@@ -53,7 +53,7 @@ src/
 ├── restate/           Durable Workflow、Projection、HTTP Ingress client
 ├── runtime/           Deployment 注册、Runtime 运维计划与备份 Manifest 验证
 ├── public/            npm 消费级 Core/Client/Plugin SDK facade 与独立 CLI
-├── release/           版本、Git、tarball、image、Schema 与 SBOM 的内容寻址 Release Manifest
+├── release/           版本、Git、tarball、image、Schema、SBOM Manifest 与外部发布 Intent/Event 协议
 ├── trace/             三层 Trace、稳定关联 ID、Noop/OTLP Sink 与恢复建议派生
 ├── board/             Board API 与静态资源服务
 ├── cli/               人和 Agent 的命令入口
@@ -80,6 +80,7 @@ scripts/
 ├── runtime-backup.ts   停写窗口双卷备份、Digest 校验与 empty-target restore
 ├── runtime_distribution_acceptance.ts  真实镜像、注册、Task、重启、备份与 Projection 一致性验收
 ├── release_verify.ts  clean commit 的 npm pack/install、CLI/exports、Docker、SBOM 与 Release Manifest 验证
+├── release_publish.ts  对 Git Tag、GitHub Release、npm 与容器 Registry 执行 Intent-first publish/reconcile
 ├── release_snapshot_acceptance.ts  把当前实现复制为独立 clean commit 后执行相同 RC 流水线
 ├── trace-compose.ts   argv-only 启停可选 Phoenix Profile
 ├── codex_fixture_smoke.mjs  一次性真实 Codex Fixture（拒绝覆盖既有证据）

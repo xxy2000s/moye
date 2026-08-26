@@ -34,6 +34,7 @@
     "package-dist",
     "schemas/project.schema.json",
     "README.md",
+    "SECURITY.md",
     "LICENSE"
   ],
   "engines": {
@@ -78,6 +79,8 @@
     "runtime:restore": "tsx scripts/runtime-backup.ts restore",
     "acceptance:framework:runtime": "tsx scripts/runtime_distribution_acceptance.ts",
     "release:verify": "tsx scripts/release_verify.ts",
+    "release:publish": "tsx scripts/release_publish.ts --apply",
+    "release:publish:status": "tsx scripts/release_publish.ts",
     "acceptance:framework:release": "tsx scripts/release_snapshot_acceptance.ts",
     "acceptance:framework:examples": "tsx scripts/external_examples_acceptance.ts",
     "acceptance:framework": "tsx scripts/framework_product_matrix.ts",

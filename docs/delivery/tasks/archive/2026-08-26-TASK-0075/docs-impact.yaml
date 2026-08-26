@@ -1,0 +1,129 @@
+schema_version: 1
+task_id: TASK-0075
+graph_revision: 123
+intents: [ga-release-handoff, incident-response, task-archive]
+changed_paths:
+  - README.md
+  - SECURITY.md
+  - docs/delivery/backlog/BL-0068.yaml
+  - docs/delivery/backlog/BL-0080.yaml
+  - docs/delivery/backlog/BL-0081.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/milestones/m2-framework-release.md
+  - docs/delivery/tasks/README.md
+  - docs/delivery/tasks/archive/README.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0075/design.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0075/docs-impact.yaml
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0075/framework-product-matrix-live-recheck.json
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0075/plan.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0075/spec.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0075/task.yaml
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0075/verification.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0075R1/design.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0075R1/docs-impact.yaml
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0075R1/plan.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0075R1/spec.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0075R1/task.yaml
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0075R1/verification.md
+  - docs/graph.yaml
+  - docs/knowledge/README.md
+  - docs/knowledge/current/architecture/document-control-plane.md
+  - docs/knowledge/current/architecture/framework-product-boundary.md
+  - docs/knowledge/current/architecture/overview.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/releases/README.md
+  - docs/knowledge/guidance/releases/v0.1.0.md
+  - docs/knowledge/guidance/runbooks/README.md
+  - docs/knowledge/guidance/runbooks/framework-migration.md
+  - docs/knowledge/guidance/runbooks/release-pipeline.md
+  - docs/sources/findings/README.md
+  - docs/sources/findings/archived-framework-matrix-digest-is-source-reference.md
+  - docs/sources/incidents/2026-08-26-ga-seal-submitted-to-stale-runtime.md
+  - docs/sources/incidents/README.md
+  - examples/README.md
+  - package.json
+  - scripts/docs_graph.rb
+  - scripts/release_publish.ts
+  - scripts/release_verify.ts
+  - src/release/publish.ts
+  - tests/unit/release-publish.test.ts
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - incidents-index
+    - backlog-index
+    - runbooks-index
+    - pitfalls-index
+    - tasks-index
+    - archived-tasks-index
+    - task-runtime-kernel
+    - root-readme
+    - security-policy
+    - bl-0068-framework-productization
+    - sources-index
+    - bl-0080-canonical-runtime-handoff
+    - bl-0081-framework-matrix-live-recheck
+    - milestone-2-framework-release
+    - knowledge-index
+    - architecture-index
+    - framework-product-boundary
+    - architecture-overview
+    - releases-index
+    - release-0-1-0
+    - framework-migration-runbook
+    - release-pipeline-runbook
+    - findings-index
+    - finding-framework-matrix-digest-source-reference
+    - incident-ga-seal-stale-runtime
+    - external-examples-index
+    - task-0075-design
+    - task-0075-docs-impact
+    - task-0075-framework-matrix-live-recheck
+    - task-0075-plan
+    - task-0075-spec
+    - task-0075-manifest
+    - task-0075-verification
+    - task-0075r1-design
+    - task-0075r1-docs-impact
+    - task-0075r1-plan
+    - task-0075r1-spec
+    - task-0075r1-manifest
+    - task-0075r1-verification
+  reviewed:
+    moye-task-control-skill: { outcome: unchanged, reason: "W10 使用 Full profile、Context Route、真实门禁与两阶段 Seal。" }
+    restate-poc-architecture: { outcome: unchanged, reason: "发布对账是独立外部 Effect，不改变 Restate PoC 的 Task 状态主权。" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "Incident、Finding、Backlog、Task、Architecture 与 Runbook 按既有职责写入。" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "TASK-0075 与 handoff 使用同一唯一 Result Commit，各 Workflow 独立 Seal。" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "未知发布回执先对账，端口漂移保留 Incident，不盲重试或改 Projection。" }
+    task-0013-manifest: { outcome: unchanged, reason: "不修改确定性控制 reducer。" }
+    task-0014-manifest: { outcome: unchanged, reason: "不修改 Role Attempt 协议。" }
+    task-0015-manifest: { outcome: unchanged, reason: "不修改 Review/Finding 生命周期。" }
+    task-0016-manifest: { outcome: unchanged, reason: "不修改 Repair/Replan 预算。" }
+    task-0017-manifest: { outcome: unchanged, reason: "不修改 Observer/Docs Gate 领域模型。" }
+    task-0018-manifest: { outcome: unchanged, reason: "不修改成功或失败 Closure 模型。" }
+    task-0019-manifest: { outcome: unchanged, reason: "不修改 Runtime owning Workflow。" }
+    task-0020-manifest: { outcome: unchanged, reason: "Board 继续只读 Runtime Projection 和 Event。" }
+    task-0021-manifest: { outcome: unchanged, reason: "M1 复核只读取既有多角色 Session Evidence。" }
+    task-0029-manifest: { outcome: unchanged, reason: "不修改 Bootstrap failure convergence。" }
+    task-0002-manifest: { outcome: unchanged, reason: "Backlog 文档变更不改 ProjectBoard 同步语义。" }
+    task-0003-manifest: { outcome: unchanged, reason: "不修改早期 TaskEnvelope/Attempt 协议。" }
+    task-0004-manifest: { outcome: unchanged, reason: "不修改 Git checkpoint/commit Effect。" }
+    task-0005-manifest: { outcome: unchanged, reason: "不修改 Agent Runner 实现。" }
+    task-0006-manifest: { outcome: unchanged, reason: "不修改 Coding Workflow。" }
+    task-0007-manifest: { outcome: unchanged, reason: "发布门禁不改写旧故障验收历史。" }
+    task-0001-manifest: { outcome: unchanged, reason: "继续以 owning Workflow 和真实 Archive Receipt 为事实。" }
+    task-0049r1-manifest: { outcome: unchanged, reason: "复用 seal-start preflight 与 append-only recovery 原则。" }
+    task-0056-manifest: { outcome: unchanged, reason: "W10 按 Full profile 执行，不改变模式分类。" }
+    task-0061r1-design: { outcome: unchanged, reason: "不改变 durable replay-sensitive command 序列。" }
+    task-0062-design: { outcome: unchanged, reason: "不修改 Session capture/join 协议。" }
+    task-0063-design: { outcome: unchanged, reason: "最终页面复用现有 Agent Session UX。" }
+    adr-0008-framework-release-boundary: { outcome: unchanged, reason: "GA 继续采用 moye@0.1.0 umbrella package 与私有 Runtime 边界。" }
+    task-0070-design: { outcome: unchanged, reason: "不修改四种 Documentation Policy。" }
+    task-0071-design: { outcome: unchanged, reason: "复用既有 Service image、health、备份和恢复设计。" }
+    task-0072-design: { outcome: updated, reason: "RC pipeline 扩展为 GA publish Intent/Event/Reconcile 与 Security 文件门禁。" }
+    task-0073-design: { outcome: unchanged, reason: "示例源码不变；仅更新其已通过 W09 产品矩阵的当前事实。" }
+    task-0074-design: { outcome: unchanged, reason: "W10 对 W09 source evidence 与六个 live Task 做只读复核，不改历史。" }
+    task-0075-design: { outcome: updated, reason: "固化 GA Artifact、逐目标发布对账、双 Runtime handoff 与端口切换设计。" }

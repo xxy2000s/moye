@@ -39,5 +39,6 @@ resolution:
     - TASK-0072
     - TASK-0073
     - TASK-0074
+    - TASK-0075
   duplicate_of:
-  reason: "M2 已批准；TASK-0066～0073 已归档，TASK-0074 External Project Product Matrix 已通过并等待 Seal，TASK-0075 在其归档后执行 RC/GA。"
+  reason: "M2 已批准；TASK-0066～0074 均已由 Runtime 归档，TASK-0075 正在执行 RC/GA Release and Handoff。"

@@ -31,7 +31,7 @@
 
 TASK-0048 已用 16 个独立真实 Runtime Task 和零 Finding live audit 验证本地 PoC 的关键状态机矩阵；Fake 只保留在 Demo 与低层自动化夹具。Board 从连续 Domain Event 派生实际路径，并展示 Projection/Event 一致性、每代 Attempt、Role Session、Verification、Git、Closure 与 Archive。该实现仍不是生产平台：Daemon 集群与完整 Lease/Fencing、远程 Git/PR、鉴权、多租户、生产 Sandbox/密钥治理、跨节点 Artifact Store、生产运营与长期知识反馈尚未实现。
 
-Framework MVP 的外部消费边界已由 [ADR-0008](../../decisions/adr/0008-publish-framework-mvp-as-versioned-umbrella-package.md) 冻结，并由 [Framework MVP 公共产品边界](./framework-product-boundary.md) 描述当前目标形态：`moye` umbrella package 提供版本化 Core、Client、Plugin SDK 与 CLI，Restate owning Workflow 和 Projection 写入口保持私有。该边界已决策但 M2 实现仍在进行，不能从 ADR 已接受推断为分发物和外部项目验收已经完成。
+Framework MVP 的外部消费边界已由 [ADR-0008](../../decisions/adr/0008-publish-framework-mvp-as-versioned-umbrella-package.md) 冻结，并由 [Framework MVP 公共产品边界](./framework-product-boundary.md) 描述当前实现：`moye` umbrella package 提供版本化 Core、Client、Plugin SDK 与 CLI，Restate owning Workflow 和 Projection 写入口保持私有。RC tarball、非 root Service image、CycloneDX SBOM、Node/Python/Minimal Git 外部项目和 Happy/Repair/Reconcile/失败归档/跨版本恢复产品矩阵已经通过本地真实 Runtime 验收。GA 的公开可用性仍按发布目标逐项由远端 Receipt 证明；本地 Artifact、已接受 ADR 或 Git Tag 均不能替代 GitHub Release、npm 与容器 Registry 的确认事实。
 
 ## 2. 设计结论
 

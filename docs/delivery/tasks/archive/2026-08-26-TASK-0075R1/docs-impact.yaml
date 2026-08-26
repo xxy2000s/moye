@@ -1,0 +1,129 @@
+schema_version: 1
+task_id: TASK-0075R1
+graph_revision: 123
+intents: [ga-release-handoff, incident-response, task-archive]
+changed_paths:
+  - README.md
+  - SECURITY.md
+  - docs/delivery/backlog/BL-0068.yaml
+  - docs/delivery/backlog/BL-0080.yaml
+  - docs/delivery/backlog/BL-0081.yaml
+  - docs/delivery/backlog/README.md
+  - docs/delivery/milestones/m2-framework-release.md
+  - docs/delivery/tasks/README.md
+  - docs/delivery/tasks/archive/README.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0075/design.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0075/docs-impact.yaml
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0075/framework-product-matrix-live-recheck.json
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0075/plan.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0075/spec.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0075/task.yaml
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0075/verification.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0075R1/design.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0075R1/docs-impact.yaml
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0075R1/plan.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0075R1/spec.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0075R1/task.yaml
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0075R1/verification.md
+  - docs/graph.yaml
+  - docs/knowledge/README.md
+  - docs/knowledge/current/architecture/document-control-plane.md
+  - docs/knowledge/current/architecture/framework-product-boundary.md
+  - docs/knowledge/current/architecture/overview.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/releases/README.md
+  - docs/knowledge/guidance/releases/v0.1.0.md
+  - docs/knowledge/guidance/runbooks/README.md
+  - docs/knowledge/guidance/runbooks/framework-migration.md
+  - docs/knowledge/guidance/runbooks/release-pipeline.md
+  - docs/sources/findings/README.md
+  - docs/sources/findings/archived-framework-matrix-digest-is-source-reference.md
+  - docs/sources/incidents/2026-08-26-ga-seal-submitted-to-stale-runtime.md
+  - docs/sources/incidents/README.md
+  - examples/README.md
+  - package.json
+  - scripts/docs_graph.rb
+  - scripts/release_publish.ts
+  - scripts/release_verify.ts
+  - src/release/publish.ts
+  - tests/unit/release-publish.test.ts
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - incidents-index
+    - backlog-index
+    - runbooks-index
+    - pitfalls-index
+    - tasks-index
+    - archived-tasks-index
+    - task-runtime-kernel
+    - root-readme
+    - security-policy
+    - bl-0068-framework-productization
+    - sources-index
+    - bl-0080-canonical-runtime-handoff
+    - bl-0081-framework-matrix-live-recheck
+    - milestone-2-framework-release
+    - knowledge-index
+    - architecture-index
+    - framework-product-boundary
+    - architecture-overview
+    - releases-index
+    - release-0-1-0
+    - framework-migration-runbook
+    - release-pipeline-runbook
+    - findings-index
+    - finding-framework-matrix-digest-source-reference
+    - incident-ga-seal-stale-runtime
+    - external-examples-index
+    - task-0075-design
+    - task-0075-docs-impact
+    - task-0075-framework-matrix-live-recheck
+    - task-0075-plan
+    - task-0075-spec
+    - task-0075-manifest
+    - task-0075-verification
+    - task-0075r1-design
+    - task-0075r1-docs-impact
+    - task-0075r1-plan
+    - task-0075r1-spec
+    - task-0075r1-manifest
+    - task-0075r1-verification
+  reviewed:
+    moye-task-control-skill: { outcome: unchanged, reason: "Handoff 仍通过 CLI/Runtime API 和两阶段 Seal，不直接改 Projection。" }
+    restate-poc-architecture: { outcome: unchanged, reason: "两个 Restate cluster 不共享 Journal；handoff 使用新 key，不复制状态。" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "端口漂移按 Incident→Backlog→Task 留存。" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "两个 Workflow 独立验证同一唯一 Result Commit，不形成第二份实现。" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "错误 cluster 保留原事实，canonical handoff 不盲重投同 key。" }
+    task-0013-manifest: { outcome: unchanged, reason: "不修改确定性控制 reducer。" }
+    task-0014-manifest: { outcome: unchanged, reason: "不执行或修改 Role Attempt。" }
+    task-0015-manifest: { outcome: unchanged, reason: "不修改 Review/Finding 生命周期。" }
+    task-0016-manifest: { outcome: unchanged, reason: "不修改 Repair/Replan 预算。" }
+    task-0017-manifest: { outcome: unchanged, reason: "不执行 Observer/Knowledge。" }
+    task-0018-manifest: { outcome: unchanged, reason: "由 SealedTaskWorkflow 自身 Closure/Archive 收口。" }
+    task-0019-manifest: { outcome: unchanged, reason: "owning Workflow 仍是唯一状态写入者。" }
+    task-0020-manifest: { outcome: unchanged, reason: "最终 Board 只读取 canonical Projection。" }
+    task-0021-manifest: { outcome: unchanged, reason: "不新增或伪造多角色 Session。" }
+    task-0029-manifest: { outcome: unchanged, reason: "不修改 Bootstrap recovery。" }
+    task-0002-manifest: { outcome: unchanged, reason: "Backlog 记录不改 ProjectBoard 同步语义。" }
+    task-0003-manifest: { outcome: unchanged, reason: "不修改 TaskEnvelope/Attempt 协议。" }
+    task-0004-manifest: { outcome: unchanged, reason: "不产生第二个 Git Result Commit。" }
+    task-0005-manifest: { outcome: unchanged, reason: "handoff 不调用 Agent Runner。" }
+    task-0006-manifest: { outcome: unchanged, reason: "handoff 不调用 Coding Workflow。" }
+    task-0007-manifest: { outcome: unchanged, reason: "不改写旧故障验收历史。" }
+    task-0001-manifest: { outcome: unchanged, reason: "每个 cluster 由各自 owning Workflow 归档。" }
+    task-0049r1-manifest: { outcome: unchanged, reason: "遵守 append-only recovery 与 seal-start preflight。" }
+    task-0056-manifest: { outcome: unchanged, reason: "canonical handoff 是文档/Seal 工作，不声称多 Agent 执行。" }
+    task-0061r1-design: { outcome: unchanged, reason: "不改变 durable handler command sequence。" }
+    task-0062-design: { outcome: unchanged, reason: "不修改 Session Evidence 协议。" }
+    task-0063-design: { outcome: unchanged, reason: "最终页面复用现有 Session UX。" }
+    adr-0008-framework-release-boundary: { outcome: unchanged, reason: "handoff 不改变 0.1.0 产品边界。" }
+    task-0070-design: { outcome: unchanged, reason: "不修改 Documentation Policy。" }
+    task-0071-design: { outcome: unchanged, reason: "最终服务继续使用既有健康切换设计。" }
+    task-0072-design: { outcome: updated, reason: "同一 W10 变更将 RC pipeline 扩展为 GA 发布对账。" }
+    task-0073-design: { outcome: unchanged, reason: "外部示例源码不变。" }
+    task-0074-design: { outcome: unchanged, reason: "只读复核 W09 历史，不改 Artifact。" }
+    task-0075-design: { outcome: updated, reason: "同一 Result Commit 固化 GA 实现和 canonical Runtime handoff。" }

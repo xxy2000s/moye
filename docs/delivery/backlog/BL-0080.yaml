@@ -1,0 +1,22 @@
+schema_version: 1
+id: BL-0080
+title: "收敛 W10 非 canonical Runtime Seal 并形成 canonical handoff"
+kind: bug
+status: converted_to_task
+priority: high
+source_refs:
+  - incident-ga-seal-stale-runtime
+affected_areas:
+  - sealed-task
+  - runtime-operations
+  - release
+acceptance_outline:
+  - "保留错误 Runtime 的 Invocation、Projection 与 Seal Intent，不删除或直接修改"
+  - "TASK-0075 在原 Runtime 通过正式 Result Commit Seal/Archive 收敛"
+  - "canonical Runtime 使用不同 Workflow key 记录同一 W10 Result Commit handoff"
+  - "最终 Board 继续绑定包含 M1/M2 历史的 canonical Runtime"
+  - "Runbook 明确要求显式 ingress/admin 与前置 Task 探针"
+resolution:
+  task_refs: [TASK-0075R1]
+  duplicate_of:
+  reason: "TASK-0075R1 只承担 canonical Runtime handoff 与事故收敛，不创建第二份实现结果。"
