@@ -22,6 +22,12 @@ changed_paths:
   - docs/delivery/tasks/archive/2026-08-27-TASK-0083/m3-product-acceptance.json
   - docs/delivery/tasks/archive/2026-08-27-TASK-0083/m3-scaffold-rerun.json
   - docs/delivery/tasks/archive/2026-08-27-TASK-0083/browser-acceptance.json
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0083/browser-backlog-desktop.png
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0083/browser-backlog-mobile.png
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0083/browser-session-desktop.png
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0083/browser-session-diagnostics.png
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0083/browser-session-mobile.png
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0083/browser-session-network-error.png
   - docs/graph.yaml
 docs:
   read:
