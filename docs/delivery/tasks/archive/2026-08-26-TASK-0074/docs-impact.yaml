@@ -1,0 +1,128 @@
+schema_version: 1
+task_id: TASK-0074
+graph_revision: 123
+intents: [m2-external-product-matrix]
+changed_paths:
+  - README.md
+  - package.json
+  - scripts/framework_product_matrix.ts
+  - scripts/core_v2_acceptance.ts
+  - scripts/core_v2_recovery_acceptance.ts
+  - scripts/core_v2_guards_acceptance.ts
+  - src/board/server.ts
+  - tests/unit/board-health.test.ts
+  - docs/knowledge/current/architecture/framework-product-boundary.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/runbooks/runtime-distribution.md
+  - docs/delivery/core-v2-roadmap.md
+  - docs/delivery/milestones/m2-framework-release.md
+  - docs/delivery/backlog/BL-0068.yaml
+  - docs/delivery/backlog/BL-0077.yaml
+  - docs/delivery/backlog/BL-0078.yaml
+  - docs/delivery/backlog/BL-0079.yaml
+  - docs/delivery/backlog/README.md
+  - docs/sources/findings/framework-acceptance-service-authorization-not-preflighted.md
+  - docs/sources/findings/minimal-git-recovery-acceptance-text-hardcodes-npm-test.md
+  - docs/sources/findings/cross-version-recovery-wait-misses-role-reconcile.md
+  - docs/sources/findings/README.md
+  - docs/delivery/tasks/README.md
+  - docs/delivery/tasks/archive/README.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0074/task.yaml
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0074/spec.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0074/design.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0074/plan.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0074/verification.md
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0074/docs-impact.yaml
+  - docs/delivery/tasks/archive/2026-08-26-TASK-0074/framework-product-matrix.json
+  - docs/graph.yaml
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - root-readme
+    - restate-poc-architecture
+    - task-runtime-kernel
+    - framework-product-boundary
+    - architecture-index
+    - runtime-distribution-runbook
+    - runbooks-index
+    - core-v2-roadmap
+    - milestone-2-framework-release
+    - bl-0068-framework-productization
+    - backlog-index
+    - sources-index
+    - bl-0077-framework-acceptance-service-auth
+    - bl-0078-minimal-git-recovery-test-contract
+    - bl-0079-cross-version-recovery-role-reconcile
+    - finding-framework-acceptance-service-auth
+    - finding-minimal-git-recovery-test-contract
+    - finding-cross-version-recovery-role-reconcile
+    - findings-index
+    - tasks-index
+    - archived-tasks-index
+    - task-0074-manifest
+    - task-0074-spec
+    - task-0074-design
+    - task-0074-plan
+    - task-0074-verification
+    - task-0074-docs-impact
+    - task-0074-framework-product-matrix
+  reviewed:
+    moye-task-control-skill: { outcome: unchanged, reason: "本 Task 按 Full、Context Route、Docs Impact 与两阶段 Seal 执行。" }
+    architecture-overview: { outcome: unchanged, reason: "产品矩阵验证既有 Framework/Runtime 边界，不改变 Task 状态主权。" }
+    external-examples-index: { outcome: unchanged, reason: "W09 使用独立真实 fixture，不改变 W08 可复制示例内容。" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "仍使用 Restate PoC，跨版本验证不把它提升为最终生产选型。" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "继续使用唯一 Result Commit 和两阶段 Seal。" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "Finding、Backlog、Task、Architecture 与 Runbook 继续按既有角色写入。" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "跨版本 fixture 使用隔离 Git cache，不改变已消费的生命周期设想。" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "真实矩阵验证既有 5+1 Agent 闭环，不修改需求基线。" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "UNKNOWN 必须先对账、旧 Attempt 不覆盖新结果等既有规避规则保持有效。" }
+    task-0013-manifest: { outcome: unchanged, reason: "不修改 Core Control reducer。" }
+    task-0014-manifest: { outcome: unchanged, reason: "不修改 Role Runtime 协议。" }
+    task-0015-manifest: { outcome: unchanged, reason: "不修改 Review/Finding 领域模型。" }
+    task-0016-manifest: { outcome: unchanged, reason: "不修改预算领域模型。" }
+    task-0017-manifest: { outcome: unchanged, reason: "不修改 Observer/Docs Gate 领域模型。" }
+    task-0018-manifest: { outcome: unchanged, reason: "不修改 Core Closure 领域模型。" }
+    task-0019-manifest: { outcome: unchanged, reason: "不修改 Runtime service ownership。" }
+    task-0020-manifest: { outcome: unchanged, reason: "Board 仅增加 release identity 健康事实，不增加状态写入口。" }
+    task-0021-manifest: { outcome: unchanged, reason: "复用多角色 Attempt/Session/Event 证据，不改协议。" }
+    task-0028-manifest: { outcome: unchanged, reason: "不修改 Bootstrap owning Workflow。" }
+    task-0029-manifest: { outcome: unchanged, reason: "不修改 Bootstrap failure closure。" }
+    task-0030-manifest: { outcome: unchanged, reason: "遵守 Core v2 5+1 与 Seal 架构合同。" }
+    task-0031-manifest: { outcome: unchanged, reason: "不修改 Lifecycle Artifact schema。" }
+    task-0032-manifest: { outcome: unchanged, reason: "不修改统一 Role Runner 结果协议。" }
+    task-0003-manifest: { outcome: unchanged, reason: "不修改 Coding Agent 早期实现。" }
+    task-0004-manifest: { outcome: unchanged, reason: "不修改 Git Effect 领域语义。" }
+    task-0005-manifest: { outcome: unchanged, reason: "不修改 Agent Runner 公共执行语义。" }
+    task-0006-manifest: { outcome: unchanged, reason: "不修改 Coding Workflow。" }
+    task-0007-manifest: { outcome: unchanged, reason: "W09 增加外部产品矩阵，不改写旧验收历史。" }
+    task-0008-manifest: { outcome: unchanged, reason: "不修改 Trace/Board 状态所有权。" }
+    task-0009-manifest: { outcome: unchanged, reason: "不修改历史任务恢复协议。" }
+    task-0001-manifest: { outcome: unchanged, reason: "继续以真实 Restate 进程恢复作为证据。" }
+    task-0002-manifest: { outcome: unchanged, reason: "Backlog 索引变化不修改 ProjectBoard 同步协议。" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "编排脚本仍使用 TypeScript，不引入新实现语言决策。" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "产品矩阵关闭可选观测，不改变 OTLP 边界。" }
+    task-0049r1-manifest: { outcome: unchanged, reason: "复用 seal-start preflight 与唯一 Result Commit。" }
+    task-0056-manifest: { outcome: unchanged, reason: "本次 Core/Release 验收继续使用 Full profile。" }
+    task-0061r1-design: { outcome: unchanged, reason: "跨版本执行保持 durable command 序列兼容，没有部署配置重放分叉。" }
+    task-0062-design: { outcome: unchanged, reason: "W09 读取 Role Session Evidence，不修改 Capture 协议。" }
+    task-0063-design: { outcome: unchanged, reason: "页面链接复用既有 Session/Prompt UI。" }
+    adr-0008-framework-release-boundary: { outcome: unchanged, reason: "矩阵验证 ADR 冻结的 umbrella package、私有 Runtime 与版本身份。" }
+    task-0070-design: { outcome: unchanged, reason: "外部 fixture 复用已实现 Documentation Policy。" }
+    task-0071-design: { outcome: updated, reason: "Runtime Runbook 登记跨真实 Commit Service 恢复已经通过。" }
+    task-0072-design: { outcome: unchanged, reason: "clean-install 复用 W07 Release Manifest 与 tarball/container pipeline。" }
+    task-0073-design: { outcome: unchanged, reason: "W08 示例保持独立；W09 不修改其源码。" }
+    task-0074-design: { outcome: updated, reason: "记录专用 Service、动态 test contract、Role reconcile、Git bundle 与增量续跑设计。" }
+    framework-product-boundary: { outcome: updated, reason: "登记 W09 产品矩阵与跨版本恢复已验收、W10 GA 未完成。" }
+    codemap: { outcome: updated, reason: "登记统一 Framework Matrix 与参数化 Core v2 acceptance scripts。" }
+    runtime-distribution-runbook: { outcome: updated, reason: "将 upgrade recovery 状态从待验收更新为真实通过。" }
+    core-v2-roadmap: { outcome: updated, reason: "增加 Framework 外部项目复验证据与生产边界。" }
+    milestone-2-framework-release: { outcome: updated, reason: "M2 进度推进到 TASK-0075。" }
+    root-readme: { outcome: updated, reason: "登记 W09 Evidence、验收入口及未公开发布边界。" }
+    findings-index: { outcome: updated, reason: "登记本轮三个真实 Finding，移除重复索引项。" }
+    backlog-index: { outcome: updated, reason: "登记 BL-0077～0079。" }
+    tasks-index: { outcome: updated, reason: "TASK-0074 Seal 后移出 Active。" }
+    task-0074-verification: { outcome: updated, reason: "记录 Requirement→Task→Session→Evidence 与最终门禁。" }
+    task-0074-framework-product-matrix: { outcome: updated, reason: "固化六个目标场景与两个诊断历史的规范摘要。" }

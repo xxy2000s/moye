@@ -89,6 +89,9 @@ Backlog Item 只需要表达问题、优先级、来源、影响范围和粗粒�
 | [BL-0074](./BL-0074.yaml) | Converted to Task | 在 Framework Task 派发前验证目标 Git ref | TASK-0068 |
 | [BL-0075](./BL-0075.yaml) | Converted to Task | 修复 Runtime 验收对一次性 registrar 的状态查询 | TASK-0071 |
 | [BL-0076](./BL-0076.yaml) | Converted to Task | 为 Runtime 备份恢复固定并校验 Restate node name | TASK-0071 |
+| [BL-0077](./BL-0077.yaml) | Converted to Task | 让 Framework 产品矩阵自举验收 Service 并快速暴露 Invocation 失败 | TASK-0074 |
+| [BL-0078](./BL-0078.yaml) | Converted to Task | 统一 Recovery Harness 的测试 argv 与验收文字 | TASK-0074 |
+| [BL-0079](./BL-0079.yaml) | Converted to Task | 让跨版本恢复 Harness 对账长 Role 并持久保存新版本 Commit | TASK-0074 |
 
 ## 本轮调度结果
 

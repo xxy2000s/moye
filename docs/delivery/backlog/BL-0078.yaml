@@ -1,0 +1,17 @@
+schema_version: 1
+id: BL-0078
+title: 统一 Recovery Harness 的测试 argv 与验收文字
+kind: bug
+status: converted_to_task
+priority: high
+source_refs: [finding-minimal-git-recovery-test-contract]
+affected_areas: [external-project-acceptance, recovery-harness, final-review]
+acceptance_outline:
+  - Test Command 与 Reviewer 验收文字必须来自同一 argv
+  - 错误契约产生的真实 Task 必须保留并合法收敛，不得计入目标场景
+  - 续跑不得重复已通过 Node/Python 场景的昂贵 Agent Run
+  - 修正版 Minimal Git 必须用新 Workflow key 证明一次测试与完整归档
+resolution:
+  task_refs: [TASK-0074]
+  duplicate_of:
+  reason: TASK-0074 参数化验收文字并增加只复用不可变历史证据的续跑入口

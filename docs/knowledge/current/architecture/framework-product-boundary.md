@@ -1,7 +1,7 @@
 # Framework MVP 公共产品边界
 
 > 文档类型：Architecture
-> 状态：Current / M2 implementation in progress
+> 状态：Current / W09 product matrix accepted; W10 release pending
 > 版本：v0.1
 > 更新日期：2026-08-25
 > 决策依据：[ADR-0008](../../decisions/adr/0008-publish-framework-mvp-as-versioned-umbrella-package.md)
@@ -63,4 +63,6 @@ Package Pipeline 使用 `tsconfig.package.json` 从四个公共入口只编译�
 
 `examples/node-typescript | python | minimal-git` 是可脱离仓库复制的消费 fixture：只包含项目相对 Manifest、业务代码/测试与发布 CLI 操作，不 import Moye source 或 Moye Document Graph。统一验收只从 W07 tarball 安装 CLI/包并在三个隔离 Git repo 执行 init、validate 和真实测试；完整 Agent/Repair/Reconcile/upgrade 场景属于 W09 产品矩阵。
 
-包流水线与三个外部示例已由 TASK-0072～0073 验收；外部产品矩阵与正式发布仍由 TASK-0074～TASK-0075 顺序实现。在这些证据完成前，Moye 仍不能声明 Framework MVP 已公开发布。
+包流水线与三个外部示例已由 TASK-0072～0073 验收。TASK-0074 进一步用 Node Happy/Repair、Python Test Failure/Repair、Minimal Git UNKNOWN/失败 Archive 及旧/新真实 Commit Service 接管形成统一产品矩阵；只有 Runtime Task、真实 Agent/Git/Test/Artifact/Receipt 和可复验快照算作通过。W10 正式发版与发布后回装仍待完成，因此 Moye 还不能声明 Framework MVP 已公开发布。
+
+跨版本接管不会靠版本字符串推断：Service `/healthz` 暴露只读 `release.version + sourceRevision`，Harness 保存新版本 Git Commit/Tree/bundle，且同一 Workflow 的每次注册都记录实际 Commit。长 Role 已产生 Manifest 但未确认时，Harness 只用绑定同一 Run/Attempt/Digest 的 Evidence 完成 `CONFIRMED` 对账；不会重跑 Agent。已归档 Task 在升级前后必须保持相同 Projection Digest。

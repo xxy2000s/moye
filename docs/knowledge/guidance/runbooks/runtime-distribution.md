@@ -1,7 +1,7 @@
 # Moye Runtime Distribution 运维手册
 
 > 文档类型：Runbook
-> 状态：Start/restart/backup/restore 已真实验证；upgrade/rollback 具备确定性门禁，待 W09 跨版本矩阵复验
+> 状态：Start/restart/backup/restore 与 W09 跨真实 Commit Service upgrade recovery 均已真实验证；公开 GA 发布待 W10
 > 更新日期：2026-08-25
 
 ## 1. 适用范围

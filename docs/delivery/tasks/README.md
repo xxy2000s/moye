@@ -23,7 +23,7 @@ tasks/
 
 | Task | 状态 | 目标 |
 |---|---|---|
-| — | — | 当前无 Active Task |
+| — | 当前无 Active Task | TASK-0074 已进入 Seal Prepared，下一 Task 需等待 Runtime 归档 |
 
 已完成任务从 [Archived Tasks](./archive/README.md) 查询。
 

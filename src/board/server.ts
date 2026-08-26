@@ -59,7 +59,7 @@ async function route(
   const url = new URL(request.url ?? "/", "http://localhost");
 
   if (method === "GET" && url.pathname === "/healthz") {
-    writeJson(response, 200, { status: "ok", service: "moye", check: "liveness" });
+    writeJson(response, 200, { status: "ok", service: "moye", check: "liveness", release: runtimeReleaseIdentity() });
     return;
   }
 
@@ -480,6 +480,14 @@ async function route(
   }
 
   await serveStatic(url.pathname, method === "HEAD", response, options.publicRoot);
+}
+
+export function runtimeReleaseIdentity(env: NodeJS.ProcessEnv = process.env): { version: string; sourceRevision: string } {
+  const version = env["MOYE_RELEASE_VERSION"]?.trim() || "0.1.0-dev";
+  const sourceRevision = env["MOYE_SOURCE_REVISION"]?.trim() || "unknown";
+  if (!/^[0-9A-Za-z][0-9A-Za-z.+-]{0,63}$/.test(version)) throw new Error("MOYE_RELEASE_VERSION is invalid");
+  if (sourceRevision !== "unknown" && !/^[0-9a-f]{40}$/.test(sourceRevision)) throw new Error("MOYE_SOURCE_REVISION is invalid");
+  return { version, sourceRevision };
 }
 
 export async function probeRuntimeReadiness(

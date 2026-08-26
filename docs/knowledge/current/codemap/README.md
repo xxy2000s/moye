@@ -29,6 +29,8 @@
 | `Dockerfile`、`compose.yaml`、`src/runtime/**`、`scripts/runtime-{compose,backup}.ts` | 非 root Service 镜像、Service+Restate+registrar 编排、健康/就绪、双卷备份恢复和固定镜像升级/回滚 | Journal/Artifact 分卷持久化；默认 loopback；删除数据需要显式确认 |
 | `src/public/**`、`src/release/manifest.ts`、`scripts/release_{verify,snapshot_acceptance}.ts`、`tsconfig.package.json`、`.github/workflows/ci.yml` | 消费级 CLI 与三个 npm exports、最小发布编译闭包、Release Identity、clean-install/容器/SBOM dry-run 和 CI | exports 不暴露 Runtime 状态写入口；release verify 要求 clean commit；外部 publish 仍由 W10 Effect 管理 |
 | `examples/**`、`scripts/external_examples_acceptance.ts` | Node/TypeScript、Python、Minimal Git 三个独立消费 fixture 与 tarball-only smoke | 不 import Moye 源码/Document Graph；完整 Runtime 场景由 W09 执行 |
+| `scripts/framework_product_matrix.ts` | W09 统一外部产品矩阵编排、Evidence 复用、专用 Service、自举跨版本 snapshot 与 clean release | 调用真实 Core v2 suites；不实现第二套 Workflow 状态机 |
+| `scripts/core_v2_{acceptance,recovery_acceptance,guards_acceptance}.ts` | 参数化 Node/Python/Minimal Git fixture 与真实 Agent/Runner 故障场景 | Test argv、Reviewer contract 与 Evidence 同源；Recovery 只消费正式 token/manifest |
 
 ## 模块图
 

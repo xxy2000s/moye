@@ -1,0 +1,18 @@
+schema_version: 1
+id: BL-0079
+title: 让跨版本恢复 Harness 对账长 Role 并持久保存新版本 Commit
+kind: bug
+status: converted_to_task
+priority: high
+source_refs: [finding-cross-version-recovery-role-reconcile]
+affected_areas: [external-project-acceptance, role-reconcile, release-evidence]
+acceptance_outline:
+  - 边界等待器必须同时观察进程退出和正式 WAITING_RECONCILE Projection
+  - 只能用绑定同一 Run 与 Attempt 的已落盘 Manifest 确认 Role 结果
+  - 对账后不得启动第二个 Agent Run，后续 Service 必须接管同一 Workflow
+  - 新 Service Commit 与 Tree 必须在运行前保存为可独立校验的 Git bundle Evidence
+  - 续跑必须复用已归档场景且只重跑缺失的跨版本与 clean-install 阶段
+resolution:
+  task_refs: [TASK-0074]
+  duplicate_of:
+  reason: TASK-0074 在真实跨版本恢复验收中就地修复并用新 Workflow key 重新执行

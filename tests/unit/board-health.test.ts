@@ -1,8 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { probeRuntimeReadiness } from "../../src/board/server.js";
+import { probeRuntimeReadiness, runtimeReleaseIdentity } from "../../src/board/server.js";
 
 describe("board health", () => {
+  it("reports a validated release identity without using it as Runtime state", () => {
+    expect(runtimeReleaseIdentity({ MOYE_RELEASE_VERSION: "0.1.0-rc.2", MOYE_SOURCE_REVISION: "a".repeat(40) })).toEqual({ version: "0.1.0-rc.2", sourceRevision: "a".repeat(40) });
+    expect(() => runtimeReleaseIdentity({ MOYE_RELEASE_VERSION: "bad value" })).toThrow(/invalid/);
+  });
   it("requires both Restate ingress reachability and admin health", async () => {
     const fetchImpl = vi.fn<typeof fetch>()
       .mockResolvedValueOnce(new Response("bad request", { status: 400 }))

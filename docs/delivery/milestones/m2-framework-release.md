@@ -197,4 +197,4 @@ npm run release:verify
 
 - 当前结论：项目 Owner 于 2026-08-25 批准 Revision 1、目标发布渠道与有凭证时的外部发布动作。
 - 冻结映射：TASK-0066～TASK-0075 分别对应 W01～W10；M1 Tag 完成前不创建第一个 Active Task。
-- 当前状态：M1 已冻结；TASK-0066～0073 已完成公共边界至三个 External Example；下一步 TASK-0074 External Project Product Matrix。
+- 当前状态：M1 已冻结；TASK-0066～0074 已完成公共边界、三个 External Example 与真实 External Project Product Matrix；下一步 TASK-0075 RC/GA Release and Handoff。

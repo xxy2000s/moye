@@ -38,5 +38,6 @@ resolution:
     - TASK-0071
     - TASK-0072
     - TASK-0073
+    - TASK-0074
   duplicate_of:
-  reason: "M2 已批准；TASK-0066～0072 已归档，TASK-0073 正在交付 External Example Projects，后续 TASK-0074～0075 按依赖创建。"
+  reason: "M2 已批准；TASK-0066～0073 已归档，TASK-0074 External Project Product Matrix 已通过并等待 Seal，TASK-0075 在其归档后执行 RC/GA。"

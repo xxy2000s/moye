@@ -1,0 +1,27 @@
+schema_version: 1
+id: TASK-0074
+title: External Project Product Matrix
+status: seal_prepared
+outcome: null
+backlog_refs:
+  - BL-0068
+  - BL-0077
+  - BL-0078
+  - BL-0079
+spec_revision: 1
+workflow_id: sealed-task/TASK-0074
+execution_mode: sealed-result-commit
+base_commit: 9b6714e71db887391d8783a27df2ebacb06615e1
+archive:
+  status: prepared
+  archived_at: null
+  archived_path: docs/delivery/tasks/archive/2026-08-26-TASK-0074
+result:
+  pull_request: null
+  merge_commit: null
+  closure_report: null
+seal:
+  status: prepared
+  intent_digest: sha256:0c917e02b38142479fa59c0306ba3a8d4123fb0033b9515a2f137683d3638d36
+  base_commit: 9b6714e71db887391d8783a27df2ebacb06615e1
+  archive_path: docs/delivery/tasks/archive/2026-08-26-TASK-0074

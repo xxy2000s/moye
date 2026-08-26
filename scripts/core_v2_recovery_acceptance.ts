@@ -16,6 +16,13 @@ const projectId = process.env["MOYE_CORE_V2_ACCEPTANCE_PROJECT"] ?? "moye";
 const acceptanceRoot = path.resolve(process.env["MOYE_CORE_V2_ACCEPTANCE_ROOT"] ?? ".moye-runtime/acceptance/core-v2");
 const cleanupSmoke = process.env["MOYE_CORE_V2_RECOVERY_CLEANUP_SMOKE"] === "enabled";
 const requestedScenarios = (process.env["MOYE_CORE_V2_RECOVERY_SCENARIOS"] ?? "").split(",").map((item) => item.trim()).filter(Boolean);
+const fixtureKindInput = process.env["MOYE_CORE_V2_FIXTURE_KIND"] ?? "node";
+if (fixtureKindInput !== "node" && fixtureKindInput !== "minimal-git") throw new Error("MOYE_CORE_V2_FIXTURE_KIND must be node or minimal-git");
+const fixtureKind = fixtureKindInput as "node" | "minimal-git";
+const trustedTestArgv = fixtureKind === "minimal-git" ? ["git", "diff", "--check", "HEAD"] : ["npm", "test"];
+const initialServiceRoot = process.env["MOYE_CORE_V2_RECOVERY_INITIAL_CWD"] === undefined ? process.cwd() : path.resolve(process.env["MOYE_CORE_V2_RECOVERY_INITIAL_CWD"]);
+const currentServiceRoot = process.env["MOYE_CORE_V2_RECOVERY_CURRENT_CWD"] === undefined ? process.cwd() : path.resolve(process.env["MOYE_CORE_V2_RECOVERY_CURRENT_CWD"]);
+const archivedUpgradeTaskId = process.env["MOYE_CORE_V2_UPGRADE_ARCHIVED_TASK_ID"];
 const stamp = new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14);
 const runRoot = path.resolve(process.env["MOYE_CORE_V2_ACCEPTANCE_RUN_ROOT"] ?? path.join(acceptanceRoot, `recovery-${stamp}-${process.pid}`));
 const servicePort = await freePort();
@@ -25,10 +32,13 @@ const boardUrl = `http://127.0.0.1:${boardPort}`;
 const pageBoardUrl = process.env["MOYE_CORE_V2_ACCEPTANCE_PAGE_BOARD"] ?? boardUrl;
 let service: ChildProcess | undefined;
 let logs = "";
+let serviceStartCount = 0;
+const serviceTransitions: Array<{ root: string; commit: string; releaseVersion: string }> = [];
 
 await mkdir(runRoot, { recursive: true });
 await startService();
 await registerService();
+const archivedBefore = archivedUpgradeTaskId === undefined ? null : await invoke<CoreV2WorkflowProjection | null>(ingressUrl, "CoreV2Workflow", archivedUpgradeTaskId, "status");
 const summaries: unknown[] = [];
 try {
   const allScenarios = ["TEST_CONFIRMED", "TEST_NOT_APPLIED", "ROLE_WORKER_RECOVERY", "CHECKPOINT_UNKNOWN", "MERGE_UNKNOWN", "ROLE_NOT_APPLIED"] as const;
@@ -43,7 +53,9 @@ try {
     summaries.push(summary);
     process.stdout.write(`${scenario}: ${summary.taskId} ${summary.outcome}/${summary.archiveStatus}\n`);
   }
-  const matrix = { schemaVersion: 1, validationKind: cleanupSmoke ? "HARNESS_CLEANUP_SMOKE" : "PRODUCT_ACCEPTANCE", executedAt: new Date().toISOString(), runRoot, ingressUrl, boardUrl, scenarios: summaries };
+  const archivedAfter = archivedUpgradeTaskId === undefined ? null : await invoke<CoreV2WorkflowProjection | null>(ingressUrl, "CoreV2Workflow", archivedUpgradeTaskId, "status");
+  if (archivedUpgradeTaskId !== undefined && (archivedBefore?.lifecycle.projectionDigest !== archivedAfter?.lifecycle.projectionDigest || archivedAfter?.lifecycle.archive?.status !== "ARCHIVED")) throw new Error(`${archivedUpgradeTaskId} archived Projection changed across service upgrade`);
+  const matrix = { schemaVersion: 1, validationKind: cleanupSmoke ? "HARNESS_CLEANUP_SMOKE" : "PRODUCT_ACCEPTANCE", executedAt: new Date().toISOString(), runRoot, ingressUrl, boardUrl, fixtureKind, serviceTransitions, archivedUpgrade: archivedUpgradeTaskId === undefined ? null : { taskId: archivedUpgradeTaskId, beforeDigest: archivedBefore?.lifecycle.projectionDigest, afterDigest: archivedAfter?.lifecycle.projectionDigest }, scenarios: summaries };
   await writeJson(path.join(runRoot, "matrix-summary.json"), matrix);
   process.stdout.write(`${JSON.stringify(matrix, null, 2)}\n`);
 } finally {
@@ -68,15 +80,15 @@ async function executeScenario(scenario: Scenario, index: number) {
   const artifactRoot = path.join(scenarioRoot, "artifacts");
   const executionLedger = path.join(scenarioRoot, "trusted-test-executions.log");
   await mkdir(artifactRoot, { recursive: true });
-  await createFixture(repositoryRoot, executionLedger);
+  await createFixture(repositoryRoot, executionLedger, fixtureKind);
   const baseCommit = git(repositoryRoot, "rev-parse", "HEAD");
   const marker = (name: string) => path.join(artifactRoot, `${name}.marker`);
   const codexHome = process.env["CODEX_HOME"] ?? path.join(os.homedir(), ".codex");
   const input: CoreV2WorkflowInput = {
     taskId, projectId, title: `Core v2 real recovery acceptance: ${scenario}`,
     objective: "Create src/value.txt whose complete content is exactly `accepted-value\\n`; add a README line exactly `## Accepted behavior`; create SECURITY.md whose complete content is exactly `# Security\\n` (the period ends this sentence and is not file content).",
-    acceptanceCriteria: ["src/value.txt complete content is exactly accepted-value plus one newline", "README contains a line exactly ## Accepted behavior", "SECURITY.md complete content is exactly # Security plus one newline", "Trusted Runner executes npm test"],
-    repositoryRoot, artifactRoot, runnerKind: "CODEX_EXEC", baseCommit, targetRef: "refs/heads/release", testCommands: [["npm", "test"]],
+    acceptanceCriteria: ["src/value.txt complete content is exactly accepted-value plus one newline", "README contains a line exactly ## Accepted behavior", "SECURITY.md complete content is exactly # Security plus one newline", `Trusted Runner executes ${trustedTestArgv.join(" ")}`],
+    repositoryRoot, artifactRoot, runnerKind: "CODEX_EXEC", baseCommit, targetRef: "refs/heads/release", testCommands: [trustedTestArgv],
     ...(scenario === "TEST_CONFIRMED" ? { recoveryControl: { testExitAfterManifestOnceAt: marker("test-manifest") } } : {}),
     ...(scenario === "TEST_NOT_APPLIED" ? { recoveryControl: { testExitAfterIntentOnceAt: marker("test-intent") } } : {}),
     ...(scenario === "ROLE_WORKER_RECOVERY" ? { recoveryControl: { roleExitAfterManifestOnceAt: {
@@ -101,7 +113,11 @@ async function executeScenario(scenario: Scenario, index: number) {
   await writeJson(path.join(scenarioRoot, "submission-receipt.json"), receipt);
 
   const exitCount = scenario === "ROLE_WORKER_RECOVERY" ? 3 : 1;
-  for (let i = 0; i < exitCount; i += 1) { await waitForExit(15 * 60_000); await startService(); await registerService(); }
+  for (let i = 0; i < exitCount; i += 1) {
+    await waitForExitWithRoleReconcile(taskId, 30 * 60_000);
+    await startService();
+    await registerService();
+  }
 
   let pending: CoreV2WorkflowProjection | undefined;
   if (scenario === "TEST_CONFIRMED" || scenario === "TEST_NOT_APPLIED" || scenario === "ROLE_NOT_APPLIED") {
@@ -160,8 +176,8 @@ async function persistSummary(root: string, scenario: Scenario, projection: Core
     }
     assert(new Set(sessionEvidence.map((item) => item.receipt?.receiptDigest)).size === sessionEvidence.length, `${projection.taskId} duplicate Session Receipt`);
   }
-  const executions = (await readFile(ledger, "utf8")).trim().split("\n").filter(Boolean);
-  assert(executions.length === 1 && projection.lifecycle.trustedTestRuns.length === 1, `${projection.taskId} test executed more than once`);
+  const executions = await readLedger(ledger);
+  assert((fixtureKind === "minimal-git" ? executions.length === 0 : executions.length === 1) && projection.lifecycle.trustedTestRuns.length === 1, `${projection.taskId} test executed more than once`);
   const repositoryRoot = path.dirname(ledger) + "/repository";
   const candidates = git(repositoryRoot, "log", "--all", "--fixed-strings", "--grep", `Moye-Task: ${projection.taskId}`, "--format=%H").split("\n").filter(Boolean);
   assert(candidates.length === projection.lifecycle.invalidatedGenerations.length + 1, `${projection.taskId} Candidate Commit count ${candidates.length} does not match valid plus invalidated generations`);
@@ -190,17 +206,22 @@ async function persistSummary(root: string, scenario: Scenario, projection: Core
     mergeReceipt: projection.lifecycle.mergeReceipt, verificationGateDigest: projection.lifecycle.verificationGateDigest,
     closureDigest: projection.lifecycle.successClosure?.closureDigest, archiveReceiptDigest: projection.lifecycle.archive?.receiptDigest,
     projectionDigest: projection.lifecycle.projectionDigest, eventCount: projection.lifecycle.events.length, faultMarkers,
-    reconciliationAudit: reconciliationAudit === undefined ? null : { ...reconciliationAudit, trustedTestExecutionCount: executions.length },
+      reconciliationAudit: reconciliationAudit === undefined ? null : { ...reconciliationAudit, trustedTestExecutionCount: projection.lifecycle.trustedTestRuns.length },
     pageUrl: `${pageBoardUrl}/tasks/${encodeURIComponent(projection.taskId)}` };
   await writeJson(path.join(root, "evidence-summary.json"), summary); return summary;
 }
 
 async function startService() {
+  const serviceRoot = serviceStartCount === 0 ? initialServiceRoot : currentServiceRoot;
+  serviceStartCount += 1;
+  const releaseVersion = serviceStartCount === 1 ? "0.1.0-rc.1" : "0.1.0-rc.2";
+  const commit = git(serviceRoot, "rev-parse", "HEAD");
+  serviceTransitions.push({ root: serviceRoot, commit, releaseVersion });
   await appendFile(path.join(runRoot, "service.log"), `\n--- service start ${new Date().toISOString()} port=${servicePort} ---\n`);
-  service = spawn(process.execPath, ["--import", "tsx", "src/index.ts"], { cwd: process.cwd(), env: { ...process.env,
+  service = spawn(process.execPath, ["--import", "tsx", "src/index.ts"], { cwd: serviceRoot, env: { ...process.env,
     RESTATE_SERVICE_PORT: String(servicePort), MOYE_BOARD_PORT: String(boardPort), RESTATE_INGRESS_URL: ingressUrl, RESTATE_ADMIN_URL: adminUrl,
     MOYE_PROJECT_ID: projectId, MOYE_LIVE_RUNTIME_ROOT: runRoot, MOYE_REPOSITORY_ROOTS: runRoot, MOYE_ARTIFACT_ROOTS: runRoot,
-    MOYE_ACCEPTANCE_FAULT_INJECTION: "enabled", MOYE_TEST_FAULT_INJECTION: "enabled", MOYE_OBSERVABILITY_ENABLED: "false",
+    MOYE_ACCEPTANCE_FAULT_INJECTION: "enabled", MOYE_TEST_FAULT_INJECTION: "enabled", MOYE_OBSERVABILITY_ENABLED: "false", MOYE_RELEASE_VERSION: releaseVersion, MOYE_SOURCE_REVISION: commit,
   }, stdio: ["ignore", "pipe", "pipe"] });
   service.stdout?.on("data", (value: Buffer) => { const text = value.toString(); logs += text; void appendFile(path.join(runRoot, "service.log"), text); });
   service.stderr?.on("data", (value: Buffer) => { const text = value.toString(); logs += text; void appendFile(path.join(runRoot, "service.log"), text); });
@@ -224,13 +245,43 @@ async function stopService(signal: NodeJS.Signals) {
   if (processExists(pid)) throw new Error(`service pid ${pid} survived SIGKILL`);
 }
 async function waitForExit(timeout: number) { const child = service; if (child === undefined) throw new Error("service absent"); await Promise.race([child.exitCode !== null ? Promise.resolve() : new Promise<void>((resolveDone) => child.once("exit", () => resolveDone())), new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`service did not exit\n${logs}`)), timeout))]); service = undefined; }
+async function waitForExitWithRoleReconcile(taskId: string, timeout: number) {
+  const child = service;
+  if (child === undefined) throw new Error("service absent");
+  const deadline = Date.now() + timeout;
+  const reconciled = new Set<string>();
+  while (Date.now() < deadline) {
+    if (child.exitCode !== null || child.signalCode !== null) { service = undefined; return; }
+    try {
+      const projection = await invoke<CoreV2WorkflowProjection | null>(ingressUrl, "CoreV2Workflow", taskId, "status");
+      const pending = projection?.pendingReconcile;
+      if (projection?.state === "WAITING_RECONCILE" && pending?.kind === "ROLE" && !reconciled.has(pending.token)) {
+        assert(typeof pending.runId === "string" && typeof pending.attemptId === "string", `${taskId} pending Role identity is incomplete`);
+        const runId = pending.runId;
+        const attemptId = pending.attemptId;
+        const manifestPath = path.join(projection.artifactRoot, "roles", `run-${runId.replace(/^sha256:/u, "")}`, "manifest.json");
+        const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as { manifestDigest?: string; runId?: string; attemptId?: string };
+        assert(manifest.runId === runId && manifest.attemptId === attemptId && typeof manifest.manifestDigest === "string", `${taskId} pending Role manifest binding is invalid`);
+        await invoke(ingressUrl, "CoreV2Workflow", taskId, "reconcile", { token: pending.token, action: "CONFIRMED", evidence: `persisted Role manifest ${manifest.manifestDigest}` });
+        reconciled.add(pending.token);
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+        await appendFile(path.join(runRoot, "service.log"), `\n--- boundary observer ${new Date().toISOString()}: ${error instanceof Error ? error.message : String(error)} ---\n`);
+      }
+    }
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, 250));
+  }
+  throw new Error(`service did not reach the requested fault boundary\n${logs}`);
+}
 async function waitForProjection(taskId: string, predicate: (value: CoreV2WorkflowProjection) => boolean, timeout: number) { let latest: CoreV2WorkflowProjection | null = null; await waitUntil(async () => { latest = await invoke(ingressUrl, "CoreV2Workflow", taskId, "status"); return latest !== null && predicate(latest); }, timeout); return latest as unknown as CoreV2WorkflowProjection; }
 async function expectConflict(fn: () => Promise<unknown>) { try { await fn(); throw new Error("expected conflict"); } catch (error) { if (!(error instanceof IngressError) || error.status !== 409) throw error; } }
 async function waitUntil(check: () => boolean | Promise<boolean>, timeout: number) { const deadline = Date.now() + timeout; let error: unknown; while (Date.now() < deadline) { try { if (await check()) return; } catch (value) { error = value; } await new Promise((resolveDelay) => setTimeout(resolveDelay, 250)); } throw new Error(`timeout${error instanceof Error ? `: ${error.message}` : ""}`); }
 async function canConnect(port: number) { return new Promise<boolean>((resolveResult) => { const socket = net.createConnection({ host: "127.0.0.1", port }); socket.once("connect", () => { socket.destroy(); resolveResult(true); }); socket.once("error", () => resolveResult(false)); }); }
 function processExists(pid: number) { try { process.kill(pid, 0); return true; } catch (error) { if ((error as NodeJS.ErrnoException).code === "ESRCH") return false; throw error; } }
 async function freePort() { return new Promise<number>((resolvePort, reject) => { const server = net.createServer(); server.once("error", reject); server.listen(0, "127.0.0.1", () => { const address = server.address(); if (address === null || typeof address === "string") return reject(new Error("port unavailable")); server.close(() => resolvePort(address.port)); }); }); }
-async function createFixture(root: string, ledger: string) { await mkdir(root, { recursive: true }); git(root, "init", "-b", "master"); git(root, "config", "user.name", "Moye Recovery Acceptance"); git(root, "config", "user.email", "moye@example.test"); await writeFile(path.join(root, "README.md"), "# Recovery fixture\n"); await writeFile(path.join(root, "package.json"), `${JSON.stringify({ private: true, scripts: { test: "node test.cjs" } }, null, 2)}\n`); await writeFile(path.join(root, "test.cjs"), `const fs=require('node:fs');if(process.env.MOYE_TRUSTED_RUNNER_EXECUTION==='1')fs.appendFileSync(${JSON.stringify(ledger)},'run\\n');const ok=fs.readFileSync('src/value.txt','utf8')==='accepted-value\\n'&&fs.readFileSync('SECURITY.md','utf8')==='# Security\\n'&&fs.readFileSync('README.md','utf8').split(/\\r?\\n/).includes('## Accepted behavior');if(!ok)process.exit(17);\n`); git(root, "add", "."); git(root, "commit", "-m", "fixture base"); git(root, "update-ref", "refs/heads/release", "HEAD"); git(root, "switch", "--detach", "HEAD"); }
+async function createFixture(root: string, ledger: string, kind: "node" | "minimal-git") { await mkdir(root, { recursive: true }); git(root, "init", "-b", "master"); git(root, "config", "user.name", "Moye Recovery Acceptance"); git(root, "config", "user.email", "moye@example.test"); await writeFile(path.join(root, "README.md"), "# Recovery fixture\n"); if (kind === "node") { await writeFile(path.join(root, "package.json"), `${JSON.stringify({ private: true, scripts: { test: "node test.cjs" } }, null, 2)}\n`); await writeFile(path.join(root, "test.cjs"), `const fs=require('node:fs');if(process.env.MOYE_TRUSTED_RUNNER_EXECUTION==='1')fs.appendFileSync(${JSON.stringify(ledger)},'run\\n');const ok=fs.readFileSync('src/value.txt','utf8')==='accepted-value\\n'&&fs.readFileSync('SECURITY.md','utf8')==='# Security\\n'&&fs.readFileSync('README.md','utf8').split(/\\r?\\n/).includes('## Accepted behavior');if(!ok)process.exit(17);\n`); } else { await writeFile(path.join(root, "project.txt"), "Minimal Git recovery fixture\n"); } git(root, "add", "."); git(root, "commit", "-m", "fixture base"); git(root, "update-ref", "refs/heads/release", "HEAD"); git(root, "switch", "--detach", "HEAD"); }
+async function readLedger(file: string): Promise<string[]> { try { return (await readFile(file, "utf8")).trim().split("\n").filter(Boolean); } catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return []; throw error; } }
 function git(cwd: string, ...argv: string[]) { const result = spawnSync("git", argv, { cwd, encoding: "utf8" }); if (result.status !== 0) throw new Error(result.stderr || `git ${argv[0]} failed`); return result.stdout.trim(); }
 async function fetchJson<T>(url: string) { const response = await fetch(url); if (!response.ok) throw new Error(`${response.status} ${await response.text()}`); return response.json() as Promise<T>; }
 async function writeJson(file: string, value: unknown) { await mkdir(path.dirname(file), { recursive: true }); await writeFile(file, `${JSON.stringify(value, null, 2)}\n`); }

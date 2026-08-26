@@ -5343,6 +5343,110 @@ documents:
     authority: task-evidence
     read_when: [task-close, task-archive]
 
+  - id: task-0074-manifest
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0074/task.yaml
+    type: task-manifest
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close, task-archive]
+
+  - id: finding-framework-acceptance-service-auth
+    path: docs/sources/findings/framework-acceptance-service-authorization-not-preflighted.md
+    type: finding
+    status: resolved
+    scope: framework-productization
+    authority: observed-defect
+    read_when: [finding-intake, external-project-acceptance, restate-runtime]
+
+  - id: bl-0077-framework-acceptance-service-auth
+    path: docs/delivery/backlog/BL-0077.yaml
+    type: backlog-item
+    status: converted_to_task
+    scope: framework-productization
+    authority: delivery-control
+    read_when: [backlog-triage, external-project-acceptance, restate-runtime]
+
+  - id: finding-minimal-git-recovery-test-contract
+    path: docs/sources/findings/minimal-git-recovery-acceptance-text-hardcodes-npm-test.md
+    type: finding
+    status: resolved
+    scope: framework-productization
+    authority: observed-defect
+    read_when: [finding-intake, external-project-acceptance, recovery]
+
+  - id: bl-0078-minimal-git-recovery-test-contract
+    path: docs/delivery/backlog/BL-0078.yaml
+    type: backlog-item
+    status: converted_to_task
+    scope: framework-productization
+    authority: delivery-control
+    read_when: [backlog-triage, external-project-acceptance, recovery]
+
+  - id: finding-cross-version-recovery-role-reconcile
+    path: docs/sources/findings/cross-version-recovery-wait-misses-role-reconcile.md
+    type: finding
+    status: resolved
+    scope: framework-productization
+    authority: observed-defect
+    read_when: [finding-intake, external-project-acceptance, recovery, release]
+
+  - id: bl-0079-cross-version-recovery-role-reconcile
+    path: docs/delivery/backlog/BL-0079.yaml
+    type: backlog-item
+    status: converted_to_task
+    scope: framework-productization
+    authority: delivery-control
+    read_when: [backlog-triage, external-project-acceptance, recovery, release]
+
+  - id: task-0074-spec
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0074/spec.md
+    type: task-spec
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0074-design
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0074/design.md
+    type: task-design
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0074-plan
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0074/plan.md
+    type: task-plan
+    status: archived
+    scope: framework-productization
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0074-verification
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0074/verification.md
+    type: verification
+    status: archived
+    scope: framework-productization
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0074-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0074/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: framework-productization
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0074-framework-product-matrix
+    path: docs/delivery/tasks/archive/2026-08-26-TASK-0074/framework-product-matrix.json
+    type: verification-evidence
+    status: archived
+    scope: framework-productization
+    authority: task-evidence
+    read_when: [task-close, task-archive, framework-release]
+
 relations:
   - from: root-readme
     to: docs-index
@@ -5359,6 +5463,70 @@ relations:
   - from: moye-task-control-skill
     to: document-control-plane
     type: enforces
+
+  - from: findings-index
+    to: finding-framework-acceptance-service-auth
+    type: indexes
+
+  - from: finding-framework-acceptance-service-auth
+    to: bl-0077-framework-acceptance-service-auth
+    type: produces
+
+  - from: backlog-index
+    to: bl-0077-framework-acceptance-service-auth
+    type: indexes
+
+  - from: bl-0077-framework-acceptance-service-auth
+    to: task-0074-manifest
+    type: converted_to
+
+  - from: task-0074-spec
+    to: bl-0077-framework-acceptance-service-auth
+    type: resolves
+
+  - from: findings-index
+    to: finding-minimal-git-recovery-test-contract
+    type: indexes
+
+  - from: finding-minimal-git-recovery-test-contract
+    to: bl-0078-minimal-git-recovery-test-contract
+    type: produces
+
+  - from: backlog-index
+    to: bl-0078-minimal-git-recovery-test-contract
+    type: indexes
+
+  - from: bl-0078-minimal-git-recovery-test-contract
+    to: task-0074-manifest
+    type: converted_to
+
+  - from: task-0074-spec
+    to: bl-0078-minimal-git-recovery-test-contract
+    type: resolves
+
+  - from: findings-index
+    to: finding-cross-version-recovery-role-reconcile
+    type: indexes
+
+  - from: finding-cross-version-recovery-role-reconcile
+    to: bl-0079-cross-version-recovery-role-reconcile
+    type: produces
+
+  - from: backlog-index
+    to: bl-0079-cross-version-recovery-role-reconcile
+    type: indexes
+
+  - from: bl-0079-cross-version-recovery-role-reconcile
+    to: task-0074-manifest
+    type: converted_to
+
+  - from: task-0074-spec
+    to: bl-0079-cross-version-recovery-role-reconcile
+    type: resolves
+
+  - from: task-0074-verification
+    to: task-0074-framework-product-matrix
+    type: verified_by
 
   - from: docs-index
     to: sources-index
@@ -9382,6 +9550,42 @@ relations:
 
   - from: task-0073-docs-impact
     to: task-0073-manifest
+    type: reports_on
+
+  - from: milestone-2-framework-release
+    to: task-0074-manifest
+    type: schedules
+
+  - from: archived-tasks-index
+    to: task-0074-manifest
+    type: indexes
+
+  - from: task-0074-spec
+    to: bl-0068-framework-productization
+    type: consumes
+
+  - from: task-0074-spec
+    to: task-0074-manifest
+    type: belongs_to
+
+  - from: task-0074-design
+    to: task-0074-spec
+    type: refines
+
+  - from: task-0074-design
+    to: framework-product-boundary
+    type: implements_slice_of
+
+  - from: task-0074-plan
+    to: task-0074-manifest
+    type: belongs_to
+
+  - from: task-0074-verification
+    to: task-0074-manifest
+    type: verifies
+
+  - from: task-0074-docs-impact
+    to: task-0074-manifest
     type: reports_on
 
 routing:

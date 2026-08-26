@@ -1,0 +1,17 @@
+schema_version: 1
+id: BL-0077
+title: 让 Framework 产品矩阵自举验收 Service 并快速暴露 Invocation 失败
+kind: bug
+status: converted_to_task
+priority: high
+source_refs: [finding-framework-acceptance-service-auth]
+affected_areas: [external-project-acceptance, acceptance-harness, restate-runtime]
+acceptance_outline:
+  - 产品矩阵命令无需人工预配置即可启动并注册授权正确的专用 Service
+  - Projection 创建前的 Restate Invocation 失败必须立即报告且保留原失败事实
+  - 专用 Service 必须精确回收并恢复主 Service 注册
+  - 修复后的矩阵必须用新的 Workflow key 完成真实 Agent 场景
+resolution:
+  task_refs: [TASK-0074]
+  duplicate_of:
+  reason: TASK-0074 在真实矩阵首轮失败后就地修复入口并使用新 Workflow key 重跑

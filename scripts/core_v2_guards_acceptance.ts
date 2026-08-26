@@ -23,6 +23,10 @@ const pageBoardUrl = process.env["MOYE_CORE_V2_ACCEPTANCE_PAGE_BOARD"] ?? boardU
 const reauditRoot = process.env["MOYE_CORE_V2_GUARD_REAUDIT_ROOT"];
 const allScenarios = ["REPAIR_BUDGET", "REPLAN_BUDGET", "OBSERVER_TIMEOUT", "STALE_FENCING"] as const;
 const selectedScenarios = selectScenarios(process.env["MOYE_CORE_V2_GUARD_SCENARIOS"]);
+const fixtureKindInput = process.env["MOYE_CORE_V2_FIXTURE_KIND"] ?? "node";
+if (fixtureKindInput !== "node" && fixtureKindInput !== "minimal-git") throw new Error("MOYE_CORE_V2_FIXTURE_KIND must be node or minimal-git");
+const fixtureKind = fixtureKindInput as "node" | "minimal-git";
+const trustedTestArgv = fixtureKind === "minimal-git" ? ["git", "diff", "--check", "HEAD"] : ["npm", "test"];
 let service: ChildProcess | undefined;
 let logs = "";
 
@@ -62,13 +66,13 @@ async function executeScenario(scenario: Scenario, index: number) {
     assert(input.acceptanceMetadata?.scenario === scenario, `${taskId} re-audit scenario binding mismatch`);
   } else {
     await mkdir(artifactRoot, { recursive: true });
-    await createFixture(repositoryRoot, executionLedger);
+    await createFixture(repositoryRoot, executionLedger, fixtureKind);
     const baseCommit = git(repositoryRoot, "rev-parse", "HEAD");
     input = {
       taskId, projectId, title: `Core v2 real guard acceptance: ${scenario}`,
       objective: "Create src/value.txt whose complete content is exactly `accepted-value\\n`; add a README line exactly `## Accepted behavior`; create SECURITY.md whose complete content is exactly `# Security\\n`.",
       acceptanceCriteria: ["src/value.txt contains accepted-value", "README contains ## Accepted behavior", "SECURITY.md contains # Security", "Trusted Runner executes npm test"],
-      repositoryRoot, artifactRoot, runnerKind: "CODEX_EXEC", baseCommit, targetRef: "refs/heads/release", testCommands: [["npm", "test"]],
+      repositoryRoot, artifactRoot, runnerKind: "CODEX_EXEC", baseCommit, targetRef: "refs/heads/release", testCommands: [trustedTestArgv],
       ...(scenario === "REPAIR_BUDGET" ? { acceptanceControl: { profile: "REPAIR_BUDGET" as const } } : {}),
       ...(scenario === "REPLAN_BUDGET" ? { acceptanceControl: { profile: "REPLAN_BUDGET" as const } } : {}),
       ...(scenario === "STALE_FENCING" ? { acceptanceControl: { profile: "IMPLEMENTATION_SELF_REVIEW" as const } } : {}),
@@ -191,7 +195,7 @@ async function waitUntil(check: () => boolean | Promise<boolean>, timeout: numbe
 async function canConnect(port: number) { return new Promise<boolean>((resolveResult) => { const socket = net.createConnection({ host: "127.0.0.1", port }); socket.once("connect", () => { socket.destroy(); resolveResult(true); }); socket.once("error", () => resolveResult(false)); }); }
 function processExists(pid: number) { try { process.kill(pid, 0); return true; } catch (error) { if ((error as NodeJS.ErrnoException).code === "ESRCH") return false; throw error; } }
 async function freePort() { return new Promise<number>((resolvePort, reject) => { const server = net.createServer(); server.once("error", reject); server.listen(0, "127.0.0.1", () => { const address = server.address(); if (address === null || typeof address === "string") return reject(new Error("port unavailable")); server.close(() => resolvePort(address.port)); }); }); }
-async function createFixture(root: string, ledger: string) { await mkdir(root, { recursive: true }); git(root, "init", "-b", "master"); git(root, "config", "user.name", "Moye Guards Acceptance"); git(root, "config", "user.email", "moye@example.test"); await writeFile(path.join(root, "README.md"), "# Guards fixture\n"); await writeFile(path.join(root, "package.json"), `${JSON.stringify({ private: true, scripts: { test: "node test.cjs" } }, null, 2)}\n`); await writeFile(path.join(root, "test.cjs"), `const fs=require('node:fs');if(process.env.MOYE_TRUSTED_RUNNER_EXECUTION==='1')fs.appendFileSync(${JSON.stringify(ledger)},'run\\n');const ok=fs.readFileSync('src/value.txt','utf8')==='accepted-value\\n'&&fs.readFileSync('SECURITY.md','utf8')==='# Security\\n'&&fs.readFileSync('README.md','utf8').split(/\\r?\\n/).includes('## Accepted behavior');if(!ok)process.exit(17);\n`); git(root, "add", "."); git(root, "commit", "-m", "fixture base"); git(root, "update-ref", "refs/heads/release", "HEAD"); git(root, "switch", "--detach", "HEAD"); }
+async function createFixture(root: string, ledger: string, kind: "node" | "minimal-git") { await mkdir(root, { recursive: true }); git(root, "init", "-b", "master"); git(root, "config", "user.name", "Moye Guards Acceptance"); git(root, "config", "user.email", "moye@example.test"); await writeFile(path.join(root, "README.md"), "# Guards fixture\n"); if (kind === "node") { await writeFile(path.join(root, "package.json"), `${JSON.stringify({ private: true, scripts: { test: "node test.cjs" } }, null, 2)}\n`); await writeFile(path.join(root, "test.cjs"), `const fs=require('node:fs');if(process.env.MOYE_TRUSTED_RUNNER_EXECUTION==='1')fs.appendFileSync(${JSON.stringify(ledger)},'run\\n');const ok=fs.readFileSync('src/value.txt','utf8')==='accepted-value\\n'&&fs.readFileSync('SECURITY.md','utf8')==='# Security\\n'&&fs.readFileSync('README.md','utf8').split(/\\r?\\n/).includes('## Accepted behavior');if(!ok)process.exit(17);\n`); } else { await writeFile(path.join(root, "project.txt"), "Minimal Git failure fixture\n"); } git(root, "add", "."); git(root, "commit", "-m", "fixture base"); git(root, "update-ref", "refs/heads/release", "HEAD"); git(root, "switch", "--detach", "HEAD"); }
 function git(cwd: string, ...argv: string[]) { const result = spawnSync("git", argv, { cwd, encoding: "utf8" }); if (result.status !== 0) throw new Error(result.stderr || `git ${argv[0]} failed`); return result.stdout.trim(); }
 async function readLines(file: string) { try { return (await readFile(file, "utf8")).trim().split("\n").filter(Boolean); } catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return []; throw error; } }
 async function fetchJson<T>(url: string) { const response = await fetch(url); if (!response.ok) throw new Error(`${response.status} ${await response.text()}`); return response.json() as Promise<T>; }

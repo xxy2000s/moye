@@ -14,6 +14,7 @@ interface Scenario { readonly name: ScenarioName; readonly profile?: CoreV2Accep
 const mode = option("--mode") ?? "happy";
 if (mode !== "happy" && mode !== "faults") throw new Error("--mode must be happy or faults");
 const ingressUrl = process.env["MOYE_CORE_V2_ACCEPTANCE_INGRESS"] ?? process.env["RESTATE_INGRESS_URL"] ?? "http://127.0.0.1:8080";
+const adminUrl = process.env["MOYE_CORE_V2_ACCEPTANCE_ADMIN"] ?? process.env["RESTATE_ADMIN_URL"] ?? "http://127.0.0.1:9070";
 const boardUrl = process.env["MOYE_CORE_V2_ACCEPTANCE_BOARD"] ?? "http://127.0.0.1:3000";
 const pageBoardUrl = process.env["MOYE_CORE_V2_ACCEPTANCE_PAGE_BOARD"] ?? boardUrl;
 const projectId = process.env["MOYE_CORE_V2_ACCEPTANCE_PROJECT"] ?? process.env["MOYE_PROJECT_ID"] ?? "moye";
@@ -28,6 +29,10 @@ const allFaultScenarios: readonly Scenario[] = [
       { name: "DESIGN_REPLAN", profile: "DESIGN_REPLAN" },
     ];
 const requestedScenarios = (process.env["MOYE_CORE_V2_ACCEPTANCE_SCENARIOS"] ?? "").split(",").map((item) => item.trim()).filter(Boolean);
+const fixtureKindInput = process.env["MOYE_CORE_V2_FIXTURE_KIND"] ?? "node";
+if (fixtureKindInput !== "node" && fixtureKindInput !== "python") throw new Error("MOYE_CORE_V2_FIXTURE_KIND must be node or python");
+const fixtureKind = fixtureKindInput as "node" | "python";
+const trustedTestArgv = fixtureKind === "python" ? ["python3", "-m", "unittest", "discover", "-s", "tests"] : ["npm", "test"];
 const scenarios: readonly Scenario[] = mode === "happy"
   ? [{ name: "HAPPY" }]
   : requestedScenarios.length === 0 ? allFaultScenarios : allFaultScenarios.filter((item) => requestedScenarios.includes(item.name));
@@ -61,7 +66,7 @@ async function executeScenario(scenario: Scenario, index: number) {
   const scenarioRoot = path.join(runRoot, scenario.name.toLowerCase());
   const repositoryRoot = path.join(scenarioRoot, "repository");
   const artifactRoot = path.join(scenarioRoot, "artifacts");
-  await createFixture(repositoryRoot);
+  await createFixture(repositoryRoot, fixtureKind);
   await mkdir(artifactRoot, { recursive: true });
   const baseCommit = git(repositoryRoot, "rev-parse", "HEAD");
   const input: CoreV2WorkflowInput = {
@@ -73,21 +78,21 @@ async function executeScenario(scenario: Scenario, index: number) {
       "src/value.txt contains exactly accepted-value followed by one newline",
       "README.md contains the exact heading ## Accepted behavior",
       "SECURITY.md exists and contains a # Security heading",
-      "the authorized npm test command is executed by the Trusted Runner",
+      `the authorized ${trustedTestArgv.join(" ")} command is executed by the Trusted Runner`,
     ],
     repositoryRoot,
     artifactRoot,
     runnerKind: "CODEX_EXEC",
     baseCommit,
     targetRef: "refs/heads/release",
-    testCommands: [["npm", "test"]],
+    testCommands: [trustedTestArgv],
     ...(scenario.profile === undefined ? {} : { acceptanceControl: { profile: scenario.profile } }),
     acceptanceMetadata: { kind: "PRODUCT_ACCEPTANCE" as const, suite: "core-v2", scenario: scenario.name },
   };
   await writeJson(path.join(scenarioRoot, "task-input.json"), input);
   const receipt = await send(ingressUrl, "CoreV2Workflow", taskId, "run", input);
   await writeJson(path.join(scenarioRoot, "submission-receipt.json"), receipt);
-  const projection = await waitForTerminal(taskId, 25 * 60_000);
+  const projection = await waitForTerminal(taskId, receipt.invocationId, 25 * 60_000);
   await writeJson(path.join(scenarioRoot, "final-projection.json"), projection);
   const trace = await fetchJson<Record<string, unknown>>(`${boardUrl}/api/tasks/${encodeURIComponent(taskId)}/trace`);
   await writeJson(path.join(scenarioRoot, "final-trace.json"), trace);
@@ -160,7 +165,7 @@ function auditCommon(input: CoreV2WorkflowInput, projection: CoreV2WorkflowProje
   assert(unique(projection.roleRuns.map((run) => required(run.sessionId, `${run.phase} sessionId`))), `${taskId} duplicate or missing Session`);
   assert(projection.roleRuns.every((run) => run.runnerKind === "CODEX_EXEC" && run.outcome === "SUCCEEDED" && run.eventsDigest.startsWith("sha256:") && run.manifestDigest.startsWith("sha256:")), `${taskId} contains a non-real or failed Role Run`);
   assert(manifests.length === lifecycle.trustedTestRuns.length && unique(manifests.map((item) => item.runId)), `${taskId} duplicate or missing Trusted Test Manifest`);
-  assert(manifests.every((manifest) => manifest.taskId === taskId && manifest.repositoryRoot === input.repositoryRoot && manifest.cases.length === 1 && JSON.stringify(manifest.cases[0]?.argv) === JSON.stringify(["npm", "test"])), `${taskId} Trusted Test binding is invalid`);
+  assert(manifests.every((manifest) => manifest.taskId === taskId && manifest.repositoryRoot === input.repositoryRoot && manifest.cases.length === 1 && JSON.stringify(manifest.cases[0]?.argv) === JSON.stringify(input.testCommands[0])), `${taskId} Trusted Test binding is invalid`);
   const task = trace["task"] as Record<string, unknown> | undefined;
   const tracedLifecycle = trace["lifecycle"] as Record<string, unknown> | undefined;
   assert(task?.["outcome"] === "SUCCEEDED" && task["archiveStatus"] === "ARCHIVED", `${taskId} Board Trace terminal mismatch`);
@@ -200,29 +205,51 @@ function auditScenario(name: ScenarioName, projection: CoreV2WorkflowProjection,
   }
 }
 
-async function createFixture(repositoryRoot: string): Promise<void> {
+async function createFixture(repositoryRoot: string, kind: "node" | "python"): Promise<void> {
   await mkdir(repositoryRoot, { recursive: true });
   git(repositoryRoot, "init", "-b", "master");
   git(repositoryRoot, "config", "user.name", "Moye Core v2 Acceptance");
   git(repositoryRoot, "config", "user.email", "moye-core-v2@example.test");
   await writeFile(path.join(repositoryRoot, "README.md"), "# Core v2 acceptance fixture\n");
-  await writeFile(path.join(repositoryRoot, "package.json"), `${JSON.stringify({ name: "moye-core-v2-acceptance", private: true, scripts: { test: "node test.cjs" } }, null, 2)}\n`);
-  await writeFile(path.join(repositoryRoot, "test.cjs"), "const fs=require('node:fs');const value=fs.readFileSync('src/value.txt','utf8');if(value!=='accepted-value\\n'){console.error('expected accepted-value');process.exit(17)}console.log('trusted value accepted')\n");
-  git(repositoryRoot, "add", "README.md", "package.json", "test.cjs");
+  if (kind === "node") {
+    await writeFile(path.join(repositoryRoot, "package.json"), `${JSON.stringify({ name: "moye-core-v2-acceptance", private: true, scripts: { test: "node test.cjs" } }, null, 2)}\n`);
+    await writeFile(path.join(repositoryRoot, "test.cjs"), "const fs=require('node:fs');const value=fs.readFileSync('src/value.txt','utf8');if(value!=='accepted-value\\n'){console.error('expected accepted-value');process.exit(17)}console.log('trusted value accepted')\n");
+  } else {
+    await mkdir(path.join(repositoryRoot, "tests"), { recursive: true });
+    await writeFile(path.join(repositoryRoot, "tests", "test_value.py"), "from pathlib import Path\nimport unittest\n\nclass ValueTest(unittest.TestCase):\n    def test_value(self):\n        self.assertEqual(Path('src/value.txt').read_text(), 'accepted-value\\n')\n\nif __name__ == '__main__':\n    unittest.main()\n");
+  }
+  git(repositoryRoot, "add", ".");
   git(repositoryRoot, "commit", "-m", "fixture base");
   git(repositoryRoot, "update-ref", "refs/heads/release", "HEAD");
   git(repositoryRoot, "switch", "--detach", "HEAD");
 }
 
-async function waitForTerminal(taskId: string, timeoutMs: number): Promise<CoreV2WorkflowProjection> {
+async function waitForTerminal(taskId: string, invocationId: string, timeoutMs: number): Promise<CoreV2WorkflowProjection> {
   const deadline = Date.now() + timeoutMs;
   let last: CoreV2WorkflowProjection | null = null;
   while (Date.now() < deadline) {
     last = await invoke<CoreV2WorkflowProjection | null>(ingressUrl, "CoreV2Workflow", taskId, "status");
     if (last !== null && (last.state === "CLOSED" || last.state === "ARCHIVE_FAILED")) return last;
+    if (last === null) {
+      const failure = await invocationFailure(invocationId);
+      if (failure !== null) throw new Error(`${taskId} Invocation failed before Projection creation: ${failure}`);
+    }
     await new Promise((resolve) => setTimeout(resolve, 3_000));
   }
   throw new Error(`Timed out waiting for ${taskId}; last=${JSON.stringify(last)}`);
+}
+
+async function invocationFailure(invocationId: string): Promise<string | null> {
+  if (!/^inv_[A-Za-z0-9]+$/u.test(invocationId)) throw new Error(`invalid Restate Invocation ID: ${invocationId}`);
+  const response = await fetch(`${adminUrl}/query`, {
+    method: "POST",
+    headers: { "content-type": "application/json", accept: "application/json" },
+    body: JSON.stringify({ query: `SELECT status, completion_result, completion_failure FROM sys_invocation WHERE id = '${invocationId}'` }),
+  });
+  if (!response.ok) return null;
+  const payload = await response.json() as { rows?: Array<{ status?: string; completion_result?: string; completion_failure?: string }> };
+  const row = payload.rows?.[0];
+  return row?.status === "completed" && row.completion_result === "failure" ? row.completion_failure ?? "unknown invocation failure" : null;
 }
 
 async function assertProductService(): Promise<void> {

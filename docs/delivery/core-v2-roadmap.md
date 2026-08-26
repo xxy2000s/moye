@@ -96,3 +96,7 @@ TASK-0039 只完成了真实 Happy Path 基线。TASK-0048 使用全新 Workflow
 TASK-0048 的最终审计包含 16 个独立 Task：Happy、五类 Finding/Repair/Replan、六类 UNKNOWN/Recovery、两个预算终止、Observer timeout 与 stale fencing。报告重新查询实时 Workflow、Authority、Board、Git、Artifact 和 Document Graph，得到 `passed=true`、`findingCount=0`、`reportDigest=sha256:96ad9fc920bf960767bb519de19007691b87fde9955d50b525f38eaf3a40de86`。首轮 OOM、Role Intent-only、探针钉住、过短/过长 Observer timeout 和 Harness 误判均作为失败历史与 Finding 保留；补跑使用新 Task，stale 只读重审计没有重跑副作用。单元测试和确定性 Adapter E2E 仍只能补充协议证明，不能替代这份真实产品证据。
 
 完整多 Daemon Lease/Fencing、远程 PR、权限、多租户、生产级观测或长期知识效果反馈仍属于生产阶段能力；本路线只对当前可实现的 Attempt/Generation/Revision fencing 做真实验收，并明确剩余限制。
+
+## 6. Framework 外部项目复验
+
+TASK-0074 没有把既有 Core v2 矩阵直接外推为 Framework 产品完成度，而是在 Node、Python、Minimal Git 和跨版本 Service fixture 中重新建立真实 Runtime Task。Node Happy/Repair、Python Test Failure/Repair、Test UNKNOWN→NOT_APPLIED、Repair 预算失败归档和旧/新真实 Commit Service 接管均得到唯一归档终态；统一 Evidence Digest 为 `sha256:d65f253ba55f8bb00f8ab253706e23b6e4d54d5f6c7f2b0db8b59456942f8354`。该证据仍只覆盖本地单 Restate 集群和受控故障，不改变上一节列出的生产阶段边界。
