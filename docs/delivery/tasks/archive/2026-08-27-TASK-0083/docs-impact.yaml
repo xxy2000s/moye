@@ -1,0 +1,116 @@
+schema_version: 1
+task_id: TASK-0083
+graph_revision: 131
+intents: [milestone-3-product-acceptance, final-deployment]
+changed_paths:
+  - README.md
+  - package.json
+  - scripts/m3_acceptance.ts
+  - scripts/demo.ts
+  - tests/e2e/demo.test.ts
+  - docs/delivery/milestones/m3-backlog-and-session-clarity.md
+  - docs/knowledge/current/architecture/overview.md
+  - docs/knowledge/current/codemap/README.md
+  - docs/knowledge/guidance/runbooks/local-restate-poc.md
+  - docs/delivery/tasks/archive/README.md
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0083/task.yaml
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0083/spec.md
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0083/design.md
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0083/plan.md
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0083/verification.md
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0083/docs-impact.yaml
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0083/m3-product-acceptance.json
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0083/m3-scaffold-rerun.json
+  - docs/delivery/tasks/archive/2026-08-27-TASK-0083/browser-acceptance.json
+  - docs/graph.yaml
+docs:
+  read:
+    - agent-contract
+    - docs-index
+    - codemap
+    - document-control-plane
+    - root-readme
+    - task-runtime-kernel
+    - restate-poc-architecture
+    - durable-runtime-pitfalls
+    - milestone-3-backlog-session-clarity
+    - architecture-overview
+    - architecture-index
+    - local-restate-poc-runbook
+    - runbooks-index
+    - archived-tasks-index
+    - tasks-index
+    - moye-task-control-skill
+    - task-0077-spec
+    - task-0077-design
+    - task-0078-spec
+    - task-0079-spec
+    - task-0080-spec
+    - task-0081-spec
+    - task-0082-spec
+    - task-0082-design
+    - task-0083-manifest
+    - task-0083-spec
+    - task-0083-design
+    - task-0083-plan
+    - task-0083-verification
+    - task-0083-docs-impact
+    - task-0083-product-acceptance
+    - task-0083-scaffold-rerun
+    - task-0083-browser-acceptance
+  reviewed:
+    architecture-overview: { outcome: updated, reason: "记录 Backlog v2 Projection、Session 四维 resolver、标准文档脚手架与固定输入验收的当前实现切片；Task/Workflow 不变量不变。" }
+    codemap: { outcome: updated, reason: "登记 M3 固定输入聚合器、严格 v2 Demo payload 与只读/不扫描边界。" }
+    local-restate-poc-runbook: { outcome: updated, reason: "登记 canonical 50889/50890 显式配置、M3 验收与 Result Commit 后安全 Deployment 交接。" }
+    root-readme: { outcome: updated, reason: "记录 M3 产品能力、acceptance:m3 入口和 Registry 未发布边界。" }
+    milestone-3-backlog-session-clarity: { outcome: updated, reason: "将批准的 Revision 1 标记完成，并登记 W01～W07 的 Result Commit 和核心证据。" }
+    docs-index: { outcome: unchanged, reason: "没有新增顶层文档类型或导航入口；既有 Delivery/Knowledge 索引继续覆盖本次文档。" }
+    document-control-plane: { outcome: unchanged, reason: "遵循现有 Context Route、Document Graph、Docs Impact 与归档规则，没有改变治理协议。" }
+    task-runtime-kernel: { outcome: unchanged, reason: "M3 验收和部署不改变 Task/Workflow/Attempt/Event/Artifact 状态所有权或恢复不变量。" }
+    restate-poc-architecture: { outcome: unchanged, reason: "沿用 canonical Restate 和现有 ProjectBoard/Service 边界，没有引入第二套 Runtime。" }
+    durable-runtime-pitfalls: { outcome: unchanged, reason: "部署采用先健康/注册/交接并保留可能被旧 Invocation 引用的 endpoint；没有删除 Journal 或直接修改 Projection。" }
+    architecture-index: { outcome: unchanged, reason: "只更新既有 Architecture 文档，没有新增或移动架构文档。" }
+    runbooks-index: { outcome: unchanged, reason: "只更新既有 local Restate Runbook，没有新增运行手册。" }
+    archived-tasks-index: { outcome: updated, reason: "增加 TASK-0083 归档索引行。" }
+    tasks-index: { outcome: unchanged, reason: "Active/Archive 生命周期与入口不变，TASK-0083 由既有索引规则覆盖。" }
+    moye-task-control-skill: { outcome: unchanged, reason: "按 Full 档位执行 Context Route、唯一 Result Commit、两阶段 Seal、Docs Impact 与 Runtime 查询；未直接改 Projection。" }
+    adr-0001-restate-poc: { outcome: unchanged, reason: "继续使用既定 Restate PoC 选型，不形成生产选型结论。" }
+    adr-0002-doc-lifecycle-roles: { outcome: unchanged, reason: "Task Evidence、Architecture、CodeMap、Runbook 与 Milestone 均按既有文档角色更新。" }
+    adr-0006-sealed-result-commit: { outcome: unchanged, reason: "TASK-0083 严格使用冻结 Base、Archive Intent、唯一 Result Commit 和 Commit 后 Seal submit。" }
+    task-lifecycle-worktree-convergence-brainstorm: { outcome: unchanged, reason: "不改变 Worktree/Git/Artifact 收敛模型。" }
+    multi-agent-core-closure-requirements: { outcome: unchanged, reason: "不改变 Core 角色隔离、Closure 或 Archive 要求。" }
+    task-0013-manifest: { outcome: unchanged, reason: "Core reducer 和 Workflow 状态所有权不变。" }
+    task-0014-manifest: { outcome: unchanged, reason: "Role Attempt 与 Worker 接管协议不变。" }
+    task-0015-manifest: { outcome: unchanged, reason: "Review/Finding 生命周期不变。" }
+    task-0016-manifest: { outcome: unchanged, reason: "Retry、Repair、Replan 与预算语义不变。" }
+    task-0017-manifest: { outcome: unchanged, reason: "Documentation/Observer Gate 状态所有权不变。" }
+    task-0018-manifest: { outcome: unchanged, reason: "Closure 与 Archive 语义不变。" }
+    task-0019-manifest: { outcome: unchanged, reason: "真实 Agent 产品流程不变。" }
+    task-0020-manifest: { outcome: unchanged, reason: "Board 仍为只读 Projection/Trace 视图。" }
+    task-0021-manifest: { outcome: unchanged, reason: "M3 只聚合和展示既有真实 Core/Session 证据。" }
+    task-0028-manifest: { outcome: unchanged, reason: "不修改历史失败 Task 或 Runtime Projection。" }
+    task-0029-manifest: { outcome: unchanged, reason: "Bootstrap 预检与失败恢复协议不变。" }
+    task-0002-manifest: { outcome: unchanged, reason: "Backlog v2 已由 W01/W02 完成；W07 只做固定事实复核。" }
+    task-0003-manifest: { outcome: unchanged, reason: "TaskEnvelope、Step、Attempt 与 Evidence 基础协议不变。" }
+    task-0004-manifest: { outcome: unchanged, reason: "Worktree/Git Effect 不变。" }
+    task-0005-manifest: { outcome: unchanged, reason: "Agent Runner 不变。" }
+    task-0006-manifest: { outcome: unchanged, reason: "Verification Gate 与 Merge Effect 不变。" }
+    task-0007-manifest: { outcome: unchanged, reason: "Trace 与故障恢复边界不变。" }
+    task-0008-manifest: { outcome: unchanged, reason: "Demo 补齐严格 v2 payload，不改变 Demo 的隔离和非生产边界。" }
+    task-0009-manifest: { outcome: unchanged, reason: "Telemetry/Trace 合同不变。" }
+    task-0001-manifest: { outcome: unchanged, reason: "Task/Archive/Board 聚合边界不变。" }
+    adr-0003-typescript-poc: { outcome: unchanged, reason: "沿用 TypeScript/Node 技术栈且没有新增依赖。" }
+    adr-0004-otlp-phoenix-demo: { outcome: unchanged, reason: "不修改 OTLP/Phoenix，M3 明确不自动启动它们。" }
+    task-0049r1-manifest: { outcome: unchanged, reason: "遵守既有 Seal preflight 与 append-only 历史原则。" }
+    task-0056-manifest: { outcome: unchanged, reason: "W07 因里程碑验收/部署使用 Full，不改变执行档位合同。" }
+    task-0061r1-design: { outcome: unchanged, reason: "不改变 replay-sensitive Core command 序列或 Session Capture Effect。" }
+    task-0062-design: { outcome: unchanged, reason: "Session 四维语义由 W04/W05 已冻结；W07 只读核对固定历史 Session。" }
+    task-0063-design: { outcome: unchanged, reason: "不再修改 Session UI，只用真实浏览器复核当前行为。" }
+    task-0077-spec: { outcome: unchanged, reason: "固定输入验收确认 Backlog v2 合同结果，不改变其 Schema。" }
+    task-0077-design: { outcome: unchanged, reason: "Projection/同步设计不变。" }
+    task-0078-spec: { outcome: unchanged, reason: "复用并核对 W02 正式 sync batch/receipt，不再次写 Runtime。" }
+    task-0079-spec: { outcome: unchanged, reason: "当前源码浏览器复核 W03 的紧凑详情、响应式与错误恢复。" }
+    task-0080-spec: { outcome: unchanged, reason: "四维 Session 合同不变，历史 Evidence 不回写。" }
+    task-0081-spec: { outcome: unchanged, reason: "Session 展示与诊断不变，W07 只做固定历史 Evidence 浏览器复核。" }
+    task-0082-spec: { outcome: unchanged, reason: "重跑既有 packed scaffold 矩阵，不改变 public CLI/模板合同。" }
+    task-0082-design: { outcome: unchanged, reason: "复用 W06 固定权威 Task/Evidence 与 OS 临时项目边界。" }

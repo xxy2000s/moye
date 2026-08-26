@@ -1,0 +1,196 @@
+{
+  "schemaVersion": 1,
+  "validationKind": "M3_PRODUCT_ACCEPTANCE",
+  "executedAt": "2026-08-26T19:45:24.165Z",
+  "runtime": {
+    "ingressUrl": "http://127.0.0.1:50889",
+    "adminUrl": "http://127.0.0.1:50890",
+    "boardUrl": "http://127.0.0.1:56618",
+    "mode": "temporary-current-source-board-read-only-canonical-runtime",
+    "serviceRegistered": false
+  },
+  "taskResults": [
+    {
+      "taskId": "TASK-0077",
+      "baseCommit": "d356eb770b90ae77609cb9a213453c3abdd66d00",
+      "resultCommit": "1f6760808dcf78a418fbbff8bbca73c3d22c9a6a",
+      "packageDigest": "sha256:b8eb6079e8ce307f1fce67fe1443f41e4ab01d8a4b7ff17d31c725c8412a90db",
+      "currentStep": "task-archived",
+      "intentDigest": "sha256:f258cffffc6a5b4c9a5e887b233ae02d7cc8a3991fbea560d9d31ea6040db391"
+    },
+    {
+      "taskId": "TASK-0078",
+      "baseCommit": "1f6760808dcf78a418fbbff8bbca73c3d22c9a6a",
+      "resultCommit": "6c8cbb74b9260bc0ff8a2cdb4101deb2aaee9060",
+      "packageDigest": "sha256:ee4c3b099eaacd64ae5d2ee11a8653354d909d2a2b62cb7211a825a913619c34",
+      "currentStep": "task-archived",
+      "intentDigest": "sha256:4918cedd591708d6252b1fd279196f9d932e17bb3ddebb6fb53257f898368a8d"
+    },
+    {
+      "taskId": "TASK-0079",
+      "baseCommit": "6c8cbb74b9260bc0ff8a2cdb4101deb2aaee9060",
+      "resultCommit": "2567fc9093b13eee225001d903a90564d8c62d3f",
+      "packageDigest": "sha256:d0662c8445c16bd2a7ae68dec817cea66c16719b1c15a05b7010fffec51d88fb",
+      "currentStep": "task-archived",
+      "intentDigest": "sha256:dd5b1d7dcd6c43340b1def3a5c8802694a08f6b0ce6a9551115b83662a5321a8"
+    },
+    {
+      "taskId": "TASK-0080",
+      "baseCommit": "2567fc9093b13eee225001d903a90564d8c62d3f",
+      "resultCommit": "f262522c1bc05f81c9339c4e5fa151f511521b1f",
+      "packageDigest": "sha256:bc5a5e9ea9c21cc3c10dd0b8d4c1d76c22c8ea6e48bc010d9c7390fb75f6ba1c",
+      "currentStep": "task-archived",
+      "intentDigest": "sha256:869a4d7676f6ba3aa28e156caec498c80c2367bc611f8ca91a5f23b045c19c96"
+    },
+    {
+      "taskId": "TASK-0081",
+      "baseCommit": "f262522c1bc05f81c9339c4e5fa151f511521b1f",
+      "resultCommit": "d369e9d3d9621391999e2db48a959a2e7fa29d7b",
+      "packageDigest": "sha256:98084d60f45912e763c3739349bed40a40444c3b36e7dc266477d90067eb53b5",
+      "currentStep": "task-archived",
+      "intentDigest": "sha256:cd6b39c7e24dbd084045387ede10389148fb41ae0474eda8c4f3aa61fb3826bd"
+    },
+    {
+      "taskId": "TASK-0082",
+      "baseCommit": "d369e9d3d9621391999e2db48a959a2e7fa29d7b",
+      "resultCommit": "241a81938065f9e4efec32507e4af2aa43380779",
+      "packageDigest": "sha256:f951eb5c90ad3d1bb2caeb5da1fd515d13593f87619224845ef80703947bb71b",
+      "currentStep": "task-archived",
+      "intentDigest": "sha256:af012cb6d699446410344d0d20aa46b772da6d7976fe7d4f541de76383864f84"
+    }
+  ],
+  "backlog": {
+    "ids": [
+      "BL-0004",
+      "BL-0005",
+      "BL-0006",
+      "BL-0007",
+      "BL-0083"
+    ],
+    "schemaVersion": 2,
+    "bl0031Visible": false,
+    "bl0083SourceDigest": "a3b48aaf9a0f7624c860f60cccddb3484408b2d68d74de770338b8835863e240",
+    "syncBatchId": "98457bb9ead7d73f657f4cd00391590e2b3e8ff49aa86162b5cf12caad49b955",
+    "syncReceiptDigest": "sha256:7240ec22f1c4b19c4a8b57a0ad0bfaf797a3cf7a44bca1a4e2bd5bd3aeadf4d5"
+  },
+  "session": {
+    "taskId": "TASK-RCV-20260826114418-01-ROLE-RECOVERY",
+    "runId": "sha256:0f7e26c3e614aefa95e9de29e91b1fccdb9db9e4c9f10f7d6440982967f0ec31",
+    "providerSessionId": "01a03de2-b60b-7371-9d85-4fddd823ff7c",
+    "receiptDigest": "sha256:7b69b895a1f043c5ed46fc653d69797d64c5e63b2a221e87dab90ae6684b2fb3",
+    "manifestDigest": "sha256:99576df390720f7793f85e1b7d530ae96b228ad0c4b289c1b8fb00a568634be8",
+    "rawState": "PARTIAL",
+    "semantics": {
+      "schemaVersion": 1,
+      "availability": {
+        "state": "AVAILABLE",
+        "reason": "EVIDENCE_READABLE"
+      },
+      "content": {
+        "evaluated": true,
+        "state": "COMPLETE",
+        "reasons": []
+      },
+      "binding": {
+        "state": "UNVERIFIED",
+        "reason": "HISTORICAL_BINDING_UNVERIFIED"
+      },
+      "limitation": {
+        "state": "NONE",
+        "reasons": []
+      }
+    },
+    "eventCount": 32
+  },
+  "scaffold": {
+    "packageDigest": "sha256:d3a64a58f389c165dca802dbb3e06a1eb27fe2883efccd6f2103117a79b0c54b",
+    "scaffoldDigest": "sha256:8a32525eb2628e9bbb767adc3ea020d22a073d11d9d769954691b2a1827027fa",
+    "evidenceDigest": "sha256:e537ea96bd67faf61532902493b2c319e0dd8d453ee79fa2dc56df11790d8f49",
+    "authoritativeTaskId": "TASK-SCAFFOLD-20260826191825",
+    "authoritativeEvidenceDigest": "sha256:85f7b65ff79c3c3b43b5416595d306b9adad8e100565eba6ef02de907d93155b",
+    "authoritativeBundleDigest": "sha256:c5944bed407c94450a8c273ee35155a6f4b71afa0d679292fe3f70cb95f1bace"
+  },
+  "browserEvidence": {
+    "backlog": {
+      "desktop1440x1000": "PASS",
+      "narrow390x844": "PASS",
+      "narrowDialogWidthPx": 337,
+      "narrowDialogScroll": "PASS (1525 content / 655 viewport)",
+      "escapeClosesDialog": "PASS",
+      "focusReturnsToTrigger": "PASS",
+      "initialLoadingState": "PASS",
+      "realNetworkFailureState": "PASS (isolated Board with unreachable ingress)",
+      "automaticRecoveryToSameProjection": "PASS (0 to 5 Backlog after canonical ingress restored)",
+      "consoleErrorsWithoutInjectedFailure": 0,
+      "runtimeWritesFromDialog": 0
+    },
+    "session": [
+      {
+        "viewport": [
+          1440,
+          1000
+        ],
+        "result": "passed",
+        "evidence": "session-historical-desktop.png",
+        "sha256": "6a838c1ffaa7a57faed8daf5e3dd36f539f68e4e2db4e800b6f485347ff6d777"
+      },
+      {
+        "viewport": [
+          1440,
+          1000
+        ],
+        "result": "passed",
+        "assertion": "advanced diagnostics preserves raw Receipt/Manifest facts",
+        "evidence": "session-historical-diagnostics.png",
+        "sha256": "88507d2b898d523001448c449e2b8833837780addb4b990ca73c6b8659620e5b"
+      },
+      {
+        "viewport": [
+          390,
+          844
+        ],
+        "result": "passed",
+        "dialogBounds": {
+          "left": 8,
+          "right": 345,
+          "width": 337,
+          "top": 8,
+          "bottom": 836
+        },
+        "bodyOverflowX": false,
+        "evidence": "session-historical-mobile.png",
+        "sha256": "53b33a3e2deb6b92a37bb1be102a02cd147a13c05c806d6e6d67c4f84db8ebc4"
+      },
+      {
+        "interaction": "Assistant category filter",
+        "result": "passed",
+        "observed": "Assistant 8 pressed"
+      },
+      {
+        "interaction": "Escape close and focus return",
+        "result": "passed",
+        "observedActiveElement": "查看 Agent 对话与工具输出"
+      },
+      {
+        "interaction": "network failure and retry same Evidence",
+        "result": "passed",
+        "failureObserved": "Session Evidence 暂时无法读取 / Failed to fetch",
+        "safeActionObserved": "重试读取同一 Evidence，或查看独立 Execution Stream。",
+        "recoveredTo": "AVAILABLE / COMPLETE / UNVERIFIED / NONE",
+        "evidence": "session-network-error.png",
+        "sha256": "faaf2d29612b03bcbf5696c1f4d585fa4ff4d31fc3b209524d38b9f4037dee5a"
+      }
+    ]
+  },
+  "evidenceFiles": {
+    "backlogSync": "sha256:7240ec22f1c4b19c4a8b57a0ad0bfaf797a3cf7a44bca1a4e2bd5bd3aeadf4d5",
+    "backlogBrowser": "sha256:f2b241283cb48aef6d725cfd69b5ef4c4fedd99aaba1c2d6688d98a2d5d31755",
+    "sessionSemantics": "sha256:ab0aa402151650ebd0bc4c5d94a6041b3a5b7e17a940b0ae60a7fefada76a68e",
+    "sessionBrowser": "sha256:5ee8d0007e63566d369847eeba12e84b5f64da84e6aba481430f62ad65d79bbf",
+    "scaffoldPackage": "sha256:429e1d757e2c34425a8af96f2d6d03619f8961b37a481b5ffe3b4f8824093b0d",
+    "scaffoldTask": "sha256:0614efed9634c757382bc59329ad6e3851df7e611dadd6f29e801a59e80165a9",
+    "scaffoldRerun": "sha256:f9f4eca2578a4eca74454e6fd7d8522ea1398fbac99447a29c2eb5497222ecc3"
+  },
+  "mutations": "none: current-source Board was not registered; all canonical Runtime queries were read-only; scaffold fixtures were OS temporary directories outside Moye",
+  "reportDigest": "sha256:f4da0e57735b69e7e1271eec5b3f6d6a8c15897b8b7864a082457e5fd4ee74e8"
+}

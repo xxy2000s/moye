@@ -107,7 +107,12 @@ describe("npm run demo", () => {
     expect(html).toContain('id="agent-events-dialog"');
     expect(html).toContain("data-agent-events-viewer");
     expect(html).not.toContain('<dialog id="task-detail"');
-    expect(html).toMatch(/<main id="task-detail-page"[\s\S]*?<\/main>\s*<dialog id="agent-events-dialog"/);
+    const taskDetailIndex = html.indexOf('<main id="task-detail-page"');
+    const backlogDialogIndex = html.indexOf('<dialog id="backlog-detail-dialog"');
+    const agentDialogIndex = html.indexOf('<dialog id="agent-events-dialog"');
+    expect(taskDetailIndex).toBeGreaterThanOrEqual(0);
+    expect(backlogDialogIndex).toBeGreaterThan(taskDetailIndex);
+    expect(agentDialogIndex).toBeGreaterThan(backlogDialogIndex);
     expect(html).toContain('class="task-detail-frame"');
     expect(html).toContain('id="task-detail-back"');
     expect(app).toContain('history.pushState({ moyeRoute: "task"');

@@ -93,12 +93,21 @@ try {
   await registerDeployment();
 
   await postJson(`${boardUrl}/api/backlog`, {
+    schemaVersion: 2,
     backlogId,
     title: "体验 Agent 编码、验证、合并与归档",
     kind: "FEATURE",
     status: "SCHEDULED",
     priority: "MEDIUM",
     sourceRefs: ["demo"],
+    affectedAreas: ["coding-demo"],
+    acceptanceOutline: ["Demo Coding Task 完成 Agent、验证、合并与归档闭环"],
+    problem: {
+      observed: "Demo 项目尚未运行本次可审计的 Coding Task。",
+      expected: "通过版本化 Backlog 输入启动并完成 Agent、验证、合并与归档闭环。",
+      impact: "缺少该入口时无法从项目看板体验真实持久化 Coding Task 的完整旅程。",
+      evidenceRefs: ["demo"],
+    },
     taskRefs: [taskId],
     updatedAt: createdAt,
   });

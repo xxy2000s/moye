@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "taskId": "TASK-0083",
+  "executedAt": "2026-08-27T03:36:09+08:00",
+  "runtime": {
+    "boardUrl": "http://127.0.0.1:3033",
+    "ingressUrl": "http://127.0.0.1:50889",
+    "mode": "temporary-current-source-board-read-only-canonical-runtime",
+    "serviceRegistered": false,
+    "temporaryEndpointsStopped": true
+  },
+  "backlog": {
+    "id": "BL-0083",
+    "desktop": "PASS: five compact cards; observed/expected/impact, four Evidence refs, affected areas, acceptance and canonical source Digest visible",
+    "mobile": "PASS: 390x844 dialog remains single-column and independently scrollable",
+    "escapeFocus": "PASS: Escape closes native dialog and focus returns to the exact BL-0083 trigger"
+  },
+  "session": {
+    "taskId": "TASK-RCV-20260826114418-01-ROLE-RECOVERY",
+    "role": "architect",
+    "runId": "sha256:0f7e26c3e614aefa95e9de29e91b1fccdb9db9e4c9f10f7d6440982967f0ec31",
+    "providerSessionId": "01a03de2-b60b-7371-9d85-4fddd823ff7c",
+    "desktop": "PASS: AVAILABLE / COMPLETE / UNVERIFIED / NONE and 32/32 managed Timeline visible",
+    "diagnostics": "PASS: raw Receipt/Manifest facts remain available behind advanced disclosure",
+    "mobile": "PASS: 390x844 Session dialog remains readable without horizontal page overflow",
+    "networkRecovery": "PASS: offline fetch shows safe retry/Execution Stream guidance; online reload returns the identical four-dimensional Evidence",
+    "escapeFocus": "PASS: Escape closes Session dialog and returns focus to the originating role button",
+    "normalConsoleErrors": 0,
+    "injectedOfflineConsoleErrors": 5,
+    "runtimeWrites": 0
+  },
+  "screenshots": [
+    { "file": "browser-backlog-desktop.png", "viewport": [1440, 1000], "sha256": "45c266280cd8c5a92870cad430075dbececb96b343afc206bced7531cbc720c6" },
+    { "file": "browser-backlog-mobile.png", "viewport": [390, 844], "sha256": "42e750e22ff619aefbe72e8ceb694f59442302f5a10a29c69c70af6292da5c23" },
+    { "file": "browser-session-desktop.png", "viewport": [1440, 1000], "sha256": "6bb3c0b0a70856579a5704cbe7cf097c316de9a6b6c6fe3bb2e12725249afc8a" },
+    { "file": "browser-session-diagnostics.png", "viewport": [1440, 1000], "sha256": "33a535a569d9400df81444f3e8b6560dfc6dde16a1d98438e85dace828c827f2" },
+    { "file": "browser-session-mobile.png", "viewport": [390, 844], "sha256": "0e22fea251b1dabbaba70189e6c87a012c51561198538cb6d8687a796ed38efa" },
+    { "file": "browser-session-network-error.png", "viewport": [390, 844], "sha256": "11fe52bc54bf8c29c91ba9bfe82910ee99dc33dc38df1db699ea90669f6d0bbf" }
+  ],
+  "mutations": "none"
+}

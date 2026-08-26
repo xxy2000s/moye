@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 130
+graph_revision: 131
 updated_at: "2026-08-27"
 
 entrypoints:
@@ -6087,6 +6087,78 @@ documents:
     authority: task-evidence
     read_when: [task-close, task-archive]
 
+  - id: task-0083-manifest
+    path: docs/delivery/tasks/archive/2026-08-27-TASK-0083/task.yaml
+    type: task-manifest
+    status: archived
+    scope: milestone-3-product-acceptance
+    authority: task-artifact
+    read_when: [task-execution, task-close, task-archive]
+
+  - id: task-0083-spec
+    path: docs/delivery/tasks/archive/2026-08-27-TASK-0083/spec.md
+    type: task-spec
+    status: archived
+    scope: milestone-3-product-acceptance
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0083-design
+    path: docs/delivery/tasks/archive/2026-08-27-TASK-0083/design.md
+    type: task-design
+    status: archived
+    scope: milestone-3-product-acceptance
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0083-plan
+    path: docs/delivery/tasks/archive/2026-08-27-TASK-0083/plan.md
+    type: task-plan
+    status: archived
+    scope: milestone-3-product-acceptance
+    authority: task-artifact
+    read_when: [task-execution, task-close]
+
+  - id: task-0083-verification
+    path: docs/delivery/tasks/archive/2026-08-27-TASK-0083/verification.md
+    type: verification
+    status: archived
+    scope: milestone-3-product-acceptance
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0083-docs-impact
+    path: docs/delivery/tasks/archive/2026-08-27-TASK-0083/docs-impact.yaml
+    type: docs-impact
+    status: archived
+    scope: milestone-3-product-acceptance
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0083-product-acceptance
+    path: docs/delivery/tasks/archive/2026-08-27-TASK-0083/m3-product-acceptance.json
+    type: runtime-evidence
+    status: archived
+    scope: milestone-3-product-acceptance
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0083-scaffold-rerun
+    path: docs/delivery/tasks/archive/2026-08-27-TASK-0083/m3-scaffold-rerun.json
+    type: runtime-evidence
+    status: archived
+    scope: milestone-3-product-acceptance
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
+  - id: task-0083-browser-acceptance
+    path: docs/delivery/tasks/archive/2026-08-27-TASK-0083/browser-acceptance.json
+    type: runtime-evidence
+    status: archived
+    scope: milestone-3-product-acceptance
+    authority: task-evidence
+    read_when: [task-close, task-archive]
+
 relations:
   - from: root-readme
     to: docs-index
@@ -10750,6 +10822,58 @@ relations:
 
   - from: task-0082-authoritative-trace
     to: task-0082-manifest
+    type: evidence_for
+
+  - from: tasks-index
+    to: task-0083-manifest
+    type: indexes
+
+  - from: archived-tasks-index
+    to: task-0083-manifest
+    type: indexes
+
+  - from: task-0083-spec
+    to: task-0083-manifest
+    type: belongs_to
+
+  - from: task-0083-spec
+    to: milestone-3-backlog-session-clarity
+    type: implements_slice_of
+
+  - from: task-0083-design
+    to: task-0083-spec
+    type: refines
+
+  - from: task-0083-design
+    to: task-0082-design
+    type: depends_on
+
+  - from: task-0083-design
+    to: local-restate-poc-runbook
+    type: enforces
+
+  - from: task-0083-plan
+    to: task-0083-manifest
+    type: belongs_to
+
+  - from: task-0083-verification
+    to: task-0083-manifest
+    type: verifies
+
+  - from: task-0083-docs-impact
+    to: task-0083-manifest
+    type: reports_on
+
+  - from: task-0083-product-acceptance
+    to: task-0083-manifest
+    type: evidence_for
+
+  - from: task-0083-scaffold-rerun
+    to: task-0083-manifest
+    type: evidence_for
+
+  - from: task-0083-browser-acceptance
+    to: task-0083-manifest
     type: evidence_for
 
 routing:

@@ -8,6 +8,8 @@ Agent Session Evidence M1 也已完成本地产品验收：新 Codex/Claude Role
 
 Framework MVP 的公共边界已由 [ADR-0008](./docs/knowledge/decisions/adr/0008-publish-framework-mvp-as-versioned-umbrella-package.md) 冻结：首版采用 `moye@0.1.0` umbrella package，通过 `moye/core`、`moye/client`、`moye/plugin-sdk` 和 CLI 提供公共入口，Restate Workflow/Projection 写入口保持私有。RC pipeline 已通过独立 snapshot 的 `npm pack`、隔离 clean install、公共 exports/CLI/Schema、非 root Service image、CycloneDX SBOM 与内容寻址 Release Manifest 验收；Node、Python、Minimal Git、失败归档和跨真实 Commit Service 恢复也已通过统一外部产品矩阵，Evidence Digest 为 `sha256:d65f253b…f8354`。`0.1.0` GA 使用 append-only publish Intent/Event 对 Git Tag、GitHub Release、npm 与容器 Registry 分别对账；只有目标状态为 `CONFIRMED` 才代表公开可用，缺少凭证会明确保留 `BLOCKED_AUTH`，不能从本地 tarball 或 image 推断公开发布成功。
 
+Milestone 3 已完成 Backlog 与 Session Evidence 的产品语义收敛：Backlog v2 保存 `observed / expected / impact`、Evidence、影响范围与验收方向，Board 以紧凑卡片和按需详情读取同一 ProjectBoard Projection；Session 则独立呈现 Availability、Content Completeness、Binding Confidence 与 Policy/Provider Limitation，历史可读但无法追溯强绑定的记录会准确显示为 `AVAILABLE + COMPLETE + UNVERIFIED + NONE`。消费级 CLI 还提供显式、非破坏、可重复验证的 `standard-docs-v1` 项目文档脚手架。固定输入的 `npm run acceptance:m3` 会重新核对六个前置 Result Commit/Runtime Seal、canonical Backlog、固定历史 Session、packed scaffold 与权威真实外部 Task；它只证明本地源码与已保存 Runtime/Evidence，不代表 npm、GitHub Release 或容器 Registry 已公开发布。
+
 发布功能、安装方式、兼容范围与生产限制见 [0.1.0 Release Notes](./docs/knowledge/guidance/releases/v0.1.0.md)，安全默认值见 [SECURITY.md](./SECURITY.md)，升级与回滚见 [Framework Migration Runbook](./docs/knowledge/guidance/runbooks/framework-migration.md)。
 
 项目 Manifest v1 与消费级 Client/CLI 已可驱动真实本地任务：`moye init`、`doctor`、`project validate`、`task start/status/watch/open` 会自动冻结 clean Git HEAD、目标 ref、受信任测试、Runner、仓库外受管 Artifact Root 和页面链接，用户不构造 Workflow Input。显式 `moye init --docs standard` 默认只预览 `standard-docs-v1` 计划，`--apply` 才为仓库外 Git 项目创建非破坏、可重复验证的 AGENTS/Sources/Delivery/Knowledge/Meta 起点；不同字节、symlink 或版本漂移均拒绝覆盖。修正版真实外部任务 `TASK-FRAMEWORK-20260825224122` 已由七个真实 Role、Trusted Runner、双父 Merge、Closure 和 Archive 唯一完成。Plugin SDK v1 也已定义七类 Adapter、显式 capability negotiation、统一 contract suite 和 UNKNOWN/Reconcile 边界；第三方 Plugin 没有 Task 状态写入口。Documentation Policy 支持 `none | conventional | moye-doc-graph | custom`，其中 `none` 也由 Workflow 生成 Candidate-bound 的确定性 Evidence；无 Moye 文档图的真实任务 `TASK-DOCS-POLICY-20260825231609` 已归档成功。本地 Runtime Distribution、npm tarball、三个独立外部示例、GA 构建与发布对账入口均已交付；公开 npm/GitHub Release/容器是否可安装必须以对应 Registry Receipt 为准。
@@ -72,6 +74,7 @@ npm run demo:trace
 npm install
 npm run check
 npm run test:e2e
+npm run acceptance:m3
 ```
 
 `test:e2e` 会启动隔离的 Restate 1.7.4 容器、强杀 Service、重启并验证唯一归档，结束后自动清理容器。开发启动、服务注册、CLI 和看板操作见 [本地 PoC Runbook](./docs/knowledge/guidance/runbooks/local-restate-poc.md)。
@@ -124,6 +127,8 @@ npm run acceptance:framework:examples
 npm run acceptance:framework
 # 重跑包含跨版本 Role Worker Recovery 的完整、可自举产品矩阵
 npm run acceptance:framework:upgrade
+# 固定输入、只读核对 M3 的 Result Commit、Runtime、Backlog、Session 与 packed scaffold
+npm run acceptance:m3
 ```
 
 Core v2 四个 suite 和统一 matrix 入口不会使用 Fake/Mock/Scenario Adapter：每个场景创建新的持久化运行目录和独立 Workflow key，调用真实 Codex、隔离 Git、Trusted Runner、适用时的双父 Merge、Closure 和 Archive，并从 Projection、Trace、Role Events、Manifest 与 Git DAG 生成 Evidence Summary。故障、恢复和预算命令要求 Service 显式设置 `MOYE_ACCEPTANCE_FAULT_INJECTION=enabled`；普通 Service 会在 TaskAuthority claim 前拒绝 `acceptanceControl` 或 `recoveryControl`。审计命令不扫描目录挑选“最新成功”，只接受显式 Manifest，并重新查询 Restate、TaskAuthority、Board、Git 对象、Artifact 摘要和 Document Graph；任何缺失、重复或实时漂移都会非零退出。这些命令消耗真实模型额度，不能用单元测试结果替代。
