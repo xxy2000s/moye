@@ -1,5 +1,5 @@
 schema_version: 1
-graph_revision: 124
+graph_revision: 125
 updated_at: "2026-08-27"
 
 entrypoints:
@@ -943,6 +943,14 @@ documents:
     scope: framework-productization
     authority: delivery-plan
     read_when: [task-create, task-execution, task-close, release-planning]
+
+  - id: milestone-3-backlog-session-clarity
+    path: docs/delivery/milestones/m3-backlog-and-session-clarity.md
+    type: delivery-plan
+    status: draft
+    scope: backlog-session-clarity
+    authority: delivery-plan
+    read_when: [backlog-triage, task-create, task-execution, session-evidence-recovery]
 
   - id: bl-0032-core-v2-architecture
     path: docs/delivery/backlog/BL-0032.yaml
@@ -6975,6 +6983,18 @@ relations:
   - from: milestone-2-framework-release
     to: milestone-1-agent-session-evidence
     type: depends_on
+
+  - from: delivery-index
+    to: milestone-3-backlog-session-clarity
+    type: indexes
+
+  - from: milestone-3-backlog-session-clarity
+    to: milestone-2-framework-release
+    type: depends_on
+
+  - from: milestone-3-backlog-session-clarity
+    to: bl-0083-session-evidence-presentation-semantics
+    type: coordinates
 
   - from: core-v2-roadmap
     to: bl-0031-bootstrap-base-failure-convergence
