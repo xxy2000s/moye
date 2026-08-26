@@ -1,0 +1,23 @@
+schema_version: 1
+id: BL-0083
+title: "区分 Agent Session 内容完整性与 Prompt 绑定可信度"
+kind: bug
+status: triaged
+priority: medium
+source_refs: []
+affected_areas:
+  - board-agent-session
+  - session-evidence
+  - transcript-schema
+acceptance_outline:
+  - "Board 将会话可读性、内容完整性与 Prompt/Attempt 绑定可信度分层展示，不再把所有 PARTIAL 统一描述为记录不完整"
+  - "HISTORICAL_ENRICHMENT + UNVERIFIED 且消息、时间、层级和解析指标无缺口时，明确显示历史会话可读、仅 Prompt 强绑定无法追溯验证"
+  - "真正的解析、丢弃、未知事件、终止标记或内容维度缺口继续显示 PARTIAL，并逐项列出缺失原因"
+  - "OMITTED_BY_POLICY、NOT_EXPOSED 等策略或 Provider 能力边界不得被误报为数据丢失"
+  - "PENDING、WAITING_RECONCILE、UNAVAILABLE、FAILED 与 Artifact 完整性错误保持独立状态和操作建议"
+  - "旧 Receipt、Manifest、Projection 和 Digest 不回写；原始 PARTIAL/UNVERIFIED 事实继续在高级诊断可见"
+  - "评估以版本化 PROMPT_BINDING_UNVERIFIED/BINDING 语义替代新 Evidence 中误导性的 UNSUPPORTED_FORMAT/PARSER，同时兼容既有封存 Evidence"
+resolution:
+  task_refs: []
+  duplicate_of:
+  reason: "2026-08-27 用户确认暂不实施；保留为后续可调度 Backlog。"

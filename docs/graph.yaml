@@ -1,6 +1,6 @@
 schema_version: 1
-graph_revision: 123
-updated_at: "2026-08-25"
+graph_revision: 124
+updated_at: "2026-08-27"
 
 entrypoints:
   human: root-readme
@@ -5639,6 +5639,14 @@ documents:
     authority: backlog
     read_when: [backlog-triage, session-evidence-recovery, task-create]
 
+  - id: bl-0083-session-evidence-presentation-semantics
+    path: docs/delivery/backlog/BL-0083.yaml
+    type: backlog-item
+    status: triaged
+    scope: agent-session-evidence
+    authority: backlog
+    read_when: [backlog-triage, task-create, session-evidence-recovery]
+
   - id: task-0076-manifest
     path: docs/delivery/tasks/archive/2026-08-26-TASK-0076/task.yaml
     type: task-manifest
@@ -10015,6 +10023,18 @@ relations:
   - from: task-0076-docs-impact
     to: task-0076-manifest
     type: reports_on
+
+  - from: backlog-index
+    to: bl-0083-session-evidence-presentation-semantics
+    type: indexes
+
+  - from: adr-0007-session-transcript-sidecar
+    to: bl-0083-session-evidence-presentation-semantics
+    type: governs
+
+  - from: bl-0083-session-evidence-presentation-semantics
+    to: task-0076-manifest
+    type: depends_on
 
 routing:
   baseline:
